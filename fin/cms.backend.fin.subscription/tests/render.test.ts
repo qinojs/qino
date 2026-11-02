@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
@@ -7,7 +8,7 @@ import { backendDashboardWidget, backendRowWidget } from "../plugin.ts";
 
 type Answer = { ok: boolean; message?: string };
 
-Deno.test("subscriptions are added, billed from the run, canceled, and deleted only unbilled", async () => {
+test("subscriptions are added, billed from the run, canceled, and deleted only unbilled", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const node = backendNode(app, "/backend/subscriptions");
     const base = "http://qino.test/backend/subscriptions";
@@ -42,7 +43,7 @@ Deno.test("subscriptions are added, billed from the run, canceled, and deleted o
   });
 });
 
-Deno.test("a subscription is changed on its page: start and period only until billed", async () => {
+test("a subscription is changed on its page: start and period only until billed", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const node = backendNode(app, "/backend/subscriptions");
     const as = (run: () => Promise<unknown>) => inRequest(app, "http://qino.test/backend/subscriptions", run);
@@ -83,7 +84,7 @@ Deno.test("a subscription is changed on its page: start and period only until bi
   });
 });
 
-Deno.test("plans are kept in the catalog and chosen for a subscription", async () => {
+test("plans are kept in the catalog and chosen for a subscription", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const node = backendNode(app, "/backend/subscriptions");
     const as = (run: () => Promise<unknown>) => inRequest(app, "http://qino.test/backend/subscriptions", run);

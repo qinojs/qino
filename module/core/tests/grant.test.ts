@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { grant } from "../mod.ts";
 import { assertEquals, testContext } from "./deps.ts";
 
@@ -15,7 +16,7 @@ function app(secret: string) {
   return { settings: { core: { _secret: secret } } } as unknown as App;
 }
 
-Deno.test("session grants belong to one session and resource", async () => {
+test("session grants belong to one session and resource", async () => {
   const own = (await testContext({ sess: session() })).sess;
   const proof = grant.sign(own, "example\0one");
   assertEquals(proof.sig.length, 22);
@@ -24,7 +25,7 @@ Deno.test("session grants belong to one session and resource", async () => {
   assertEquals(grant.verify((await testContext({ sess: session() })).sess, "example\0one", proof), "forged");
 });
 
-Deno.test("session grants distinguish unsigned, forged and expired values", async () => {
+test("session grants distinguish unsigned, forged and expired values", async () => {
   const sess = (await testContext({ sess: session() })).sess;
   assertEquals(grant.verify(sess, "example\0one", {}), "unsigned");
   assertEquals(grant.verify(sess, "example\0one", { exp: "1e12", sig: "x" }), "forged");
@@ -32,7 +33,7 @@ Deno.test("session grants distinguish unsigned, forged and expired values", asyn
   assertEquals(grant.verify(sess, "example\0one", proof), "expired");
 });
 
-Deno.test("permanent grants belong to one app and resource", async () => {
+test("permanent grants belong to one app and resource", async () => {
   const own = app("one");
   const proof = await grant.sign(own, "example\0one");
   assertEquals(proof.sig.length, 22);

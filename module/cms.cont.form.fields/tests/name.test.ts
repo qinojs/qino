@@ -1,8 +1,9 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { fieldName, RESERVED } from "../mod.ts";
 
-Deno.test("fieldName turns a label into a name", () => {
+test("fieldName turns a label into a name", () => {
   assertEquals(fieldName("Ihre Bemerkung"), "ihre_bemerkung");
   assertEquals(fieldName("E-Mail"), "e_mail");
   assertEquals(fieldName("Grösse in m²"), "groesse_in_m");
@@ -10,7 +11,7 @@ Deno.test("fieldName turns a label into a name", () => {
   assertEquals(fieldName("  ***  "), "field", "a label without letters still needs a name");
 });
 
-Deno.test("fieldName defuses names that mean something on an object", () => {
+test("fieldName defuses names that mean something on an object", () => {
   for (const name of RESERVED) assertEquals(fieldName(name), name + "_", `"${name}" has to give way`);
 
   // the two that would not merely shadow: a prototype write and an accidental thenable

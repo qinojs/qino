@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, fakeRender } from "@qino/qino/tests";
 import { unixTime } from "@qino/qino";
 
@@ -32,20 +33,20 @@ const ctxPending = (db: any, usrId: number) =>
 const github = (over: Record<string, unknown> = {}) =>
   identity({ id: 4711, email: "kim@example.com", email_verified: true, ...over });
 
-Deno.test("auth.oauth: a remembered sub decides, without looking at the e-mail", async () => {
+test("auth.oauth: a remembered sub decides, without looking at the e-mail", async () => {
   const db = fakeDb({ link: 7 });
   assertEquals(await resolveUser(ctxWith(db), PROVIDER, github({ email: "" })), 7);
   assertEquals(db.inserted.length, 0); // nothing new to remember
   assertEquals(db.execs.some((s) => s.includes("UPDATE oauth_provider_usr")), true); // last_used
 });
 
-Deno.test("auth.oauth: an unknown sub falls back to the verified e-mail and is remembered", async () => {
+test("auth.oauth: an unknown sub falls back to the verified e-mail and is remembered", async () => {
   const db = fakeDb({ usr: 3 });
   assertEquals(await resolveUser(ctxWith(db), PROVIDER, github()), 3);
   assertEquals(db.inserted, [["oauth_provider_usr", { provider: "github", sub: "4711", usr_id: 3, created: db.inserted[0][1].created, last_used: db.inserted[0][1].last_used }]]);
 });
 
-Deno.test("auth.oauth: a created user keeps the address the provider vouched for as a contact", async () => {
+test("auth.oauth: a created user keeps the address the provider vouched for as a contact", async () => {
   const db = fakeDb();
   assertEquals(await resolveUser(ctxWith(db), PROVIDER, github()), 99);
   assertEquals(db.inserted.map(([table]) => table), ["usr", "usr_contact", "oauth_provider_usr"]);
@@ -53,13 +54,13 @@ Deno.test("auth.oauth: a created user keeps the address the provider vouched for
   assertEquals(db.inserted[1][1].main, true); // the first address on a channel is the main one
 });
 
-Deno.test("auth.oauth: an unverified e-mail is refused", async () => {
+test("auth.oauth: an unverified e-mail is refused", async () => {
   const db = fakeDb();
   assertEquals(await resolveUser(ctxWith(db), PROVIDER, github({ email_verified: false })), 0);
   assertEquals(db.inserted.length, 0);
 });
 
-Deno.test("auth.oauth: trust_email lets an unflagged e-mail create a new account, never enter an existing one", async () => {
+test("auth.oauth: trust_email lets an unflagged e-mail create a new account, never enter an existing one", async () => {
   const facebook = { ...PROVIDER, name: "facebook", trust_email: 1 };
   const fresh = fakeDb();
   assertEquals(await resolveUser(ctxWith(fresh), facebook, github({ email_verified: undefined })), 99);
@@ -69,53 +70,53 @@ Deno.test("auth.oauth: trust_email lets an unflagged e-mail create a new account
   assertEquals(taken.inserted.length, 0);
 });
 
-Deno.test("auth.oauth: auto_create off means an unknown e-mail creates nobody", async () => {
+test("auth.oauth: auto_create off means an unknown e-mail creates nobody", async () => {
   const db = fakeDb();
   assertEquals(await resolveUser(ctxWith(db), { ...PROVIDER, auto_create: 0 }, github()), 0);
   assertEquals(db.inserted.length, 0);
 });
 
-Deno.test("auth.oauth: a login handle already taken creates no twin account", async () => {
+test("auth.oauth: a login handle already taken creates no twin account", async () => {
   const db = fakeDb({ handle: 8 });
   assertEquals(await resolveUser(ctxWith(db), PROVIDER, github()), 0);
   assertEquals(db.inserted.length, 0);
 });
 
-Deno.test("auth.oauth: signed in, the round trip connects the provider to whoever is here", async () => {
+test("auth.oauth: signed in, the round trip connects the provider to whoever is here", async () => {
   const db = fakeDb();
   assertEquals(await resolveUser(ctxWith(db, 5), PROVIDER, github({ email: "someone.else@example.com" })), 5);
   assertEquals(db.inserted[0][1].usr_id, 5); // not the account owning that e-mail
 });
 
-Deno.test("auth.oauth: signed in, an identity linked to someone else is refused, not switched to", async () => {
+test("auth.oauth: signed in, an identity linked to someone else is refused, not switched to", async () => {
   const db = fakeDb({ link: 7 });
   assertEquals(await resolveUser(ctxWith(db, 5), PROVIDER, github()), 0);
 });
 
-Deno.test("auth.oauth: a parked login is finished by a link it already has", async () => {
+test("auth.oauth: a parked login is finished by a link it already has", async () => {
   const db = fakeDb({ link: 5 });
   assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github()), 5);
 });
 
-Deno.test("auth.oauth: a parked login connects no new provider — the password alone must not add a factor", async () => {
+test("auth.oauth: a parked login connects no new provider — the password alone must not add a factor", async () => {
   const db = fakeDb({ usr: 5 });
   assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github({ email: "someone.else@example.com" })), 0);
   assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github()), 0); // not even with the user's own verified e-mail
   assertEquals(db.inserted.length, 0);
 });
 
-Deno.test("auth.oauth: a parked login is not finished by an identity belonging to someone else", async () => {
+test("auth.oauth: a parked login is not finished by an identity belonging to someone else", async () => {
   const db = fakeDb({ link: 7 });
   assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github()), 0);
 });
 
-Deno.test("auth.oauth: allowed_domains rejects a foreign e-mail but spares an existing link", async () => {
+test("auth.oauth: allowed_domains rejects a foreign e-mail but spares an existing link", async () => {
   const p = { ...PROVIDER, allowed_domains: "example.com" };
   assertEquals(await resolveUser(ctxWith(fakeDb({ usr: 3 })), p, github({ email: "kim@other.com" })), 0);
   assertEquals(await resolveUser(ctxWith(fakeDb({ link: 7 })), p, github({ email: "" })), 7); // Apple stops sending one
 });
 
-Deno.test("auth.oauth: identity reads the id of both provider kinds", () => {
+test("auth.oauth: identity reads the id of both provider kinds", () => {
   assertEquals(identity({ sub: "oidc-1" }).sub, "oidc-1");
   assertEquals(identity({ id: 4711 }).sub, "4711");
   assertEquals(identity({}).sub, ""); // nothing to remember, e-mail stays the only way

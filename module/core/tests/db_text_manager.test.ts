@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { DbTextManager } from "../lib/DbTextManager.ts";
 
-Deno.test("DbTextManager: generate inserts an identity row and takes its id", async () => {
+test("DbTextManager: generate inserts an identity row and takes its id", async () => {
   const inserts: Record<string, unknown>[] = [];
   const app = {
     languages: { def: "de" },

@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { ResHtml } from "@qino/qino";
 
 import { protect } from "../plugin.ts";
 
 /** The client script against a stub DOM: proves the two halves agree, not just the encoding. */
-Deno.test("emailguard: pub/main.js restores what the server encoded", async () => {
+test("emailguard: pub/main.js restores what the server encoded", async () => {
   const html = new ResHtml();
   html.content = '<a href="mailto:info@example.com?subject=Hi">mail</a><a href="/page">other</a>';
   protect(html, "/m/");

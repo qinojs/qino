@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
@@ -38,7 +39,7 @@ async function app(models: Record<string, string[]>, adapters: Record<string, Ad
 const fired: [string, any][] = [];
 const ask = (content: string) => ({ messages: [{ role: "user" as const, content }] });
 
-Deno.test("ai: failures fall back and rest", async () => {
+test("ai: failures fall back and rest", async () => {
   const testApp = await app({ fail: ["text"], low: ["text"] });
   calls.length = 0;
   assertEquals((await text(testApp, ask("hi"))).text, "low: hi");
@@ -51,7 +52,7 @@ Deno.test("ai: failures fall back and rest", async () => {
   ]);
 });
 
-Deno.test("ai: one model at several providers, the cheaper or the faster first", async () => {
+test("ai: one model at several providers, the cheaper or the faster first", async () => {
   const testApp = await app({ llama: ["text"] });
   const second = await testApp.db.table("ai_provider").insert({ name: "fast", type: "fake", endpoint: "" });
   await testApp.db.exec`UPDATE ai_model_provider SET cost_input = 1, cost_output = 1, speed = 100, provider_model = 'cheap-llama'`;
@@ -60,7 +61,7 @@ Deno.test("ai: one model at several providers, the cheaper or the faster first",
   assertEquals((await text(testApp, ask("hi"), { prefer: { speed: 1 } })).text, "fast-llama: hi");
 });
 
-Deno.test("ai: out of credit rests the whole provider", async () => {
+test("ai: out of credit rests the whole provider", async () => {
   const tried: string[] = [];
   const broke: Adapter = { text: (call) => (tried.push(call.model), Promise.reject(new AiError("Insufficient credits", 402))) };
   const testApp = await app({ a: ["text"], b: ["text"] }, { fake: broke });
@@ -68,7 +69,7 @@ Deno.test("ai: out of credit rests the whole provider", async () => {
   assertEquals(tried, ["a"]); // b is at the same account
 });
 
-Deno.test("ai: weights choose among models; candidates show the order", async () => {
+test("ai: weights choose among models; candidates show the order", async () => {
   const testApp = await app({ smart: ["text"], cheap: ["text"] });
   await testApp.db.exec`UPDATE ai_model_provider SET cost_input = CASE model_id WHEN 1 THEN 10 ELSE 1 END, cost_output = CASE model_id WHEN 1 THEN 10 ELSE 1 END`;
   await testApp.db.table("ai_model_score").insert({ model_id: 1, metric: "coding", value: 50 });
@@ -81,14 +82,14 @@ Deno.test("ai: weights choose among models; candidates show the order", async ()
   assertEquals((await text(testApp, ask("hi"), { prefer: { coding: 1 } })).text, "smart: hi"); // request takes the same order
 });
 
-Deno.test("ai: a request too long for a model's context skips it", async () => {
+test("ai: a request too long for a model's context skips it", async () => {
   const testApp = await app({ small: ["text"], big: ["text"] });
   await testApp.db.exec`UPDATE ai_model SET context_length = 100 WHERE name = 'small'`;
   assertEquals((await text(testApp, "hi")).text, "small: hi");
   assertEquals((await text(testApp, "x".repeat(1000))).text.slice(0, 5), "big: ");
 });
 
-Deno.test("ai: embeddings never fall back to another model", async () => {
+test("ai: embeddings never fall back to another model", async () => {
   const vectors: Adapter = { embed: (call) => call.model === "a" ? Promise.reject(new AiError("down", 503)) : Promise.resolve([[1]]) };
   const testApp = await app({ a: ["embed"], b: ["embed"] }, { fake: vectors });
   await assertRejects(() => embed(testApp, { texts: ["x"] }), AiError, "down"); // b would give other vectors
@@ -99,7 +100,7 @@ Deno.test("ai: embeddings never fall back to another model", async () => {
   await assertRejects(() => embed(testApp, { texts: ["x"] }, { model: "a" }), AiError, 'No model for "embed"');
 });
 
-Deno.test("ai: a pinned model goes first, needs filter the candidates", async () => {
+test("ai: a pinned model goes first, needs filter the candidates", async () => {
   const testApp = await app({ a: ["text"], b: ["text", "vision"] });
   assertEquals((await text(testApp, ask("hi"), { model: "b" })).text, "b: hi");
   const image = { messages: [{ role: "user" as const, content: [{ type: "image" as const, url: "data:," }, { type: "text" as const, text: "?" }] }] };
@@ -107,7 +108,7 @@ Deno.test("ai: a pinned model goes first, needs filter the candidates", async ()
   assertEquals(calls.at(-1), "b");
 });
 
-Deno.test("ai: capabilities fall back through others", async () => {
+test("ai: capabilities fall back through others", async () => {
   // no translator: translate via text
   assertEquals(await translate(await app({ chat: ["text"] }), { text: "Hallo", to: "en" }), "chat: Hallo");
   // a chat model given translate by hand translates by prompt itself, not the best text model
@@ -117,7 +118,7 @@ Deno.test("ai: capabilities fall back through others", async () => {
   assertEquals((await ocr(await app({ blind: ["text"], chat: ["text", "vision"] }), { image: "data:," })).split(":")[0], "chat");
 });
 
-Deno.test("ai: decide via structured via text", async () => {
+test("ai: decide via structured via text", async () => {
   let asked = "";
   const judge: Adapter = {
     text: (_call, { messages }) => {
@@ -138,13 +139,13 @@ Deno.test("ai: decide via structured via text", async () => {
   await assertRejects(() => decide(lying, { content: "x", options: ["yes", "no"] }), AiError, "Not an option");
 });
 
-Deno.test("ai: nothing configured, or an answer already streamed, is an error", async () => {
+test("ai: nothing configured, or an answer already streamed, is an error", async () => {
   await assertRejects(async () => text(await app({}), ask("hi")), AiError, 'No model for "text"');
   const testApp = await app({ a: ["text"], b: ["text"] }, { fake: { text: () => Promise.reject(new AiError("cut", undefined, true)) } });
   await assertRejects(() => text(testApp, ask("hi")), AiError, "cut");
 });
 
-Deno.test("ai: openai and deepl adapters speak their protocols", async () => {
+test("ai: openai and deepl adapters speak their protocols", async () => {
   const bodies: any[] = [], extra_content = { google: { thought_signature: "signature-1" } };
   const fetchOrg = globalThis.fetch;
   globalThis.fetch = (url, init) => {
@@ -200,7 +201,7 @@ const sse = (...events: unknown[]) => new Response(new ReadableStream({
   },
 }));
 
-Deno.test("ai: openai streams text, joins tool-call fragments, reports truncation and usage", async () => {
+test("ai: openai streams text, joins tool-call fragments, reports truncation and usage", async () => {
   const deltas: string[] = [];
   await withFetch(() => sse(
     { choices: [{ delta: { content: "Hel" } }] },
@@ -216,14 +217,14 @@ Deno.test("ai: openai streams text, joins tool-call fragments, reports truncatio
   });
 });
 
-Deno.test("ai: a model that wants alternating roles says what to do", async () => {
+test("ai: a model that wants alternating roles says what to do", async () => {
   await withFetch(() => new Response("Conversation roles must alternate", { status: 400 }), async () => {
     const testApp = await openaiApp({ gpt: ["text"] }), messages = [{ role: "user" as const, content: "hi" }, { role: "system" as const, content: "later" }];
     await assertRejects(() => text(testApp, { messages }), AiError, "two user messages in a row");
   });
 });
 
-Deno.test("ai: malformed or incomplete streams fail after partial text", async () => {
+test("ai: malformed or incomplete streams fail after partial text", async () => {
   const testApp = await openaiApp({ gpt: ["text"] });
   const deltas: string[] = [];
   await withFetch(() => sse({ choices: [{ delta: { content: "partial" } }] }, "not-json"), async () => {
@@ -236,7 +237,7 @@ Deno.test("ai: malformed or incomplete streams fail after partial text", async (
   });
 });
 
-Deno.test("ai: openai embeds, draws images, transcribes (retrying without verbose_json)", async () => {
+test("ai: openai embeds, draws images, transcribes (retrying without verbose_json)", async () => {
   const formats: unknown[] = [];
   await withFetch((url, init) => {
     if (url.endsWith("/embeddings")) return Response.json({ data: [{ embedding: [1, 2] }], usage: { prompt_tokens: 3 } });
@@ -255,7 +256,7 @@ Deno.test("ai: openai embeds, draws images, transcribes (retrying without verbos
   });
 });
 
-Deno.test("ai: NVIDIA embeddings distinguish passages from queries", async () => {
+test("ai: NVIDIA embeddings distinguish passages from queries", async () => {
   const bodies: Record<string, unknown>[] = [];
   await withFetch((_url, init) => {
     bodies.push(JSON.parse(String(init?.body)));
@@ -272,7 +273,7 @@ Deno.test("ai: NVIDIA embeddings distinguish passages from queries", async () =>
   assertEquals(bodies.map((body) => body.input_type), [undefined, "passage", "query", "passage"]);
 });
 
-Deno.test("ai: Jina Omni embeds text and images for retrieval", async () => {
+test("ai: Jina Omni embeds text and images for retrieval", async () => {
   const bodies: Record<string, unknown>[] = [];
   await withFetch((_url, init) => {
     bodies.push(JSON.parse(String(init?.body)));
@@ -295,7 +296,7 @@ Deno.test("ai: Jina Omni embeds text and images for retrieval", async () => {
   ]);
 });
 
-Deno.test("ai: google translates", async () => {
+test("ai: google translates", async () => {
   let asked = "";
   await withFetch((url) => (asked = url, Response.json({ data: { translations: [{ translatedText: "hello" }] } })), async () => {
     const testApp = await app({ g: ["translate"] });
@@ -305,7 +306,7 @@ Deno.test("ai: google translates", async () => {
   });
 });
 
-Deno.test("ai: silence times out and rests the provider until the cooldown is over", async () => {
+test("ai: silence times out and rests the provider until the cooldown is over", async () => {
   let calls = 0;
   const hang = (_url: string, init?: RequestInit) => {
     calls++;
@@ -324,7 +325,7 @@ Deno.test("ai: silence times out and rests the provider until the cooldown is ov
   });
 });
 
-Deno.test("ai: a cancelled call does not fall back", async () => {
+test("ai: a cancelled call does not fall back", async () => {
   const testApp = await app({ a: ["text"], b: ["text"] });
   calls.length = 0;
   const abort = new AbortController();
@@ -333,7 +334,7 @@ Deno.test("ai: a cancelled call does not fall back", async () => {
   assertEquals(calls, []);
 });
 
-Deno.test("ai: openrouter decides with Jev (System One)", async () => {
+test("ai: openrouter decides with Jev (System One)", async () => {
   let body: any;
   await withFetch((url, init) => {
     body = JSON.parse(String(init?.body));
@@ -350,7 +351,7 @@ Deno.test("ai: openrouter decides with Jev (System One)", async () => {
   });
 });
 
-Deno.test("ai: without options Jev answers a noul: the probability that it holds", async () => {
+test("ai: without options Jev answers a noul: the probability that it holds", async () => {
   let body: any;
   await withFetch((_url, init) => {
     body = JSON.parse(String(init?.body));
@@ -368,7 +369,7 @@ Deno.test("ai: without options Jev answers a noul: the probability that it holds
   });
 });
 
-Deno.test("ai: decision protocols use configured endpoints, keys and provider model names", async () => {
+test("ai: decision protocols use configured endpoints, keys and provider model names", async () => {
   for (const [type, endpoint, path] of [
     ["systemone", "https://decision.test/custom/v1/", "/systemone"],
     ["decisions", "https://decision.test/custom/alpha/", "/decisions"],
@@ -399,7 +400,7 @@ Deno.test("ai: decision protocols use configured endpoints, keys and provider mo
   }
 });
 
-Deno.test("ai: both decision protocols handle yes/no probabilities without a key", async () => {
+test("ai: both decision protocols handle yes/no probabilities without a key", async () => {
   for (const type of ["systemone", "decisions"]) {
     let p = 0;
     await withFetch((_url, init) => {
@@ -419,7 +420,7 @@ Deno.test("ai: both decision protocols handle yes/no probabilities without a key
   }
 });
 
-Deno.test("ai: malformed native decisions fail instead of inventing certainty", async () => {
+test("ai: malformed native decisions fail instead of inventing certainty", async () => {
   let answer: unknown;
   await withFetch(() => Response.json({ answers: { decide: answer } }), async () => {
     const testApp = await app({ model: ["decide"] });
@@ -442,7 +443,7 @@ Deno.test("ai: malformed native decisions fail instead of inventing certainty", 
   });
 });
 
-Deno.test("ai: failed decisions fall back and text-only adapters reject images before sending", async () => {
+test("ai: failed decisions fall back and text-only adapters reject images before sending", async () => {
   let count = 0;
   await withFetch(() => {
     count++;
@@ -460,7 +461,7 @@ Deno.test("ai: failed decisions fall back and text-only adapters reject images b
   });
 });
 
-Deno.test("ai: translate many texts at once, natively and by prompt", async () => {
+test("ai: translate many texts at once, natively and by prompt", async () => {
   let body: URLSearchParams | undefined;
   await withFetch((_url, init) => (body = init?.body as URLSearchParams, Response.json({ translations: [{ text: "Title" }, { text: "Hello" }] })), async () => {
     const testApp = await app({ dl: ["translate"] });
@@ -471,7 +472,7 @@ Deno.test("ai: translate many texts at once, natively and by prompt", async () =
   assertEquals(await translate(await app({ chat: ["text"] }), { text: ["a", "b"], to: "en" }), ["chat: a", "chat: b"]);
 });
 
-Deno.test("ai: decide on an image needs a vision model; structured takes a JSON Schema too", async () => {
+test("ai: decide on an image needs a vision model; structured takes a JSON Schema too", async () => {
   const answer: Adapter = { structured: (call) => Promise.resolve({ choice: call.model === "seeing" ? "invoice" : "?" }) };
   const image = [{ type: "image" as const, url: "data:," }];
   const withVision = await app({ blind: ["structured"], seeing: ["structured", "vision"] }, { fake: answer });
@@ -480,7 +481,7 @@ Deno.test("ai: decide on an image needs a vision model; structured takes a JSON 
   assertEquals(await structured(await app({ m: ["text"] }, { fake: json }), { messages: [{ role: "user", content: "?" }], schema: { type: "object" } }), { n: 1 });
 });
 
-Deno.test("ai: weights see distances — nearly as good and far cheaper wins", async () => {
+test("ai: weights see distances — nearly as good and far cheaper wins", async () => {
   const testApp = await app({ top: ["text"], close: ["text"], weak: ["text"] });
   const models = [["top", 50, 10], ["close", 49, 1], ["weak", 20, 0.5]] as const;
   for (const [i, [, coding, cost]] of models.entries()) {
@@ -492,7 +493,7 @@ Deno.test("ai: weights see distances — nearly as good and far cheaper wins", a
   assertEquals(await order({ coding: 1, cost: 1 }), ["close", "top", "weak"]); // by rank all three would tie
 });
 
-Deno.test("ai: a few free or very dear offers don't flatten the prices of the others", async () => {
+test("ai: a few free or very dear offers don't flatten the prices of the others", async () => {
   // good and fine among 18 weak ones, two of them free and two at $262
   const weak = Array.from({ length: 18 }, (_, i) => [`weak${i}`, 5, i < 2 ? 0 : i < 4 ? 262 : [0.5, 1, 2, 4][i % 4]] as const);
   const models = [["good", 50, 8], ["fine", 45, 2], ...weak] as const;
@@ -505,7 +506,7 @@ Deno.test("ai: a few free or very dear offers don't flatten the prices of the ot
   assertEquals((await candidates(testApp, "text", ask("hi"))).map((c) => c.model).slice(0, 2), ["fine", "good"]);
 });
 
-Deno.test("ai: openrouter draws at /images", async () => {
+test("ai: openrouter draws at /images", async () => {
   let asked = "";
   await withFetch((url) => (asked = url, Response.json({ data: [{ b64_json: "AA==", media_type: "image/webp" }] })), async () => {
     const testApp = await app({ painter: ["image"] });
@@ -516,7 +517,7 @@ Deno.test("ai: openrouter draws at /images", async () => {
   });
 });
 
-Deno.test("ai: openai speaks at /audio/speech; the audio comes as a data URL", async () => {
+test("ai: openai speaks at /audio/speech; the audio comes as a data URL", async () => {
   let body: any;
   await withFetch((_url, init) => (body = JSON.parse(String(init?.body)), new Response(new Uint8Array([1, 2, 3]), { headers: { "content-type": "audio/mpeg" } })), async () => {
     const testApp = await openaiApp({ tts: ["speak"] });
@@ -525,7 +526,7 @@ Deno.test("ai: openai speaks at /audio/speech; the audio comes as a data URL", a
   });
 });
 
-Deno.test("ai: fal puts the input into the model's fields, waits in its queue and takes the file", async () => {
+test("ai: fal puts the input into the model's fields, waits in its queue and takes the file", async () => {
   const asked: [string, unknown][] = [];
   let polls = 0;
   // a second model sings only: it needs lyrics
@@ -558,7 +559,7 @@ Deno.test("ai: fal puts the input into the model's fields, waits in its queue an
   });
 });
 
-Deno.test("ai: gemini makes music through its Interactions API, lyrics and length in the prompt", async () => {
+test("ai: gemini makes music through its Interactions API, lyrics and length in the prompt", async () => {
   let asked: [string, any, any] | undefined;
   await withFetch((url, init) => (asked = [new URL(url).href, init?.headers, JSON.parse(String(init?.body))], Response.json({ steps: [
     { type: "model_output", content: [{ type: "text", text: "[Verse] …" }, { type: "audio", data: "AQID" }] },
@@ -572,7 +573,7 @@ Deno.test("ai: gemini makes music through its Interactions API, lyrics and lengt
   });
 });
 
-Deno.test("ai: quality, the default, is a capability's own score, else intelligence", async () => {
+test("ai: quality, the default, is a capability's own score, else intelligence", async () => {
   const testApp = await app({ smart: ["image"], painter: ["image"] });
   await testApp.db.table("ai_model_score").insert({ model_id: 1, metric: "intelligence", value: 50 }); // a clever model that draws badly
   await testApp.db.table("ai_model_score").insert({ model_id: 1, metric: "image", value: 900 });
@@ -586,7 +587,7 @@ Deno.test("ai: quality, the default, is a capability's own score, else intellige
   assertEquals((await candidates(writers, "text", ask("hi")))[0].model, "clever");
 });
 
-Deno.test("ai: cache asks openrouter to cache the prompt; unasked, and at openai, nothing is sent", async () => {
+test("ai: cache asks openrouter to cache the prompt; unasked, and at openai, nothing is sent", async () => {
   const bodies: any[] = [];
   const answer = { choices: [{ message: { content: "ok" }, finish_reason: "stop" }] };
   await withFetch((_url, init) => (bodies.push(JSON.parse(String(init!.body))), Response.json(answer)), async () => {
@@ -600,7 +601,7 @@ Deno.test("ai: cache asks openrouter to cache the prompt; unasked, and at openai
   });
 });
 
-Deno.test("ai: openai talks live: the offer with the session goes to OpenAI, what is said and tool calls come by its sideband", async () => {
+test("ai: openai talks live: the offer with the session goes to OpenAI, what is said and tool calls come by its sideband", async () => {
   const posted: [string, RequestInit | undefined][] = [], sent: any[] = [], said: unknown[] = [];
   let socket: any;
   const WebSocketOrg = globalThis.WebSocket;

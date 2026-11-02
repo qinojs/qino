@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, fakeT, messagingDbSchema, templatePlaceholders, testContext } from "@qino/qino/tests";
 
@@ -6,7 +7,7 @@ import { overview, render, sampleValues } from "../render.ts";
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.backend.superuser.messaging.templates lists the frames and names the channels without one", async () => {
+test("cms.backend.superuser.messaging.templates lists the frames and names the channels without one", async () => {
   assertEquals(name, "cms.backend.superuser.messaging.templates");
   assertEquals(dependencies, ["cms.backend.superuser.messaging", "messaging"]);
 
@@ -27,7 +28,7 @@ Deno.test("cms.backend.superuser.messaging.templates lists the frames and names 
   await db.close();
 });
 
-Deno.test("the preview asks the modules themselves, so a template shows the real identity", async () => {
+test("the preview asks the modules themselves, so a template shows the real identity", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messagingDbSchema.properties, ...contactDbSchema.properties } });
   await db.loadTables();
@@ -58,7 +59,7 @@ Deno.test("the preview asks the modules themselves, so a template shows the real
   await db.close();
 });
 
-Deno.test("template previews accept sync and async placeholders and isolate their failures", async () => {
+test("template previews accept sync and async placeholders and isolate their failures", async () => {
   const app = { modules: { linked: () => [{ name: "example", plugin: { templatePlaceholders: {
     sync: () => ({ text: "sync" }),
     async: () => Promise.resolve({ text: "async" }),

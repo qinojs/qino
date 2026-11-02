@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { stat } from "node:fs/promises";
 import { App, fs, requestStorage } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
@@ -8,7 +10,7 @@ import { cms as layout } from "../plugin.ts";
 const NAME = "cms.layout.standard.2";
 
 async function fixture() {
-  const dir = await Deno.makeTempDir() + "/";
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add(NAME);
   await app.init();
@@ -23,12 +25,12 @@ async function fixture() {
   const close = async () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   };
   return { app, cm, ctx, page, render, close };
 }
 
-Deno.test("standard.2: isolated install, navigation, starter content and CSS precedence", async () => {
+test("standard.2: isolated install, navigation, starter content and CSS precedence", async () => {
   const f = await fixture();
   try {
     await requestStorage.run(f.ctx, async () => {
@@ -83,7 +85,7 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
         assertEquals(await f.render(), "");
         await fs.remove(template.file);
         assertStringIncludes(await f.render(), 'id="container"');
-        assertEquals(await Deno.stat(template.file).catch(() => null), null);
+        assertEquals(await stat(template.file).catch(() => null), null);
       });
     });
   } finally {
@@ -91,7 +93,7 @@ Deno.test("standard.2: isolated install, navigation, starter content and CSS pre
   }
 });
 
-Deno.test("standard.2: site template controls creation; apps keep separate identity and contents", async () => {
+test("standard.2: site template controls creation; apps keep separate identity and contents", async () => {
   const a = await fixture();
   const b = await fixture();
   try {
@@ -124,7 +126,7 @@ Deno.test("standard.2: site template controls creation; apps keep separate ident
   }
 });
 
-Deno.test("standard.2: starter content follows the module the template gives main", async () => {
+test("standard.2: starter content follows the module the template gives main", async () => {
   const f = await fixture();
   try {
     await requestStorage.run(f.ctx, async () => {
@@ -144,7 +146,7 @@ Deno.test("standard.2: starter content follows the module the template gives mai
   }
 });
 
-Deno.test("standard.2: starter titles are editable language snapshots; removed slots stay absent", async () => {
+test("standard.2: starter titles are editable language snapshots; removed slots stay absent", async () => {
   const f = await fixture();
   try {
     f.app.languages.setLangs(["en", "de"]);

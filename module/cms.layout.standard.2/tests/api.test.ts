@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { AccessError, ConflictError, NotFoundError, fs, invoke, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, assertStringIncludes, fakeCms } from "@qino/qino/tests";
 
@@ -25,8 +26,8 @@ function context(dir: string, access = 3, module = name, exists = true) {
   return { node, ctx, call: (method: string, key: string, input = {}) => requestStorage.run(ctx as any, () => invoke(api, method, `/node/7/codefiles/${key}`, input)) };
 }
 
-Deno.test("standard.2 API: HTML/CSS tools; reading a missing file returns its starting point", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("standard.2 API: HTML/CSS tools; reading a missing file returns its starting point", async () => {
+  const dir = await fs.tempDir() + "/";
   const f = context(dir);
   try {
     assertEquals(toTools({ [name]: api }).map((tool) => tool.name), [
@@ -57,12 +58,12 @@ Deno.test("standard.2 API: HTML/CSS tools; reading a missing file returns its st
       assertEquals(await f.call("GET", key), { content });
     }
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("standard.2 API: global ADMIN required, wrong module and missing node rejected", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("standard.2 API: global ADMIN required, wrong module and missing node rejected", async () => {
+  const dir = await fs.tempDir() + "/";
   try {
     for (const access of [1, 2]) {
       const denied = context(dir, access);
@@ -75,6 +76,6 @@ Deno.test("standard.2 API: global ADMIN required, wrong module and missing node 
     await assertRejects(() => context(dir, 3, "cms.cont.html").call("GET", "html"), ConflictError);
     await assertRejects(() => context(dir, 3, name, false).call("GET", "html"), NotFoundError);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

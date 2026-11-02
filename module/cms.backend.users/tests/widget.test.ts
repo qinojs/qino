@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, fakeT, testContext } from "@qino/qino/tests";
 
@@ -9,7 +10,7 @@ import type { App } from "@qino/qino";
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.backend.users: metadata and cms export are wired", () => {
+test("cms.backend.users: metadata and cms export are wired", () => {
   assertEquals(name, "cms.backend.users");
   assertEquals(dependencies, ["cms.backend"]);
   assertEquals(typeof cms.node.api, "function");
@@ -17,7 +18,7 @@ Deno.test("cms.backend.users: metadata and cms export are wired", () => {
   assertEquals(typeof cms.node.parts.contacts, "function");
 });
 
-Deno.test("cms.backend.users: dashboard widget renders counts and recent logins", async () => {
+test("cms.backend.users: dashboard widget renders counts and recent logins", async () => {
   const oneValues = [7, 5];
   const app = {
     db: {
@@ -33,7 +34,7 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
   assertEquals(out.includes("2023-11-14T22:13:20.000Z"), true);
 });
 
-Deno.test("cms.backend.users: empty password save is ignored", async () => {
+test("cms.backend.users: empty password save is ignored", async () => {
   let saved: Record<string, unknown> | undefined;
   const usr = {
     superuser: false,
@@ -53,7 +54,7 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
   assertEquals(saved, undefined);
 });
 
-Deno.test("a username that is no address is a login handle, not a failure", async () => {
+test("a username that is no address is a login handle, not a failure", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate(contactDbSchema);
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT)`;
@@ -69,7 +70,7 @@ Deno.test("a username that is no address is a login handle, not a failure", asyn
   await db.close();
 });
 
-Deno.test("how a user signs in, as a card on other pages, links to where it is changed", async () => {
+test("how a user signs in, as a card on other pages, links to where it is changed", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate(contactDbSchema);
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, active INTEGER, superuser INTEGER)`;

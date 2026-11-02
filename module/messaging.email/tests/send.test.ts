@@ -1,4 +1,5 @@
-import { ApiError, contacts, Db } from "@qino/qino";
+import { test } from "node:test";
+import { ApiError, contacts, Db, fs } from "@qino/qino";
 import { assertEquals, assertRejects, assertStringIncludes, authAttemptDbSchema, contactDbSchema, DbFileManager, fileDbSchema, fakeT, journal, messagingDbSchema as messageSchema, templatePlaceholders } from "@qino/qino/tests";
 import { outbox, pendingContacts } from "@qino/qino/messaging";
 
@@ -16,7 +17,7 @@ async function makeApp() {
   await db.loadTables();
   await db.table("usr").insert({ username: "one@qino.test", given_name: "One", family_name: "User" });
   await db.table("usr_contact").insert({ type: "email", address: "one@qino.test", usr_id: 1, main: true, created: 1 });
-  const dir = await Deno.makeTempDir();
+  const dir = await fs.tempDir();
   const app = {
     db,
     dir,
@@ -35,10 +36,10 @@ async function makeApp() {
 async function close(app: App) {
   await new Promise((r) => setTimeout(r, 0)); // send leaves contact bookkeeping running on purpose
   await app.db.close();
-  await Deno.remove(app.dir, { recursive: true });
+  await fs.remove(app.dir, { recursive: true });
 }
 
-Deno.test("a mail to a user reaches their address and lands in the journal", async () => {
+test("a mail to a user reaches their address and lands in the journal", async () => {
   const app = await makeApp();
   const sent: Record<string, unknown>[] = [];
   setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true, messageId: "<a@qino.test>" })) });
@@ -59,7 +60,7 @@ Deno.test("a mail to a user reaches their address and lands in the journal", asy
   await close(app);
 });
 
-Deno.test("an inbound address becomes Reply-To unless the message overrides it", async () => {
+test("an inbound address becomes Reply-To unless the message overrides it", async () => {
   const app = await makeApp();
   const settings = (app.settings as unknown as Record<string, Record<string, unknown>>)["messaging.email"];
   settings.inbound = { enabled: true, address: "inbox@qino.test" };
@@ -79,7 +80,7 @@ Deno.test("an inbound address becomes Reply-To unless the message overrides it",
   await close(app);
 });
 
-Deno.test("what only email understands survives the queue", async () => {
+test("what only email understands survives the queue", async () => {
   const app = await makeApp();
   app.modules = { linked: () => [{ name: "messaging", plugin: { templatePlaceholders } }, { plugin: { messagingChannel } }] } as unknown as App["modules"];
   const sent: Record<string, unknown>[] = [];
@@ -106,7 +107,7 @@ Deno.test("what only email understands survives the queue", async () => {
   await close(app);
 });
 
-Deno.test("a debug redirect is journaled as a delivery that never reached the recipient", async () => {
+test("a debug redirect is journaled as a delivery that never reached the recipient", async () => {
   const app = await makeApp();
   const settings = (app.settings as unknown as Record<string, Record<string, unknown>>)["messaging.email"];
   settings.debugTo = "dev@qino.test";
@@ -123,7 +124,7 @@ Deno.test("a debug redirect is journaled as a delivery that never reached the re
   await close(app);
 });
 
-Deno.test("literal addresses find owners, keep sending past invalid ones, and journal every result", async () => {
+test("literal addresses find owners, keep sending past invalid ones, and journal every result", async () => {
   const app = await makeApp();
   setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["mailbox full"] }) });
   const errors: string[] = [];
@@ -145,7 +146,7 @@ Deno.test("literal addresses find owners, keep sending past invalid ones, and jo
   await close(app);
 });
 
-Deno.test("a markdown mail carries both parts, a plain one only text", async () => {
+test("a markdown mail carries both parts, a plain one only text", async () => {
   const app = await makeApp();
   const sent: Record<string, unknown>[] = [];
   setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
@@ -163,7 +164,7 @@ Deno.test("a markdown mail carries both parts, a plain one only text", async () 
   await close(app);
 });
 
-Deno.test("email carries generic attachments as MIME files", async () => {
+test("email carries generic attachments as MIME files", async () => {
   const app = await makeApp();
   const sent: Record<string, unknown>[] = [];
   setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });
@@ -171,15 +172,15 @@ Deno.test("email carries generic attachments as MIME files", async () => {
   await send(app, { usr: 1 }, {
     text: "Files attached.",
     attachments: [
-      new File(["invoice"], "invoice.txt", { type: "text/plain" }),
-      { name: "terms.txt", type: "text/plain", content: new TextEncoder().encode("terms") },
+      new File(["invoice"], "invoice.txt", { type: "application/pdf" }),
+      { name: "terms.txt", type: "application/pdf", content: new TextEncoder().encode("terms") },
     ],
   });
 
   const files = sent[0].attachments as { filename: string; contentType: string; content: unknown }[];
   assertEquals(files.map((file) => [file.filename, file.contentType]), [
-    ["invoice.txt", "text/plain"],
-    ["terms.txt", "text/plain"],
+    ["invoice.txt", "application/pdf"],
+    ["terms.txt", "application/pdf"],
   ]);
   // upyo 0.6 may hand the content over as a reader factory instead of bytes
   const text = async (content: unknown) =>
@@ -188,14 +189,14 @@ Deno.test("email carries generic attachments as MIME files", async () => {
 
   const [journaled] = await journal(app);
   assertEquals(journaled.attachments.map((file) => [file.name, file.mime, file.size, file.sort]), [
-    ["invoice.txt", "text/plain", 7, 0],
-    ["terms.txt", "text/plain", 5, 1],
+    ["invoice.txt", "application/pdf", 7, 0],
+    ["terms.txt", "application/pdf", 5, 1],
   ]);
-  assertEquals(await Deno.readTextFile((await app.dbFiles.file(Number(journaled.attachments[0].file_id))).path), "invoice");
+  assertEquals(await fs.text((await app.dbFiles.file(Number(journaled.attachments[0].file_id))).path), "invoice");
   await close(app);
 });
 
-Deno.test("unsubscribe headers ride along only where the message offers the way out", async () => {
+test("unsubscribe headers ride along only where the message offers the way out", async () => {
   const app = await makeApp();
   const db = app.db;
   await app.db.exec`INSERT INTO grp (name) VALUES ('Newsletter')`;
@@ -230,7 +231,7 @@ Deno.test("unsubscribe headers ride along only where the message offers the way 
   await close(app);
 });
 
-Deno.test("the connection pool serves the batch and is closed after it", async () => {
+test("the connection pool serves the batch and is closed after it", async () => {
   const app = await makeApp();
   let closed = 0;
   setTransport(app, {
@@ -243,7 +244,7 @@ Deno.test("the connection pool serves the batch and is closed after it", async (
   await close(app);
 });
 
-Deno.test("a failure that names no reason is tried once more on a fresh connection", async () => {
+test("a failure that names no reason is tried once more on a fresh connection", async () => {
   const app = await makeApp();
   let sends = 0, closed = 0;
   setTransport(app, {
@@ -260,7 +261,7 @@ Deno.test("a failure that names no reason is tried once more on a fresh connecti
   await close(app);
 });
 
-Deno.test("a user verifies an address by mailed code and cannot claim another user's", async () => {
+test("a user verifies an address by mailed code and cannot claim another user's", async () => {
   const app = await makeApp();
   const sent: Record<string, unknown>[] = [];
   setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true })) });

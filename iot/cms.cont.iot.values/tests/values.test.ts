@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -6,7 +7,7 @@ import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Adapter } from "@qino/qino/iot";
 
-Deno.test("IoT values preserve types, escape output and isolate provider failures", async () => {
+test("IoT values preserve types, escape output and isolate provider failures", async () => {
   let reads = 0;
   const provider: Adapter = {
     name: "healthy",

@@ -1,4 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { assertEquals, DbFileManager, fakeRender } from "./deps.ts";
 
 /** A manager over one file row, recording what `extractText()` writes. */
@@ -17,11 +19,11 @@ function fixture(dir: string, row: Record<string, unknown>) {
   return { updates, queries, files: new DbFileManager(app as never, dir) };
 }
 
-Deno.test("DbFile: text files are indexed as they are, capped, and shared with their duplicates", async () => {
-  const dir = await Deno.makeTempDir();
+test("DbFile: text files are indexed as they are, capped, and shared with their duplicates", async () => {
+  const dir = await fs.tempDir();
   try {
     const { updates, queries, files } = fixture(dir, { id: 3, name: "a.txt", mime: "text/plain", md5: "aaa" });
-    await Deno.writeTextFile(dir + "/aaa", "x".repeat(8_500));
+    await fs.write(dir + "/aaa", "x".repeat(8_500));
 
     const text = await (await files.file(3)).extractText();
     assertEquals([text.length, updates.length], [8_000, 1]);
@@ -32,30 +34,30 @@ Deno.test("DbFile: text files are indexed as they are, capped, and shared with t
     assertEquals(sql.includes("WHERE md5=") && sql.includes("id!="), true);
     assertEquals(params, [text, "aaa", 3]);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("DbFile: a file without text is marked as looked at, not as untouched", async () => {
-  const dir = await Deno.makeTempDir();
+test("DbFile: a file without text is marked as looked at, not as untouched", async () => {
+  const dir = await fs.tempDir();
   try {
     const { updates, files } = fixture(dir, { id: 3, name: "a.txt", mime: "text/plain", md5: "aaa" });
-    await Deno.writeTextFile(dir + "/aaa", "");
+    await fs.write(dir + "/aaa", "");
 
     assertEquals(await (await files.file(3)).extractText(), "");
     assertEquals(updates[0].text, ""); // "" = nothing to find, null = nobody looked
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("DbFile: a file that is gone is not indexed", async () => {
-  const dir = await Deno.makeTempDir();
+test("DbFile: a file that is gone is not indexed", async () => {
+  const dir = await fs.tempDir();
   try {
     const { updates, queries, files } = fixture(dir, { id: 3, name: "a.txt", mime: "text/plain", md5: "gone" });
     assertEquals(await (await files.file(3)).extractText(), "");
     assertEquals([updates.length, queries.length], [0, 0]);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

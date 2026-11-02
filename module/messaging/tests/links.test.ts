@@ -1,9 +1,10 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 
 import { rewriteLinks } from "../lib/links.ts";
 import { testApp as app } from "./deps.ts";
 
-Deno.test("links are made absolute and traded for a short code, in every format", async () => {
+test("links are made absolute and traded for a short code, in every format", async () => {
   const a = await app();
   const md = await rewriteLinks(a, { text: "[shop](/shop) and ![pic](pic.png)", format: "md" });
   assertEquals(md.msg.text, "[shop](https://qino.test/s/c1) and ![pic](https://qino.test/s/c2)");
@@ -17,7 +18,7 @@ Deno.test("links are made absolute and traded for a short code, in every format"
   await a.db.close();
 });
 
-Deno.test("an absolute address is a browser's, and what is not a web address is left alone", async () => {
+test("an absolute address is a browser's, and what is not a web address is left alone", async () => {
   const a = await app(false);
   // no shortener: only what is relative is resolved, and against the host as a browser would
   const md = await rewriteLinks(a, { text: "[a](/root) [b](deep) [c](https://x.test) [d](mailto:a@b.ch) [e](#top)", format: "md" });
@@ -26,7 +27,7 @@ Deno.test("an absolute address is a browser's, and what is not a web address is 
   await a.db.close();
 });
 
-Deno.test("one of our own grants stays long; a foreign sig means nothing to us", async () => {
+test("one of our own grants stays long; a foreign sig means nothing to us", async () => {
   const a = await app();
   const own = await rewriteLinks(a, { text: "[file](/cms2/dbFile/7/u-abcde/report.pdf?sig=verylongmac)", format: "md" });
   assertEquals(own.msg.text, "[file](https://qino.test/cms2/dbFile/7/u-abcde/report.pdf?sig=verylongmac)");
@@ -37,14 +38,14 @@ Deno.test("one of our own grants stays long; a foreign sig means nothing to us",
   await a.db.close();
 });
 
-Deno.test("an address inside a code block is being shown, not offered", async () => {
+test("an address inside a code block is being shown, not offered", async () => {
   const a = await app();
   const { msg } = await rewriteLinks(a, { text: "run this:\n\n    curl https://example.test/a\n", format: "md" });
   assertEquals(msg.text, "run this:\n\n    curl https://example.test/a\n");
   await a.db.close();
 });
 
-Deno.test("an address that is still a placeholder is left for the renderer to fill", async () => {
+test("an address that is still a placeholder is left for the renderer to fill", async () => {
   const a = await app();
   const { msg, links } = await rewriteLinks(a, {
     text: `<a href="{{brandUrl|#}}"><img src="{{logoUrl}}"></a>`,
@@ -55,7 +56,7 @@ Deno.test("an address that is still a placeholder is left for the renderer to fi
   await a.db.close();
 });
 
-Deno.test("an address written out in markup is one too, label or not", async () => {
+test("an address written out in markup is one too, label or not", async () => {
   const a = await app();
   const { msg, links } = await rewriteLinks(a, {
     text: `<dd>https://example.test/a?x=1&amp;y=2</dd><a href="https://example.test/b">https://example.test/b</a>`,
@@ -70,7 +71,7 @@ Deno.test("an address written out in markup is one too, label or not", async () 
   await a.db.close();
 });
 
-Deno.test("what markup only shows is not offered, and an entity is where an address ends", async () => {
+test("what markup only shows is not offered, and an entity is where an address ends", async () => {
   const a = await app();
   const { msg } = await rewriteLinks(a, {
     text: `<p>see https://example.test/a?x=1&amp;y=2&nbsp;now</p><pre>curl https://example.test/b</pre>`,

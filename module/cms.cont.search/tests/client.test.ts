@@ -1,8 +1,10 @@
+import { test } from "node:test";
+import { fs } from "@qino/qino";
 import { runInNewContext } from "node:vm";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.cont.search: live requests keep their entry in input order, including clearing during a request", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/main.js", import.meta.url));
+test("cms.cont.search: live requests keep their entry in input order, including clearing during a request", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/main.js");
   const handlers = new Map<string, (event: unknown) => void>();
   const timers = new Map<number, () => void>();
   const calls: { vars: Record<string, unknown>; resolve: (out: string) => void }[] = [];

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { datapoints, enable } from "@qino/qino/iot";
 
@@ -7,7 +8,7 @@ import { fixture } from "./fixture.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("iot backend selects and stops recording while a provider is disabled", async () => {
+test("iot backend selects and stops recording while a provider is disabled", async () => {
   const { app, provider, close } = await fixture(), node = { app, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node;
   try {
     await enable(app, provider, false);
@@ -30,7 +31,7 @@ Deno.test("iot backend selects and stops recording while a provider is disabled"
   } finally { await close(); }
 });
 
-Deno.test("iot backend creates manual datapoints without discovery and stores entered values", async () => {
+test("iot backend creates manual datapoints without discovery and stores entered values", async () => {
   const { app, close } = await fixture({ manual: true }), node = { app, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node;
   try {
     assertEquals(await backendApi(node, { config: { name: "Manual values", adapter: "manual" } }), { ok: true, message: "Provider saved." });

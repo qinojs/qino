@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, testContext } from "./deps.ts";
 
 function sessionFake(sessionUserId: number) {
@@ -7,7 +8,7 @@ function sessionFake(sessionUserId: number) {
   return { sess: { data } as any, writes };
 }
 
-Deno.test("Ctx: userId falls back to the cookie session", async () => {
+test("Ctx: userId falls back to the cookie session", async () => {
   const ctx = await testContext({ sess: sessionFake(5).sess });
 
   assertEquals(ctx.userId, 5);
@@ -27,14 +28,14 @@ async function authenticated(userId: number, actor: string) {
   return { ctx, seen, writes };
 }
 
-Deno.test("Ctx: authenticate beats the cookie session and never writes it", async () => {
+test("Ctx: authenticate beats the cookie session and never writes it", async () => {
   const { ctx, writes } = await authenticated(7, "api_key:1");
   assertEquals(ctx.userId, 7);
   assertEquals(ctx.statelessAuth, true);
   assertEquals(writes.length, 0);
 });
 
-Deno.test("Ctx: a credential's actor is one client and one pinned session, named by a secret hash", async () => {
+test("Ctx: a credential's actor is one client and one pinned session, named by a secret hash", async () => {
   const { ctx, seen } = await authenticated(7, "api_key:1");
   assertEquals(ctx.clientId, "3");
   assertEquals(seen.client?.length, 22);

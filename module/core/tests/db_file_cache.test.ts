@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { DbFile } from "../mod.ts";
 import { assertEquals, DbFileManager } from "./deps.ts";
 
@@ -9,8 +11,8 @@ function fixture(dir: string) {
   return { row, reads, files: new DbFileManager(app as never, dir) };
 }
 
-Deno.test("DbFile: a cached object is never rewritten by a preloaded row", async () => {
-  const dir = await Deno.makeTempDir();
+test("DbFile: a cached object is never rewritten by a preloaded row", async () => {
+  const dir = await fs.tempDir();
   try {
     const { reads, files } = fixture(dir);
     const file = await files.file(3);
@@ -24,12 +26,12 @@ Deno.test("DbFile: a cached object is never rewritten by a preloaded row", async
     const other = await files.file(4, { id: 4, name: "b.txt", md5: "ccc" });
     assertEquals([other.name, reads.count], ["b.txt", 1]);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("DbFile: reload picks up a write that went past the manager", async () => {
-  const dir = await Deno.makeTempDir();
+test("DbFile: reload picks up a write that went past the manager", async () => {
+  const dir = await fs.tempDir();
   try {
     const { row, reads, files } = fixture(dir);
     const file = await files.file(3);
@@ -44,12 +46,12 @@ Deno.test("DbFile: reload picks up a write that went past the manager", async ()
     await file.reload();
     assertEquals(file.path, "");
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("DbFile: a row passed to the constructor is a detached view", async () => {
-  const dir = await Deno.makeTempDir();
+test("DbFile: a row passed to the constructor is a detached view", async () => {
+  const dir = await fs.tempDir();
   try {
     const { files } = fixture(dir);
     const live = await files.file(3);
@@ -59,6 +61,6 @@ Deno.test("DbFile: a row passed to the constructor is a detached view", async ()
     assertEquals([live.name, live.path], ["a.txt", dir + "/aaa"]);
     assertEquals(await files.file(3) === live, true);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

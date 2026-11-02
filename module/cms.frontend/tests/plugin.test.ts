@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { fs, invoke, requestStorage, unixTime } from "@qino/qino";
 import { assertEquals, fakeCms } from "@qino/qino/tests";
 
@@ -5,8 +6,8 @@ import { api, init } from "../plugin.ts";
 
 import type { App, Ctx } from "@qino/qino";
 
-Deno.test("cms.frontend: repeated file creation advances the asset revision", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.frontend: repeated file creation advances the asset revision", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = { assetRev: unixTime() + 10 };
   fakeCms(app, { node: () => ({ module: { data: dir } }) });
   const ctx = { app, user: { superuser: true } } as unknown as Ctx;
@@ -20,11 +21,11 @@ Deno.test("cms.frontend: repeated file creation advances the asset revision", as
     assertEquals(app.assetRev, initial + 2);
     assertEquals(await fs.text(dir + "pub/second.css"), "");
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms.frontend: stores request URI without base path", async () => {
+test("cms.frontend: stores request URI without base path", async () => {
   let listener: (e: Record<string, unknown>) => Promise<void> = null!;
   let stored = "";
   const app = {
@@ -56,7 +57,7 @@ Deno.test("cms.frontend: stores request URI without base path", async () => {
   assertEquals(jsData.qino?.cms?.beUrl, "frontend/page");
 });
 
-Deno.test("cms.frontend: exposes stored app path unchanged", async () => {
+test("cms.frontend: exposes stored app path unchanged", async () => {
   let listener: (e: Record<string, unknown>) => Promise<void> = null!;
   const app = {
     settings: { cms: { frontend: "cms.frontend" } },

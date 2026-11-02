@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { createSettingItem } from "../lib/SettingItem.ts";
@@ -24,7 +25,7 @@ const rowCount = async (db: Db) => Number(await db.one`SELECT count(*) FROM qg_s
 /** Read a persisted subtree through a fresh root, so cached in-memory items can't mask a missing DELETE. */
 const readBack = (db: Db, path: string[]) => itemReadDeep(createSettingItem(db).sub(path));
 
-Deno.test("SettingItem: object-set replaces — keys absent from the new object are removed", async () => {
+test("SettingItem: object-set replaces — keys absent from the new object are removed", async () => {
   await using db = await setup();
   const root = createSettingItem(db);
 
@@ -38,7 +39,7 @@ Deno.test("SettingItem: object-set replaces — keys absent from the new object 
 
 });
 
-Deno.test("SettingItem: object-set replace cascades into nested objects", async () => {
+test("SettingItem: object-set replace cascades into nested objects", async () => {
   await using db = await setup();
   const root = createSettingItem(db);
 
@@ -50,7 +51,7 @@ Deno.test("SettingItem: object-set replace cascades into nested objects", async 
 
 });
 
-Deno.test("SettingItem: leaf write does not touch sibling keys", async () => {
+test("SettingItem: leaf write does not touch sibling keys", async () => {
   await using db = await setup();
   const root = createSettingItem(db);
 
@@ -60,7 +61,7 @@ Deno.test("SettingItem: leaf write does not touch sibling keys", async () => {
 
 });
 
-Deno.test("SettingItem: two leaf writes under one branch do not duplicate the branch", async () => {
+test("SettingItem: two leaf writes under one branch do not duplicate the branch", async () => {
   await using db = await setup();
   const root = createSettingItem(db);
 

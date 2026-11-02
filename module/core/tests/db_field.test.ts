@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, assertThrows } from "./deps.ts";
 import { DbField } from "../lib/db/DbField.ts";
 
@@ -14,7 +15,7 @@ function field(type: string, extra: Record<string, any> = {}) {
   });
 }
 
-Deno.test("DbField: parses type metadata", () => {
+test("DbField: parses type metadata", () => {
   const f = field("int(10) unsigned", { Key: "PRI", Extra: "auto_increment" });
   assertEquals(f.type, "int");
   assertEquals(f.length, "10");
@@ -23,7 +24,7 @@ Deno.test("DbField: parses type metadata", () => {
   assertEquals(f.isAutoIncrement(), true);
 });
 
-Deno.test("DbField: parses compound and fallback type metadata", () => {
+test("DbField: parses compound and fallback type metadata", () => {
   const decimal = field("decimal(10,2)");
   assertEquals(decimal.type, "decimal");
   assertEquals(decimal.length, "10,2");
@@ -40,7 +41,7 @@ Deno.test("DbField: parses compound and fallback type metadata", () => {
   assertEquals(fallback.special, "");
 });
 
-Deno.test("DbField: valueTransform normalizes numeric, date and null values", () => {
+test("DbField: valueTransform normalizes numeric, date and null values", () => {
   assertEquals(field("int(11)").valueTransform("12.5"), "12.5");
   assertEquals(field("decimal(10,2)").valueTransform("7.25"), "7.25");
   assertEquals(field("int(11)").valueTransform(""), "0"); // empty form input on NOT NULL
@@ -57,7 +58,7 @@ Deno.test("DbField: valueTransform normalizes numeric, date and null values", ()
 // Same schema, same result — whatever the dialect happens to call the column. SQLite spells its
 // integers INTEGER and its booleans INTEGER too, and its columns accept whatever they are given,
 // so a gap here does not fail loudly, it stores nonsense.
-Deno.test("DbField: valueTransform does not depend on the dialect's spelling", () => {
+test("DbField: valueTransform does not depend on the dialect's spelling", () => {
   const declared = (type: string, schemaType: string) =>
     new DbField(
       { db: {}, schema: { additionalProperties: { properties: { value: { type: schemaType } } } }, toString: () => "tbl" } as any,
@@ -80,7 +81,7 @@ Deno.test("DbField: valueTransform does not depend on the dialect's spelling", (
   assertEquals(declared("integer", "boolean").valueTransform(false), false);
 });
 
-Deno.test("DbField: valueTransform throws on invalid numeric values", () => {
+test("DbField: valueTransform throws on invalid numeric values", () => {
   assertThrows(() => field("int(11)").valueTransform("bad"), Error, "tbl.value");
   assertThrows(() => field("int(11)").valueTransform("12abc"), Error);
   assertThrows(() => field("float").valueTransform(NaN), Error);

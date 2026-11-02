@@ -1,15 +1,16 @@
+import { test } from "node:test";
 import { assertEquals, assertThrows } from "./deps.ts";
 import { DbDriver, pgTypes } from "../lib/db/DbDriver.ts";
 import { Db } from "../lib/db/Db.ts";
 
-Deno.test("PostgreSQL driver exposes its dialect and escapes identifiers", async () => {
+test("PostgreSQL driver exposes its dialect and escapes identifiers", async () => {
   const driver = DbDriver.from("postgresql://qino:secret@localhost/qino");
   assertEquals(driver.dialect, "postgres");
   assertEquals(driver.quoteId('a"b'), '"a""b"');
   await driver.close();
 });
 
-Deno.test("PostgreSQL dates come as text, like on the other backends; other types parse as usual", () => {
+test("PostgreSQL dates come as text, like on the other backends; other types parse as usual", () => {
   const parse = (oid: number, text: string) => pgTypes.getTypeParser(oid)(text);
   assertEquals(parse(1082, "2026-10-07"), "2026-10-07");
   assertEquals(parse(1114, "2026-10-07 15:25:32"), "2026-10-07 15:25:32");
@@ -18,18 +19,18 @@ Deno.test("PostgreSQL dates come as text, like on the other backends; other type
   assertEquals(parse(1007, "{1,2}"), [1, 2]); // int4[]
 });
 
-Deno.test("MySQL driver exposes its dialect and escapes identifiers", async () => {
+test("MySQL driver exposes its dialect and escapes identifiers", async () => {
   const driver = DbDriver.from("mysql://qino:secret@localhost/qino");
   assertEquals(driver.dialect, "mysql");
   assertEquals(driver.quoteId("a`b"), "`a``b`");
   await driver.close();
 });
 
-Deno.test("DB driver rejects unsupported connection strings", () => {
+test("DB driver rejects unsupported connection strings", () => {
   assertThrows(() => DbDriver.from("mysql:host=localhost;dbname=qino"));
 });
 
-Deno.test("a schema boolean survives a dialect without a boolean type", async () => {
+test("a schema boolean survives a dialect without a boolean type", async () => {
   const schema = {
     properties: {
       t: {
@@ -62,7 +63,7 @@ Deno.test("a schema boolean survives a dialect without a boolean type", async ()
   }
 });
 
-Deno.test("SQLite keeps concurrent access out of an open transaction", async () => {
+test("SQLite keeps concurrent access out of an open transaction", async () => {
   const driver = DbDriver.from("sqlite:");
   await driver.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)");
 
@@ -85,7 +86,7 @@ Deno.test("SQLite keeps concurrent access out of an open transaction", async () 
   await driver.close();
 });
 
-Deno.test("afterCommit defers side effects to the outermost commit", async () => {
+test("afterCommit defers side effects to the outermost commit", async () => {
   const db = new Db("sqlite:");
   const done: string[] = [];
 
@@ -110,7 +111,7 @@ Deno.test("afterCommit defers side effects to the outermost commit", async () =>
   await db.close();
 });
 
-Deno.test("a write escaping its transaction does not run on the finished one", async () => {
+test("a write escaping its transaction does not run on the finished one", async () => {
   const driver = DbDriver.from("sqlite:");
   await driver.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)");
 
@@ -129,7 +130,7 @@ Deno.test("a write escaping its transaction does not run on the finished one", a
   await driver.close();
 });
 
-Deno.test("close() is idempotent, so `await using` can close what a test already closed", async () => {
+test("close() is idempotent, so `await using` can close what a test already closed", async () => {
   const db = new Db("sqlite::memory:");
   await db.query`SELECT 1`;
   await db.close();

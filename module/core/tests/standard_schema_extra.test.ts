@@ -1,7 +1,8 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { s, toJsonSchema } from "../lib/StandardSchema.ts";
 
-Deno.test("StandardSchema: nested object/array issues include paths", () => {
+test("StandardSchema: nested object/array issues include paths", () => {
   const schema = s.object({
     title: s.string(),
     tags: s.array(s.string()),
@@ -21,7 +22,7 @@ Deno.test("StandardSchema: nested object/array issues include paths", () => {
   ]);
 });
 
-Deno.test("StandardSchema: optional accepts null and default applies on undefined", () => {
+test("StandardSchema: optional accepts null and default applies on undefined", () => {
   const schema = s.object({
     optional: s.optional(s.string()),
     count: s.number().default(3),
@@ -31,17 +32,17 @@ Deno.test("StandardSchema: optional accepts null and default applies on undefine
   assertEquals(schema["~standard"].validate({ optional: "x", count: 4 }), { value: { optional: "x", count: 4 } });
 });
 
-Deno.test("StandardSchema: record validates values and reports keyed paths", () => {
+test("StandardSchema: record validates values and reports keyed paths", () => {
   const res = s.record(s.number())["~standard"].validate({ a: 1, b: "x" });
   assertEquals(res.issues, [{ message: "expected number", path: ["b"] }]);
 });
 
-Deno.test("StandardSchema: toJsonSchema maps record value schema to additionalProperties", () => {
+test("StandardSchema: toJsonSchema maps record value schema to additionalProperties", () => {
   assertEquals(toJsonSchema(s.record(s.string())), { type: "object", additionalProperties: { type: "string" } });
   assertEquals(toJsonSchema(s.record()), { type: "object", additionalProperties: true });
 });
 
-Deno.test("StandardSchema: toJsonSchema keeps descriptions and required fields", () => {
+test("StandardSchema: toJsonSchema keeps descriptions and required fields", () => {
   const schema = s.object({
     title: s.string().describe("Title"),
     tags: s.array(s.string()).describe("Tags"),
@@ -62,7 +63,7 @@ Deno.test("StandardSchema: toJsonSchema keeps descriptions and required fields",
   });
 });
 
-Deno.test("StandardSchema: enum takes one of its values, also described and optional", () => {
+test("StandardSchema: enum takes one of its values, also described and optional", () => {
   const kind = s.enum(["config", "bug"]).describe("For whom");
   assertEquals(kind["~standard"].validate("bug"), { value: "bug" });
   assertEquals(kind["~standard"].validate("other").issues, [{ message: "expected one of: config, bug", path: [] }]);

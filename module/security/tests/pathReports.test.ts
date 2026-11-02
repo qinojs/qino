@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { Output } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { reports, suspects } from "../mod.ts";
 import { get, settle, withApp } from "./app.ts";
 
-Deno.test("security: suspicious paths stop early, report and eventually block the IP", () => withApp(async (app) => {
+test("security: suspicious paths stop early, report and eventually block the IP", () => withApp(async (app) => {
   for (const path of ["bulk/.env", "_profiler/phpinfo", "backup.sql", "server-status"]) assertEquals((await get(app, "7.7.7.7", path)).status, 404);
   await settle();
   assertEquals((await get(app, "7.7.7.7")).status, 429);
@@ -15,7 +16,7 @@ Deno.test("security: suspicious paths stop early, report and eventually block th
   assertEquals(suspects(app).map((s) => s.key), ["7.7.7.7"]);
 }));
 
-Deno.test("security: 404s on foreign paths report lightly, unless security.foreignPaths is off", () => withApp(async (app) => {
+test("security: 404s on foreign paths report lightly, unless security.foreignPaths is off", () => withApp(async (app) => {
   await get(app, "8.8.8.8", "kontakt.php");
   await get(app, "8.8.8.8", "css/style.css");
   await settle();
@@ -27,7 +28,7 @@ Deno.test("security: 404s on foreign paths report lightly, unless security.forei
   assertEquals(suspects(app).map((s) => s.key), ["8.8.8.8"]);
 }));
 
-Deno.test("security: early paths never reach routing, foreign paths can exist or redirect", () => withApp(async (app) => {
+test("security: early paths never reach routing, foreign paths can exist or redirect", () => withApp(async (app) => {
   const routed: string[] = [];
   app.on("route", ({ ctx }) => {
     routed.push(ctx.req.appPath);
@@ -46,7 +47,7 @@ Deno.test("security: early paths never reach routing, foreign paths can exist or
   assertEquals(reports(app).length, 3);
 }));
 
-Deno.test("security: environment variants and exposed configuration or backup files stop early", () => withApp(async (app) => {
+test("security: environment variants and exposed configuration or backup files stop early", () => withApp(async (app) => {
   const routed: string[] = [];
   app.on("route", ({ ctx }) => {
     routed.push(ctx.req.appPath);

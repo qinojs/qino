@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { ApiError, Db } from "@qino/qino";
 
@@ -30,7 +31,7 @@ async function app() {
   } as any;
 }
 
-Deno.test("knowing the handle is the whole proof, and redeeming spends it", async () => {
+test("knowing the handle is the whole proof, and redeeming spends it", async () => {
   const a = await app();
   const handle = await issue(a, "auth.resetPw", { usrId: 7 });
   assertEquals((await check(a, handle))?.purpose, "auth.resetPw");
@@ -42,14 +43,14 @@ Deno.test("knowing the handle is the whole proof, and redeeming spends it", asyn
   await assertRejects(() => redeem(a, handle), ApiError, "Nothing to redeem");
 });
 
-Deno.test("looking does not spend — a mail scanner opening the link costs nothing", async () => {
+test("looking does not spend — a mail scanner opening the link costs nothing", async () => {
   const a = await app();
   const handle = await issue(a, "auth.resetPw", { usrId: 1 });
   for (let i = 0; i < 3; i++) await check(a, handle);
   assertEquals(await a.db.one`SELECT COUNT(*) FROM ticket`, 1);
 });
 
-Deno.test("a kind decides how long and how often", async () => {
+test("a kind decides how long and how often", async () => {
   const a = await app();
   const share = await issue(a, "cms.share", { page: 410 });
   assertEquals((await redeem(a, share) as { data: unknown }).data, { page: 410 }); // no handler: the ticket itself
@@ -67,7 +68,7 @@ Deno.test("a kind decides how long and how often", async () => {
   assertEquals((await check(a, forever))?.expires, undefined);
 });
 
-Deno.test("expired and spent tickets stop working but stay on record", async () => {
+test("expired and spent tickets stop working but stay on record", async () => {
   const a = await app();
   const handle = await issue(a, "auth.resetPw", { usrId: 1 });
   await a.db.exec`UPDATE ticket SET expires = 1`;
@@ -75,7 +76,7 @@ Deno.test("expired and spent tickets stop working but stay on record", async () 
   assertEquals(await a.db.one`SELECT COUNT(*) FROM ticket`, 1); // kept as a record, the cron sweeps it after a year
 });
 
-Deno.test("the handle is never stored, and an unregistered purpose is a mistake", async () => {
+test("the handle is never stored, and an unregistered purpose is a mistake", async () => {
   const a = await app();
   const handle = await issue(a, "auth.resetPw", { usrId: 1 });
   assertEquals(await a.db.one`SELECT hash FROM ticket WHERE hash = ${handle}`, undefined);

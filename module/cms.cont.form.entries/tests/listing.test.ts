@@ -1,13 +1,13 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assert, assertEquals, assertRejects } from "@qino/qino/tests";
 
 import nodeApi from "../nodeApi.ts";
 
-const quiet = { sanitizeOps: false, sanitizeResources: false };
 
-Deno.test({ name: "form.entries: a block shows a form's entries only once the form allows it", ...quiet, fn: async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("form.entries: a block shows a form's entries only once the form allows it", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form.entries");
   await app.init();
@@ -39,6 +39,6 @@ Deno.test({ name: "form.entries: a block shows a form's entries only once the fo
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100)); // background writes (the user's language)
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
-} });
+});

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { CMS } from "../lib/CMS.ts";
@@ -8,7 +9,7 @@ const node = (id: number, type: string, readable: boolean) => ({
   isReadable: () => readable,
 });
 
-Deno.test("CMS.filter combines PHP-style tags and properties", async () => {
+test("CMS.filter combines PHP-style tags and properties", async () => {
   const cms = new CMS({ db: {} } as never);
   const pages = new Map([
     [1, node(1, "p", true)],

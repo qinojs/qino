@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { $item } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
 import { bot as renderBot } from "../render.ts";
 
-Deno.test("Telegram bot token is validated once and cannot be replaced here", async () => {
+test("Telegram bot token is validated once and cannot be replaced here", async () => {
   let token: unknown;
   const settings = {
     "messaging.telegram": {
@@ -40,7 +41,7 @@ Deno.test("Telegram bot token is validated once and cannot be replaced here", as
   }
 });
 
-Deno.test("Telegram token form is only rendered before configuration", async () => {
+test("Telegram token form is only rendered before configuration", async () => {
   const empty = { app: { settings: { "messaging.telegram": {} }, t: fakeT } } as never;
   assertStringIncludes(String(await renderBot(empty)), "name=botToken");
 

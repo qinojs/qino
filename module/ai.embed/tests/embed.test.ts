@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { sql } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
@@ -97,4 +98,4 @@ export async function check(conn: string) {
   } finally { await db.close(); }
 }
 
-Deno.test("ai.embed: index, reuse, chunk, filter and remove vectors (sqlite)", () => check("sqlite::memory:"));
+test("ai.embed: index, reuse, chunk, filter and remove vectors (sqlite)", () => check("sqlite::memory:"));

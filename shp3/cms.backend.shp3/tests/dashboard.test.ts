@@ -1,11 +1,12 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
 const BACKEND = ["cms.backend.shp3", "cms.backend.shp3.orders1", "cms.backend.shp3.products", "cms.backend.shp3.settings"];
 
 async function shop() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json"))
     .add("cms").add("cms.backend").add("cron").add("locale.country").add("locale.currency").add("u2");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
@@ -14,7 +15,7 @@ async function shop() {
   return app;
 }
 
-Deno.test("backend.shp3: the shop pages hang under one overview", async () => {
+test("backend.shp3: the shop pages hang under one overview", async () => {
   await using app = await shop();
   const c = cms(app);
   const overview = await c.nodeByModule("cms.backend.shp3");
@@ -29,7 +30,7 @@ Deno.test("backend.shp3: the shop pages hang under one overview", async () => {
   }
 });
 
-Deno.test("backend.shp3: every shop page reports its numbers to the overview", async () => {
+test("backend.shp3: every shop page reports its numbers to the overview", async () => {
   await using app = await shop();
   await app.db.table("page").insert({ id: 90, name: "Cup", access: 1 });
   await app.db.table("shp3_product").insert({ id: 90, price: 12 });

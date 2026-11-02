@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
@@ -23,7 +24,7 @@ async function setup() {
   return db;
 }
 
-Deno.test("db.merge: rows equal in the chosen fields form groups, empty values never", async () => {
+test("db.merge: rows equal in the chosen fields form groups, empty values never", async () => {
   const db = await setup();
   const groups = await duplicates(db, "person", ["name"]);
   assertEquals(groups.map((g) => g.map((r) => r.id)), [[1, 2], [3, 4]]); // 5 and 6 share only an empty name
@@ -32,7 +33,7 @@ Deno.test("db.merge: rows equal in the chosen fields form groups, empty values n
   await db.close();
 });
 
-Deno.test("db.merge: references move, a repeated membership goes, empty fields are filled", async () => {
+test("db.merge: references move, a repeated membership goes, empty fields are filled", async () => {
   const db = await setup();
   const result = await merge(db, "person", 1, 2);
   assertEquals(result, { moved: { "orders.person_id": 2, "member.person_id": 1 }, dropped: 1, filled: ["email", "phone"] });
@@ -45,7 +46,7 @@ Deno.test("db.merge: references move, a repeated membership goes, empty fields a
   await db.close();
 });
 
-Deno.test("db.merge: into itself or a missing row is refused, nothing changes", async () => {
+test("db.merge: into itself or a missing row is refused, nothing changes", async () => {
   const db = await setup();
   await assertRejects(() => merge(db, "person", 1, 1));
   await assertRejects(() => merge(db, "person", 1, 99));

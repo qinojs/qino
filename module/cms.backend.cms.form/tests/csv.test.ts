@@ -1,14 +1,14 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assert, assertEquals } from "@qino/qino/tests";
 import { strFromU8, unzipSync } from "fflate";
 
 import nodeApi from "../nodeApi.ts";
 
-const quiet = { sanitizeOps: false, sanitizeResources: false };
 
-Deno.test({ name: "form backend: entries export as Excel for people, as CSV for machines", ...quiet, fn: async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("form backend: entries export as Excel for people, as CSV for machines", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.backend.cms.form");
   await app.init();
@@ -31,6 +31,6 @@ Deno.test({ name: "form backend: entries export as Excel for people, as CSV for 
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
-} });
+});

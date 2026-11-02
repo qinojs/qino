@@ -1,12 +1,13 @@
-import { App, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { cms as plugin } from "@qino/qino/cms.cont.nav";
 import { assert, assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.cont.nav: global navigation, settings and content anchors on a real CMS tree", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.nav: global navigation, settings and content anchors on a real CMS tree", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.nav");
   await app.init();
@@ -114,6 +115,6 @@ Deno.test("cms.cont.nav: global navigation, settings and content anchors on a re
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

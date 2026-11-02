@@ -1,4 +1,5 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
@@ -6,8 +7,8 @@ import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.ai.chat: choose an agent, and resume own sessions", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("cms.backend.ai.chat: choose an agent, and resume own sessions", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "ai.tools", "cron", "score", "ai.embed", "ai.discover", "ai.agent"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   try {

@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { ResCsp } from "../mod.ts";
 
 const directive = (csp: ResCsp, name: string) =>
   csp.toHeader().split("; ").find((part) => part.startsWith(name + " "))!.slice(name.length + 1).split(" ");
 
-Deno.test("csp: sources below a declared directory collapse into it", () => {
+test("csp: sources below a declared directory collapse into it", () => {
   const csp = new ResCsp();
   const store = "https://cdn.example/store@1/";
   csp["script-src"][store] = true;
@@ -15,7 +16,7 @@ Deno.test("csp: sources below a declared directory collapse into it", () => {
   assertEquals(directive(csp, "script-src"), ["'self'", store, "https://other.example/lib/", "'report-sample'"]);
 });
 
-Deno.test("csp: a directive that only repeats default-src is dropped, one without a fallback is not", () => {
+test("csp: a directive that only repeats default-src is dropped, one without a fallback is not", () => {
   const header = new ResCsp().toHeader();
 
   assertEquals(header.includes("connect-src"), false); // 'self', same as default-src
@@ -25,7 +26,7 @@ Deno.test("csp: a directive that only repeats default-src is dropped, one withou
   assertEquals(header.includes("frame-ancestors 'self'"), true);
 });
 
-Deno.test("csp: a source without a trailing slash covers nothing but itself", () => {
+test("csp: a source without a trailing slash covers nothing but itself", () => {
   const csp = new ResCsp();
   csp["script-src"]["https://cdn.example/dump"] = true;
   csp["script-src"]["https://cdn.example/dump.js"] = true; // sibling, not below it

@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { Db, invoke, Output, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, fakeT, testContext } from "@qino/qino/tests";
 import { AiError } from "@qino/qino/ai";
-import { aiCapabilities, dbSchema as aiSchema } from "@qino/m/ai/tests/deps.ts";
+import { aiCapabilities, aiDbSchema as aiSchema } from "@qino/qino/tests";
 
 import { api } from "../api.ts";
 
@@ -36,7 +37,7 @@ async function ctx(userId = 1) {
   return testContext({ app: { db, modules, t: fakeT, settings: { core: { _secret: "test", keys: {} } } } as any, set: { user: userId ? { id: userId } : null, userId } });
 }
 
-Deno.test("ai api: capabilities for signed-in users, shaped like their functions", async () => {
+test("ai api: capabilities for signed-in users, shaped like their functions", async () => {
   const signedIn = await ctx();
   await requestStorage.run(signedIn, async () => {
     assertEquals(await invoke(api, "POST", "/translate", { text: "Hallo", to: "en" }), "en:Hallo");
@@ -54,7 +55,7 @@ Deno.test("ai api: capabilities for signed-in users, shaped like their functions
   });
 });
 
-Deno.test("ai api: text streams deltas, then the answer", async () => {
+test("ai api: text streams deltas, then the answer", async () => {
   const signedIn = await ctx();
   let output: Output | undefined;
   await requestStorage.run(signedIn, async () => {
@@ -69,7 +70,7 @@ Deno.test("ai api: text streams deltas, then the answer", async () => {
   ]);
 });
 
-Deno.test("ai api: a closed stream cancels the call", async () => {
+test("ai api: a closed stream cancels the call", async () => {
   const signedIn = await ctx();
   let aborted = false;
   const fetch = globalThis.fetch;

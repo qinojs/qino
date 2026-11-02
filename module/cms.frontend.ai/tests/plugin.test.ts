@@ -1,8 +1,9 @@
+import { test } from "node:test";
 import { assertEquals, fakeCms } from "@qino/qino/tests";
 
 import { init } from "../plugin.ts";
 
-Deno.test("cms.frontend.ai: loads the editor's assistant in editmode only", () => {
+test("cms.frontend.ai: loads the editor's assistant in editmode only", () => {
   let handler: (e: { ctx: unknown }) => void = () => {};
   const app = {};
   fakeCms(app, { on: (_: string, fn: typeof handler) => handler = fn });

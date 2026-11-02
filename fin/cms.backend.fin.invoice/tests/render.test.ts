@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
 import { setTransport } from "@qino/qino/messaging.email";
@@ -32,7 +33,7 @@ const edited = {
   name5: "Hosting", quantity5: "", unit5: "", price5: "99", taxRate5: "8.1",
 };
 
-Deno.test("a new invoice opens in the editor, saves as one types, is issued, asked for and paid", async () => {
+test("a new invoice opens in the editor, saves as one types, is issued, asked for and paid", async () => {
   await withApp(async (app, as, node) => {
     const base = "http://qino.test/backend/invoices";
     const created = await as(base, () => api(node, { create: { direction: "out", currency: "chf" } })) as Answer;
@@ -86,7 +87,7 @@ Deno.test("a new invoice opens in the editor, saves as one types, is issued, ask
   });
 });
 
-Deno.test("a draft is thrown away; an unpaid issued invoice is revised into a new draft", async () => {
+test("a draft is thrown away; an unpaid issued invoice is revised into a new draft", async () => {
   await withApp(async (app, as, node) => {
     const base = "http://qino.test/backend/invoices";
     const action = (name: string, id: number) => as(base, () => api(node, { action: { action: name, id: String(id) } })) as Promise<Answer>;
@@ -110,7 +111,7 @@ Deno.test("a draft is thrown away; an unpaid issued invoice is revised into a ne
   });
 });
 
-Deno.test("a received invoice shows its original beside the editor; the receipt is uploaded there", async () => {
+test("a received invoice shows its original beside the editor; the receipt is uploaded there", async () => {
   await withApp(async (_app, as, node) => {
     const base = "http://qino.test/backend/invoices";
     const created = await as(base, () => api(node, { create: { direction: "in", currency: "CHF" } })) as Answer;
@@ -127,7 +128,7 @@ Deno.test("a received invoice shows its original beside the editor; the receipt 
   });
 });
 
-Deno.test("a user is picked and gives the invoice their name, address and language", async () => {
+test("a user is picked and gives the invoice their name, address and language", async () => {
   await withApp(async (app, as, node) => {
     const id = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster", organization: "Muster AG",
@@ -143,7 +144,7 @@ Deno.test("a user is picked and gives the invoice their name, address and langua
   });
 });
 
-Deno.test("an issued invoice is mailed with its PDF, in its language, to the address typed", async () => {
+test("an issued invoice is mailed with its PDF, in its language, to the address typed", async () => {
   await withFinApp([...FIN, "messaging", "messaging.email"], async (app) => {
     app.languages.setLangs(["en", "de"]);
     await app.settings["messaging.email"].address("office@atelier.test");
@@ -166,7 +167,7 @@ Deno.test("an issued invoice is mailed with its PDF, in its language, to the add
   });
 });
 
-Deno.test("a credit note is made from an invoice, and what it owes goes onto the customer's credit", async () => {
+test("a credit note is made from an invoice, and what it owes goes onto the customer's credit", async () => {
   await withFinApp([...FIN, "fin.payment.credit"], async (app) => {
     const node = backendNode(app, "/backend/invoices");
     const base = "http://qino.test/backend/invoices";
@@ -188,7 +189,7 @@ Deno.test("a credit note is made from an invoice, and what it owes goes onto the
   });
 });
 
-Deno.test("issued, it goes to the customer at once where asked to, and says when", async () => {
+test("issued, it goes to the customer at once where asked to, and says when", async () => {
   await withFinApp([...FIN, "messaging", "messaging.email"], async (app) => {
     await app.settings["messaging.email"].address("office@atelier.test");
     const mails: unknown[] = [];
@@ -209,7 +210,7 @@ Deno.test("issued, it goes to the customer at once where asked to, and says when
   });
 });
 
-Deno.test("a customer's page shows their invoices as a card, and nothing without any", async () => {
+test("a customer's page shows their invoices as a card, and nothing without any", async () => {
   await withApp(async (app, as, node) => {
     const id = Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, given_name: "Anna" }));
     const page = await node.page();
@@ -222,7 +223,7 @@ Deno.test("a customer's page shows their invoices as a card, and nothing without
   });
 });
 
-Deno.test("the list shows overdue as status, the due date on hover, no column of its own", async () => {
+test("the list shows overdue as status, the due date on hover, no column of its own", async () => {
   await withApp(async (app, as, node) => {
     const late = Number(await create(app, { currency: "CHF", date: "2020-01-01", term: 30, lines: [{ name: "Hosting", price: 24000 }] }));
     await issue(app, late);
@@ -239,7 +240,7 @@ Deno.test("the list shows overdue as status, the due date on hover, no column of
   });
 });
 
-Deno.test("the list says what of an open invoice is paid already, only where part of it is", async () => {
+test("the list says what of an open invoice is paid already, only where part of it is", async () => {
   await withApp(async (app, as, node) => {
     const id = Number(await create(app, { currency: "CHF", lines: [{ name: "Hosting", price: 24000 }] }));
     await issue(app, id);
@@ -249,7 +250,7 @@ Deno.test("the list says what of an open invoice is paid already, only where par
   });
 });
 
-Deno.test("a party's invoices: the list filters by it, its card links there once there are more than it shows", async () => {
+test("a party's invoices: the list filters by it, its card links there once there are more than it shows", async () => {
   await withApp(async (app, as, node) => {
     const usr = Number(await app.db.table("usr").insert({ active: 0, pw: "", superuser: 0, given_name: "", family_name: "", organization: "Viel AG" }));
     for (let i = 0; i < 11; i++) await create(app, { currency: "CHF", usrId: usr, party: { name: "Viel AG" }, lines: [{ name: "x", price: 100 }] });
@@ -261,7 +262,7 @@ Deno.test("a party's invoices: the list filters by it, its card links there once
   });
 });
 
-Deno.test("a pro forma becomes its invoice; an invoice is held, reminded, written off", async () => {
+test("a pro forma becomes its invoice; an invoice is held, reminded, written off", async () => {
   await withFinApp([...FIN, "fin.invoice.reminder"], async (app) => {
     const node = backendNode(app, "/backend/invoices");
     const as = (url: string, run: () => Promise<unknown>) => inRequest(app, url, run);
@@ -291,7 +292,7 @@ Deno.test("a pro forma becomes its invoice; an invoice is held, reminded, writte
   });
 });
 
-Deno.test("paid by hand, the source is suggested: those the books know an account for", async () => {
+test("paid by hand, the source is suggested: those the books know an account for", async () => {
   await withFinApp([...FIN, "fin.accounting", "fin.accounting.ch"], async (app) => {
     const node = backendNode(app, "/backend/invoices");
     const draft = await create(app, { direction: "in", number: "S-1", currency: "CHF", lines: [{ name: "Software", price: 5000 }] });

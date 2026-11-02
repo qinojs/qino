@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 
 import { api } from "../api.ts";
 import { cart } from "../mod.ts";
@@ -9,7 +10,7 @@ const call = (path: string[], verb: string, input?: unknown) =>
   (path.reduce((n: any, k) => n[k], api as any))[verb].execute(input);
 
 async function shop() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   app.modules.add(import.meta.resolve("../../shp3.shipping.pickup/plugin.ts"), "shp3.shipping.pickup");
@@ -20,7 +21,7 @@ async function shop() {
   return app;
 }
 
-Deno.test("shp3 api: a product goes into the cart from anywhere", async () => {
+test("shp3 api: a product goes into the cart from anywhere", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -38,7 +39,7 @@ Deno.test("shp3 api: a product goes into the cart from anywhere", async () => {
   });
 });
 
-Deno.test("shp3 api: price answers for an amount, method choices are checked", async () => {
+test("shp3 api: price answers for an amount, method choices are checked", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -54,7 +55,7 @@ Deno.test("shp3 api: price answers for an amount, method choices are checked", a
   });
 });
 
-Deno.test("shp3 api: the address only takes address columns", async () => {
+test("shp3 api: the address only takes address columns", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -72,7 +73,7 @@ Deno.test("shp3 api: the address only takes address columns", async () => {
   });
 });
 
-Deno.test("shp3 api: a line belongs to the visitor's own cart, never to an id from the request", async () => {
+test("shp3 api: a line belongs to the visitor's own cart, never to an id from the request", async () => {
   await using app = await shop();
   const mine = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   mine.sess = await app.sessions.load();
@@ -95,7 +96,7 @@ Deno.test("shp3 api: a line belongs to the visitor's own cart, never to an id fr
   });
 });
 
-Deno.test("shp3 api: money comes formatted, the client does not guess the decimals", async () => {
+test("shp3 api: money comes formatted, the client does not guess the decimals", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -108,7 +109,7 @@ Deno.test("shp3 api: money comes formatted, the client does not guess the decima
   });
 });
 
-Deno.test("shp3 api: no endpoint shadows a name api reserves", () => {
+test("shp3 api: no endpoint shadows a name api reserves", () => {
   // `resolve` is the param resolver of a `:id` node — an endpoint of that name breaks every
   // call below it, and only at request time.
   const walk = (node: Record<string, any>, path: string) => {
@@ -125,7 +126,7 @@ Deno.test("shp3 api: no endpoint shadows a name api reserves", () => {
   walk(api as any, "shp3");
 });
 
-Deno.test("shp3 api: a page that is no product cannot be bought", async () => {
+test("shp3 api: a page that is no product cannot be bought", async () => {
   await using app = await shop();
   // a public page without a product row — naming it in a request must not make it one
   await app.db.table("page").insert({ id: 20, name: "Imprint", access: 1, module: "cms.cont.text" });

@@ -1,7 +1,8 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { ResHtml } from "../lib/ctx/ResHtml.ts";
 
-Deno.test("ResHtml: render renders escaped metadata and assets in head", () => {
+test("ResHtml: render renders escaped metadata and assets in head", () => {
   const html = new ResHtml();
   html.titlePrefix = "Pre ";
   html.title = `<Title>`;
@@ -35,13 +36,13 @@ Deno.test("ResHtml: render renders escaped metadata and assets in head", () => {
   assertEquals(html.inlineScripts.size, 1);
 });
 
-Deno.test("ResHtml: no import map, nothing to allow", () => {
+test("ResHtml: no import map, nothing to allow", () => {
   const html = new ResHtml();
   html.render();
   assertEquals(html.inlineScripts.size, 0);
 });
 
-Deno.test("ResHtml: resolve turns import-map names into urls, the longest prefix first", () => {
+test("ResHtml: resolve turns import-map names into urls, the longest prefix first", () => {
   const html = new ResHtml();
   html.importMap.set("@a/", "https://cdn/a@1/").set("@a/el/", "https://cdn/el@2/").set("@b", "/b.js");
   html.scripts.add("@a/x.js").add("@a/el/y.js").add("@b").add("/own.js");
@@ -51,7 +52,7 @@ Deno.test("ResHtml: resolve turns import-map names into urls, the longest prefix
   assertEquals([...html.styles], ["https://cdn/a@1/x.css", "https://other/z.css"]);
 });
 
-Deno.test("ResHtml: a script-free page carries no import map and no data block", () => {
+test("ResHtml: a script-free page carries no import map and no data block", () => {
   const html = new ResHtml();
   html.importMap.set("@qino/pub/", "/m/core/pub/js/");
   Object.assign(html.jsData, { csrfToken: "secret" });
@@ -63,7 +64,7 @@ Deno.test("ResHtml: a script-free page carries no import map and no data block",
   assertEquals(html.render().includes('<script type="importmap">'), true);
 });
 
-Deno.test("ResHtml: inline scripts default to module and take attributes", () => {
+test("ResHtml: inline scripts default to module and take attributes", () => {
   const html = new ResHtml();
   html.scripts.add("/m.mjs");
   html.inlineScripts.set(`alert("hi")`);
@@ -75,7 +76,7 @@ Deno.test("ResHtml: inline scripts default to module and take attributes", () =>
   assertEquals(out.indexOf("<script type=module src") < out.indexOf(`<script type="module">`), true);
 });
 
-Deno.test("ResHtml: an inline script cannot break out of its tag", () => {
+test("ResHtml: an inline script cannot break out of its tag", () => {
   const html = new ResHtml();
   html.inlineScripts.set(`x = "</script><script>evil()"`);
   // escaped on the way in, so the key CSP hashes is already the body that gets rendered
@@ -83,7 +84,7 @@ Deno.test("ResHtml: an inline script cannot break out of its tag", () => {
   assertEquals(html.render().includes(`<script type="module">x = "<\\/script><script>evil()"</script>`), true);
 });
 
-Deno.test("ResHtml: inline styles come before the stylesheets and cannot break out of their tag", () => {
+test("ResHtml: inline styles come before the stylesheets and cannot break out of their tag", () => {
   const html = new ResHtml();
   html.styles.add("/site.css");
   html.inlineStyles.add("html{--color:red}");
@@ -97,7 +98,7 @@ Deno.test("ResHtml: inline styles come before the stylesheets and cannot break o
   for (const css of html.inlineStyles) assertEquals(out.includes(`<style>${css}</style>`), true);
 });
 
-Deno.test("ResHtml: render emits lang, classes and content", () => {
+test("ResHtml: render emits lang, classes and content", () => {
   const html = new ResHtml();
   html.lang = "de";
   html.class.add("theme");

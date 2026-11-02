@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals, scoreDbSchema as dbSchema } from "@qino/qino/tests";
 import { hit } from "@qino/qino/score";
@@ -24,7 +25,7 @@ async function testNode() {
   return { node: { app } as never, db };
 }
 
-Deno.test("cms.backend.superuser.db.score: metadata is wired", () => {
+test("cms.backend.superuser.db.score: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.db.score");
   assertEquals(dependencies, ["cms.backend.superuser.db", "score"]);
   assertEquals(typeof cms.node.render, "function");
@@ -32,7 +33,7 @@ Deno.test("cms.backend.superuser.db.score: metadata is wired", () => {
   assertEquals(typeof cms.node.parts.list, "function");
 });
 
-Deno.test("cms.backend.superuser.db.score: a score table shows its numbers and strongest rows", async () => {
+test("cms.backend.superuser.db.score: a score table shows its numbers and strongest rows", async () => {
   const { node, db } = await testNode();
   await hit(db, "doc_view", { doc_id: 7 }, 4);
   await hit(db, "doc_view", { doc_id: 8 });
@@ -46,7 +47,7 @@ Deno.test("cms.backend.superuser.db.score: a score table shows its numbers and s
   await db.close();
 });
 
-Deno.test("cms.backend.superuser.db.score: an empty score table says so instead of showing a table", async () => {
+test("cms.backend.superuser.db.score: an empty score table says so instead of showing a table", async () => {
   const { node, db } = await testNode();
   const out = String(await list(node));
   assertEquals(out.includes("No accesses recorded yet."), true);
@@ -54,7 +55,7 @@ Deno.test("cms.backend.superuser.db.score: an empty score table says so instead 
   await db.close();
 });
 
-Deno.test("cms.backend.superuser.db.score: prune reports how many scores it deleted", async () => {
+test("cms.backend.superuser.db.score: prune reports how many scores it deleted", async () => {
   const { node, db } = await testNode();
   await hit(db, "doc_view", { doc_id: 1 });
   await db.exec`UPDATE score_doc_view SET score = 0 WHERE doc_id = 1`; // faded far below the limit

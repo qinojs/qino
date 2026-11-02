@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { toTools } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -13,13 +14,13 @@ const channel = (name: string, label: string, reach: number) =>
 const appWith = (...list: unknown[]) =>
   ({ modules: { linked: () => list.map((c) => ({ plugin: { messagingChannel: c } })) } }) as any;
 
-Deno.test("auth.otp: module metadata is wired", () => {
+test("auth.otp: module metadata is wired", () => {
   assertEquals(name, "auth.otp");
   assertEquals(dependencies, ["auth", "messaging"]);
   assertEquals(toTools(api).map((tool: { name: string }) => tool.name), ["post", "verify_post"]);
 });
 
-Deno.test("auth.otp: one factor per channel, none without channels", () => {
+test("auth.otp: one factor per channel, none without channels", () => {
   assertEquals(authFactors(appWith()).length, 0);
   const factors = authFactors(appWith(channel("sms", "SMS", 1), channel("email", "Email", 1)));
   assertEquals(factors.map((f) => f.name), ["sms", "email"]);
@@ -28,7 +29,7 @@ Deno.test("auth.otp: one factor per channel, none without channels", () => {
   assertEquals(factors.every((f) => f.stepUp && f.second), true);
 });
 
-Deno.test("auth.otp: a channel that cannot reach the user is not something they have", async () => {
+test("auth.otp: a channel that cannot reach the user is not something they have", async () => {
   const app = appWith(channel("sms", "SMS", 0), channel("telegram", "Telegram", 2));
   const [sms, telegram] = authFactors(app);
   assertEquals(await sms.has!(app, 7), false);

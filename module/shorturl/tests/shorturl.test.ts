@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { Db } from "@qino/qino";
 
@@ -18,7 +19,7 @@ async function app() {
   return { db, url: () => Promise.resolve("https://site.test/"), settings: { core: { _secret: "test-secret" } } } as unknown as App;
 }
 
-Deno.test("shorten stores the target and builds a link under the path", async () => {
+test("shorten stores the target and builds a link under the path", async () => {
   const testApp = await app();
   const link = await shorten(testApp, "https://example.test/a/long/one?x=1");
   const code = link.replace("https://site.test/s/", "");
@@ -26,7 +27,7 @@ Deno.test("shorten stores the target and builds a link under the path", async ()
   assertEquals((await row(testApp, code))?.url, "https://example.test/a/long/one?x=1");
 });
 
-Deno.test("the same target shortens to the same code, a different one does not", async () => {
+test("the same target shortens to the same code, a different one does not", async () => {
   const testApp = await app();
   const one = await shorten(testApp, "https://example.test/a");
   assertEquals(await shorten(testApp, "https://example.test/a"), one);
@@ -35,14 +36,14 @@ Deno.test("the same target shortens to the same code, a different one does not",
   assertEquals(await shorten(await app(), "https://example.test/a"), one); // the code is the target, not a counter
 });
 
-Deno.test("an existing local short link is not shortened again", async () => {
+test("an existing local short link is not shortened again", async () => {
   const testApp = await app();
   const link = await shorten(testApp, "https://example.test/a");
   assertEquals(await shorten(testApp, link), link);
   assertEquals(Number(await testApp.db.one`SELECT COUNT(*) FROM shorturl`), 1);
 });
 
-Deno.test("a code the app never signed is recognisable without asking the database", async () => {
+test("a code the app never signed is recognisable without asking the database", async () => {
   const testApp = await app();
   const code = (await shorten(testApp, "https://example.test/a")).split("/").pop()!;
   assertEquals(await valid(testApp, code), true);
@@ -51,13 +52,13 @@ Deno.test("a code the app never signed is recognisable without asking the databa
   assertEquals(await valid(testApp, ""), false);
 });
 
-Deno.test("relative targets resolve against the base", async () => {
+test("relative targets resolve against the base", async () => {
   const testApp = await app();
   const link = await shorten(testApp, "invoice/7");
   assertEquals((await row(testApp, link.split("/").pop()!))?.url, "https://site.test/invoice/7");
 });
 
-Deno.test("shortening again lengthens the life of the link, never shortens it", async () => {
+test("shortening again lengthens the life of the link, never shortens it", async () => {
   const testApp = await app();
   const url = "https://example.test/c";
   const code = (await shorten(testApp, url, { expires: 100 })).split("/").pop()!;

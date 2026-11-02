@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { invoke } from "@qino/qino";
 import { cancel } from "@qino/qino/fin.payment";
@@ -10,7 +11,7 @@ import type { ApiTree } from "@qino/qino";
 
 const FIN = ["fin.payment", "fin.invoice", "fin.bank", "fin.bank.camt", "fin.accounting", "fin.accounting.ch"];
 
-Deno.test("statements, their lines and the VAT return are a superuser's", async () => {
+test("statements, their lines and the VAT return are a superuser's", async () => {
   await withFinApp(FIN, async (app) => {
     const { anna, boss } = await users(app);
     const [camt, vat] = [app.apiTree["fin.bank.camt"], app.apiTree["fin.accounting.ch"]] as ApiTree[];
@@ -25,7 +26,7 @@ Deno.test("statements, their lines and the VAT return are a superuser's", async 
   });
 });
 
-Deno.test("a line assigned by mistake is free again once its payment is canceled", async () => {
+test("a line assigned by mistake is free again once its payment is canceled", async () => {
   await withFinApp(FIN, async (app) => {
     await ingest(app, {
       account: "CH9300762011623852957", currency: "CHF",

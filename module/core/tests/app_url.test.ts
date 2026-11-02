@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 import { App, requestStorage } from "@qino/qino";
 
@@ -11,18 +13,18 @@ const app = (core: Record<string, string>) =>
 const on = <T>(host: string, run: () => Promise<T>) =>
   requestStorage.run({ req: { url: new URL(`https://${host}/shop/a`), appUrl: "/shop/" } } as unknown as Ctx, run);
 
-Deno.test("app.url reads core.url and adds the missing slash", async () => {
+test("app.url reads core.url and adds the missing slash", async () => {
   assertEquals(await app({ url: "https://abc.ch/shop" }).url(), "https://abc.ch/shop/");
   await assertRejects(() => app({}).url(), Error, "core.url is not set");
 });
 
-Deno.test("app.url answers the same inside a request, whatever host was asked for", async () => {
+test("app.url answers the same inside a request, whatever host was asked for", async () => {
   assertEquals(await on("xy.ch", () => app({ url: "https://abc.ch/shop/" }).url()), "https://abc.ch/shop/");
   await assertRejects(() => on("xy.ch", () => app({}).url()), Error, "core.url is not set");
 });
 
-Deno.test("core.hosts: foreign hosts get a 421, the host of core.url and local hosts always pass", async () => {
-  await using a = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("core.hosts: foreign hosts get a 421, the host of core.url and local hosts always pass", async () => {
+  await using a = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   await a.init();
   const status = (host: string) => a.handle(new Request(`http://${host}/x.txt`)).then((res) => (res.body?.cancel(), res.status));
   assertEquals(await status("any.ch") === 421, false, "an empty list checks nothing");

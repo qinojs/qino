@@ -1,7 +1,8 @@
+import { test } from "node:test";
 import { sql } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 import { create, search } from "@qino/qino/ai.embed";
-import { fakeApp } from "@qino/m/ai.embed/tests/fake.ts";
+import { embedFakeApp as fakeApp } from "@qino/qino/tests";
 
 import schema from "../dbschema.json" with { type: "json" };
 import { sync } from "../mod.ts";
@@ -40,4 +41,4 @@ export async function check(conn: string) {
   } finally { await db.close(); }
 }
 
-Deno.test("cms.embed: indexes page texts, skips unchanged content, drops unused vectors", () => check("sqlite::memory:"));
+test("cms.embed: indexes page texts, skips unchanged content, drops unused vectors", () => check("sqlite::memory:"));

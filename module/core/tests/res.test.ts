@@ -1,14 +1,15 @@
+import { test } from "node:test";
 import { assert, assertEquals } from "./deps.ts";
 import { Res } from "../lib/ctx/Res.ts";
 
-Deno.test("Res: defaults are 200, empty headers, empty body", () => {
+test("Res: defaults are 200, empty headers, empty body", () => {
   const res = new Res();
   assertEquals(res.status, 200);
   assertEquals(res.body, "");
   assertEquals([...res.headers].length, 0);
 });
 
-Deno.test("Res: html stays lazy until first access", () => {
+test("Res: html stays lazy until first access", () => {
   const res = new Res();
   assertEquals(res.hasHtml, false);
   res.html.title = "t";
@@ -16,13 +17,13 @@ Deno.test("Res: html stays lazy until first access", () => {
   assertEquals(res.html.title, "t"); // same instance on repeated access
 });
 
-Deno.test("Res: csp is instance-local", () => {
+test("Res: csp is instance-local", () => {
   const a = new Res();
   const b = new Res();
   assert(a.csp !== b.csp);
 });
 
-Deno.test("Res: answered tells an untouched response from a deliberate one", () => {
+test("Res: answered tells an untouched response from a deliberate one", () => {
   assertEquals(new Res().answered, false);
 
   const html = new Res();

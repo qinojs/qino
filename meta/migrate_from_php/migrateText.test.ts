@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -24,7 +25,7 @@ async function newTables(db: Db) {
   await db.loadTables();
 }
 
-Deno.test("migrateText: the language rows move to text_lang, the ids stay", async () => {
+test("migrateText: the language rows move to text_lang, the ids stay", async () => {
   const db = await oldShape();
   await parkText(db);
   await newTables(db);

@@ -1,4 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
+import { stat } from "node:fs/promises";
 import { AccessError, ConflictError, fs, invoke, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, fakeCms } from "@qino/qino/tests";
 
@@ -26,7 +28,7 @@ const fakeCtx = (dir: string, module = name, access = 3) => {
   return { app, user: {} };
 };
 
-Deno.test("cms.cont.html api: tools describe each code file", () => {
+test("cms.cont.html api: tools describe each code file", () => {
   const tools = toTools({ [name]: api });
   assertEquals(tools.map((tool) => tool.name), [
     "cmsContHtml_node_codefiles_html_get",
@@ -46,8 +48,8 @@ Deno.test("cms.cont.html api: tools describe each code file", () => {
   });
 });
 
-Deno.test("cms.cont.html api: writes and reads code files", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.html api: writes and reads code files", async () => {
+  const dir = await fs.tempDir() + "/";
   const ctx = fakeCtx(dir);
   try {
     const css = `${dir}data/${name}/pub/7.css`;
@@ -65,31 +67,31 @@ Deno.test("cms.cont.html api: writes and reads code files", async () => {
       { content: "body {}\n" },
     );
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms.cont.html api: opening a new node provides starter files without rendering", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.html api: opening a new node provides starter files without rendering", async () => {
+  const dir = await fs.tempDir() + "/";
   const ctx = fakeCtx(dir);
   try {
     for (const [file, example] of [["html", "cms-text=title"], ["css", '[qcms-id="7"]'], ["js", "SelectorObserver"]]) {
       const result = await requestStorage.run(ctx as any, () => invoke(api, "GET", `/node/7/codefiles/${file}`)) as { content: string };
       assertEquals(result.content.includes(example), true);
       if (file === "html") {
-        await assertRejects(() => Deno.stat(`${dir}data/${name}/pub/7.css`), Deno.errors.NotFound);
+        await assertRejects(() => stat(`${dir}data/${name}/pub/7.css`));
       }
       if (file !== "js") {
-        await assertRejects(() => Deno.stat(`${dir}data/${name}/pub/7.js`), Deno.errors.NotFound);
+        await assertRejects(() => stat(`${dir}data/${name}/pub/7.js`));
       }
     }
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms.cont.html api: rejects nodes of another module", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.html api: rejects nodes of another module", async () => {
+  const dir = await fs.tempDir() + "/";
   try {
     const ctx = fakeCtx(dir, "cms.cont.text");
     await assertRejects(
@@ -98,12 +100,12 @@ Deno.test("cms.cont.html api: rejects nodes of another module", async () => {
       "does not use cms.cont.html",
     );
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms.cont.html api: code needs admin access, edit access is not enough", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.html api: code needs admin access, edit access is not enough", async () => {
+  const dir = await fs.tempDir() + "/";
   try {
     for (const access of [1, 2]) {
       const ctx = fakeCtx(dir, name, access);
@@ -113,6 +115,6 @@ Deno.test("cms.cont.html api: code needs admin access, edit access is not enough
       );
     }
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

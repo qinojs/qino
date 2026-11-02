@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { html, u2Root } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
@@ -7,12 +8,12 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name } = manifest;
 
-Deno.test("cms.layout.system: metadata is wired", () => {
+test("cms.layout.system: metadata is wired", () => {
   assertEquals(name, "cms.layout.system");
   assertEquals(cms.node.css, ["pub/main.css"]);
 });
 
-Deno.test("cms.layout.system: render adds assets and wraps the main cont", async () => {
+test("cms.layout.system: render adds assets and wraps the main cont", async () => {
   const ctx = await testContext();
 
   const node = {

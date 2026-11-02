@@ -1,8 +1,9 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { sql } from "../deps.ts";
 
-Deno.test("sql`` builds params, ids, raw and joins", () => {
+test("sql`` builds params, ids, raw and joins", () => {
   const f = sql`a = ${1} AND ${sql.id("b")} = ${2}`;
   assertEquals(f.parts, [
     { text: "a = " }, { param: 1 }, { text: " AND " }, { id: "b" }, { text: " = " }, { param: 2 },
@@ -11,7 +12,7 @@ Deno.test("sql`` builds params, ids, raw and joins", () => {
   assertEquals(sql.raw("DESC").parts, [{ text: "DESC" }]);
 });
 
-Deno.test("sql`` tag renders and runs (sqlite)", async () => {
+test("sql`` tag renders and runs (sqlite)", async () => {
   const db = new Db("sqlite::memory:");
   await db.query`CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)`;
   await db.exec`INSERT INTO t (id, name) VALUES (${1}, ${"a"})`;

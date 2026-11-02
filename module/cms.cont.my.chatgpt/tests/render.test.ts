@@ -1,14 +1,15 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { assertStringIncludes } from "@qino/qino/tests";
-import { store } from "@qino/m/ai.chatgpt/tests/deps.ts";
+import { chatgptStore as store } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("ChatGPT account content node renders a return link and escapes account labels", async () => {
-  const dir = await Deno.makeTempDir();
+test("ChatGPT account content node renders a return link and escapes account labels", async () => {
+  const dir = await fs.tempDir();
   const original = globalThis.fetch;
   const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
@@ -31,5 +32,5 @@ Deno.test("ChatGPT account content node renders a return link and escapes accoun
     assertStringIncludes(output, "gpt-test");
     assertStringIncludes(output, 'name=return_to value="/cms1/account"');
     assertStringIncludes(headers.get("Cache-Control") ?? "", "no-store");
-  } finally { globalThis.fetch = original; await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+  } finally { globalThis.fetch = original; await app.db.close(); await fs.remove(dir, { recursive: true }); }
 });

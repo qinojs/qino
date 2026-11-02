@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { suspicion, release, reports, suspects } from "../mod.ts";
@@ -8,7 +9,7 @@ import type { App } from "@qino/qino";
 const stored = async (app: App, ip: string) =>
   Number(await app.db.one`SELECT COUNT(*) FROM score_log_ip_suspicious s JOIN log_ip l ON l.id = s.ip_id WHERE l.ip = ${ip}`);
 
-Deno.test("security: reports add up, delay, block and are stored from strength 5", () => withApp(async (app) => {
+test("security: reports add up, delay, block and are stored from strength 5", () => withApp(async (app) => {
   assertEquals(suspicion(app, "6.6.6.6") >= 1, false);
   await get(app, "6.6.6.6"); // puts the ip into log_ip
   await app.fire("suspicious", { ctx: ctxOf(app, "6.6.6.6"), weight: 2, reason: "small" });
@@ -35,7 +36,7 @@ Deno.test("security: reports add up, delay, block and are stored from strength 5
   assertEquals((await get(app, "5.5.5.5")).status, 200);
 }));
 
-Deno.test("security: an IPv6 address counts as its /64, rotating inside it does not help", () => withApp(async (app) => {
+test("security: an IPv6 address counts as its /64, rotating inside it does not help", () => withApp(async (app) => {
   for (let i = 1; i <= 3; i++) await app.fire("suspicious", { ctx: ctxOf(app, `2a02:1210:3c4d:4200::${i}`), weight: 20 });
   assertEquals((await get(app, "2a02:1210:3c4d:4200:bc73:f023:7666:bd65")).status, 429);
   assertEquals((await get(app, "2a02:1210:3c4d:4201::1")).status, 200);
@@ -47,7 +48,7 @@ Deno.test("security: an IPv6 address counts as its /64, rotating inside it does 
   assertEquals(await stored(app, "2a02:1210:3c4d:4200::/64"), 1);
 }));
 
-Deno.test("security: a restart keeps stored strengths, release forgets them", () => inDir(async (dir) => {
+test("security: a restart keeps stored strengths, release forgets them", () => inDir(async (dir) => {
   const app = await testApp(dir);
   try {
     await get(app, "6.6.6.6");
@@ -71,7 +72,7 @@ Deno.test("security: a restart keeps stored strengths, release forgets them", ()
   }
 }));
 
-Deno.test("security: the tracked keys stay capped, the strongest survive", () => withApp(async (app) => {
+test("security: the tracked keys stay capped, the strongest survive", () => withApp(async (app) => {
   for (let i = 0; i < 11000; i++) await app.fire("suspicious", { ctx: ctxOf(app, `10.${i >> 16 & 255}.${i >> 8 & 255}.${i & 255}`), weight: 1 });
   await app.fire("suspicious", { ctx: ctxOf(app, "6.6.6.6"), weight: 60 });
   const all = suspects(app);

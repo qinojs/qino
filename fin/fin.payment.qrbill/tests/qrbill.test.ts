@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { ingest } from "@qino/qino/fin.bank.camt";
 import { create as invoice, document, issue, payerOf, refOf } from "@qino/qino/fin.invoice";
@@ -8,7 +9,7 @@ import { isQrIban, qrr, scor } from "../lib/reference.ts";
 
 import type { App } from "@qino/qino";
 
-Deno.test("references carry their check digits", () => {
+test("references carry their check digits", () => {
   // QR reference: 26 digits and a recursive mod-10 check
   assertEquals(qrr("21000000000313947143000901"), "210000000003139471430009017"); // the SIX example
   assertEquals(qrr(1), "000000000000000000000000011");
@@ -32,7 +33,7 @@ const credit = (id: string, amount: string, reference: string) => `<Document><Bk
     <NtryDtls><TxDtls><RmtInf><Strd><CdtrRefInf><Ref>${reference}</Ref></CdtrRefInf></Strd></RmtInf></TxDtls></NtryDtls>
   </Ntry></Ntfctn></BkToCstmrDbtCdtNtfctn></Document>`;
 
-Deno.test("an invoice paid by QR bill: slip, a partial transfer, the rest", async () => {
+test("an invoice paid by QR bill: slip, a partial transfer, the rest", async () => {
   await withApp("CH44 3199 9123 0008 8901 2", async (app) => {
     app.languages.setLangs(["en", "de"]); // a site that speaks German
     assertEquals(await methods(app, { amount: 100, currency: "CHF" }), [{ method: "qrbill", label: "QR-bill" }]);
@@ -61,7 +62,7 @@ Deno.test("an invoice paid by QR bill: slip, a partial transfer, the rest", asyn
   });
 });
 
-Deno.test("with a normal IBAN the reference is a creditor reference", async () => {
+test("with a normal IBAN the reference is a creditor reference", async () => {
   await withApp("CH93 0076 2011 6238 5295 7", async (app) => {
     const { id } = await create(app, { method: "qrbill", amount: 1000, currency: "EUR", return: "/" });
     assertEquals(await app.db.one`SELECT external_id FROM payment WHERE id = ${id}`, scor(id));
@@ -69,7 +70,7 @@ Deno.test("with a normal IBAN the reference is a creditor reference", async () =
   });
 });
 
-Deno.test("the invoice's party is the debtor — with a whole address; else it is left to fill in", async () => {
+test("the invoice's party is the debtor — with a whole address; else it is left to fill in", async () => {
   await withApp("CH44 3199 9123 0008 8901 2", async (app) => {
     const lines = [{ name: "Design", price: 50000 }];
     const address = { streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern" };

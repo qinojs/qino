@@ -1,9 +1,10 @@
+import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { html } from "@qino/qino";
+import { fs, html } from "@qino/qino";
 import { assert, assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.frontend.search: its sidebar item mounts itself and restores the panel selection", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/init.js", import.meta.url));
+test("cms.frontend.search: its sidebar item mounts itself and restores the panel selection", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/init.js");
   const handlers = new Map<string, (e: { value: string }) => void>();
   const mounts: unknown[] = [], classes: string[] = [];
   const selected: string[] = [];
@@ -49,8 +50,8 @@ Deno.test("cms.frontend.search: its sidebar item mounts itself and restores the 
   assertEquals(classes.at(-1), "-sidebar-open");
 });
 
-Deno.test("cms.frontend.search: the widget escapes results, cancels stale queries and cleans up on unmount", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/widget.js", import.meta.url));
+test("cms.frontend.search: the widget escapes results, cancels stale queries and cleans up on unmount", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/widget.js");
   const handlers = new Map<string, (...args: unknown[]) => void>();
   const timers = new Map<number, () => void>();
   const calls: { query: Record<string, unknown>; signal: AbortSignal; resolve: (found: unknown) => void }[] = [];

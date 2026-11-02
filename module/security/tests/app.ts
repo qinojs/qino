@@ -1,4 +1,4 @@
-import { App } from "@qino/qino";
+import { App, fs } from "@qino/qino";
 
 import type { Ctx } from "@qino/qino";
 
@@ -29,11 +29,11 @@ export async function close(app: App): Promise<void> {
 
 /** Runs `fn` in a temp dir, removed afterwards. */
 export async function inDir(fn: (dir: string) => Promise<void>): Promise<void> {
-  const dir = await Deno.makeTempDir() + "/";
+  const dir = await fs.tempDir() + "/";
   try {
     await fn(dir);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 }
 

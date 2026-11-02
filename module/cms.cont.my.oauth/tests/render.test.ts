@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -5,7 +6,7 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.cont.my.oauth lists the connect links of configured providers", async () => {
+test("cms.cont.my.oauth lists the connect links of configured providers", async () => {
   assertEquals(name, "cms.cont.my.oauth");
   assertEquals(dependencies, ["cms", "auth.oauth", "u2"]);
   const app = { t: fakeT, db: { query: () => Promise.resolve([{ name: "github" }]) } };

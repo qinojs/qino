@@ -1,11 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
-import { App } from "@qino/qino";
+import { App, fs } from "@qino/qino";
 
 import { ensureView, historicalViews, versedTables } from "../lib/Vers.ts";
 
 async function versionedApp() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.versions");
   await app.init();
   return app;
@@ -16,7 +17,7 @@ async function versionedApp() {
 const views = (app: App) =>
   app.db.col<string>`SELECT name FROM sqlite_master WHERE type = 'view' AND name LIKE '_vers_5%'`;
 
-Deno.test("historicalViews: routes reads while open, drops every view on dispose", async () => {
+test("historicalViews: routes reads while open, drops every view on dispose", async () => {
   await using app = await versionedApp();
   const ctx = { app, state: {} as any } as any;
 
@@ -30,7 +31,7 @@ Deno.test("historicalViews: routes reads while open, drops every view on dispose
   assertEquals(ctx.state.dbScope.tables, undefined); // routing stopped, request cache stays
 });
 
-Deno.test("historicalViews: a failed render leaves no view behind", async () => {
+test("historicalViews: a failed render leaves no view behind", async () => {
   await using app = await versionedApp();
   const ctx = { app, state: {} as any } as any;
 
@@ -43,7 +44,7 @@ Deno.test("historicalViews: a failed render leaves no view behind", async () => 
   assertEquals(await views(app), []);
 });
 
-Deno.test("historicalViews: a half-built set is dropped when setup itself fails", async () => {
+test("historicalViews: a half-built set is dropped when setup itself fails", async () => {
   const queries: unknown[] = [];
   let columns = 0;
   const db = {
@@ -62,7 +63,7 @@ Deno.test("historicalViews: a half-built set is dropped when setup itself fails"
   assertEquals(queries.length, 3); // create first view (2 queries), then drop it
 });
 
-Deno.test("ensureView: space and log must be integers, they end up as raw SQL", async () => {
+test("ensureView: space and log must be integers, they end up as raw SQL", async () => {
   await using app = await versionedApp();
   for (const [space, log] of [["1) OR (1=1", 0], [0, 1.5], [NaN, 0]] as any[])
     await assertRejects(() => ensureView(app.db, "page", space, log), TypeError);

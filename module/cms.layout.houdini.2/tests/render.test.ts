@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { App, fs, requestStorage } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
@@ -7,8 +8,8 @@ import { cms as editorial } from "../plugin.ts";
 
 const NAME = "cms.layout.houdini.2";
 
-Deno.test("houdini.2: isolated install reuses the editor but owns its settings, template and contents", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("houdini.2: isolated install reuses the editor but owns its settings, template and contents", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add(NAME);
   await app.init();
@@ -66,6 +67,6 @@ Deno.test("houdini.2: isolated install reuses the editor but owns its settings, 
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

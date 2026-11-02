@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { fs, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -21,35 +22,35 @@ function fakeNode(dir: string, edit: boolean) {
 
 const render = (node: any, ctx: any) => requestStorage.run(ctx, () => cms.node.render(node));
 
-Deno.test("cms.cont.html: renders the file of the node, unknown to the parser stays as written", async () => {
-  const dir = await Deno.makeTempDir() + "/";
-  await Deno.mkdir(`${dir}data/${name}/pub/`, { recursive: true });
-  await Deno.writeTextFile(`${dir}data/${name}/7.html`, "<div><script>if (a < b) x();</script></div>");
-  await Deno.writeTextFile(`${dir}data/${name}/pub/7.js`, "");
+test("cms.cont.html: renders the file of the node, unknown to the parser stays as written", async () => {
+  const dir = await fs.tempDir() + "/";
+  await fs.mkdir(`${dir}data/${name}/pub/`);
+  await fs.write(`${dir}data/${name}/7.html`, "<div><script>if (a < b) x();</script></div>");
+  await fs.write(`${dir}data/${name}/pub/7.js`, "");
 
   const ctx = fakeCtx();
   assertEquals(await render(fakeNode(dir, false), ctx), "<div><script>if (a < b) x();</script></div>");
   assertEquals([...ctx.res.html.scripts], [`/app/d/${name}/pub/7.js`]);
   assertEquals([...ctx.res.html.styles], []); // no css file
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.cont.html: the first render in edit mode creates only HTML, the example stays commented out", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.html: the first render in edit mode creates only HTML, the example stays commented out", async () => {
+  const dir = await fs.tempDir() + "/";
   const ctx = fakeCtx();
   const out = await render(fakeNode(dir, true), ctx);
   assertStringIncludes(out, "<div>");
   assertEquals(out.includes("cms-text"), false); // examples are comments, nothing is created
-  const source = await Deno.readTextFile(`${dir}data/${name}/7.html`);
+  const source = await fs.text(`${dir}data/${name}/7.html`);
   assertStringIncludes(source, "<!-- editable text");
   assertStringIncludes(source, "cms-link=page");
   assertEquals([...ctx.res.html.styles], []);
   assertEquals([...ctx.res.html.scripts], []);
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.cont.html: without a file a visitor sees nothing", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.html: without a file a visitor sees nothing", async () => {
+  const dir = await fs.tempDir() + "/";
   assertEquals(await render(fakeNode(dir, false), fakeCtx()), "<div></div>");
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });

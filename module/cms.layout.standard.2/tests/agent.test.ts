@@ -1,11 +1,12 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 const NAME = "cms.layout.standard.2";
 
-Deno.test("standard.2: its designer agent is told the u2 release the site loads", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("standard.2: its designer agent is told the u2 release the site loads", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add(NAME).add("ai.agent");
   try {
@@ -20,6 +21,6 @@ Deno.test("standard.2: its designer agent is told the u2 release the site loads"
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

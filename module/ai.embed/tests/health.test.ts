@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { create } from "../lib/collection.ts";
 import { healthChecks } from "../healthChecks.ts";
 import { fakeApp } from "./fake.ts";
 
-Deno.test("ai.embed: health tells a collection's model nobody offers, or nobody has a key for", async () => {
+test("ai.embed: health tells a collection's model nobody offers, or nobody has a key for", async () => {
   const { app, db } = await fakeApp("sqlite::memory:");
   const checks = healthChecks(app);
   const offered = checks.error["embedding model offered by no provider"], keyed = checks.warning["embedding model without a key"];

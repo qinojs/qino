@@ -1,9 +1,10 @@
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.cont.table: the title is the caption, the first row can head the columns", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.table: the title is the caption, the first row can head the columns", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.table");
   await app.init();
@@ -34,6 +35,6 @@ Deno.test("cms.cont.table: the title is the caption, the first row can head the 
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

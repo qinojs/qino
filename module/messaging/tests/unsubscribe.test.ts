@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { Db, Output } from "@qino/qino";
 import { fakeT, testContext } from "@qino/qino/tests";
@@ -37,7 +38,7 @@ async function call(a: App, path: string, method = "GET") {
   }
 }
 
-Deno.test("a get asks and drops nobody; the post is what unsubscribes", async () => {
+test("a get asks and drops nobody; the post is what unsubscribes", async () => {
   const a = await app();
   const path = (await link(a, 7, 1)).replace("https://qino.test/", "");
 
@@ -55,7 +56,7 @@ Deno.test("a get asks and drops nobody; the post is what unsubscribes", async ()
   await a.db.close();
 });
 
-Deno.test("a token nobody signed is not one of ours, and other paths pass through", async () => {
+test("a token nobody signed is not one of ours, and other paths pass through", async () => {
   const a = await app();
   const path = (await link(a, 7, 1)).replace("https://qino.test/", "");
 
@@ -69,7 +70,7 @@ Deno.test("a token nobody signed is not one of ours, and other paths pass throug
   await a.db.close();
 });
 
-Deno.test("the headers carry the same link, and say it may be posted to", async () => {
+test("the headers carry the same link, and say it may be posted to", async () => {
   const a = await app();
   const set = await headers(a, 7, 1);
   assertEquals(set["List-Unsubscribe"], `<${await link(a, 7, 1)}>`);
@@ -77,7 +78,7 @@ Deno.test("the headers carry the same link, and say it may be posted to", async 
   await a.db.close();
 });
 
-Deno.test("the placeholder becomes a link in markup and a bare address in text", async () => {
+test("the placeholder becomes a link in markup and a bare address in text", async () => {
   const a = await app();
   await a.db.exec`CREATE TABLE message_template (name TEXT, channel TEXT, main INTEGER, format TEXT, text TEXT)`;
   await a.db.loadTables();

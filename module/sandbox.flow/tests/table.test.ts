@@ -1,13 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, App, s } from "@qino/qino";
+import { test } from "node:test";
+import { Access, App, fs, s } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { history } from "../mod.ts";
 
 const settle = () => new Promise((r) => setTimeout(r, 300)); // runs go in the background
 
-Deno.test("sandbox.flow: active rows listen, changed rows anew, inactive or deleted ones not", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("sandbox.flow: active rows listen, changed rows anew, inactive or deleted ones not", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   await app.init();
@@ -54,8 +55,8 @@ Deno.test("sandbox.flow: active rows listen, changed rows anew, inactive or dele
   }
 });
 
-Deno.test("sandbox.flow: a run ends with the version it began with, though its flow is saved meanwhile", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("sandbox.flow: a run ends with the version it began with, though its flow is saved meanwhile", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   await app.init();
@@ -80,8 +81,8 @@ Deno.test("sandbox.flow: a run ends with the version it began with, though its f
   }
 });
 
-Deno.test("sandbox.flow: a flow's state is kept in its row, without listening anew", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("sandbox.flow: a flow's state is kept in its row, without listening anew", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   await app.init();

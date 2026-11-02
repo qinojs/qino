@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { AccessError, ConflictError, NotFoundError, fs, invoke, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, assertStringIncludes, fakeCms } from "@qino/qino/tests";
 
@@ -33,8 +34,8 @@ function context(dir: string, access = 3, module = name, exists = true) {
   return { node, ctx, call: (method: string, key: string, input = {}) => requestStorage.run(ctx as any, () => invoke(api, method, `/node/7/codefiles/${key}`, input)) };
 }
 
-Deno.test("houdini API: HTML/CSS tools; reading a missing file returns its starting point", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("houdini API: HTML/CSS tools; reading a missing file returns its starting point", async () => {
+  const dir = await fs.tempDir() + "/";
   const f = context(dir);
   try {
     assertEquals(toTools({ [name]: api }).map((tool) => tool.name), [
@@ -67,12 +68,12 @@ Deno.test("houdini API: HTML/CSS tools; reading a missing file returns its start
       assertEquals(f.ctx.app.assetRev > revision, key === "css");
     }
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("houdini API: global ADMIN required, wrong module and missing node rejected", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("houdini API: global ADMIN required, wrong module and missing node rejected", async () => {
+  const dir = await fs.tempDir() + "/";
   try {
     for (const access of [1, 2]) {
       const denied = context(dir, access);
@@ -85,12 +86,12 @@ Deno.test("houdini API: global ADMIN required, wrong module and missing node rej
     await assertRejects(() => context(dir, 3, "cms.cont.html").call("GET", "html"), ConflictError);
     await assertRejects(() => context(dir, 3, name, false).call("GET", "html"), NotFoundError);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("houdini panel: global WRITE protects design values, ADMIN the file editor capabilities", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("houdini panel: global WRITE protects design values, ADMIN the file editor capabilities", async () => {
+  const dir = await fs.tempDir() + "/";
   const denied = context(dir, 1);
   const editor = context(dir, 2);
   const allowed = context(dir);
@@ -115,6 +116,6 @@ Deno.test("houdini panel: global WRITE protects design values, ADMIN the file ed
     await panel(allowed, { do: "openFile", key: "html" });
     assertStringIncludes(await fs.text(codeFiles(allowed.node as any).html), "u2-responsive");
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

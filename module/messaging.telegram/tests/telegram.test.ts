@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db, Output, unixTime } from "@qino/qino";
 import { assert, assertEquals, fakeT, messagingDbSchema as messageSchema, testContext } from "@qino/qino/tests";
 
@@ -64,7 +65,7 @@ async function run(ctx: Ctx | Promise<Ctx>) {
 const startMessage = (payload: string, chatId = 555) =>
   ({ chat: { id: chatId, type: "private", username: "someone" }, text: `/start ${payload}` });
 
-Deno.test("link token round-trips and rejects anything else", async () => {
+test("link token round-trips and rejects anything else", async () => {
   const app = makeApp();
   const token = await linkToken(app, 42);
   assert(/^[A-Za-z0-9_-]{1,64}$/.test(token), `payload not deep-link safe: ${token}`);
@@ -82,7 +83,7 @@ Deno.test("link token round-trips and rejects anything else", async () => {
   assertEquals(await readLinkToken(other, token), undefined, "a token of another bot must not verify");
 });
 
-Deno.test("webhook only accepts POST carrying the secret", async () => {
+test("webhook only accepts POST carrying the secret", async () => {
   const db = await makeDb();
   const bot = fakeTelegram();
   try {
@@ -94,7 +95,7 @@ Deno.test("webhook only accepts POST carrying the secret", async () => {
   }
 });
 
-Deno.test("/start links the chat, links again, and /stop unlinks it", async () => {
+test("/start links the chat, links again, and /stop unlinks it", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const bot = fakeTelegram();
@@ -121,7 +122,7 @@ Deno.test("/start links the chat, links again, and /stop unlinks it", async () =
   }
 });
 
-Deno.test("a linked user's incoming Telegram message is journaled for the conversation", async () => {
+test("a linked user's incoming Telegram message is journaled for the conversation", async () => {
   const db = await makeDb();
   await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: unixTime() });
   const bot = fakeTelegram();
@@ -148,7 +149,7 @@ Deno.test("a linked user's incoming Telegram message is journaled for the conver
   }
 });
 
-Deno.test("send delivers, clears a stale error and drops a chat that blocked the bot", async () => {
+test("send delivers, clears a stale error and drops a chat that blocked the bot", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: unixTime(), error: "500: earlier" });
@@ -173,7 +174,7 @@ Deno.test("send delivers, clears a stale error and drops a chat that blocked the
   }
 });
 
-Deno.test("chat arrays and user selectors add up without duplicate deliveries", async () => {
+test("chat arrays and user selectors add up without duplicate deliveries", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const table = db.table("telegram_chat");

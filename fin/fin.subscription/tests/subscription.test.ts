@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { lines, remove } from "@qino/qino/fin.invoice";
 import { setTransport } from "@qino/qino/messaging.email";
@@ -5,7 +6,7 @@ import { setTransport } from "@qino/qino/messaging.email";
 import { withFinApp } from "../../tests/app.ts";
 import { bill, cancel, plan, subscribe, subscriptions } from "../mod.ts";
 
-Deno.test("what renews is billed in advance, one invoice per customer, and stops when canceled", async () => {
+test("what renews is billed in advance, one invoice per customer, and stops when canceled", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const usr = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster", organization: "Muster AG",
@@ -44,7 +45,7 @@ Deno.test("what renews is billed in advance, one invoice per customer, and stops
   });
 });
 
-Deno.test("with send set, the invoices go out issued and by mail; without, nothing is mailed", async () => {
+test("with send set, the invoices go out issued and by mail; without, nothing is mailed", async () => {
   const modules = ["fin.payment", "fin.invoice", "messaging", "messaging.email", "fin.subscription"];
   await withFinApp(modules, async (app) => {
     await app.settings["messaging.email"].address("office@atelier.test");
@@ -68,7 +69,7 @@ Deno.test("with send set, the invoices go out issued and by mail; without, nothi
   });
 });
 
-Deno.test("a plan fills in what a subscription leaves empty; its own fields win", async () => {
+test("a plan fills in what a subscription leaves empty; its own fields win", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const usr = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster",

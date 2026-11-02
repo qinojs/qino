@@ -1,4 +1,5 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 import { collections, create, drop } from "@qino/qino/ai.embed";
 import { Agent } from "@qino/qino/ai.agent";
@@ -12,7 +13,7 @@ const fake: Adapter = {
 };
 
 async function withApp(fn: (app: App) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "ai.tools", "cron", "score", "ai.embed", "ai.discover", "ai.agent", "ai.agent.recall"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   app.modules.add(new URL("../../ai.agent/tests/many/plugin.ts", import.meta.url));
   await app.init();
@@ -47,7 +48,7 @@ async function notes(app: App, session: number) {
     .map((m) => m.content);
 }
 
-Deno.test("ai.agent.recall: what is close to what was said and not given yet comes to mind, once", () => withApp(async (app) => {
+test("ai.agent.recall: what is close to what was said and not given yet comes to mind, once", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "tool lead", tools: ["many_*"] }); // 25 tools: the logo one, far from its role, not given
   const session = await agent.start(7);
   await session.ask("hi");
@@ -62,7 +63,7 @@ Deno.test("ai.agent.recall: what is close to what was said and not given yet com
   assertEquals((await notes(app, session.id)).length, 1); // given already
 }));
 
-Deno.test("ai.agent.recall: a text said before comes to mind too, with its stored vector", () => withApp(async (app) => {
+test("ai.agent.recall: a text said before comes to mind too, with its stored vector", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "tool lead", tools: ["many_*"] });
   const tools = "## Possibly relevant tools\nNot in your tool list; call them with call_tool.\n- many_logo_get: Draws a logo";
   for (const _ of [1, 2]) { // the second session's message is embedded already
@@ -72,7 +73,7 @@ Deno.test("ai.agent.recall: a text said before comes to mind too, with its store
   }
 }));
 
-Deno.test("ai.agent.recall: what was said earlier and is no longer sent comes to mind", () => withApp(async (app) => {
+test("ai.agent.recall: what was said earlier and is no longer sent comes to mind", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   const said = "the logo must stay round in every version we make";
   await session.ask(said);
@@ -84,7 +85,7 @@ Deno.test("ai.agent.recall: what was said earlier and is no longer sent comes to
   assertEquals((await notes(app, session.id)).filter((note) => note.includes("Said earlier")), [`## Said earlier in this session\n[#${id} user] ${said}`]);
 }));
 
-Deno.test("ai.agent.recall: of a long message earlier only its start comes to mind", () => withApp(async (app) => {
+test("ai.agent.recall: of a long message earlier only its start comes to mind", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   const said = "the logo " + "x".repeat(2000);
   await session.ask(said);

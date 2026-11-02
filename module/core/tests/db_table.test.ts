@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { DbTable } from "../lib/db/DbTable.ts";
 import { Db } from "../lib/db/Db.ts";
@@ -61,7 +62,7 @@ function db() {
   return fake;
 }
 
-Deno.test("DbTable: init discovers fields, primary and auto increment", async () => {
+test("DbTable: init discovers fields, primary and auto increment", async () => {
   const fake = db();
   const table = new DbTable(fake as any, "thing");
   await table.init();
@@ -71,7 +72,7 @@ Deno.test("DbTable: init discovers fields, primary and auto increment", async ()
   assertEquals(String(table.autoIncrement), "id");
 });
 
-Deno.test("DbTable: entry id and where fragments use field transforms", async () => {
+test("DbTable: entry id and where fragments use field transforms", async () => {
   const table = new DbTable(db() as any, "thing");
   await table.init();
 
@@ -96,7 +97,7 @@ Deno.test("DbTable: entry id and where fragments use field transforms", async ()
   );
 });
 
-Deno.test("DbTable: composite entry ids round-trip and reject wrong part counts", async () => {
+test("DbTable: composite entry ids round-trip and reject wrong part counts", async () => {
   const fake: any = {
     escapeId: (id: string) => `\`${id}\``,
     columns: () => [
@@ -118,7 +119,7 @@ Deno.test("DbTable: composite entry ids round-trip and reject wrong part counts"
   assertEquals(table.entryIdValues("a%:1"), undefined); // malformed escape, not a URIError
 });
 
-Deno.test("DbTable: schema fields and children come from db schema", async () => {
+test("DbTable: schema fields and children come from db schema", async () => {
   const calls: Array<[string, unknown[] | undefined]> = [];
   const fake: any = {
     tables: {},
@@ -159,7 +160,7 @@ Deno.test("DbTable: schema fields and children come from db schema", async () =>
   assertEquals(field && field.onParentDelete, "cascade");
 });
 
-Deno.test("DbTable: select, insert, update and delete build parameterized SQL", async () => {
+test("DbTable: select, insert, update and delete build parameterized SQL", async () => {
   const fake = db();
   const table = new DbTable(fake as any, "thing");
   await table.init();
@@ -186,7 +187,7 @@ Deno.test("DbTable: select, insert, update and delete build parameterized SQL", 
   ]);
 });
 
-Deno.test("DbTable: copy and delete cascade via x-qg-parent-field on real sqlite", async () => {
+test("DbTable: copy and delete cascade via x-qg-parent-field on real sqlite", async () => {
   const real = new Db("sqlite:");
   await real.exec`CREATE TABLE parent (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL)`;
   await real.exec`CREATE TABLE child (id INTEGER PRIMARY KEY AUTOINCREMENT, parent_code TEXT, val TEXT)`;

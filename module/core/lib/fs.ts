@@ -81,7 +81,7 @@ export const fs = {
     return Deno ? Deno.readTextFile(path) : readFile(path, "utf8");
   },
   bytes(path: string): Promise<Uint8Array<ArrayBuffer>> {
-    return Deno ? Deno.readFile(path) : readFile(path) as Promise<Uint8Array<ArrayBuffer>>; // never shared
+    return Deno ? Deno.readFile(path) : readFile(path).then((b) => new Uint8Array(b.buffer as ArrayBuffer, b.byteOffset, b.length)); // not a Buffer; never shared
   },
   /** As stream, optionally a byte range (`end` inclusive, like HTTP). A missing file throws
    *  here, not later while reading. The stat is renewed from the open file: it is what is read. */
@@ -179,6 +179,6 @@ export const fs = {
     return path;
   },
   tempDir({ prefix = "", dir }: { prefix?: string; dir?: string } = {}): Promise<string> {
-    return Deno ? Deno.makeTempDir({ prefix, dir }) : mkdtemp(join(dir ?? tmpdir(), prefix));
+    return Deno ? Deno.makeTempDir({ prefix, dir }) : mkdtemp(`${dir ?? tmpdir()}/${prefix}`);
   },
 };

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { create } from "@qino/qino/fin.invoice";
 import { render as pdf } from "@qino/qino/pdf";
@@ -12,7 +13,7 @@ import type { App } from "@qino/qino";
 const withApp = (fn: (app: App) => Promise<void>) =>
   withFinApp(["fin.payment", "fin.invoice"], fn);
 
-Deno.test("what the model read becomes a received draft, in minor units", () => {
+test("what the model read becomes a received draft, in minor units", () => {
   const values = valuesOf({
     supplier: { name: "Hosting AG", street: "Seeweg 2", postalCode: "3000", city: "Bern", country: "ch", iban: "CH93 0076 2011 6238 5295 7" },
     number: "R-778",
@@ -33,8 +34,8 @@ Deno.test("what the model read becomes a received draft, in minor units", () => 
   assertEquals(values.data.read, { total: 13237, reference: "RF18539007547034" });
 });
 
-Deno.test("a PDF is shown as its text, one without text as its pages; anything else is refused", async () => {
-  if ((await Deno.permissions.query({ name: "run" })).state !== "granted") return; // no browser to make a PDF
+test("a PDF is shown as its text, one without text as its pages; anything else is refused", async () => {
+  if (globalThis.Deno && (await Deno.permissions.query({ name: "run" })).state !== "granted") return; // no browser to make a PDF
   await withApp(async (app) => {
     const fileOf = async (body: string) =>
       app.dbFiles.add(new File([await pdf(app, body)], "invoice.pdf", { type: "application/pdf" }));
@@ -54,7 +55,7 @@ Deno.test("a PDF is shown as its text, one without text as its pages; anything e
   });
 });
 
-Deno.test("drafts to check are listed; a total that does not match what was read is marked", async () => {
+test("drafts to check are listed; a total that does not match what was read is marked", async () => {
   await withApp(async (app) => {
     const read = { supplier: { name: "Hosting AG" }, currency: "CHF", lines: [{ name: "Server", quantity: 1, unitPrice: 99, taxRate: 0 }], total: 100 };
     await create(app, valuesOf(read));
@@ -66,7 +67,7 @@ Deno.test("drafts to check are listed; a total that does not match what was read
   });
 });
 
-Deno.test("a read invoice finds its supplier by IBAN or name, else one is created by hand", async () => {
+test("a read invoice finds its supplier by IBAN or name, else one is created by hand", async () => {
   await withApp(async (app) => {
     const known = Number(await app.db.table("usr").insert({
       organization: "Hosting AG", given_name: "", family_name: "", active: 0, pw: "", superuser: 0,

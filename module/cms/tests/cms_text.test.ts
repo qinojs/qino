@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { invoke, requestStorage } from "@qino/qino";
 import { assertEquals, testContext, fakeRender } from "@qino/qino/tests";
 import { api } from "@qino/qino/cms.text";
@@ -62,7 +63,7 @@ function translator(answer: (input: TranslateInput) => string) {
   return { modules: { linked: (name?: string) => name ? mods.find((m) => m.name === name) : mods }, db: { query }, settings: { core: { keys: {} } } };
 }
 
-Deno.test("cms.text: missing and empty texts are returned as untranslated", async () => {
+test("cms.text: missing and empty texts are returned as untranslated", async () => {
   const ctx = await ctxWith({
     languages: { all: ["de", "en", "fr"] },
     api: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
@@ -87,7 +88,7 @@ Deno.test("cms.text: missing and empty texts are returned as untranslated", asyn
   });
 });
 
-Deno.test("cms.text: translate-all-langs translates only missing or empty texts", async () => {
+test("cms.text: translate-all-langs translates only missing or empty texts", async () => {
   const title = new FakeText(10, { de: "Titel", en: "", fr: "" });
   const main = new FakeText(11, { de: "Hallo", en: "" });
   const node = new FakeNode(1, title, new Map([["main", main]]));
@@ -110,7 +111,7 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
   assertEquals(main.values, { de: "Hallo", en: "", fr: "en-fr:de-en:Hallo" });
 });
 
-Deno.test("cms.text: a text is translated through ai as html", async () => {
+test("cms.text: a text is translated through ai as html", async () => {
   const writes: unknown[] = [], asked: unknown[] = [];
   const ai = translator((input) => (asked.push(input), "hello"));
   const ctx = await ctxWith({

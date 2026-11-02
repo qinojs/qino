@@ -1,9 +1,10 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-Deno.test("cms adds public, searchable pages to the seo sitemap", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms adds public, searchable pages to the seo sitemap", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir, appUrl: "/site/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("seo");
   await app.init();
@@ -30,6 +31,6 @@ Deno.test("cms adds public, searchable pages to the seo sitemap", async () => {
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

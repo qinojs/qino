@@ -1,9 +1,10 @@
+import { test } from "node:test";
 import { html } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import * as el from "../lib/el.ts";
 
-Deno.test("u2: el.time returns safe HTML", () => {
+test("u2: el.time returns safe HTML", () => {
   assertEquals(String(el.time(null)), "-");
   assertEquals(
     String(html`${el.time("2024-01-02T03:04:00Z")}`),

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
@@ -12,7 +13,7 @@ function node(id: number, ancestors: number[] = []) {
   return { id, path: () => Promise.resolve(path) } as any;
 }
 
-Deno.test("formOf finds the nearest open form up the tree", async () => {
+test("formOf finds the nearest open form up the tree", async () => {
   const ctx = await testContext();
   await requestStorage.run(ctx, async () => {
     const outer = openForm(node(10));
@@ -24,7 +25,7 @@ Deno.test("formOf finds the nearest open form up the tree", async () => {
   });
 });
 
-Deno.test("Form.value reflects the submitted body only once sent", () => {
+test("Form.value reflects the submitted body only once sent", () => {
   const form = new Form();
   assertEquals(form.sent, false);
   assertEquals(form.value("name"), undefined);
@@ -46,7 +47,7 @@ function tree(module: string, conts: unknown[] = [], fields?: Record<string, str
   } as any;
 }
 
-Deno.test("fields: every field block in the form, nested ones too, in render order", async () => {
+test("fields: every field block in the form, nested ones too, in render order", async () => {
   const form = tree("cms.cont.form", [
     tree("cms.cont.flexible", [
       tree("cms.cont.form.fields", [], { name: "Name", email: "E-Mail" }, "email,name"),

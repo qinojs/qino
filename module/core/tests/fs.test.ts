@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { chmod, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { assert, assertEquals, assertRejects } from "./deps.ts";
 import { fs } from "../lib/fs.ts";
 import { requestStorage } from "../lib/ctx/Ctx.ts";
@@ -8,7 +10,7 @@ async function inDir(fn: (dir: string) => Promise<void>) {
   try { await fn(dir); } finally { await fs.remove(dir, { recursive: true }); }
 }
 
-Deno.test("fs: stat, isFile, size, mtime; missing is undefined", () => inDir(async (dir) => {
+test("fs: stat, isFile, size, mtime; missing is undefined", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   assertEquals(await fs.stat(path), undefined);
   assertEquals(await fs.isFile(path), false);
@@ -27,27 +29,27 @@ Deno.test("fs: stat, isFile, size, mtime; missing is undefined", () => inDir(asy
   assertEquals((await fs.stat(dir))?.isDirectory, true);
 }));
 
-Deno.test("fs: foreign writes stay unseen until ttl, own writes are seen at once", () => inDir(async (dir) => {
+test("fs: foreign writes stay unseen until ttl, own writes are seen at once", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   assertEquals(await fs.isFile(path), false);
-  await Deno.writeTextFile(path, "foreign");
+  await writeFile(path, "foreign");
   assertEquals(await fs.isFile(path), false); // cached miss
   assertEquals(await fs.isFile(path, { ttl: 0 }), true);
 
-  await Deno.remove(path);
+  await rm(path);
   assertEquals(await fs.isFile(path), true); // cached hit
   await fs.write(path, "own");
   assertEquals(await fs.size(path), 3);
 }));
 
-Deno.test("fs: concurrent stats share one lookup", () => inDir(async (dir) => {
+test("fs: concurrent stats share one lookup", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   await fs.write(path, "x");
   const a = fs.stat(path), b = fs.stat(path);
   assertEquals(a, b);
 }));
 
-Deno.test("fs: text, bytes, write with createNew", () => inDir(async (dir) => {
+test("fs: text, bytes, write with createNew", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   await fs.write(path, "héllo");
   assertEquals(await fs.text(path), "héllo");
@@ -61,7 +63,7 @@ Deno.test("fs: text, bytes, write with createNew", () => inDir(async (dir) => {
   await assertRejects(() => fs.text(dir + "/nope.txt"));
 }));
 
-Deno.test("fs: write takes a stream", () => inDir(async (dir) => {
+test("fs: write takes a stream", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   await fs.write(path, new Blob(["hello ", "world"]).stream());
   assertEquals(await fs.text(path), "hello world");
@@ -69,7 +71,7 @@ Deno.test("fs: write takes a stream", () => inDir(async (dir) => {
   assertEquals(await fs.text(path), "x");
 }));
 
-Deno.test("fs: stream, whole and as a range", () => inDir(async (dir) => {
+test("fs: stream, whole and as a range", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   await fs.write(path, "hello world");
   assertEquals(await new Response(await fs.stream(path)).text(), "hello world");
@@ -77,22 +79,22 @@ Deno.test("fs: stream, whole and as a range", () => inDir(async (dir) => {
   assertEquals(await new Response(await fs.stream(path, { start: 6 })).text(), "world");
 }));
 
-Deno.test("fs: a stream renews the stat from the open file", () => inDir(async (dir) => {
+test("fs: a stream renews the stat from the open file", () => inDir(async (dir) => {
   await fs.write(dir + "/a", "old");
   assertEquals(await fs.size(dir + "/a"), 3);
-  await Deno.writeTextFile(dir + "/a", "longer"); // a foreign write
+  await writeFile(dir + "/a", "longer"); // a foreign write
   assertEquals(await fs.size(dir + "/a"), 3); // cached
   await (await fs.stream(dir + "/a")).cancel();
   assertEquals(await fs.size(dir + "/a"), 6);
 }));
 
-Deno.test("fs: stream of a missing file throws at once", () => inDir(async (dir) => {
+test("fs: stream of a missing file throws at once", () => inDir(async (dir) => {
   const err = await assertRejects(() => fs.stream(dir + "/nope.txt"));
   assertEquals((err as { code?: string }).code, "ENOENT");
   await assertRejects(() => fs.stream(dir + "/nope.txt", { start: 1 }));
 }));
 
-Deno.test("fs: list, mkdir", () => inDir(async (dir) => {
+test("fs: list, mkdir", () => inDir(async (dir) => {
   await fs.mkdir(dir + "/sub/deep"); // parents too
   await fs.mkdir(dir + "/sub"); // existing is fine
   await fs.write(dir + "/a.txt", "x");
@@ -104,7 +106,7 @@ Deno.test("fs: list, mkdir", () => inDir(async (dir) => {
   await assertRejects(() => fs.list(dir + "/nope"));
 }));
 
-Deno.test("fs: remove forgets the path and everything below", () => inDir(async (dir) => {
+test("fs: remove forgets the path and everything below", () => inDir(async (dir) => {
   await fs.mkdir(dir + "/sub");
   await fs.write(dir + "/sub/a.txt", "x");
   assertEquals(await fs.isFile(dir + "/sub/a.txt"), true);
@@ -118,7 +120,7 @@ Deno.test("fs: remove forgets the path and everything below", () => inDir(async 
   assertEquals(await fs.isFile(dir + "/b.txt"), false);
 }));
 
-Deno.test("fs: remove takes an empty directory, not a full one", () => inDir(async (dir) => {
+test("fs: remove takes an empty directory, not a full one", () => inDir(async (dir) => {
   await fs.mkdir(dir + "/empty");
   await fs.remove(dir + "/empty");
   assertEquals(await fs.stat(dir + "/empty"), undefined);
@@ -129,7 +131,7 @@ Deno.test("fs: remove takes an empty directory, not a full one", () => inDir(asy
   assertEquals((err as { code?: string }).code, "ENOTEMPTY");
 }));
 
-Deno.test("fs: rename, copy", () => inDir(async (dir) => {
+test("fs: rename, copy", () => inDir(async (dir) => {
   const a = dir + "/a.txt", b = dir + "/b.txt", c = dir + "/c.txt";
   await fs.write(a, "x");
   assertEquals(await fs.isFile(a), true);
@@ -147,39 +149,39 @@ Deno.test("fs: rename, copy", () => inDir(async (dir) => {
 }));
 
 // Deno grants symlink only with unscoped read and write — `deno task test` scopes write to /tmp.
-const unscoped = Deno.permissions.querySync({ name: "write" }).state === "granted";
+const unscoped = (globalThis.Deno?.permissions.querySync({ name: "write" }).state ?? "granted") === "granted";
 
-Deno.test({ name: "fs: symlink", ignore: !unscoped, fn: () => inDir(async (dir) => {
+test("fs: symlink", { skip: !unscoped }, () => inDir(async (dir) => {
   const a = dir + "/a.txt", link = dir + "/link.txt";
   await fs.write(a, "x");
   assertEquals(await fs.isFile(link), false);
   await fs.symlink(a, link);
   assertEquals(await fs.isFile(link), true); // stat follows the link
   assertEquals(await fs.text(link), "x");
-}) });
+}));
 
-Deno.test("fs: touch", () => inDir(async (dir) => {
+test("fs: touch", () => inDir(async (dir) => {
   const a = dir + "/a.txt";
   await fs.write(a, "x");
   const old = new Date(2000, 0, 1);
-  await Deno.utime(a, old, old);
+  await utimes(a, old, old);
   assertEquals(await fs.mtime(a, { ttl: 0 }), old.getTime());
   await fs.touch(a);
   assert(await fs.mtime(a) as number > old.getTime());
 }));
 
-Deno.test("fs: writable", () => inDir(async (dir) => {
+test("fs: writable", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   await fs.write(path, "x");
   assertEquals(await fs.writable(path), true);
   assertEquals(await fs.writable(dir + "/nope.txt"), false);
-  await Deno.chmod(path, 0o444);
-  const root = (() => { try { return Deno.uid() === 0; } catch { return false; } })(); // uid needs --allow-sys
+  await chmod(path, 0o444);
+  const root = (() => { try { return process.getuid?.() === 0; } catch { return false; } })(); // uid needs --allow-sys
   if (!root) assertEquals(await fs.writable(path), false); // root writes anyway
   assertEquals(await fs.text(path), "x"); // asking did not truncate
 }));
 
-Deno.test("fs: tempFile, tempDir", () => inDir(async (dir) => {
+test("fs: tempFile, tempDir", () => inDir(async (dir) => {
   const file = await fs.tempFile({ prefix: "t-", dir });
   assert(file.startsWith(dir + "/t-"));
   assertEquals(await fs.text(file), "");
@@ -190,19 +192,19 @@ Deno.test("fs: tempFile, tempDir", () => inDir(async (dir) => {
   assertEquals((await fs.list(sub)).length, 0);
 }));
 
-Deno.test("fs: a request in dev looks fresh, others use the cache", () => inDir(async (dir) => {
+test("fs: a request in dev looks fresh, others use the cache", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   assertEquals(await fs.isFile(path), false);
-  await Deno.writeTextFile(path, "foreign");
+  await writeFile(path, "foreign");
   // deno-lint-ignore no-explicit-any
   const run = (dev: boolean) => requestStorage.run({ dev } as any, () => fs.isFile(path));
   assertEquals(await run(false), false);
   assertEquals(await run(true), true);
 }));
 
-Deno.test("fs: mode applies to new files and directories", () => inDir(async (dir) => {
+test("fs: mode applies to new files and directories", () => inDir(async (dir) => {
   await fs.mkdir(dir + "/private", { mode: 0o700 });
   await fs.write(dir + "/private/key", "secret", { mode: 0o600 });
-  assertEquals((await Deno.stat(dir + "/private")).mode! & 0o777, 0o700);
-  assertEquals((await Deno.stat(dir + "/private/key")).mode! & 0o777, 0o600);
+  assertEquals((await stat(dir + "/private")).mode! & 0o777, 0o700);
+  assertEquals((await stat(dir + "/private/key")).mode! & 0o777, 0o600);
 }));

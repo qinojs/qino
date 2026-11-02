@@ -1,9 +1,10 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 
 // ───── Schema tests ───────────────────────────────────────────────────────
 
-Deno.test("schema: string/number/boolean primitives", () => {
+test("schema: string/number/boolean primitives", () => {
   assertEquals(s.string()["~standard"].validate("x"), { value: "x" });
   assertEquals(s.number()["~standard"].validate(42), { value: 42 });
   assertEquals(s.boolean()["~standard"].validate(true), { value: true });
@@ -12,7 +13,7 @@ Deno.test("schema: string/number/boolean primitives", () => {
   if (!bad.issues) throw new Error("expected issues");
 });
 
-Deno.test("schema: object with optional and default", () => {
+test("schema: object with optional and default", () => {
   const schema = s.object({
     name: s.string(),
     age:  s.optional(s.number()),
@@ -27,13 +28,13 @@ Deno.test("schema: object with optional and default", () => {
   });
 });
 
-Deno.test("schema: object exposes keys + shape for introspection", () => {
+test("schema: object exposes keys + shape for introspection", () => {
   const schema = s.object({ a: s.string(), b: s.number() });
   assertEquals(schema.kind, "object");
   assertEquals(Object.keys(schema.shape!), ["a", "b"]);
 });
 
-Deno.test("schema: array + record", () => {
+test("schema: array + record", () => {
   assertEquals(s.array(s.string())["~standard"].validate(["a", "b"]).value, ["a", "b"]);
   assertEquals(s.record()["~standard"].validate({ x: 1 }).value, { x: 1 });
 });
@@ -44,7 +45,7 @@ Deno.test("schema: array + record", () => {
 // Instead, we test the walk/invoke logic indirectly via a stub that mimics
 // what api.ts does. Real integration tests happen when the tree is mounted.
 
-Deno.test("schema: collision source names are surfaced via keys", () => {
+test("schema: collision source names are surfaced via keys", () => {
   // This is what checkCollisions() in api.ts uses to detect overlaps.
   const pathNames = new Set(["node", "file"]);
   const inputKeys = Object.keys(s.object({ deep: s.boolean() }).shape!);

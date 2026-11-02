@@ -1,17 +1,18 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 
-Deno.test("cms.backend.config.identity: metadata and node API are wired", () => {
+test("cms.backend.config.identity: metadata and node API are wired", () => {
   assertEquals(manifest.name, "cms.backend.config.identity");
   assertEquals(manifest.dependencies, ["identity", "cms.backend.config"]);
   assertEquals(typeof cms.node.api, "function");
 });
 
-Deno.test("cms.backend.config.identity: render exposes the canonical fields and assets", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("cms.backend.config.identity: render exposes the canonical fields and assets", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("identity");
   await app.init();
     app.t = fakeT;

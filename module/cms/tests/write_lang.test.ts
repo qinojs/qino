@@ -1,10 +1,11 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 // A text in a language the site doesn't have would be kept, but never shown: the api refuses it.
-Deno.test("cms: the api writes texts and titles only in the site's languages", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms: the api writes texts and titles only in the site's languages", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms");
   await app.init();
@@ -22,6 +23,6 @@ Deno.test("cms: the api writes texts and titles only in the site's languages", a
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

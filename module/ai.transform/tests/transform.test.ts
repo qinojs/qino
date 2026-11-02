@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { Db, FileTransformer } from "@qino/qino";
+import { test } from "node:test";
+import { Db, FileTransformer, fs } from "@qino/qino";
 import { aiAdapters, aiCapabilities, aiDbSchema, assertEquals } from "@qino/qino/tests";
 
 import { init } from "../plugin.ts";
@@ -13,8 +14,8 @@ const fake: Adapter = {
   transcribe: (_call, { file }) => Promise.resolve({ kind: "qino.transcript", version: 1, text: `hello ${file.name}`, segments: [] }),
 };
 
-Deno.test("ai.transform: ai reads images and hears audio while linked", async () => {
-  const dir = await Deno.makeTempDir();
+test("ai.transform: ai reads images and hears audio while linked", async () => {
+  const dir = await fs.tempDir();
   const db = new Db("sqlite::memory:");
   await db.migrate(aiDbSchema);
   await db.loadTables();
@@ -32,12 +33,12 @@ Deno.test("ai.transform: ai reads images and hears audio while linked", async ()
   assertEquals((await tf.transcriptEngine(ctx))?.name, undefined); // no model for it yet
   for (const capability of ["text", "vision", "transcribe"]) await db.table("ai_model_capability").insert({ model_id: 1, capability });
   const file = `${dir}/a.mp3`;
-  await Deno.writeFile(file, new Uint8Array([1]));
+  await fs.write(file, new Uint8Array([1]));
   assertEquals(await (await tf.ocrEngine(ctx))!.ocr(file, "image/png", ctx), "# image"); // the fence goes
   assertEquals((await (await tf.transcriptEngine(ctx))!.transcribe(file, "audio/mpeg", ctx)).text, "hello a.mp3");
   unlink.abort();
   assertEquals((await tf.transcriptEngine(ctx))?.name, undefined);
   assertEquals((await tf.ocrEngine(ctx))?.name === "ai", false);
   await db.close();
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });

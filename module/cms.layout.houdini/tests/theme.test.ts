@@ -1,8 +1,9 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 import { DESIGN_MARKER, safeValue, themeCss } from "../pub/theme.js";
 
-Deno.test("houdini: visual design uses known tokens and keeps values inside declarations", () => {
+test("houdini: visual design uses known tokens and keeps values inside declarations", () => {
   assertEquals(themeCss(), DESIGN_MARKER + "html{}");
   assertEquals(themeCss(null), DESIGN_MARKER + "html{}");
   assertEquals(themeCss({ unknown: "red", color: " #abc " }), DESIGN_MARKER + "html{--color:#abc}");

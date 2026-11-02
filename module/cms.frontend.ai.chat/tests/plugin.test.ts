@@ -1,9 +1,10 @@
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, fakeCms } from "@qino/qino/tests";
 
 import { api, init } from "../plugin.ts";
 
-Deno.test("cms.frontend.ai.chat: in editmode, for signed-in users who may edit the page", async () => {
+test("cms.frontend.ai.chat: in editmode, for signed-in users who may edit the page", async () => {
   let handler: (e: { ctx: unknown }) => Promise<void> = async () => {};
   const app = {};
   fakeCms(app, { on: (_: string, fn: typeof handler) => handler = fn });
@@ -24,7 +25,7 @@ Deno.test("cms.frontend.ai.chat: in editmode, for signed-in users who may edit t
   assertEquals(Object.keys(ctx.res.csp["script-src"]).length > 0, true); // markdown
 });
 
-Deno.test("cms.frontend.ai.chat: the user's session stays, a foreign or fresh one is started anew", async () => {
+test("cms.frontend.ai.chat: the user's session stays, a foreign or fresh one is started anew", async () => {
   const owners: Record<number, number> = { 10: 5, 11: 6 };
   let stored: number | undefined, inserted = 0;
   const leaf = Object.assign((value: number) => { stored = value; }, { then: (resolve: (v: unknown) => void) => resolve(stored) });
@@ -49,7 +50,7 @@ Deno.test("cms.frontend.ai.chat: the user's session stays, a foreign or fresh on
   assertEquals(stored, 21);
 });
 
-Deno.test("cms.frontend.ai.chat: what changed on a page since a change, each node with its parent", async () => {
+test("cms.frontend.ai.chat: what changed on a page since a change, each node with its parent", async () => {
   let access = 2, asked: unknown[] = [];
   const app = {
     db: {

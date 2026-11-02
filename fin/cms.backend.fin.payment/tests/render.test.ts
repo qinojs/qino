@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { ingest } from "@qino/qino/fin.bank";
 import { create } from "@qino/qino/fin.payment";
@@ -20,7 +21,7 @@ const withApp = (fn: (app: App, as: As, node: Node) => Promise<void>) =>
     await fn(app, (url, run) => inRequest(app, url, run), backendNode(app, "/backend/payments"));
   });
 
-Deno.test("the overview lists and filters payments and shows the providers with their settings", async () => {
+test("the overview lists and filters payments and shows the providers with their settings", async () => {
   await withApp(async (app, as, node) => {
     await create(app, { method: "qrbill", amount: 47226, currency: "CHF", ref: "shop.order:1", description: "Order <1>", return: "/" });
     await as("http://qino.test/backend/payments", () => api(node, {
@@ -37,7 +38,7 @@ Deno.test("the overview lists and filters payments and shows the providers with 
   });
 });
 
-Deno.test("the detail shows every field, the bank lines and the slip; sync asks again", async () => {
+test("the detail shows every field, the bank lines and the slip; sync asks again", async () => {
   await withApp(async (app, as, node) => {
     const { id } = await create(app, { method: "qrbill", amount: 50000, currency: "CHF", return: "/" });
     const reference = String(await app.db.one`SELECT external_id FROM payment WHERE id = ${id}`);
@@ -54,7 +55,7 @@ Deno.test("the detail shows every field, the bank lines and the slip; sync asks 
   });
 });
 
-Deno.test("what cannot be done says so instead of failing", async () => {
+test("what cannot be done says so instead of failing", async () => {
   await withApp(async (_app, as, node) => {
     const refund = await as("http://qino.test/", () => api(node, { refund: { id: "999", amount: "" } })) as { ok: boolean };
     assertEquals(refund.ok, false);
@@ -64,7 +65,7 @@ Deno.test("what cannot be done says so instead of failing", async () => {
   });
 });
 
-Deno.test("a payment recorded by hand can be canceled from its page; one a provider stands behind cannot", async () => {
+test("a payment recorded by hand can be canceled from its page; one a provider stands behind cannot", async () => {
   await withApp(async (app, as, node) => {
     const { id: asked } = await create(app, { method: "qrbill", amount: 1000, currency: "CHF", return: "/" });
     const page = (id: unknown) => as(`http://qino.test/backend/payments?payment=${id}`, () => render(node)).then(String);

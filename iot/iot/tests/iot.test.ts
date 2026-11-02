@@ -1,4 +1,5 @@
-import { App, requestStorage, toTools } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import {
@@ -8,8 +9,8 @@ import {
 import { api } from "../plugin.ts";
 
 async function fixture() {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-test-" }), app = new App({ dir, db: "sqlite::memory:" });
-  await Deno.writeTextFile(`${dir}/plugin.ts`, `
+  const dir = await fs.tempDir({ prefix: "qino-iot-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  await fs.write(`${dir}/plugin.ts`, `
 export const iotProvider = {
   name: "fake",
   schema: { type: "object", additionalProperties: false, properties: {
@@ -25,12 +26,12 @@ export const iotProvider = {
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init();
-  return { app, close: async () => { await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
+  return { app, close: async () => { await app.db.close(); await fs.remove(dir, { recursive: true }); } };
 }
 const url = "https://first.test/";
 const input = { name: "First", adapter: "fake", config: { url, token: "private", nested: { password: "nested-private", label: "Public" } } };
 
-Deno.test("iot persists distinct provider instances and dispatches overlapping entity identities by numeric ID", async () => {
+test("iot persists distinct provider instances and dispatches overlapping entity identities by numeric ID", async () => {
   const { app, close } = await fixture();
   try {
     assertEquals(adapter(app, "fake")?.name, "fake");
@@ -54,7 +55,7 @@ Deno.test("iot persists distinct provider instances and dispatches overlapping e
   } finally { await close(); }
 });
 
-Deno.test("IoT provider configuration validates before writes, retains blank nested secrets and never includes credentials in events", async () => {
+test("IoT provider configuration validates before writes, retains blank nested secrets and never includes credentials in events", async () => {
   const { app, close } = await fixture();
   try {
     const events: unknown[] = [];
@@ -69,7 +70,7 @@ Deno.test("IoT provider configuration validates before writes, retains blank nes
   } finally { await close(); }
 });
 
-Deno.test("iot tools redact credentials, enforce superuser access and dispatch validated provider IDs", async () => {
+test("iot tools redact credentials, enforce superuser access and dispatch validated provider IDs", async () => {
   const { app, close } = await fixture();
   try {
     const id = await save(app, { ...input, config: { ...input.config, accounts: [{ token: "array-private", label: "Public account" }] } }), tools = toTools({ iot: api });
@@ -94,7 +95,7 @@ Deno.test("iot tools redact credentials, enforce superuser access and dispatch v
   } finally { await close(); }
 });
 
-Deno.test("IoT observations and cleanup remain isolated between Apps", async () => {
+test("IoT observations and cleanup remain isolated between Apps", async () => {
   const one = await fixture(), two = await fixture(), controller = new AbortController();
   try {
     const seen: unknown[] = [], other: unknown[] = [];
@@ -110,7 +111,7 @@ Deno.test("IoT observations and cleanup remain isolated between Apps", async () 
   } finally { await one.close(); await two.close(); }
 });
 
-Deno.test("iot stores commands as named action calls and runs them with run-time data", async () => {
+test("iot stores commands as named action calls and runs them with run-time data", async () => {
   const { app, close } = await fixture();
   try {
     const provider = await save(app, input);
@@ -138,7 +139,7 @@ Deno.test("iot stores commands as named action calls and runs them with run-time
   } finally { await close(); }
 });
 
-Deno.test("iot addresses every value of an entity by path and reports input and change apart", async () => {
+test("iot addresses every value of an entity by path and reports input and change apart", async () => {
   const { app, close } = await fixture();
   try {
     const entity = {

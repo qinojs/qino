@@ -1,8 +1,9 @@
-import { $item, App } from "@qino/qino";
+import { test } from "node:test";
+import { $item, App, fs } from "@qino/qino";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 async function testApp() {
-  const dir = await Deno.makeTempDir() + "/";
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir, appUrl: "/site/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("webapp");
   await app.init();
@@ -18,10 +19,10 @@ async function testApp() {
 async function close(app: App, dir: string) {
   await new Promise((resolve) => setTimeout(resolve, 100));
   await app.db.close();
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 }
 
-Deno.test("webapp serves an extensible manifest with identity defaults and validators", async () => {
+test("webapp serves an extensible manifest with identity defaults and validators", async () => {
   const { app, dir } = await testApp();
   try {
     const settings = app.settings.webapp;
@@ -60,7 +61,7 @@ Deno.test("webapp serves an extensible manifest with identity defaults and valid
   }
 });
 
-Deno.test("webapp adds browser metadata and conventional icon routes", async () => {
+test("webapp adds browser metadata and conventional icon routes", async () => {
   const { app, dir } = await testApp();
   try {
     const settings = app.settings.webapp;
@@ -96,7 +97,7 @@ Deno.test("webapp adds browser metadata and conventional icon routes", async () 
   }
 });
 
-Deno.test("webapp omits standalone metadata in browser mode", async () => {
+test("webapp omits standalone metadata in browser mode", async () => {
   const { app, dir } = await testApp();
   try {
     app.on("render", ({ ctx }) => { ctx.res.html.content = "<main>ok</main>"; });

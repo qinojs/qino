@@ -1,9 +1,10 @@
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.cont.search: the hits part renders alone; grouped by contents a hit links to its section", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.search: the hits part renders alone; grouped by contents a hit links to its section", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.search").add("cms.cont.text");
   await app.init();
@@ -32,6 +33,6 @@ Deno.test("cms.cont.search: the hits part renders alone; grouped by contents a h
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

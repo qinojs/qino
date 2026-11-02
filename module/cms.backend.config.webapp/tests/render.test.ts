@@ -1,17 +1,18 @@
-import { $item, App, Ctx, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { $item, App, Ctx, fs, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 
-Deno.test("cms.backend.config.webapp: metadata and node API are wired", () => {
+test("cms.backend.config.webapp: metadata and node API are wired", () => {
   assertEquals(manifest.name, "cms.backend.config.webapp");
   assertEquals(manifest.dependencies, ["webapp", "cms.backend.config", "cms.backend.config.identity"]);
   assertEquals(typeof cms.node.api, "function");
 });
 
-Deno.test("cms.backend.config.webapp renders launch and browser settings", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.backend.config.webapp renders launch and browser settings", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("webapp");
   await app.init();
@@ -50,6 +51,6 @@ Deno.test("cms.backend.config.webapp renders launch and browser settings", async
     assertStringIncludes(out, "+41 44 123 45 67");
   } finally {
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

@@ -1,4 +1,5 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { entities, save } from "@qino/qino/iot";
 import { run } from "@qino/qino/sandbox.flow";
 import { assertEquals, assertRejects, Emitter } from "@qino/qino/tests";
@@ -37,7 +38,7 @@ const appOf = (url = "http://house.test/proxy/", token = "private-token") => Obj
   db: { query: () => Promise.resolve([{ id: 1, name: "First", adapter: "homeassistant", config: { url, accessToken: token }, enabled: true }]) },
 }) as unknown as App;
 
-Deno.test("homeassistant reads full history with app credentials and leaves live observations unchanged", () => withServer(async () => {
+test("homeassistant reads full history with app credentials and leaves live observations unchanged", () => withServer(async () => {
   const app = appOf("wss://house.test/proxy/"), ctrl = new AbortController(), original = globalThis.fetch;
   const requests: { url: URL; init?: RequestInit }[] = [], changes: unknown[] = [];
   app.on("iot:change", (event) => { changes.push(event); });
@@ -123,7 +124,7 @@ async function withServer(fn: (server: {
   }
 }
 
-Deno.test("homeassistant authenticates, discovers and sends native actions without faking device states", () => withServer(async (server) => {
+test("homeassistant authenticates, discovers and sends native actions without faking device states", () => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController(), changes: unknown[] = [];
   app.on("iot:change", (e) => { changes.push(e); });
   try {
@@ -167,7 +168,7 @@ Deno.test("homeassistant authenticates, discovers and sends native actions witho
   } finally { ctrl.abort(); await tick(); }
 }));
 
-Deno.test("homeassistant buffers changes during snapshots and handles creation, unavailability and removal", () => withServer(async (server) => {
+test("homeassistant buffers changes during snapshots and handles creation, unavailability and removal", () => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController();
   const seen: { id: string; entity: { state: string } | null; previous: unknown }[] = [];
   app.on("iot:change", (e) => { seen.push(e); });
@@ -195,7 +196,7 @@ Deno.test("homeassistant buffers changes during snapshots and handles creation, 
   } finally { ctrl.abort(); await tick(); }
 }));
 
-Deno.test("homeassistant isolates apps and rejects pending calls on unlink", () => withServer(async (server) => {
+test("homeassistant isolates apps and rejects pending calls on unlink", () => withServer(async (server) => {
   const one = appOf(), two = appOf("https://other.test/api/websocket", "other-token");
   const a = new AbortController(), b = new AbortController(), c = new AbortController();
   try {
@@ -222,7 +223,7 @@ Deno.test("homeassistant isolates apps and rejects pending calls on unlink", () 
   } finally { a.abort(); b.abort(); c.abort(); await tick(); }
 }));
 
-Deno.test("homeassistant reconnects and resubscribes without replaying an interrupted command", () => withServer(async (server) => {
+test("homeassistant reconnects and resubscribes without replaying an interrupted command", () => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController(), seen: unknown[] = [], observed: { entity: { available: boolean } }[] = [];
   app.on("iot:change", (e) => { seen.push(e); });
   app.on("iot:observe", (e) => { observed.push(e as typeof observed[number]); });
@@ -246,7 +247,7 @@ Deno.test("homeassistant reconnects and resubscribes without replaying an interr
   } finally { ctrl.abort(); await tick(); }
 }));
 
-Deno.test("homeassistant supports response actions, surfaces remote failures and stops after rejected authentication", () => withServer(async (server) => {
+test("homeassistant supports response actions, surfaces remote failures and stops after rejected authentication", () => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController();
   server.handle = (socket, command) => {
     if (command.type === "get_services") {
@@ -281,7 +282,7 @@ Deno.test("homeassistant supports response actions, surfaces remote failures and
   } finally { rejected.abort(); await tick(); }
 }));
 
-Deno.test("homeassistant leaves invalid persisted configurations dormant", async () => {
+test("homeassistant leaves invalid persisted configurations dormant", async () => {
   for (const url of ["", "http://user:password@house.test", "file:///tmp/ha"]) {
     const app = appOf(url), ctrl = new AbortController();
     await init(app, { signal: ctrl.signal });
@@ -290,7 +291,7 @@ Deno.test("homeassistant leaves invalid persisted configurations dormant", async
   }
 });
 
-Deno.test("homeassistant bounds command and authentication waits without retrying actions", () => withDeadlines(() => withServer(async (server) => {
+test("homeassistant bounds command and authentication waits without retrying actions", () => withDeadlines(() => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController();
   server.handle = (_socket, command) => command.type === "call_service";
   try {
@@ -307,7 +308,7 @@ Deno.test("homeassistant bounds command and authentication waits without retryin
   } finally { auth.abort(); await tick(); }
 })));
 
-Deno.test("homeassistant detects a silent connection through its heartbeat", () => withDeadlines(() => withServer(async (server) => {
+test("homeassistant detects a silent connection through its heartbeat", () => withDeadlines(() => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController();
   server.handle = (_socket, command) => command.type === "ping";
   try {
@@ -319,8 +320,8 @@ Deno.test("homeassistant detects a silent connection through its heartbeat", () 
   } finally { ctrl.abort(); await tick(); }
 })));
 
-Deno.test("iot modules link through Qino and a flow dispatches with its owner's rights", () => withServer(async (server) => {
-  const dir = await Deno.makeTempDir();
+test("iot modules link through Qino and a flow dispatches with its owner's rights", () => withServer(async (server) => {
+  const dir = await fs.tempDir();
   const app = new App({ dir, db: "sqlite::memory:" });
   app.modules.add(new URL("../../iot/plugin.ts", import.meta.url));
   try {
@@ -353,11 +354,11 @@ Deno.test("iot modules link through Qino and a flow dispatches with its owner's 
     app.modules.unlink("iot.homeassistant");
     await new Promise((resolve) => setTimeout(resolve, 60)); // session writes are deferred by 50 ms
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 }));
 
-Deno.test("homeassistant runs independent provider instances in the same App and reconfigures only the selected connection", () => withServer(async (server) => {
+test("homeassistant runs independent provider instances in the same App and reconfigures only the selected connection", () => withServer(async (server) => {
   const app = appOf(), ctrl = new AbortController();
   const rows = [
     { id: 1, name: "First", adapter: "homeassistant", config: { url: "http://first.test/", accessToken: "first-token" }, enabled: true },

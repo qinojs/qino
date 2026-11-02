@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { today } from "@qino/qino/fin";
 import { create, issue } from "@qino/qino/fin.invoice";
@@ -9,7 +10,7 @@ import { backendRowWidget, cms } from "../plugin.ts";
 
 type Answer = { ok: boolean; message?: string; url?: string };
 
-Deno.test("customers and suppliers follow from the invoices; a new one keeps its address here", async () => {
+test("customers and suppliers follow from the invoices; a new one keeps its address here", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.payment.credit"], async (app) => {
     const node = backendNode(app, "/backend/parties");
     const as = (url: string, run: () => Promise<unknown>) => inRequest(app, url, run);
@@ -45,7 +46,7 @@ Deno.test("customers and suppliers follow from the invoices; a new one keeps its
   });
 });
 
-Deno.test("the page speaks with the texts of the namespace fin", async () => {
+test("the page speaks with the texts of the namespace fin", async () => {
   await withFinApp(["fin.payment", "fin.invoice"], async (app) => {
     app.languages.setLangs(["en", "de"]);
     const node = backendNode(app, "/backend/parties");
@@ -55,7 +56,7 @@ Deno.test("the page speaks with the texts of the namespace fin", async () => {
   });
 });
 
-Deno.test("the list shows current parties; former ones on request or when searched for", async () => {
+test("the list shows current parties; former ones on request or when searched for", async () => {
   await withFinApp(["fin.payment", "fin.invoice"], async (app) => {
     const node = backendNode(app, "/backend/parties");
     const base = "http://qino.test/backend/parties";
@@ -76,7 +77,7 @@ Deno.test("the list shows current parties; former ones on request or when search
   });
 });
 
-Deno.test("a user's address and credit, as a card on other pages, links to where they are kept", async () => {
+test("a user's address and credit, as a card on other pages, links to where they are kept", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.payment.credit"], async (app) => {
     const node = backendNode(app, "/backend/parties");
     const id = Number(await app.db.table("usr").insert({

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
@@ -19,7 +20,7 @@ const jobStatus = (o: Partial<JobStatus>): JobStatus => ({
   durationMs: undefined, failures: 0, lastError: undefined, ...o,
 });
 
-Deno.test("cms.backend.system.cron: metadata is wired", () => {
+test("cms.backend.system.cron: metadata is wired", () => {
   assertEquals(name, "cms.backend.system.cron");
   assertEquals(dependencies, ["cms.backend.system", "cron"]);
   assertEquals(typeof cms.node.render, "function");
@@ -27,7 +28,7 @@ Deno.test("cms.backend.system.cron: metadata is wired", () => {
   assertEquals(typeof cms.node.parts.list, "function");
 });
 
-Deno.test("cms.backend.system.cron: job table shows operational state safely", async () => {
+test("cms.backend.system.cron: job table shows operational state safely", async () => {
   const out = String(await renderJobs(app, [jobStatus({
     id: 'shop:<script>alert("x")</script>',
     every: "week",
@@ -47,7 +48,7 @@ Deno.test("cms.backend.system.cron: job table shows operational state safely", a
   assertEquals(out.includes("5123 ms"), true);
 });
 
-Deno.test("cms.backend.system.cron: a job whose module was unlinked stays, greyed out and without actions", async () => {
+test("cms.backend.system.cron: a job whose module was unlinked stays, greyed out and without actions", async () => {
   const out = String(await renderJobs(app, [jobStatus({ id: "gone:cleanup", active: false, lastSuccess: 1_700_000_005 })]));
   assertEquals(out.includes("<tr data-inactive>"), true);
   assertEquals(out.includes("inactive"), true);
@@ -55,7 +56,7 @@ Deno.test("cms.backend.system.cron: a job whose module was unlinked stays, greye
   assertEquals(out.includes("gone:cleanup"), true); // but its history is still readable
 });
 
-Deno.test("cms.backend.system.cron: counts only regard active jobs", () => {
+test("cms.backend.system.cron: counts only regard active jobs", () => {
   assertEquals(counts([
     jobStatus({ running: true }),
     jobStatus({ failures: 3 }),
@@ -63,7 +64,7 @@ Deno.test("cms.backend.system.cron: counts only regard active jobs", () => {
   ]), { active: 2, running: 1, failed: 1 });
 });
 
-Deno.test("cms.backend.system.cron: node API reports failures instead of throwing", async () => {
+test("cms.backend.system.cron: node API reports failures instead of throwing", async () => {
   const node = { app } as never;
   assertEquals(await api(node, {}), false);
   // cron is not linked in this test app, so run/trigger throw — the node API must surface that.

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { invoke } from "@qino/qino";
 
@@ -16,7 +17,7 @@ const withApp = (fn: (app: App, users: { anna: number; ben: number; boss: number
 const draft = (app: App, usrId: number) =>
   create(app, { currency: "CHF", usrId, lines: [{ name: "Design", price: 10000 }] });
 
-Deno.test("a user reads their own issued invoices, nobody else's, and no drafts", async () => {
+test("a user reads their own issued invoices, nobody else's, and no drafts", async () => {
   await withApp(async (app, { anna, ben }) => {
     const own = Number((await issue(app, await draft(app, anna)))?.id);
     const hidden = await draft(app, anna);
@@ -35,7 +36,7 @@ Deno.test("a user reads their own issued invoices, nobody else's, and no drafts"
   });
 });
 
-Deno.test("a user pays what is open on their invoice, but changes nothing on it", async () => {
+test("a user pays what is open on their invoice, but changes nothing on it", async () => {
   await withApp(async (app, { anna }) => {
     const id = Number((await issue(app, await draft(app, anna)))?.id);
     const ways = await asUser(app, anna, () => invoke(api, "GET", `/invoice/${id}/methods`)) as { method: string }[];
@@ -58,7 +59,7 @@ Deno.test("a user pays what is open on their invoice, but changes nothing on it"
   });
 });
 
-Deno.test("a superuser does anything: drafts, changes, issues, sees all", async () => {
+test("a superuser does anything: drafts, changes, issues, sees all", async () => {
   await withApp(async (app, { anna, ben, boss }) => {
     const as = <T>(fn: () => Promise<T>) => asUser(app, boss, fn);
     const values = { currency: "CHF", usrId: ben, lines: [{ name: "Hosting", price: 9900 }] };

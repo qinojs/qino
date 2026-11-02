@@ -1,9 +1,10 @@
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.cont.not_found: suggests readable pages matching the address, and the home page", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.not_found: suggests readable pages matching the address, and the home page", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.not_found");
   await app.init();
@@ -31,6 +32,6 @@ Deno.test("cms.cont.not_found: suggests readable pages matching the address, and
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

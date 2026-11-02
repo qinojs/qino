@@ -1,4 +1,5 @@
-import { App, requestStorage, toTools } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 import { reported, observed, configure, datapoint, save, value } from "@qino/qino/iot";
 import { history } from "@qino/qino/iot.history";
@@ -12,8 +13,8 @@ const start = Date.parse("2026-01-01T00:00:00Z");
 const period = { start: new Date(start).toISOString(), end: new Date(start + 3600_000).toISOString(), source: "local" as const };
 
 async function fixture() {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-record-test-" }), app = new App({ dir, db: "sqlite::memory:" });
-  await Deno.writeTextFile(`${dir}/plugin.ts`, `
+  const dir = await fs.tempDir({ prefix: "qino-iot-record-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  await fs.write(`${dir}/plugin.ts`, `
 export const iotProvider = {
   name: "fake", schema: { type: "object", properties: { url: { type: "string" } } },
   entities: async () => [], actions: async () => [], call: async () => null,
@@ -25,10 +26,10 @@ export const iotProvider = {
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init();
   const provider = await save(app, { name: "First", adapter: "fake", config: { url: "http://first.test/" } });
-  return { app, provider, close: async () => { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
+  return { app, provider, close: async () => { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await fs.remove(dir, { recursive: true }); } };
 }
 
-Deno.test("measurement rows contain numeric datapoint/time/value only, replace repeated instants and retain millisecond precision", async () => {
+test("measurement rows contain numeric datapoint/time/value only, replace repeated instants and retain millisecond precision", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", record: true });
@@ -44,7 +45,7 @@ Deno.test("measurement rows contain numeric datapoint/time/value only, replace r
   } finally { await close(); }
 });
 
-Deno.test("numeric and discrete datapoints have different typed storage and immutable interpretations", async () => {
+test("numeric and discrete datapoints have different typed storage and immutable interpretations", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "switch", type: "state", mapping: { on: 1, off: 0 }, record: true });
@@ -66,7 +67,7 @@ Deno.test("numeric and discrete datapoints have different typed storage and immu
   } finally { await close(); }
 });
 
-Deno.test("late measurements do not rewrite latest state; stopping preserves archives and upstream selection is explicit", async () => {
+test("late measurements do not rewrite latest state; stopping preserves archives and upstream selection is explicit", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", record: true });
@@ -89,7 +90,7 @@ Deno.test("late measurements do not rewrite latest state; stopping preserves arc
   } finally { await close(); }
 });
 
-Deno.test("recording follows source observations, records gaps and removes listeners on module unlink", async () => {
+test("recording follows source observations, records gaps and removes listeners on module unlink", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", record: true });
@@ -108,7 +109,7 @@ Deno.test("recording follows source observations, records gaps and removes liste
   } finally { await close(); }
 });
 
-Deno.test("recording tools enforce user access; stale detection writes one gap instead of periodic copies", async () => {
+test("recording tools enforce user access; stale detection writes one gap instead of periodic copies", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", interval: 30, record: true });
@@ -125,7 +126,7 @@ Deno.test("recording tools enforce user access; stale detection writes one gap i
   } finally { await close(); }
 });
 
-Deno.test("unchanged values are stored once per expected interval", async () => {
+test("unchanged values are stored once per expected interval", async () => {
   const { app, provider, close } = await fixture();
   try {
     const steady = await configure(app, { provider, entity: "steady", record: true });
@@ -142,7 +143,7 @@ Deno.test("unchanged values are stored once per expected interval", async () => 
   } finally { await close(); }
 });
 
-Deno.test("bounded history aggregates gauges and counter differences before reducing output", async () => {
+test("bounded history aggregates gauges and counter differences before reducing output", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "meter", record: true });
@@ -165,7 +166,7 @@ Deno.test("bounded history aggregates gauges and counter differences before redu
   } finally { await close(); }
 });
 
-Deno.test("starting the recorder after a ready provider captures a snapshot without change rules", async () => {
+test("starting the recorder after a ready provider captures a snapshot without change rules", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "temperature", unit: "°C", record: true });
@@ -181,7 +182,7 @@ Deno.test("starting the recorder after a ready provider captures a snapshot with
   } finally { await close(); }
 });
 
-Deno.test("each reported press of a button is a measurement, even when it repeats", async () => {
+test("each reported press of a button is a measurement, even when it repeats", async () => {
   const { app, provider, close } = await fixture();
   try {
     // After the recorder's own snapshot at selection time, which a provider without entities records as a gap.

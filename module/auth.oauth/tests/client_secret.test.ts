@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 import { unb64url } from "@qino/qino";
 
@@ -5,11 +6,11 @@ import { clientSecret } from "../plugin.ts";
 
 const json = (part: string) => JSON.parse(new TextDecoder().decode(unb64url(part)));
 
-Deno.test("auth.oauth: without key_id the client secret is used as is", async () => {
+test("auth.oauth: without key_id the client secret is used as is", async () => {
   assertEquals(await clientSecret({ client_secret: "s3cret" }, "https://idp.test"), "s3cret");
 });
 
-Deno.test("auth.oauth: with key_id the client secret is an ES256 JWT signed by the stored key (Apple)", async () => {
+test("auth.oauth: with key_id the client secret is an ES256 JWT signed by the stored key (Apple)", async () => {
   const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
   const der = new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey)).toBase64();
   const pem = `-----BEGIN PRIVATE KEY-----\n${der.match(/.{1,64}/g)!.join("\n")}\n-----END PRIVATE KEY-----`;

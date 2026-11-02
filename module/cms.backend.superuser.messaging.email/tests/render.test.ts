@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import manifest from "../manifest.json" with { type: "json" };
@@ -25,7 +26,7 @@ const schema = {
   },
 };
 
-Deno.test("cms.backend.superuser.messaging.email builds its form from the module's schema", async () => {
+test("cms.backend.superuser.messaging.email builds its form from the module's schema", async () => {
   assertEquals(name, "cms.backend.superuser.messaging.email");
   assertEquals(dependencies, ["cms.backend.superuser.messaging", "messaging.email", "cron"]);
   assertEquals(leaves(schema).map((leaf) => leaf.path), ["address", "name", "debugTo", "inbound.enabled", "inbound.host", "transport.type", "transport.smtp.host", "transport.smtp.secure", "transport.smtp.pass", "transport.mock.result"]);
@@ -74,11 +75,11 @@ Deno.test("cms.backend.superuser.messaging.email builds its form from the module
   assert(!incoming.includes("data-settings-save"));
 });
 
-Deno.test("cms.backend.superuser.messaging.email explains an empty sending test", async () => {
+test("cms.backend.superuser.messaging.email explains an empty sending test", async () => {
   assertEquals(await api({ app: { t: fakeT } } as never, { test: "" }), { ok: false, message: "A system address is required." });
 });
 
-Deno.test("cms.backend.superuser.messaging.email adds files to the send form", async () => {
+test("cms.backend.superuser.messaging.email adds files to the send form", async () => {
   const node = { app: { t: fakeT, db: { query: () => Promise.resolve([]) } } } as never;
   const output = String(await sendForm(node));
   assertStringIncludes(output, "<input type=file name=attachments multiple>");
@@ -88,13 +89,13 @@ Deno.test("cms.backend.superuser.messaging.email adds files to the send form", a
 
   const [file] = await attachmentsOf([{
     name: "invoice.txt",
-    type: "text/plain",
-    content: "data:text/plain;base64,aW52b2ljZQ==",
+    type: "application/pdf",
+    content: "data:application/pdf;base64,aW52b2ljZQ==",
   }]);
-  assertEquals([file.name, file.type, await file.text()], ["invoice.txt", "text/plain", "invoice"]);
+  assertEquals([file.name, file.type, await file.text()], ["invoice.txt", "application/pdf", "invoice"]);
 });
 
-Deno.test("cms.backend.superuser.messaging.email dashboard uses portable traffic aliases", async () => {
+test("cms.backend.superuser.messaging.email dashboard uses portable traffic aliases", async () => {
   const queries: string[] = [];
   const app = {
     db: {

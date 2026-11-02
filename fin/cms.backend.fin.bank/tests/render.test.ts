@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
 
@@ -24,7 +25,7 @@ const camt = `<Document><BkToCstmrStmt><Stmt><Id>S1</Id>
   </Ntry>
 </Stmt></BkToCstmrStmt></Document>`;
 
-Deno.test("a statement is read, its unclaimed line suggests the invoice of its amount, and is assigned", async () => {
+test("a statement is read, its unclaimed line suggests the invoice of its amount, and is assigned", async () => {
   await withApp(async (app, as, node) => {
     const base = "http://qino.test/backend/bank";
     const invoice = Number((await issue(app, await create(app, {

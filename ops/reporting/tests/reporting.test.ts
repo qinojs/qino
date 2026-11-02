@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals, assertRejects, reportingIntake as intake, reportingServerDbSchema as serverSchema } from "@qino/qino/tests";
 
@@ -38,7 +39,7 @@ function settings(values: Record<string, unknown>) {
 
 const signal = new AbortController().signal;
 
-Deno.test("reporting: files relative to qino or the app, URLs without their origin", () => {
+test("reporting: files relative to qino or the app, URLs without their origin", () => {
   const roots: [string, string][] = [["file:///srv/qino/", "qino/"], ["file:///srv/site/", "app/"]];
   assertEquals(relative("file:///srv/qino/module/core/lib/App.ts", roots), "qino/module/core/lib/App.ts");
   assertEquals(relative("file:///srv/site/module/x/plugin.ts", roots), "app/module/x/plugin.ts");
@@ -46,7 +47,7 @@ Deno.test("reporting: files relative to qino or the app, URLs without their orig
   assertEquals(relative("anonymous", roots), "anonymous");
 });
 
-Deno.test("reporting: new errors go to the server, grouped; nothing new is quiet until the heartbeat", async () => {
+test("reporting: new errors go to the server, grouped; nothing new is quiet until the heartbeat", async () => {
   const db = await sqlite(errorSchema);
   const server = { db: await sqlite(serverSchema) } as unknown as App;
   const values: Record<string, unknown> = { url: "https://server.example/" };
@@ -99,7 +100,7 @@ Deno.test("reporting: new errors go to the server, grouped; nothing new is quiet
   }
 });
 
-Deno.test("reporting: without a server address nothing is sent", async () => {
+test("reporting: without a server address nothing is sent", async () => {
   const app = { settings: settings({}) } as unknown as App;
   await send(app, { signal }); // would throw on the missing db
 });

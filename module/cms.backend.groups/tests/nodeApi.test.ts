@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
@@ -47,7 +48,7 @@ async function run(db: ReturnType<typeof makeDb>, vars: Record<string, unknown>,
   return requestStorage.run(ctx, () => nodeApi(node as never, vars));
 }
 
-Deno.test("cms.backend.groups: member can add and remove", async () => {
+test("cms.backend.groups: member can add and remove", async () => {
   const db = makeDb({ emailUserId: 99 });
   const user = makeUser({ grps: [0, 3] });
 
@@ -63,7 +64,7 @@ Deno.test("cms.backend.groups: member can add and remove", async () => {
   assertEquals(db.state.ensured, true);
 });
 
-Deno.test("cms.backend.groups: non-member cannot manage members", async () => {
+test("cms.backend.groups: non-member cannot manage members", async () => {
   const db = makeDb({ emailUserId: 99 });
   const user = makeUser({ grps: [0] });
   const err = { error: "You are not a member of this group and cannot manage its members." };
@@ -78,7 +79,7 @@ Deno.test("cms.backend.groups: non-member cannot manage members", async () => {
   assertEquals(db.state.ensured, false);
 });
 
-Deno.test("cms.backend.groups: add_email with unknown email returns error", async () => {
+test("cms.backend.groups: add_email with unknown email returns error", async () => {
   const db = makeDb({}); // no emailUserId → lookup misses
   const user = makeUser({ grps: [0, 3] });
 
@@ -89,7 +90,7 @@ Deno.test("cms.backend.groups: add_email with unknown email returns error", asyn
   assertEquals(db.state.ensured, false);
 });
 
-Deno.test("cms.backend.groups: superuser bypasses membership gate", async () => {
+test("cms.backend.groups: superuser bypasses membership gate", async () => {
   const db = makeDb({ emailUserId: 99 });
   const user = makeUser({ grps: [0], superuser: true });
 

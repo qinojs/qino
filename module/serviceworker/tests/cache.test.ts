@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { Emitter, Output } from "@qino/qino";
 
@@ -5,7 +6,7 @@ import { init } from "../plugin.ts";
 
 import type { App, AppEvents } from "@qino/qino";
 
-Deno.test("serviceworker: asset revisions and mount paths invalidate script and ETag", async () => {
+test("serviceworker: asset revisions and mount paths invalidate script and ETag", async () => {
   const app = Object.assign(new Emitter<AppEvents>(), {
     assetRev: 1,
     modules: { linked: () => [{ name: "part", manifest: { files: ["pub/sw.js"] } }] },

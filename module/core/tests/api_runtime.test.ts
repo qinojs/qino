@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { apiRequest, assertEquals, assertRejects, assertThrows, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import {
@@ -77,13 +78,13 @@ function withCtx<T>(fn: () => T) {
   return requestStorage.run(ctx, fn);
 }
 
-Deno.test("api: invoke resolves path params and validates output", async () => {
+test("api: invoke resolves path params and validates output", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "GET", "/thing/1"), { id: 1, title: "One" });
   });
 });
 
-Deno.test("api: invoke keeps input strict and coerces query fields", async () => {
+test("api: invoke keeps input strict and coerces query fields", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "POST", "/thing/1/update", {
       input: {
@@ -119,7 +120,7 @@ Deno.test("api: invoke keeps input strict and coerces query fields", async () =>
   });
 });
 
-Deno.test("api: access and validation errors are typed", async () => {
+test("api: access and validation errors are typed", async () => {
   await withCtx(async () => {
     await assertRejects(() => invoke(api, "GET", "/thing/9"), NotFoundError);
     await assertRejects(() => invoke(api, "GET", "/thing/2kb"), ValidationError);
@@ -130,7 +131,7 @@ Deno.test("api: access and validation errors are typed", async () => {
   });
 });
 
-Deno.test("api: denied access skips path validation and resolution, including dry runs", async () => {
+test("api: denied access skips path validation and resolution, including dry runs", async () => {
   let resolved = 0;
   let allowed = false;
   const tree = { thing: { ":thing": {
@@ -152,7 +153,7 @@ Deno.test("api: denied access skips path validation and resolution, including dr
   });
 });
 
-Deno.test("api: a guard sees the validated input", async () => {
+test("api: a guard sees the validated input", async () => {
   const seen: unknown[] = [];
   const tree: any = {
     thing: {
@@ -173,7 +174,7 @@ Deno.test("api: a guard sees the validated input", async () => {
   });
 });
 
-Deno.test("api: checkAccess option returns before input validation", async () => {
+test("api: checkAccess option returns before input validation", async () => {
   await withCtx(async () => {
     // invalid body would normally throw ValidationError; the gate returns first
     assertEquals(await invoke(api, "POST", "/thing/1/update", { title: "Bad", count: "x" }, { checkAccess: true }), { ok: true });
@@ -184,7 +185,7 @@ Deno.test("api: checkAccess option returns before input validation", async () =>
   });
 });
 
-Deno.test("api: a verb's requireStepUp is demanded before execute, but not by a dry run", async () => {
+test("api: a verb's requireStepUp is demanded before execute, but not by a dry run", async () => {
   const ran: string[] = [];
   const tree = {
     grave: { post: { description: "Grave", access: Access.PUBLIC, requireStepUp: true, execute: () => (ran.push("grave"), { ok: true }) } },
@@ -203,7 +204,7 @@ Deno.test("api: a verb's requireStepUp is demanded before execute, but not by a 
   });
 });
 
-Deno.test("api: X-Api-Check header triggers the access gate over HTTP", async () => {
+test("api: X-Api-Check header triggers the access gate over HTTP", async () => {
   await withCtx(async () => {
     const res = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
@@ -215,7 +216,7 @@ Deno.test("api: X-Api-Check header triggers the access gate over HTTP", async ()
   });
 });
 
-Deno.test("api: __proto__ body keys do not become inherited input", async () => {
+test("api: __proto__ body keys do not become inherited input", async () => {
   await withCtx(async () => {
     const res = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
@@ -226,7 +227,7 @@ Deno.test("api: __proto__ body keys do not become inherited input", async () => 
   });
 });
 
-Deno.test("api: errors answer with code and data, so a client can react instead of parse", async () => {
+test("api: errors answer with code and data, so a client can react instead of parse", async () => {
   await withCtx(async () => {
     const tree = {
       locked: {
@@ -248,7 +249,7 @@ Deno.test("api: errors answer with code and data, so a client can react instead 
   });
 });
 
-Deno.test("api: a validation error carries its issues as data", async () => {
+test("api: a validation error carries its issues as data", async () => {
   await withCtx(async () => {
     const res = await apiRequest(api, "/thing/1/update", {
       method: "POST",
@@ -263,7 +264,7 @@ Deno.test("api: a validation error carries its issues as data", async () => {
   });
 });
 
-Deno.test("api: GET query params are available as input", async () => {
+test("api: GET query params are available as input", async () => {
   await withCtx(async () => {
     const tree = {
       search: {
@@ -280,7 +281,7 @@ Deno.test("api: GET query params are available as input", async () => {
   });
 });
 
-Deno.test("api: mutations require same origin and csrf token", async () => {
+test("api: mutations require same origin and csrf token", async () => {
   await withCtx(async () => {
     const body = JSON.stringify({ title: "Two", count: 2 });
 
@@ -308,7 +309,7 @@ Deno.test("api: mutations require same origin and csrf token", async () => {
   });
 });
 
-Deno.test("api: catchall params collect remaining path segments", async () => {
+test("api: catchall params collect remaining path segments", async () => {
   await withCtx(async () => {
     const files = {
       file: {
@@ -347,7 +348,7 @@ Deno.test("api: catchall params collect remaining path segments", async () => {
   });
 });
 
-Deno.test("api: toTools exposes and separates path/input/query parameters", async () => {
+test("api: toTools exposes and separates path/input/query parameters", async () => {
   const tools = toTools(api);
   const update = tools.find((tool) => tool.name === "thing_update_post");
   assertEquals(update?.description, "Update thing");
@@ -371,7 +372,7 @@ Deno.test("api: toTools exposes and separates path/input/query parameters", asyn
   );
 });
 
-Deno.test("api: apiClient mirrors the action tree", async () => {
+test("api: apiClient mirrors the action tree", async () => {
   await withCtx(async () => {
     const client = apiClient(api);
     assertEquals(await client.thing(1).get(), { id: 1, title: "One" });
@@ -386,7 +387,7 @@ Deno.test("api: apiClient mirrors the action tree", async () => {
   });
 });
 
-Deno.test("api: tool names stay within the MCP name charset", () => {
+test("api: tool names stay within the MCP name charset", () => {
   assertEquals(toolName("get", ["cms.frontend", "widget"]), "cmsFrontend_widget_get");
   assertEquals(toolName("post", ["cms.backend.superuser.security.oauth_server"]), "cmsBackendSuperuserSecurityOauthServer_post");
   assertEquals(toolName("delete", ["file-store.9", ":id"]), "fileStore9_delete");
@@ -394,7 +395,7 @@ Deno.test("api: tool names stay within the MCP name charset", () => {
   assertEquals(/^[a-zA-Z0-9_-]{1,64}$/.test(tools[0].name), true);
 });
 
-Deno.test("api: two routes may not be the same tool (path params are not in the name)", () => {
+test("api: two routes may not be the same tool (path params are not in the name)", () => {
   const get = { get: { description: "x", execute: () => 1 } };
   assertThrows(() => toTools({ events: { ...get, ":event": get } }), Error, 'GET /events/:event and GET /events are both the tool "events_get"');
   assertEquals(toTools({ events: get, event: { ":event": get } }).map((t) => t.name), ["events_get", "event_get"]); // the list and an item

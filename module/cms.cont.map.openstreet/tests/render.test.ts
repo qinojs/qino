@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { bildJsonItem, requestStorage } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
 
@@ -37,13 +38,13 @@ function stubFetch(reply: unknown[] | null) {
 
 const MURTEN = [{ lat: "46.9284", lon: "7.1147", display_name: "Hauptgasse 1, 3280 Murten, Schweiz" }];
 
-Deno.test("cms.cont.map.openstreet: metadata is wired", () => {
+test("cms.cont.map.openstreet: metadata is wired", () => {
   assertEquals(name, "cms.cont.map.openstreet");
   assertEquals(dependencies, ["cms", "cms.text"]);
   assertEquals(cms.node.settingsSchema.properties.address.type, "string");
 });
 
-Deno.test("cms.cont.map.openstreet: coordinates place the marker, and the frame is simply there", async () => {
+test("cms.cont.map.openstreet: coordinates place the marker, and the frame is simply there", async () => {
   const ctx = await testContext();
   const out = String(await run(contNode({ lat: 46.9284, lon: 7.1147 }), ctx));
   assertStringIncludes(out, "marker=46.9284,7.1147");
@@ -54,7 +55,7 @@ Deno.test("cms.cont.map.openstreet: coordinates place the marker, and the frame 
   assertEquals(ctx.res.csp["frame-src"]["https://www.openstreetmap.org"], true);
 });
 
-Deno.test("cms.cont.map.openstreet: an address is looked up once and remembered", async () => {
+test("cms.cont.map.openstreet: an address is looked up once and remembered", async () => {
   const ctx = await testContext();
   const stub = stubFetch(MURTEN);
   try {
@@ -80,7 +81,7 @@ Deno.test("cms.cont.map.openstreet: an address is looked up once and remembered"
   }
 });
 
-Deno.test("cms.cont.map.openstreet: typed coordinates override the address", async () => {
+test("cms.cont.map.openstreet: typed coordinates override the address", async () => {
   const ctx = await testContext();
   const stub = stubFetch(MURTEN);
   try {
@@ -92,7 +93,7 @@ Deno.test("cms.cont.map.openstreet: typed coordinates override the address", asy
   }
 });
 
-Deno.test("cms.cont.map.openstreet: an unknown address is a note for the editor, nothing for the visitor", async () => {
+test("cms.cont.map.openstreet: an unknown address is a note for the editor, nothing for the visitor", async () => {
   const ctx = await testContext();
   const stub = stubFetch([]);
   try {
@@ -110,7 +111,7 @@ Deno.test("cms.cont.map.openstreet: an unknown address is a note for the editor,
   }
 });
 
-Deno.test("cms.cont.map.openstreet: without any position the editor is told what to set", async () => {
+test("cms.cont.map.openstreet: without any position the editor is told what to set", async () => {
   const ctx = await testContext();
   assertEquals(String(await run(contNode({}), ctx)), "");
   const out = String(await run(contNode({}, { edit: true }), ctx));

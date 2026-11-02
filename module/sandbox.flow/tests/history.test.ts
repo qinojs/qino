@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { history, record } from "../lib/history.ts";
 
 import type { App } from "@qino/qino";
 
-Deno.test("sandbox.flow history: the latest runs, newest first, per app and flow; filtered ones counted", () => {
+test("sandbox.flow history: the latest runs, newest first, per app and flow; filtered ones counted", () => {
   const app = {} as App, other = {} as App;
   const run = (end: string, calls = 1) => ({ end, calls: Array(calls).fill({}) });
   record(app, 1, run("done", 0)); // not for it

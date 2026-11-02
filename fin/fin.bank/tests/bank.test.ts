@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { Db } from "@qino/qino";
 import { create } from "@qino/qino/fin.payment";
@@ -45,7 +46,7 @@ const statement = (transactions: { id: string; amount: number; reference?: strin
   transactions: transactions.map((tx) => ({ date: "2026-10-07", ...tx })),
 });
 
-Deno.test("lines are stored once per account; the account comes from the statement", async () => {
+test("lines are stored once per account; the account comes from the statement", async () => {
   const { app } = await setup();
   assertEquals(await ingest(app, statement([{ id: "a", amount: 100 }, { id: "b", amount: -50 }])), { added: 2, matched: 0 });
   assertEquals(await ingest(app, statement([{ id: "b", amount: -50 }, { id: "c", amount: 70 }])), { added: 1, matched: 0 });
@@ -53,7 +54,7 @@ Deno.test("lines are stored once per account; the account comes from the stateme
   assertEquals(await app.db.col`SELECT amount FROM bank_tx ORDER BY id`, [100, -50, 70]);
 });
 
-Deno.test("a statement is stored all or nothing", async () => {
+test("a statement is stored all or nothing", async () => {
   const { app } = await setup();
   const broken = statement([{ id: "a", amount: 100 }, { id: "b", amount: 1.5 }]);
   await assertRejects(() => ingest(app, broken), Error, "minor units");
@@ -61,7 +62,7 @@ Deno.test("a statement is stored all or nothing", async () => {
   assertEquals((await ingest(app, statement([{ id: "a", amount: 100 }]))).added, 1); // read again, it is there
 });
 
-Deno.test("a reference settles its payment; partial transfers add up", async () => {
+test("a reference settles its payment; partial transfers add up", async () => {
   const { app, events } = await setup();
   const { id } = await create(app, { method: "qr", amount: 10000, currency: "CHF", ref: "fin.invoice:1", return: "/" });
   // spaces and case do not matter, the direction does
@@ -77,7 +78,7 @@ Deno.test("a reference settles its payment; partial transfers add up", async () 
   assertEquals(await paid(app, id), 10000);
 });
 
-Deno.test("a line nobody claimed is assigned by hand and becomes a recorded payment", async () => {
+test("a line nobody claimed is assigned by hand and becomes a recorded payment", async () => {
   const { app, events } = await setup();
   await ingest(app, statement([{ id: "x", amount: -12000 }]));
   const tx = Number(await app.db.one`SELECT id FROM bank_tx`);

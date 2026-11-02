@@ -1,9 +1,10 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assert, assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms: a renamed page is found under its new url, not the cached old one", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms: a renamed page is found under its new url, not the cached old one", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms");
   await app.init();
@@ -24,6 +25,6 @@ Deno.test("cms: a renamed page is found under its new url, not the cached old on
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

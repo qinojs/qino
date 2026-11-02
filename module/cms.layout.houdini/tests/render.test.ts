@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { stat } from "node:fs/promises";
 import { App, fs, requestStorage } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
@@ -8,7 +10,7 @@ import { cms as layout } from "../plugin.ts";
 const NAME = "cms.layout.houdini";
 
 async function fixture() {
-  const dir = await Deno.makeTempDir() + "/";
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add(NAME);
   await app.init();
@@ -23,12 +25,12 @@ async function fixture() {
   const close = async () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   };
   return { app, cm, ctx, page, render, close };
 }
 
-Deno.test("houdini: isolated install, navigation, starter content and CSS precedence", async () => {
+test("houdini: isolated install, navigation, starter content and CSS precedence", async () => {
   const f = await fixture();
   try {
     await requestStorage.run(f.ctx, async () => {
@@ -83,7 +85,7 @@ Deno.test("houdini: isolated install, navigation, starter content and CSS preced
         assertEquals(await f.render(), "");
         await fs.remove(template.file);
         assertStringIncludes(await f.render(), 'id="container"');
-        assertEquals(await Deno.stat(template.file).catch(() => null), null);
+        assertEquals(await stat(template.file).catch(() => null), null);
       });
     });
   } finally {
@@ -91,7 +93,7 @@ Deno.test("houdini: isolated install, navigation, starter content and CSS preced
   }
 });
 
-Deno.test("houdini: site template controls creation; apps keep separate identity and contents", async () => {
+test("houdini: site template controls creation; apps keep separate identity and contents", async () => {
   const a = await fixture();
   const b = await fixture();
   try {
@@ -124,7 +126,7 @@ Deno.test("houdini: site template controls creation; apps keep separate identity
   }
 });
 
-Deno.test("houdini: starter content follows the module the template gives main", async () => {
+test("houdini: starter content follows the module the template gives main", async () => {
   const f = await fixture();
   try {
     await requestStorage.run(f.ctx, async () => {
@@ -144,7 +146,7 @@ Deno.test("houdini: starter content follows the module the template gives main",
   }
 });
 
-Deno.test("houdini: starter titles are editable language snapshots; removed slots stay absent", async () => {
+test("houdini: starter titles are editable language snapshots; removed slots stay absent", async () => {
   const f = await fixture();
   try {
     f.app.languages.setLangs(["en", "de"]);
@@ -172,7 +174,7 @@ Deno.test("houdini: starter titles are editable language snapshots; removed slot
   }
 });
 
-Deno.test("houdini: global design, translations and languages remain specific to their app", async () => {
+test("houdini: global design, translations and languages remain specific to their app", async () => {
   const a = await fixture();
   const b = await fixture();
   try {
@@ -206,7 +208,7 @@ Deno.test("houdini: global design, translations and languages remain specific to
   }
 });
 
-Deno.test("houdini: real CMS rendering orders u2, layout, content modules and site CSS", async () => {
+test("houdini: real CMS rendering orders u2, layout, content modules and site CSS", async () => {
   const f = await fixture();
   try {
     await requestStorage.run(f.ctx, async () => {
@@ -225,7 +227,7 @@ Deno.test("houdini: real CMS rendering orders u2, layout, content modules and si
   }
 });
 
-Deno.test("houdini: the site's flexible-content initializer takes precedence over the title starter", async () => {
+test("houdini: the site's flexible-content initializer takes precedence over the title starter", async () => {
   const f = await fixture();
   try {
     await f.app.settings["cms.cont.flexible"]["init-child-module"]("cms.cont.text");
@@ -242,7 +244,7 @@ Deno.test("houdini: the site's flexible-content initializer takes precedence ove
   }
 });
 
-Deno.test("houdini: the real settings API saves a design and clears all overrides", async () => {
+test("houdini: the real settings API saves a design and clears all overrides", async () => {
   const f = await fixture();
   try {
     const ctx = await testContext({ set: { app: f.app, user: { superuser: true, valueOf: () => 0 } } });
@@ -267,7 +269,7 @@ Deno.test("houdini: the real settings API saves a design and clears all override
   }
 });
 
-Deno.test("houdini: brand links use the language entrance under the app mount at any page depth", async () => {
+test("houdini: brand links use the language entrance under the app mount at any page depth", async () => {
   const f = await fixture();
   try {
     const nested = await f.page.createChild({ module: NAME });

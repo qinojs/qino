@@ -1,8 +1,9 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 
 import { uaInfo } from "../lib/userAgent.ts";
 
-Deno.test("uaInfo classifies browser, os and device", () => {
+test("uaInfo classifies browser, os and device", () => {
   assertEquals(
     uaInfo("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"),
     { browser: "Safari", version: "17.0", os: "iOS", mobile: true, bot: false },

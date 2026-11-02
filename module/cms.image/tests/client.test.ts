@@ -1,9 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
+import { fs } from "@qino/qino";
 import { runInNewContext } from "node:vm";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.image: client resizes raster URLs and preserves SVG sources", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/cms-image.js", import.meta.url));
+test("cms.image: client resizes raster URLs and preserves SVG sources", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/cms-image.js");
   for (const [url, expected] of [
     ["/dbFile/1/u-svg/logo.svg", "/dbFile/1/u-svg/logo.svg"],
     ["/dbFile/1/u-svg/q-37/logo.svg", "/dbFile/1/u-svg/q-37/logo.svg"],

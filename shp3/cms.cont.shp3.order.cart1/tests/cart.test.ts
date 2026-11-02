@@ -1,5 +1,6 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cart, shp3 } from "@qino/qino/shp3";
 
 import { cms as panel } from "../plugin.ts";
@@ -7,7 +8,7 @@ import { cms as panel } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function shop() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   app.modules.add(import.meta.resolve("../../shp3.shipping.pickup/plugin.ts"), "shp3.shipping.pickup");
@@ -20,7 +21,7 @@ async function shop() {
 // The cont only reads its own settings; everything else it needs is the cart.
 const node = (app: App) => ({ app, settings: { editable: () => Promise.resolve(true) } }) as unknown as Node;
 
-Deno.test("cart1: what the shop adds itself is a line of its own", async () => {
+test("cart1: what the shop adds itself is a line of its own", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -37,7 +38,7 @@ Deno.test("cart1: what the shop adds itself is a line of its own", async () => {
   });
 });
 
-Deno.test("cart1: an empty cart says so and shows no table", async () => {
+test("cart1: an empty cart says so and shows no table", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();

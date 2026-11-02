@@ -1,4 +1,5 @@
-import { App, Ctx, requestStorage, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage, runAs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -7,7 +8,7 @@ import { cms as dbrow } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function setup(url = "http://qino.test/?id=1") {
-  const dir = await Deno.makeTempDir() + "/";
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.dbrow");
   await app.init();
@@ -25,7 +26,7 @@ async function setup(url = "http://qino.test/?id=1") {
   const close = async () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   };
   return { app, page, run, close };
 }
@@ -39,7 +40,7 @@ const row = (node: Node) => node.createCont({
   },
 });
 
-Deno.test("cms.cont.dbrow: the page's row, label beside value, joined fields to read", async () => {
+test("cms.cont.dbrow: the page's row, label beside value, joined fields to read", async () => {
   const { page, run, close } = await setup();
   try {
     const node = await row(page);
@@ -50,7 +51,7 @@ Deno.test("cms.cont.dbrow: the page's row, label beside value, joined fields to 
   }
 });
 
-Deno.test("cms.cont.dbrow: a row `where` does not reach is neither shown nor written", async () => {
+test("cms.cont.dbrow: a row `where` does not reach is neither shown nor written", async () => {
   const { app, page, run, close } = await setup("http://qino.test/?id=2");
   try {
     const node = await row(page);
@@ -67,7 +68,7 @@ Deno.test("cms.cont.dbrow: a row `where` does not reach is neither shown nor wri
   }
 });
 
-Deno.test("cms.cont.dbrow: the widget adds and removes fields as the list's does", async () => {
+test("cms.cont.dbrow: the widget adds and removes fields as the list's does", async () => {
   const { app, page, close } = await setup();
   try {
     const node = await row(page);

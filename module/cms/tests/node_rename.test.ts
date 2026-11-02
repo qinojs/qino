@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { Node } from "../lib/Node.ts";
@@ -36,7 +37,7 @@ function tree() {
   return { cms, created };
 }
 
-Deno.test("Node: renaming a cont updates the parent's name index", async () => {
+test("Node: renaming a cont updates the parent's name index", async () => {
   const { cms } = tree();
   const parent = await cms.node(1);
   const cont = await parent.cont("teaser");

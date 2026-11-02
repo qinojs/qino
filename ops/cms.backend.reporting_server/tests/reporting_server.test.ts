@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
@@ -25,7 +26,7 @@ async function testApp() {
   return { db, app, node: { app } as unknown as Node };
 }
 
-Deno.test("cms.backend.reporting_server: an instance registers with its key and has to keep it", async () => {
+test("cms.backend.reporting_server: an instance registers with its key and has to keep it", async () => {
   const { db, app } = await testApp();
   try {
     const report = { url: "https://a.ch/", qino: "0.7.7", modules: ["core", "cms"], errors: [error()] };
@@ -45,7 +46,7 @@ Deno.test("cms.backend.reporting_server: an instance registers with its key and 
   }
 });
 
-Deno.test("cms.backend.reporting_server: the same error on two instances is one row, done on both", async () => {
+test("cms.backend.reporting_server: the same error on two instances is one row, done on both", async () => {
   const { db, app, node } = await testApp();
   try {
     await intake(app, auth("instance-a-000001"), { url: "https://a.ch/", errors: [error({ message: "<b>boom" })] }, "", true);

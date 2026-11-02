@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assert, assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { DbRow } from "../lib/db/DbRow.ts";
@@ -57,7 +58,7 @@ async function testDb() {
   return db;
 }
 
-Deno.test("DbRow: columns are accessors, writes batch into one UPDATE", async () => {
+test("DbRow: columns are accessors, writes batch into one UPDATE", async () => {
   await using db = await testDb();
   const updates: unknown[] = [];
   db.on("table:update-after", (e: any) => { updates.push(e.data); });
@@ -80,7 +81,7 @@ Deno.test("DbRow: columns are accessors, writes batch into one UPDATE", async ()
   assertEquals((await db.row`SELECT title, note FROM shop_order WHERE id = 1`), { title: "Two", note: "later" });
 });
 
-Deno.test("DbRow: an unwritten change is flushed without being asked", async () => {
+test("DbRow: an unwritten change is flushed without being asked", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -89,7 +90,7 @@ Deno.test("DbRow: an unwritten change is flushed without being asked", async () 
   assertEquals(await db.one`SELECT title FROM shop_order WHERE id = 1`, "auto");
 });
 
-Deno.test("DbRow: same id gives the same object, so pending changes are shared", async () => {
+test("DbRow: same id gives the same object, so pending changes are shared", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -100,7 +101,7 @@ Deno.test("DbRow: same id gives the same object, so pending changes are shared",
   assertEquals(b.title, "changed");
 });
 
-Deno.test("DbRow: $read() writes pending changes before re-reading", async () => {
+test("DbRow: $read() writes pending changes before re-reading", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -111,7 +112,7 @@ Deno.test("DbRow: $read() writes pending changes before re-reading", async () =>
   assertEquals(await db.one`SELECT title FROM shop_order WHERE id = 1`, "kept");
 });
 
-Deno.test("DbRow: a write past the object invalidates it, the next get() re-reads", async () => {
+test("DbRow: a write past the object invalidates it, the next get() re-reads", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -124,7 +125,7 @@ Deno.test("DbRow: a write past the object invalidates it, the next get() re-read
   assertEquals(order.$stale, false);
 });
 
-Deno.test("DbRow: row TTL is configured per table and disabled by default", async () => {
+test("DbRow: row TTL is configured per table and disabled by default", async () => {
   await using db = await testDb();
   const orders = db.table("shop_order");
   const items = db.table("shop_item");
@@ -140,7 +141,7 @@ Deno.test("DbRow: row TTL is configured per table and disabled by default", asyn
   assertEquals(items.rowTtl, 0);
 });
 
-Deno.test("DbRow: a delete past the object marks it as gone", async () => {
+test("DbRow: a delete past the object marks it as gone", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -151,7 +152,7 @@ Deno.test("DbRow: a delete past the object marks it as gone", async () => {
   assertEquals(await t.get(1), undefined);
 });
 
-Deno.test("DbRow: $remove() and $exists", async () => {
+test("DbRow: $remove() and $exists", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -161,7 +162,7 @@ Deno.test("DbRow: $remove() and $exists", async () => {
   assertEquals(await db.one`SELECT COUNT(*) FROM shop_order`, 0);
 });
 
-Deno.test("DbRow: add() returns a loaded row, all() maps a query", async () => {
+test("DbRow: add() returns a loaded row, all() maps a query", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   const a = (await t.add<Order>({ title: "a" }))!;
@@ -176,7 +177,7 @@ Deno.test("DbRow: add() returns a loaded row, all() maps a query", async () => {
   assertEquals(await t.all().then((r) => r.length), 2);
 });
 
-Deno.test("DbRow: a subclass carries behaviour, registered per table", async () => {
+test("DbRow: a subclass carries behaviour, registered per table", async () => {
   await using db = await testDb();
   const t = db.table("shop_item");
   await t.insert({ id: 1, title: "One", time_ordered: 0 });
@@ -188,7 +189,7 @@ Deno.test("DbRow: a subclass carries behaviour, registered per table", async () 
   assertEquals(await db.one`SELECT time_ordered FROM shop_item WHERE id = 1`, 1700000000);
 });
 
-Deno.test("DbRow: a member colliding with a column is refused, loudly", async () => {
+test("DbRow: a member colliding with a column is refused, loudly", async () => {
   class Colliding extends DbRow {
     title(): string { return "shadowed"; }
   }
@@ -205,7 +206,7 @@ Deno.test("DbRow: a member colliding with a column is refused, loudly", async ()
   }
 });
 
-Deno.test("DbRow: unknown columns are refused, JSON is the values", async () => {
+test("DbRow: unknown columns are refused, JSON is the values", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One", time_ordered: 0, note: "" });
@@ -215,7 +216,7 @@ Deno.test("DbRow: unknown columns are refused, JSON is the values", async () => 
   assertEquals(order.$keys, ["id", "title", "time_ordered", "note"]);
 });
 
-Deno.test("DbRow: $set(values) is the awaitable form", async () => {
+test("DbRow: $set(values) is the awaitable form", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -224,7 +225,7 @@ Deno.test("DbRow: $set(values) is the awaitable form", async () => {
   assertEquals(await db.row`SELECT title, note FROM shop_order WHERE id = 1`, { title: "x", note: "y" });
 });
 
-Deno.test("DbRow: a failed write keeps the values and the row dirty", async () => {
+test("DbRow: a failed write keeps the values and the row dirty", async () => {
   const db = await testDb();
   try {
     const t = db.table("shop_order");
@@ -241,7 +242,7 @@ Deno.test("DbRow: a failed write keeps the values and the row dirty", async () =
   }
 });
 
-Deno.test("DbRow: a second module must extend the class, it cannot replace it", async () => {
+test("DbRow: a second module must extend the class, it cannot replace it", async () => {
   await using db = await testDb();
   class Other extends DbRow {}
   assertThrows(() => { db.table("shop_order").rowClass = Other; }, Error, "must extend it");
@@ -252,7 +253,7 @@ Deno.test("DbRow: a second module must extend the class, it cannot replace it", 
   assertEquals((await db.table("shop_order").get<Extended>(1))!.extra(), "ok");
 });
 
-Deno.test("Db: tables stay reachable while loadTables runs", async () => {
+test("Db: tables stay reachable while loadTables runs", async () => {
   await using db = await testDb();
   // A session timer or a parallel request must not meet a half-introspected database, so the
   // check runs inside the introspection itself — waiting for a real overlap never interleaves.
@@ -269,7 +270,7 @@ Deno.test("Db: tables stay reachable while loadTables runs", async () => {
   assertEquals(missed, "");
 });
 
-Deno.test("Db: loadTables reads in parallel and preserves table order and identity", async () => {
+test("Db: loadTables reads in parallel and preserves table order and identity", async () => {
   await using db = await testDb();
   for (let i = 0; i < 20; i++) await db.exec`CREATE TABLE ${sql.id(`extra_${i}`)} (id INTEGER PRIMARY KEY)`;
   await db.loadTables();
@@ -288,7 +289,7 @@ Deno.test("Db: loadTables reads in parallel and preserves table order and identi
   assertEquals(db.table("shop_order").rowClass, Order);
 });
 
-Deno.test("Db: failed loadTables waits for pending reads and keeps the table map", async () => {
+test("Db: failed loadTables waits for pending reads and keeps the table map", async () => {
   await using db = await testDb();
   const tables = db.tables;
   const columns = db.columns.bind(db);
@@ -306,7 +307,7 @@ Deno.test("Db: failed loadTables waits for pending reads and keeps the table map
   assert(db.tables === tables);
 });
 
-Deno.test("DbRow: a numeric column reads back as a number, whatever the driver hands over", async () => {
+test("DbRow: a numeric column reads back as a number, whatever the driver hands over", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -317,7 +318,7 @@ Deno.test("DbRow: a numeric column reads back as a number, whatever the driver h
   assertEquals(row.note, "7"); // a string column stays a string
 });
 
-Deno.test("DbTable.rowBy: a lookup by a non-key column lands in the identity map", async () => {
+test("DbTable.rowBy: a lookup by a non-key column lands in the identity map", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   await t.insert({ id: 1, title: "One" });
@@ -335,7 +336,7 @@ Deno.test("DbTable.rowBy: a lookup by a non-key column lands in the identity map
   assertEquals(String(await t.rowBy<Order>("title", "Renamed")), "1");
 });
 
-Deno.test("DbTable.rowBy: a value with no row is not remembered", async () => {
+test("DbTable.rowBy: a value with no row is not remembered", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");
   assertEquals(await t.rowBy("title", "Later"), undefined);
@@ -343,7 +344,7 @@ Deno.test("DbTable.rowBy: a value with no row is not remembered", async () => {
   assertEquals(String(await t.rowBy("title", "Later")), "1");
 });
 
-Deno.test("usr.contacts is the natural way in and out of usr_contact", async () => {
+test("usr.contacts is the natural way in and out of usr_contact", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { usr: coreSchema.properties.usr, usr_contact: coreSchema.properties.usr_contact } });
   await db.loadTables();

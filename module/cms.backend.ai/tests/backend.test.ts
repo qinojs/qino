@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { Db, requestStorage } from "@qino/qino";
 import { aiAdapters, aiCapabilities, aiDbSchema, assert, assertEquals, assertStringIncludes, Emitter, fakeT, testContext } from "@qino/qino/tests";
-import { dbSchema, record } from "@qino/m/ai.stats/tests/deps.ts";
+import { statsDbSchema as dbSchema, statsRecord as record } from "@qino/qino/tests";
 
 import { evaluate, importModels, key, unit } from "../lib/sources.ts";
 import api from "../nodeApi.ts";
@@ -47,7 +48,7 @@ async function withFetch(answer: (url: string) => unknown, fn: () => Promise<voi
   finally { globalThis.fetch = fetchOrg; }
 }
 
-Deno.test("cms.backend.ai: capabilities come from adapters, capability definitions, needs and use", async () => {
+test("cms.backend.ai: capabilities come from adapters, capability definitions, needs and use", async () => {
   const { app } = await setup();
   await app.db.table("ai_model").insert({ name: "m" });
   await app.db.table("ai_model_capability").insert({ model_id: 1, capability: "summarize" });
@@ -56,7 +57,7 @@ Deno.test("cms.backend.ai: capabilities come from adapters, capability definitio
   assert(!caps.includes("batch") && !caps.includes("batched")); // a way to serve them, not a capability (aiBatches)
 });
 
-Deno.test("cms.backend.ai: providers, models, capabilities and keys are managed through the node api", async () => {
+test("cms.backend.ai: providers, models, capabilities and keys are managed through the node api", async () => {
   const { app, node, stored } = await setup();
   assertEquals(await api(node, { add: "provider", name: "api.test", type: "openai", endpoint: "https://x.test/v1" }), { ok: true });
   assertEquals(await api(node, { add: "model", name: "llama" }), { ok: true });
@@ -83,7 +84,7 @@ Deno.test("cms.backend.ai: providers, models, capabilities and keys are managed 
   assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai_model_provider`), 0); // cascades
 });
 
-Deno.test("cms.backend.ai: the views render the matrix and the providers, escaped", async () => {
+test("cms.backend.ai: the views render the matrix and the providers, escaped", async () => {
   const { app, node } = await setup({ "api.openai.com": "sk-abcdef1234" });
   await api(node, { add: "provider", name: "api.openai.com", type: "openai", endpoint: "https://x.test/v1" });
   await api(node, { add: "model", name: "<b>llama</b>" });
@@ -123,7 +124,7 @@ Deno.test("cms.backend.ai: the views render the matrix and the providers, escape
   assertStringIncludes(String(await widget(app)), "<b>1</b> active models · <b>1</b> providers");
 });
 
-Deno.test("cms.backend.ai: all models of every provider are imported, switched on, one per name", async () => {
+test("cms.backend.ai: all models of every provider are imported, switched on, one per name", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "api.groq.com", type: "openai", endpoint: "https://api.groq.com/openai/v1" });
   await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
@@ -191,7 +192,7 @@ Deno.test("cms.backend.ai: all models of every provider are imported, switched o
     JOIN ai_model_capability c ON c.model_id = m.id WHERE m.name = 'elevenlabs-music-v2.5'`, { name: "elevenlabs-music-v2.5", provider_model: "elevenlabs/music/v2.5", capability: "music" }); // named by the catalog
 });
 
-Deno.test("cms.backend.ai: a music model gives text too (the lyrics), but is no chat model", async () => {
+test("cms.backend.ai: a music model gives text too (the lyrics), but is no chat model", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
   const lyria = { id: "google/lyria-3-pro-preview", description: "Google's music generation models", supported_parameters: ["response_format"],
@@ -231,7 +232,7 @@ async function llama(keys: Record<string, string> = {}) {
   return { app, node };
 }
 
-Deno.test("cms.backend.ai: a provider's and a model's switch is their offers' default", async () => {
+test("cms.backend.ai: a provider's and a model's switch is their offers' default", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
   const list = (ids: string[]) => ({ data: ids.map((id) => ({ id })) });
@@ -247,13 +248,13 @@ Deno.test("cms.backend.ai: a provider's and a model's switch is their offers' de
   assertEquals(await app.db.one`SELECT enabled FROM ai_model_provider WHERE provider_model = 'a/new'`, 1);
 });
 
-Deno.test("cms.backend.ai: names match across spellings", () => {
+test("cms.backend.ai: names match across spellings", () => {
   assertEquals(key("llama-3.3-70b"), key("Llama-3-3-Instruct-70B"));
   assertEquals(unit("meta-llama/Llama-3.3-70B"), "llama-3.3-70b");
   assert(key("llama-3.1-8b") !== key("llama-3.3-70b"));
 });
 
-Deno.test("cms.backend.ai: models.dev and Artificial Analysis fill prices, capabilities, context and scores", async () => {
+test("cms.backend.ai: models.dev and Artificial Analysis fill prices, capabilities, context and scores", async () => {
   const { app, node } = await llama({ "artificialanalysis.ai": "aa-key" });
   await app.db.table("ai_model_score").insert({ model_id: 1, metric: "math", value: 60 }); // from an earlier import
   await withFetch((url) => url.includes("models.dev") ? MODELS_DEV : url.includes("artificialanalysis") ? benchmarks(url) : {}, async () => {
@@ -306,7 +307,7 @@ Deno.test("cms.backend.ai: models.dev and Artificial Analysis fill prices, capab
   assert(at("intelligence") > 0 && at("intelligence") < at("coding")); // indexes as columns, intelligence first
 });
 
-Deno.test("cms.backend.ai: shows the measured calls", async () => {
+test("cms.backend.ai: shows the measured calls", async () => {
   const { app, node } = await llama();
   for (const [ms, input, output, error] of [[8_000, 10, 800], [4_000, 10, 400], [100, 0, 0, "HTTP 503"], [50, 30, 0]] as const) {
     await record(app, { id: 1, capability: "text", ms, input, output, error });
@@ -316,7 +317,7 @@ Deno.test("cms.backend.ai: shows the measured calls", async () => {
   assertStringIncludes(await show(node, { show: "providers" }), ">50 / 1,200");
 });
 
-Deno.test("cms.backend.ai: try shows who would answer by the weights, and who did", async () => {
+test("cms.backend.ai: try shows who would answer by the weights, and who did", async () => {
   const { app, node } = await setup();
   assertStringIncludes((await api(node, { try: { capability: "text", input: { messages: [] }, prefer: {} } }) as any).message, 'No model for "text"');
   assertEquals(await api(node, { try: { capability: "transcribe", input: { file: "https://elsewhere.test/a.mp3" }, prefer: {} } }), { ok: false, message: "A file is expected" }); // an upload, never a URL to fetch
@@ -339,7 +340,7 @@ Deno.test("cms.backend.ai: try shows who would answer by the weights, and who di
   assertEquals([res.result.text, res.tried.map((c: any) => [c.model, c.provider])], ["cheap says hi", [["cheap", "fake"]]]);
 });
 
-Deno.test("cms.backend.ai: Jina catalog excludes models unavailable at chat completions", async () => {
+test("cms.backend.ai: Jina catalog excludes models unavailable at chat completions", async () => {
   const { app, node } = await setup();
   await app.db.table("ai_provider").insert({ name: "api.jina.ai", type: "jina", endpoint: "https://api.jina.ai/v1" });
   const old = await app.db.table("ai_model").insert({ name: "jina-reranker-v3" });
@@ -361,7 +362,7 @@ Deno.test("cms.backend.ai: Jina catalog excludes models unavailable at chat comp
     WHERE m.name = 'jina-ocr-v1' ORDER BY c.capability`, ["ocr", "text", "vision"]);
 });
 
-Deno.test("cms.backend.ai: try includes the provider's raw body on success and failure", async () => {
+test("cms.backend.ai: try includes the provider's raw body on success and failure", async () => {
   const { app, node } = await setup();
   const mod = (app.modules.linked() as any)[0];
   mod.plugin.aiAdapters = { ...aiAdapters, fake: { text: async (call: any) => {
@@ -383,7 +384,7 @@ Deno.test("cms.backend.ai: try includes the provider's raw body on success and f
   } finally { globalThis.fetch = original; }
 });
 
-Deno.test("cms.backend.ai: a provider's own description wins; a variant is another offer of the model", async () => {
+test("cms.backend.ai: a provider's own description wins; a variant is another offer of the model", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
   const old = await app.db.table("ai_model_provider").insert({ model_id: await app.db.table("ai_model").insert({ name: "old" }), provider_id: 1, provider_model: "x/old:batch" });
@@ -417,7 +418,7 @@ Deno.test("cms.backend.ai: a provider's own description wins; a variant is anoth
   assertEquals(Number(await app.db.one`SELECT context_length FROM ai_model WHERE id = ${sol}`), 400000);
 });
 
-Deno.test("cms.backend.ai: the arenas' Elo becomes the score named like the capability", async () => {
+test("cms.backend.ai: the arenas' Elo becomes the score named like the capability", async () => {
   const { app } = await setup({ "artificialanalysis.ai": "aa-key" });
   await app.db.table("ai_model").insert({ name: "gpt-image-2" });
   await app.db.table("ai_model").insert({ name: "sonic-3-6" });
@@ -436,7 +437,7 @@ Deno.test("cms.backend.ai: the arenas' Elo becomes the score named like the capa
   ]);
 });
 
-Deno.test("cms.backend.ai: a model the arena doesn't name is found by its description", async () => {
+test("cms.backend.ai: a model the arena doesn't name is found by its description", async () => {
   const { app, node } = await setup({ "artificialanalysis.ai": "aa-key" });
   await api(node, { add: "provider", name: "openrouter.ai", type: "openrouter", endpoint: "https://openrouter.ai/api/v1" });
   const listed = { data: [
@@ -458,7 +459,7 @@ Deno.test("cms.backend.ai: a model the arena doesn't name is found by its descri
   ]);
 });
 
-Deno.test("cms.backend.ai: a provider with plain ids gets its models without the org/ its list puts before", async () => {
+test("cms.backend.ai: a provider with plain ids gets its models without the org/ its list puts before", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "api.jina.ai", type: "openai", endpoint: "https://api.jina.ai/v1" });
   assertEquals(await app.db.one`SELECT type FROM ai_provider WHERE name = ${"api.jina.ai"}`, "jina");
@@ -481,7 +482,7 @@ Deno.test("cms.backend.ai: a provider with plain ids gets its models without the
   ]);
 });
 
-Deno.test("cms.backend.ai: the batches waiting at a provider are listed beside the models; none, no card", async () => {
+test("cms.backend.ai: the batches waiting at a provider are listed beside the models; none, no card", async () => {
   const { app, node } = await setup();
   await api(node, { add: "provider", name: "api.openai.com", type: "openai", endpoint: "https://x.test/v1" });
   await api(node, { add: "model", name: "m" });

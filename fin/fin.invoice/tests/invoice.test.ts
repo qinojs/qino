@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { Db } from "@qino/qino";
 import { addDays, today } from "@qino/qino/fin";
@@ -50,7 +51,7 @@ const order = {
   ],
 };
 
-Deno.test("tax is rounded once per rate; gross prices have it taken out", () => {
+test("tax is rounded once per rate; gross prices have it taken out", () => {
   assertEquals(totals(order.lines, false), {
     amounts: [30000, 9900, 3990],
     rates: [{ rate: 2.6, net: 3990, tax: 104 }, { rate: 8.1, net: 39900, tax: 3232 }],
@@ -64,13 +65,13 @@ Deno.test("tax is rounded once per rate; gross prices have it taken out", () => 
   assertEquals([gross.net, gross.tax, gross.total], [40799, 3091, 43890]);
 });
 
-Deno.test("a unit price finer than a minor unit rounds only in the line amount", () => {
+test("a unit price finer than a minor unit rounds only in the line amount", () => {
   const power = [{ name: "Power", quantity: 1234, unit: "kWh", price: 23.45, taxRate: 8.1 }]; // 0.2345 CHF/kWh
   const sum = totals(power, false);
   assertEquals([sum.amounts, sum.net, sum.tax, sum.total], [[28937], 28937, 2344, 31281]);
 });
 
-Deno.test("a draft stores its lines and totals and can be changed until issued", async () => {
+test("a draft stores its lines and totals and can be changed until issued", async () => {
   const { app } = await setup();
   const id = await create(app, { ...order, party: { name: "Muster AG", country: "CH" }, ref: "shop.order:3" });
   assertEquals((await lines(app, id)).map((l) => [l.name, l.quantity, l.unit, l.amount]), [
@@ -91,7 +92,7 @@ Deno.test("a draft stores its lines and totals and can be changed until issued",
   await assertRejects(() => update(app, id, { text: "Too late" }), Error, "only drafts");
 });
 
-Deno.test("issuing draws gapless numbers per year and sets date, due and term", async () => {
+test("issuing draws gapless numbers per year and sets date, due and term", async () => {
   const { app, events } = await setup({ number: "R{year}-{n}", term: 10 });
   const ids = [
     await create(app, { ...order, date: "2026-12-30" }),
@@ -110,7 +111,7 @@ Deno.test("issuing draws gapless numbers per year and sets date, due and term", 
   await assertRejects(() => issue(app, ids[0]), Error, "only drafts");
 });
 
-Deno.test("a draft's date and due date can be cleared again: issuing then sets them", async () => {
+test("a draft's date and due date can be cleared again: issuing then sets them", async () => {
   const { app } = await setup({ term: 10 });
   const id = await create(app, { ...order, date: "2027-01-02", due: "2027-03-01" });
   await update(app, id, { date: null, due: null });
@@ -119,13 +120,13 @@ Deno.test("a draft's date and due date can be cleared again: issuing then sets t
   assertEquals([issued?.date, issued?.due, issued?.term], [today(), addDays(today(), 10), 10]);
 });
 
-Deno.test("an issued invoice without a date is dated today, and numbers default to {year}-{n}", async () => {
+test("an issued invoice without a date is dated today, and numbers default to {year}-{n}", async () => {
   const { app } = await setup();
   const invoice = await issue(app, await create(app, order));
   assertEquals([invoice?.date, invoice?.number], [today(), `${today().slice(0, 4)}-1`]);
 });
 
-Deno.test("an invoice over nothing is paid as it is issued: nothing is owed", async () => {
+test("an invoice over nothing is paid as it is issued: nothing is owed", async () => {
   const { app, events } = await setup();
   const credit = { currency: "CHF", lines: [{ name: "Cards", price: 1900, quantity: 2 }, { name: "Prepaid credit", price: -3800 }] };
   const invoice = await issue(app, await create(app, credit));
@@ -133,7 +134,7 @@ Deno.test("an invoice over nothing is paid as it is issued: nothing is owed", as
   assertEquals(events.map((e) => [e.invoice.status, e.previous]), [["open", "draft"], ["paid", "open"]]);
 });
 
-Deno.test("payments with its ref settle it, partly and fully; a refund reopens it", async () => {
+test("payments with its ref settle it, partly and fully; a refund reopens it", async () => {
   const { app, events } = await setup();
   const id = await issue(app, await create(app, order)).then((i) => Number(i?.id));
   const pay = (amount: number) =>
@@ -152,7 +153,7 @@ Deno.test("payments with its ref settle it, partly and fully; a refund reopens i
   assertEquals(events.slice(1).map((e) => [e.invoice.status, e.previous]), [["paid", "open"], ["open", "paid"]]);
 });
 
-Deno.test("a received invoice keeps the sender's number and is settled by outgoing money", async () => {
+test("a received invoice keeps the sender's number and is settled by outgoing money", async () => {
   const { app } = await setup();
   const party = { name: "Supplier", iban: "CH93…" };
   const id = await create(app, { ...order, direction: "in", number: "INV-778", party });
@@ -162,7 +163,7 @@ Deno.test("a received invoice keeps the sender's number and is settled by outgoi
   assertEquals([invoice?.number, invoice?.status, invoice?.paid], ["INV-778", "paid", 47226]);
 });
 
-Deno.test("a canceled invoice stays canceled, whatever is paid", async () => {
+test("a canceled invoice stays canceled, whatever is paid", async () => {
   const { app } = await setup();
   const id = Number((await issue(app, await create(app, order)))?.id);
   assertEquals((await cancel(app, id))?.status, "canceled");
@@ -170,7 +171,7 @@ Deno.test("a canceled invoice stays canceled, whatever is paid", async () => {
   assertEquals([(await row(app, id))?.status, (await row(app, id))?.paid], ["canceled", 47226]);
 });
 
-Deno.test("bad values are refused", async () => {
+test("bad values are refused", async () => {
   const { app } = await setup();
   await assertRejects(() => create(app, { ...order, currency: "chf" }));
   await assertRejects(() => create(app, { ...order, date: "7.10.2026" }));
@@ -181,7 +182,7 @@ Deno.test("bad values are refused", async () => {
   await assertRejects(() => issue(unnumbered, draft), Error, "{n}");
 });
 
-Deno.test("paid another way, a payment still waiting for it is withdrawn", async () => {
+test("paid another way, a payment still waiting for it is withdrawn", async () => {
   const { app } = await setup();
   const id = Number((await issue(app, await create(app, order)))?.id);
   const waiting = Number(await app.db.table("payment").insert({
@@ -193,7 +194,7 @@ Deno.test("paid another way, a payment still waiting for it is withdrawn", async
   assertEquals(await app.db.one`SELECT status FROM payment WHERE id = ${waiting}`, "canceled");
 });
 
-Deno.test("a draft can be thrown away; an issued invoice is revised into a new draft instead", async () => {
+test("a draft can be thrown away; an issued invoice is revised into a new draft instead", async () => {
   const { app } = await setup();
   const draft = await create(app, order);
   await remove(app, draft);
@@ -214,7 +215,7 @@ Deno.test("a draft can be thrown away; an issued invoice is revised into a new d
   await assertRejects(() => revise(app, paid), Error, "nothing was paid");
 });
 
-Deno.test("a line without a tax rate takes the default one", async () => {
+test("a line without a tax rate takes the default one", async () => {
   const { app } = await setup({ taxRate: 8.1 });
   const id = await create(app, {
     currency: "CHF",
@@ -224,7 +225,7 @@ Deno.test("a line without a tax rate takes the default one", async () => {
   assertEquals(Number((await row(app, id))?.tax), 810);
 });
 
-Deno.test("a credit note counts on its invoice as paid; what goes beyond is owed until paid back", async () => {
+test("a credit note counts on its invoice as paid; what goes beyond is owed until paid back", async () => {
   const { app } = await setup();
   const status = async (id: number) => {
     const r = await row(app, id);
@@ -260,13 +261,13 @@ Deno.test("a credit note counts on its invoice as paid; what goes beyond is owed
   assertEquals([again?.type, again?.preceding, again?.total], ["credit_note", id, -500]);
 });
 
-Deno.test("a credit note rounds as its invoice: half away from zero", () => {
+test("a credit note rounds as its invoice: half away from zero", () => {
   const line = { name: "Half", price: 125, taxRate: 10 }; // tax 12.5
   assertEquals(totals([line], false).tax, 13);
   assertEquals(totals([{ ...line, quantity: -1 }], false).tax, -13);
 });
 
-Deno.test("a line's tax category: S with a rate, O without, or as given; others are refused", async () => {
+test("a line's tax category: S with a rate, O without, or as given; others are refused", async () => {
   const { app } = await setup();
   const id = await create(app, {
     currency: "CHF",
@@ -276,7 +277,7 @@ Deno.test("a line's tax category: S with a rate, O without, or as given; others 
   await assertRejects(() => create(app, { currency: "CHF", lines: [{ name: "x", price: 1, taxCategory: "X" }] }), Error, "taxCategory");
 });
 
-Deno.test("a pro forma claims nothing; its money makes it the invoice, dated the day it came", async () => {
+test("a pro forma claims nothing; its money makes it the invoice, dated the day it came", async () => {
   const { app } = await setup();
   const id = await create(app, { ...order, type: "proforma" });
   const proforma = await issue(app, id);
@@ -291,7 +292,7 @@ Deno.test("a pro forma claims nothing; its money makes it the invoice, dated the
   assertEquals(await finalize(app, id), Number(invoice?.id)); // made once
 });
 
-Deno.test("a pro forma is finalized by hand: delivered before it was paid", async () => {
+test("a pro forma is finalized by hand: delivered before it was paid", async () => {
   const { app } = await setup();
   const id = Number((await issue(app, await create(app, { ...order, type: "proforma" })))?.id);
   const made = await finalize(app, id);
@@ -302,7 +303,7 @@ Deno.test("a pro forma is finalized by hand: delivered before it was paid", asyn
   await assertRejects(() => finalize(app, made), Error, "pro forma");
 });
 
-Deno.test("an invoice that went out is canceled by a credit note over all of it; one that did not, just so", async () => {
+test("an invoice that went out is canceled by a credit note over all of it; one that did not, just so", async () => {
   const { app } = await setup();
   const unsent = Number((await issue(app, await create(app, order)))?.id);
   assertEquals((await cancel(app, unsent))?.status, "canceled");
@@ -319,7 +320,7 @@ Deno.test("an invoice that went out is canceled by a credit note over all of it;
   assertEquals([(await row(app, again))?.status, (await row(app, draft))?.status], ["paid", "draft"]);
 });
 
-Deno.test("written off, an invoice is uncollectible until money comes after all", async () => {
+test("written off, an invoice is uncollectible until money comes after all", async () => {
   const { app, events } = await setup();
   const id = Number((await issue(app, await create(app, order)))?.id);
   await record(app, { direction: "in", provider: "bank", amount: 7226, currency: "CHF", ref: refOf(id) });
@@ -332,7 +333,7 @@ Deno.test("written off, an invoice is uncollectible until money comes after all"
   await assertRejects(() => writeOff(app, id), Error, "only open");
 });
 
-Deno.test("a payment for a document that lists others goes to its own lines first, then the oldest due", async () => {
+test("a payment for a document that lists others goes to its own lines first, then the oldest due", async () => {
   const { app } = await setup();
   const one = [{ name: "Design", price: 10000 }];
   const older = Number((await issue(app, await create(app, { currency: "CHF", lines: one, due: "2026-01-10" })))?.id);
@@ -353,7 +354,7 @@ Deno.test("a payment for a document that lists others goes to its own lines firs
   assertEquals(await owed(app, (await row(app, reminder))!), 0);
 });
 
-Deno.test("a reminder without fees is paid as issued, and still asks for what it lists", async () => {
+test("a reminder without fees is paid as issued, and still asks for what it lists", async () => {
   const { app } = await setup();
   const id = Number((await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Design", price: 10000 }] })))?.id);
   const reminder = await issue(app, await create(app, {
@@ -365,7 +366,7 @@ Deno.test("a reminder without fees is paid as issued, and still asks for what it
   assertEquals((await row(app, id))?.status, "paid");
 });
 
-Deno.test("a payment synced again keeps its shares: what it paid before stays paid", async () => {
+test("a payment synced again keeps its shares: what it paid before stays paid", async () => {
   const { app } = await setup();
   const one = [{ name: "Design", price: 10000 }];
   const older = Number((await issue(app, await create(app, { currency: "CHF", lines: one, due: "2026-01-10" })))?.id);

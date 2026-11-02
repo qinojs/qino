@@ -1,8 +1,9 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("seo serves robots.txt and a cached sitemap from seo:sitemap entries", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("seo serves robots.txt and a cached sitemap from seo:sitemap entries", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir, appUrl: "/site/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("seo");
   await app.init();
@@ -32,6 +33,6 @@ Deno.test("seo serves robots.txt and a cached sitemap from seo:sitemap entries",
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

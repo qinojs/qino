@@ -1,11 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import "../plugin.ts";
 import { Node } from "../lib/Node.ts";
 
-Deno.test("Node.htmlPrepared escapes module name inside qcms-mod attribute", async () => {
+test("Node.htmlPrepared escapes module name inside qcms-mod attribute", async () => {
   const moduleName = `bad" onclick="alert(1) x="`;
   const ctx = await testContext({ app: {
     modules: {

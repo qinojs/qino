@@ -1,4 +1,5 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 import { save } from "@qino/qino/iot";
 
@@ -6,10 +7,10 @@ import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("virtual backend offers a provider, applies templates and lists virtual entities escaped", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-virtual-backend-" });
+test("virtual backend offers a provider, applies templates and lists virtual entities escaped", async () => {
+  const dir = await fs.tempDir({ prefix: "qino-iot-virtual-backend-" });
   const app = new App({ dir, db: "sqlite::memory:" });
-  await Deno.writeTextFile(`${dir}/plugin.ts`, `
+  await fs.write(`${dir}/plugin.ts`, `
 export const iotProvider = { name: "homeassistant", entities: async () => [], actions: async () => [], call: async () => null };
 `);
   app.modules.add(new URL("../../iot/plugin.ts", import.meta.url));
@@ -32,6 +33,6 @@ export const iotProvider = { name: "homeassistant", entities: async () => [], ac
     assertEquals((await cms.node.api(node, { virtual: { provider: source, name: "X" } }) as { ok: boolean }).ok, false);
   } finally {
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

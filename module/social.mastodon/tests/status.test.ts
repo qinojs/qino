@@ -1,8 +1,9 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 
 import { postOf } from "../lib/status.ts";
 
-Deno.test("social.mastodon normalizes own and remote statuses to plain posts", () => {
+test("social.mastodon normalizes own and remote statuses to plain posts", () => {
   assertEquals(postOf("https://social.test#7", {
     id: "10",
     created_at: "2026-08-26T10:00:00Z",

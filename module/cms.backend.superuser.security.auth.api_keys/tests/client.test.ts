@@ -1,8 +1,10 @@
+import { test } from "node:test";
+import { fs } from "@qino/qino";
 import { runInNewContext } from "node:vm";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("API key backend: an empty node initializes and later handles its user filter", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/main.js", import.meta.url));
+test("API key backend: an empty node initializes and later handles its user filter", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/main.js");
   const handlers = new Map<string, (event: unknown) => Promise<void>>();
   const calls: unknown[] = [];
   const msg = { value: "" };
@@ -32,8 +34,8 @@ Deno.test("API key backend: an empty node initializes and later handles its user
   assertEquals(JSON.parse(JSON.stringify(calls)), [[42, "list", { usr_id: "8" }], [42, "list", { usr_id: "" }]]);
 });
 
-Deno.test("API key backend: creation uses the action route and keeps the returned key visible while refreshing", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/main.js", import.meta.url));
+test("API key backend: creation uses the action route and keeps the returned key visible while refreshing", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/main.js");
   const handlers = new Map<string, (event: unknown) => Promise<void>>();
   const calls: unknown[] = [];
   const button = { disabled: false };

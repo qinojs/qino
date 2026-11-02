@@ -1,10 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, AccessError, App, NotFoundError, runAs, s } from "@qino/qino";
+import { test } from "node:test";
+import { Access, AccessError, App, fs, NotFoundError, runAs, s } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 /** A real app with sandbox.flow, superusers 7 and 8, user 9, and a route as tool: test_greet_post. */
 async function withApp(fn: (app: App, as: (usr: number, call: () => Promise<any>) => Promise<any>) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   await app.init();
@@ -30,7 +31,7 @@ const made = {
   code: "await tools.test_greet_post({ name: event.table }); return true;",
 };
 
-Deno.test("sandbox.flow api: make, read, change, try and delete your own flows", () => withApp(async (app, as) => {
+test("sandbox.flow api: make, read, change, try and delete your own flows", () => withApp(async (app, as) => {
   const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
   const { id } = await as(7, () => flows.post(made));
   const got = await as(7, () => flow(id).get());
@@ -50,7 +51,7 @@ Deno.test("sandbox.flow api: make, read, change, try and delete your own flows",
   assertEquals(await as(7, () => flows.get()), []);
 }));
 
-Deno.test("sandbox.flow api: someone else's flow does not exist for you", () => withApp(async (app, as) => {
+test("sandbox.flow api: someone else's flow does not exist for you", () => withApp(async (app, as) => {
   const flows = (app.api as any)["sandbox.flow"].flows, flow = (app.api as any)["sandbox.flow"].flow;
   const { id } = await as(7, () => flows.post(made));
   assertEquals(await as(8, () => flows.get()), []);
@@ -61,7 +62,7 @@ Deno.test("sandbox.flow api: someone else's flow does not exist for you", () => 
 }));
 
 // events are not filtered by rights yet: a flow sees every event of its host
-Deno.test("sandbox.flow api: only superusers", () => withApp(async (app, as) => {
+test("sandbox.flow api: only superusers", () => withApp(async (app, as) => {
   const flows = (app.api as any)["sandbox.flow"].flows;
   await assertRejects(() => as(9, () => flows.get()), AccessError);
   await assertRejects(() => as(9, () => flows.post(made)), AccessError);

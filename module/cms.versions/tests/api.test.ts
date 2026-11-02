@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { toTools } from "@qino/qino";
 import { assertEquals, fakeCms } from "@qino/qino/tests";
 
@@ -8,13 +9,13 @@ import { getCmsVers } from "../mod.ts";
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.versions: module metadata is wired", () => {
+test("cms.versions: module metadata is wired", () => {
   assertEquals(name, "cms.versions");
   assertEquals(dependencies, ["cms"]);
   assertEquals(settingsSchema.properties, {});
 });
 
-Deno.test("cms.versions: parked draft space stays inactive", async () => {
+test("cms.versions: parked draft space stays inactive", async () => {
   const routes: ((event: any) => unknown)[] = [];
   const app = {
     db: { on() {} },
@@ -31,7 +32,7 @@ Deno.test("cms.versions: parked draft space stays inactive", async () => {
   assertEquals(getCmsVers(ctx as never).space, 0);
 });
 
-Deno.test("cms.versions: API exposes publish/page/log endpoints", () => {
+test("cms.versions: API exposes publish/page/log endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
     "publishNode_post",

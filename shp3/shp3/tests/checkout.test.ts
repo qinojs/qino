@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { setTransport } from "@qino/qino/messaging.email";
 
 import { api } from "../api.ts";
@@ -10,7 +11,7 @@ const call = (path: string[], verb: string, input?: unknown) =>
   (path.reduce((n: any, k) => n[k], api as any))[verb].execute(input);
 
 async function shop(...extra: string[]) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("messaging").add("messaging.email").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   for (const m of ["shp3.shipping.pickup", "shp3.payment.invoice", "shp3.payment.advance", "cms.cont.shp3.order.addresses2", ...extra]) {
@@ -22,7 +23,7 @@ async function shop(...extra: string[]) {
   return app;
 }
 
-Deno.test("shp3: a whole order, from the empty cart to the placed one", async () => {
+test("shp3: a whole order, from the empty cart to the placed one", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -62,7 +63,7 @@ Deno.test("shp3: a whole order, from the empty cart to the placed one", async ()
   });
 });
 
-Deno.test("shp3 backend: an order is paid off, an open cart can still be placed", async () => {
+test("shp3 backend: an order is paid off, an open cart can still be placed", async () => {
   await using app = await shop("cms.backend.shp3", "cms.backend.shp3.orders1");
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -83,7 +84,7 @@ Deno.test("shp3 backend: an order is paid off, an open cart can still be placed"
   });
 });
 
-Deno.test("shp3: ordering sends the confirmation", async () => {
+test("shp3: ordering sends the confirmation", async () => {
   await using app = await shop("shp3.messages2");
   await app.settings["messaging.email"].address("shop@example.test");
   const sent: { to: string[]; subject: string; html: string }[] = [];
@@ -106,7 +107,7 @@ Deno.test("shp3: ordering sends the confirmation", async () => {
   assertEquals(sent[0].html.includes("24.00"), true); // the total is in the mail
 });
 
-Deno.test("shp3: a confirmation that cannot go out does not undo the order", async () => {
+test("shp3: a confirmation that cannot go out does not undo the order", async () => {
   await using app = await shop("shp3.messages2");
   // No transport at all — exactly what an unconfigured shop looks like on its first sale.
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });

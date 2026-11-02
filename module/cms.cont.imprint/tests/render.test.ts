@@ -1,9 +1,10 @@
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assert, assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.cont.imprint/privacy: owner from identity, switchable sections, editable texts", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.imprint/privacy: owner from identity, switchable sections, editable texts", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.imprint").add("cms.cont.privacy");
   await app.init();
@@ -51,6 +52,6 @@ Deno.test("cms.cont.imprint/privacy: owner from identity, switchable sections, e
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

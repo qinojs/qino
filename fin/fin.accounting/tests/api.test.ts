@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { invoke } from "@qino/qino";
 
 import { asUser, users, withFinApp } from "../../tests/app.ts";
 import { api } from "../api.ts";
 
-Deno.test("the books are a superuser's: a user reads and books nothing", async () => {
+test("the books are a superuser's: a user reads and books nothing", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.accounting", "fin.accounting.ch"], async (app) => {
     const { anna, boss } = await users(app);
     const lines = [{ account: "6000", amount: 1000 }, { account: "1020", amount: -1000 }];

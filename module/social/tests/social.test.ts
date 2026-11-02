@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { Db } from "@qino/qino";
 
@@ -19,7 +20,7 @@ async function testApp(socialProvider: Provider | Provider[]) {
   } as unknown as App;
 }
 
-Deno.test("social target discovery isolates providers", async () => {
+test("social target discovery isolates providers", async () => {
   const app = await testApp([
     { name: "good", targets: () => Promise.resolve([{ id: "a", label: "A" }]), publish: () => Promise.reject() },
     { name: "broken", targets: () => Promise.reject(new Error("Broken")), publish: () => Promise.reject() },
@@ -27,7 +28,7 @@ Deno.test("social target discovery isolates providers", async () => {
   assertEquals(await targets(app), [{ provider: "good", id: "a", label: "A" }]);
 });
 
-Deno.test("social publishes one row per target and records when it was sent", async () => {
+test("social publishes one row per target and records when it was sent", async () => {
   const provider: Provider = {
     name: "fake",
     targets: () => Promise.resolve([{ id: "a", label: "A" }, { id: "b", label: "B" }]),
@@ -46,7 +47,7 @@ Deno.test("social publishes one row per target and records when it was sent", as
   ]);
 });
 
-Deno.test("social retries an explicitly temporary failure without adding another row", async () => {
+test("social retries an explicitly temporary failure without adding another row", async () => {
   let calls = 0;
   const provider: Provider = {
     name: "fake",
@@ -63,7 +64,7 @@ Deno.test("social retries an explicitly temporary failure without adding another
   assertEquals(rows.map((row) => [row.external_id, row.attempts, row.error]), [["remote-a", 1, null]]);
 });
 
-Deno.test("social applies default backoff and ignores sent outbox rows", async () => {
+test("social applies default backoff and ignores sent outbox rows", async () => {
   let calls = 0;
   const provider: Provider = {
     name: "fake",
@@ -78,7 +79,7 @@ Deno.test("social applies default backoff and ignores sent outbox rows", async (
   assertEquals(calls, 1);
 });
 
-Deno.test("social imports remote posts idempotently without marking them sent", async () => {
+test("social imports remote posts idempotently without marking them sent", async () => {
   const provider: Provider = { name: "fake", targets: () => Promise.resolve([]), publish: () => Promise.reject() };
   const app = await testApp(provider);
   const remote = { target: "a", id: "7", text: "Remote", own: true, time: 10 };

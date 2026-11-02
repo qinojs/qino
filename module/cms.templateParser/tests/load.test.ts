@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { stat, utimes } from "node:fs/promises";
 import { assert, assertEquals } from "@qino/qino/tests";
 import { fs } from "@qino/qino";
 
@@ -5,13 +7,13 @@ import { loadTemplate } from "../mod.ts";
 
 const text = (ast: unknown) => JSON.stringify(ast);
 
-Deno.test("loadTemplate: no file, no template", async () => {
+test("loadTemplate: no file, no template", async () => {
   assertEquals(await loadTemplate("/tmp/qino-does-not-exist.html"), undefined);
 });
 
-Deno.test("loadTemplate: a saved file is reparsed, an unchanged one comes from the cache", async () => {
-  const path = await Deno.makeTempFile({ suffix: ".html" });
-  await Deno.writeTextFile(path, "<div>a</div>");
+test("loadTemplate: a saved file is reparsed, an unchanged one comes from the cache", async () => {
+  const path = await fs.tempFile();
+  await fs.write(path, "<div>a</div>");
   const first = await loadTemplate(path);
   assertEquals(await loadTemplate(path), first); // same object — parsed once
 
@@ -19,40 +21,40 @@ Deno.test("loadTemplate: a saved file is reparsed, an unchanged one comes from t
   await fs.write(path, "<div>b</div>"); // through fs, or the cached stat hides it until its ttl
   const second = await loadTemplate(path);
   assert(text(second) !== text(first));
-  await Deno.remove(path);
+  await fs.remove(path);
 });
 
-Deno.test("loadTemplate: a local file URL is read like its path", async () => {
-  const path = await Deno.makeTempFile({ suffix: " space.html" });
-  await Deno.writeTextFile(path, "<div>local URL</div>");
+test("loadTemplate: a local file URL is read like its path", async () => {
+  const path = await fs.tempFile({ prefix: "with space " });
+  await fs.write(path, "<div>local URL</div>");
   const url = new URL(`file://${path}`);
   assertEquals(text(await loadTemplate(url)), text(await loadTemplate(path)));
   assertEquals(text(await loadTemplate(url.href)), text(await loadTemplate(path)));
-  await Deno.remove(path);
+  await fs.remove(path);
 });
 
-Deno.test("loadTemplate: changed content with the same timestamp is reparsed", async () => {
-  const path = await Deno.makeTempFile({ suffix: ".html" });
+test("loadTemplate: changed content with the same timestamp is reparsed", async () => {
+  const path = await fs.tempFile();
   try {
-    await Deno.writeTextFile(path, "<div>a</div>");
+    await fs.write(path, "<div>a</div>");
     const time = new Date("2020-01-01T00:00:00Z");
-    await Deno.utime(path, time, time);
+    await utimes(path, time, time);
     const first = await loadTemplate(path);
     await fs.write(path, "<div>b</div>");
-    await Deno.utime(path, time, time);
-    assertEquals((await Deno.stat(path)).mtime, time);
+    await utimes(path, time, time);
+    assertEquals((await stat(path)).mtime, time);
     const second = await loadTemplate(path);
     assert(text(second) !== text(first));
     assert(await loadTemplate(path) === second);
     await fs.remove(path);
     assertEquals(await loadTemplate(path), undefined);
   } finally {
-    await Deno.remove(path).catch(() => {});
+    await fs.remove(path).catch(() => {});
   }
 });
 
-Deno.test("loadTemplate: cached files are not read again until fs invalidates their stat", async () => {
-  const path = await Deno.makeTempFile({ suffix: ".html" });
+test("loadTemplate: cached files are not read again until fs invalidates their stat", async () => {
+  const path = await fs.tempFile();
   const read = fs.text;
   let reads = 0;
   fs.text = (file: string) => {
@@ -75,7 +77,7 @@ Deno.test("loadTemplate: cached files are not read again until fs invalidates th
   }
 });
 
-Deno.test("loadTemplate: a remote template is fetched once and cached", async () => {
+test("loadTemplate: a remote template is fetched once and cached", async () => {
   const real = globalThis.fetch;
   const url = `https://qino.test/${crypto.randomUUID()}/template.html`;
   let requests = 0;

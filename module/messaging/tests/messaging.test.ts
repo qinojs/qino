@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { journal, userJournal } from "@qino/qino/tests";
 import { Db } from "@qino/qino";
@@ -19,7 +20,7 @@ async function app() {
   return { db } as App;
 }
 
-Deno.test("messaging stores one logical message with recipient deliveries", async () => {
+test("messaging stores one logical message with recipient deliveries", async () => {
   const testApp = await app();
   await testApp.db.exec`INSERT INTO usr (username) VALUES ('one@example.test'), ('two@example.test')`;
   await testApp.db.exec`INSERT INTO grp (name) VALUES ('Editors')`;
@@ -82,7 +83,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
   assertEquals(await userJournal(testApp, 3), []);
 });
 
-Deno.test("a bare string is a message, and a missing title is its first line", () => {
+test("a bare string is a message, and a missing title is its first line", () => {
   assertEquals(msgOf("Hello"), { text: "Hello" });
   assertEquals(msgOf({ text: "Hello", title: "Hi" }), { text: "Hello", title: "Hi" });
 

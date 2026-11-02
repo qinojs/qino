@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import manifest from "../manifest.json" with { type: "json" };
@@ -5,7 +6,7 @@ import { provider } from "../render.ts";
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.backend.superuser.messaging.sms wires metadata and keeps provider secrets out of HTML", async () => {
+test("cms.backend.superuser.messaging.sms wires metadata and keeps provider secrets out of HTML", async () => {
   assertEquals(name, "cms.backend.superuser.messaging.sms");
   assertEquals(dependencies, ["cms.backend.superuser.messaging", "messaging.sms"]);
   const node = {

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { generateVAPIDKeys } from "web-push-neo";
 import { b64url, Db, randB64 } from "@qino/qino";
 import { assertEquals, messagingDbSchema } from "@qino/qino/tests";
@@ -38,7 +39,7 @@ async function app() {
   } as unknown as App;
 }
 
-Deno.test("webpush: the asking device does not count as a way to reach someone", async () => {
+test("webpush: the asking device does not count as a way to reach someone", async () => {
   const a = await app();
   assertEquals(await messagingChannel.reach(a, 7), 2);
   assertEquals(await messagingChannel.reach(a, 7, 100), 1);
@@ -47,7 +48,7 @@ Deno.test("webpush: the asking device does not count as a way to reach someone",
   await a.db.close();
 });
 
-Deno.test("webpush: subscription and client arrays add to user selection without duplicates", async () => {
+test("webpush: subscription and client arrays add to user selection without duplicates", async () => {
   const a = await app();
   const table = a.db.table("webpush_subscription");
   const keys = await a.db.row`SELECT p256dh, auth FROM webpush_subscription WHERE id = ${1}`;

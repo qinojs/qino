@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { addDays, today } from "@qino/qino/fin";
 import { create, issue, lines, owed } from "@qino/qino/fin.invoice";
@@ -37,7 +38,7 @@ const reminders = (app: App) => app.db.query`SELECT * FROM invoice WHERE type = 
 const listed = (app: App, id: number) =>
   app.db.query`SELECT listed_id, open, level FROM invoice_listed WHERE invoice_id = ${id} ORDER BY listed_id`;
 
-Deno.test("overdue invoices are reminded in levels, apart, one reminder per customer", async () => {
+test("overdue invoices are reminded in levels, apart, one reminder per customer", async () => {
   await withFinApp(MODULES, async (app) => {
     const { usr, sent } = await customer(app);
     const old = await issued(app, { usrId: usr, lang: "de", date: day(-70), due: day(-40) });
@@ -64,7 +65,7 @@ Deno.test("overdue invoices are reminded in levels, apart, one reminder per cust
   });
 });
 
-Deno.test("a fee is taxed as what it reminds of, shared by what is open; interest is not taxed", async () => {
+test("a fee is taxed as what it reminds of, shared by what is open; interest is not taxed", async () => {
   await withFinApp(MODULES, async (app) => {
     const { usr } = await customer(app);
     await app.settings["fin.invoice.reminder"].fees("0, 20");
@@ -91,7 +92,7 @@ Deno.test("a fee is taxed as what it reminds of, shared by what is open; interes
   });
 });
 
-Deno.test("held, or on a reminder waiting as a draft, an invoice is not reminded again", async () => {
+test("held, or on a reminder waiting as a draft, an invoice is not reminded again", async () => {
   await withFinApp(MODULES, async (app) => {
     const { usr } = await customer(app);
     const held = await issued(app, { usrId: usr, due: day(-40) });
@@ -105,7 +106,7 @@ Deno.test("held, or on a reminder waiting as a draft, an invoice is not reminded
   });
 });
 
-Deno.test("a reminder that could not be mailed counts all the same: no second one the next day", async () => {
+test("a reminder that could not be mailed counts all the same: no second one the next day", async () => {
   await withFinApp(MODULES, async (app) => {
     const { usr } = await customer(app, true);
     await issued(app, { usrId: usr, due: day(-40) });
@@ -115,7 +116,7 @@ Deno.test("a reminder that could not be mailed counts all the same: no second on
   });
 });
 
-Deno.test("one reminder is for one debtor and currency, of open invoices of ours", async () => {
+test("one reminder is for one debtor and currency, of open invoices of ours", async () => {
   await withFinApp(MODULES, async (app) => {
     const { usr } = await customer(app);
     const a = await issued(app, { usrId: usr, due: day(-40) });

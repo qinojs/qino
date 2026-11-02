@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { createHash } from "node:crypto";
 import { NotFoundError, requestStorage } from "@qino/qino";
 import { apiRequest, assertEquals, assertRejects, assertStringIncludes, testContext } from "@qino/qino/tests";
@@ -6,7 +7,7 @@ import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("API key backend: creation stays local, stores a hash and shows the token only once", async () => {
+test("API key backend: creation stays local, stores a hash and shows the token only once", async () => {
   let stored: Record<string, unknown> | undefined;
   const db = {
     one: (_sql: unknown, id: number) => id === 8 ? 8 : null,
@@ -41,7 +42,7 @@ Deno.test("API key backend: creation stays local, stores a hash and shows the to
   assertEquals(stored, undefined);
 });
 
-Deno.test("API key backend: an expired proof reaches the client as step_up_required, then creation can be retried", async () => {
+test("API key backend: an expired proof reaches the client as step_up_required, then creation can be retried", async () => {
   let created = 0;
   let password = 1;
   const db = { one: () => 8, table: () => ({ insert: () => ++created }) };

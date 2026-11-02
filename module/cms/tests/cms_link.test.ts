@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { CMS } from "../lib/CMS.ts";
 import { sanitizeHtml } from "../lib/sanitize.ts";
 
-Deno.test("CMS.link keeps sanitized title HTML", async () => {
+test("CMS.link keeps sanitized title HTML", async () => {
   const ctx = await testContext();
   ctx.lang = "de";
   const cms = new CMS(ctx.app);
@@ -25,7 +26,7 @@ Deno.test("CMS.link keeps sanitized title HTML", async () => {
   });
 });
 
-Deno.test("CMS.linkAttributes describes the target state", async () => {
+test("CMS.linkAttributes describes the target state", async () => {
   const ctx = await testContext();
   ctx.lang = "de";
   const cms = new CMS(ctx.app);

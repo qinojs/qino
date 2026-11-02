@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { create, sync } from "@qino/qino/fin.payment";
 
@@ -24,7 +25,7 @@ function btcpay(invoice: Record<string, unknown>) {
   };
 }
 
-Deno.test("an invoice is made at BTCPay and its status taken over, paid in part and late too", async () => {
+test("an invoice is made at BTCPay and its status taken over, paid in part and late too", async () => {
   await withApp(async (app) => {
     const state: Record<string, unknown> = { status: "New", additionalStatus: "None", paidAmount: "0" };
     await withFetch(btcpay(state), async (calls) => {
@@ -44,7 +45,7 @@ Deno.test("an invoice is made at BTCPay and its status taken over, paid in part 
   });
 });
 
-Deno.test("a webhook counts only with BTCPay's signature, and only names the invoice", async () => {
+test("a webhook counts only with BTCPay's signature, and only names the invoice", async () => {
   await withApp(async (app) => {
     const state: Record<string, unknown> = { status: "New", paidAmount: "0" };
     await withFetch(btcpay(state), async () => {

@@ -1,4 +1,5 @@
-import { Db, invoke, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { Db, fs, invoke, requestStorage } from "@qino/qino";
 import { setTransport } from "@qino/qino/messaging.email";
 import { assert, assertEquals, assertRejects, contactDbSchema, DbFileManager, fakeT, fileDbSchema, messagingDbSchema } from "@qino/qino/tests";
 
@@ -13,7 +14,7 @@ async function makeApp() {
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.loadTables();
-  const dir = await Deno.makeTempDir();
+  const dir = await fs.tempDir();
   const app = {
     db,
     dir,
@@ -43,10 +44,10 @@ function makeCtx(app: App, draft: { value: string }, user: Record<string, unknow
 
 async function close(app: App) {
   await app.db.close();
-  await Deno.remove(app.dir, { recursive: true });
+  await fs.remove(app.dir, { recursive: true });
 }
 
-Deno.test("cms.frontend feedback: sends escaped feedback over the email channel", async () => {
+test("cms.frontend feedback: sends escaped feedback over the email channel", async () => {
   const app = await makeApp();
   const draft = { value: "draft" };
   const ctx = makeCtx(app, draft, {
@@ -72,7 +73,7 @@ Deno.test("cms.frontend feedback: sends escaped feedback over the email channel"
   await close(app);
 });
 
-Deno.test("cms.frontend feedback: keeps the draft when sending fails", async () => {
+test("cms.frontend feedback: keeps the draft when sending fails", async () => {
   const app = await makeApp();
   const draft = { value: "Please help" };
   const ctx = makeCtx(app, draft, { superuser: true, contact: () => Promise.resolve(undefined) });

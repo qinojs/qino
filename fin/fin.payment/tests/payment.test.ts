@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { Db, Output, Redirect, unixTime } from "@qino/qino";
 import { testContext } from "@qino/qino/tests";
@@ -57,14 +58,14 @@ async function setup() {
 
 const order = { amount: 4990, currency: "CHF", method: "fake.twint", ref: "shop.order:1", return: "/done" };
 
-Deno.test("methods are listed per provider, as create() takes them", async () => {
+test("methods are listed per provider, as create() takes them", async () => {
   const { app } = await setup();
   const chf = await methods(app, { amount: 100, currency: "CHF" });
   assertEquals(chf.map((m) => m.method), ["fake.card", "fake.twint"]);
   assertEquals(await methods(app, { amount: 100, currency: "EUR" }), []);
 });
 
-Deno.test("a method without a name stands for the provider itself", async () => {
+test("a method without a name stands for the provider itself", async () => {
   const { app, provider } = await setup();
   provider.methods = () => [{ name: "", label: "Fake" }];
   assertEquals(await methods(app, { amount: 100, currency: "CHF" }), [{ method: "fake", label: "Fake" }]);
@@ -72,7 +73,7 @@ Deno.test("a method without a name stands for the provider itself", async () => 
   assertEquals((await app.db.row`SELECT method FROM payment WHERE id = ${id}`)?.method, null);
 });
 
-Deno.test("the job asks after open payments with growing gaps, for two days", async () => {
+test("the job asks after open payments with growing gaps, for two days", async () => {
   const { app, provider } = await setup();
   let asked = 0;
   provider.sync = () => (asked++, Promise.resolve({}));
@@ -91,7 +92,7 @@ Deno.test("the job asks after open payments with growing gaps, for two days", as
   assertEquals(await at(3 * 86400, 86400), false); // too old
 });
 
-Deno.test("create stores an incoming payment and hands the provider signed addresses", async () => {
+test("create stores an incoming payment and hands the provider signed addresses", async () => {
   const { app, provider } = await setup();
   const { id, redirect } = await create(app, order);
   assertEquals(provider.urls!.back.replace("/return/", "/pay/"), provider.urls!.pay);
@@ -104,7 +105,7 @@ Deno.test("create stores an incoming payment and hands the provider signed addre
   assertEquals(provider.urls!.back.replace("/return/", "/notify/"), provider.urls!.notify);
 });
 
-Deno.test("a slip still waiting for the same thing is that payment: one QR bill, not one per ask", async () => {
+test("a slip still waiting for the same thing is that payment: one QR bill, not one per ask", async () => {
   const { app } = await setup();
   const first = await create(app, { ...order, ref: "fin.invoice:7" });
   const again = await create(app, { ...order, ref: "fin.invoice:7" });
@@ -116,7 +117,7 @@ Deno.test("a slip still waiting for the same thing is that payment: one QR bill,
   assertEquals((await create(app, { ...order, ref: "fin.invoice:7" })).id === first.id, false); // over: a new one
 });
 
-Deno.test("create rejects amounts that are not minor units and unknown providers", async () => {
+test("create rejects amounts that are not minor units and unknown providers", async () => {
   const { app } = await setup();
   for (const amount of [0, -1, 49.9]) await assertRejects(() => create(app, { ...order, amount }));
   await assertRejects(() => create(app, { ...order, currency: "chf" }));
@@ -124,7 +125,7 @@ Deno.test("create rejects amounts that are not minor units and unknown providers
   assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM payment`), 0);
 });
 
-Deno.test("a status change fires once, however often it is reported", async () => {
+test("a status change fires once, however often it is reported", async () => {
   const { app, provider, events } = await setup();
   const { id } = await create(app, order);
   provider.next = { status: "paid", paid: 4990, method: "card", fee: 120 };
@@ -136,7 +137,7 @@ Deno.test("a status change fires once, however often it is reported", async () =
   );
 });
 
-Deno.test("a recorded payment fires the event and is left alone by sync", async () => {
+test("a recorded payment fires the event and is left alone by sync", async () => {
   const { app, events } = await setup();
   const id = await record(app, { direction: "out", provider: "cash", amount: 2000, currency: "EUR", ref: "x:1" });
   assertEquals(
@@ -147,7 +148,7 @@ Deno.test("a recorded payment fires the event and is left alone by sync", async 
   await assertRejects(() => refund(app, id), Error, "cannot refund");
 });
 
-Deno.test("refund defaults to what is left and refuses more", async () => {
+test("refund defaults to what is left and refuses more", async () => {
   const { app, provider, events } = await setup();
   const { id } = await create(app, order);
   await assertRejects(() => refund(app, id)); // nothing paid yet
@@ -160,7 +161,7 @@ Deno.test("refund defaults to what is left and refuses more", async () => {
   assertEquals(events.at(-1)?.previous, "paid");
 });
 
-Deno.test("the payer comes back to the return url, the provider gets an ok, a forged token nothing", async () => {
+test("the payer comes back to the return url, the provider gets an ok, a forged token nothing", async () => {
   const { app, provider, events, request } = await setup();
   const { id } = await create(app, order);
   provider.next = { status: "paid", paid: 4990 };
@@ -174,7 +175,7 @@ Deno.test("the payer comes back to the return url, the provider gets an ok, a fo
   assertEquals(await request("https://site.test/payment/other/x"), undefined);
 });
 
-Deno.test("the slip of an open payment is shown at its pay address, a settled one has none", async () => {
+test("the slip of an open payment is shown at its pay address, a settled one has none", async () => {
   const { app, provider, request } = await setup();
   await create(app, order);
   const shown = await request(provider.urls!.pay);
@@ -185,7 +186,7 @@ Deno.test("the slip of an open payment is shown at its pay address, a settled on
   assertEquals((await request(provider.urls!.pay)).status, 404);
 });
 
-Deno.test("money that moves without a new status is a change too", async () => {
+test("money that moves without a new status is a change too", async () => {
   const { app, provider, events } = await setup();
   const { id } = await create(app, order);
   provider.next = { status: "processing", paid: 2000 };

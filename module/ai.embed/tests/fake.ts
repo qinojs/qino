@@ -1,7 +1,6 @@
 import * as sqliteVec from "sqlite-vec";
 import { Db } from "@qino/qino";
-import { aiCapabilities } from "@qino/m/ai/plugin.ts";
-import aiSchema from "@qino/m/ai/dbschema.json" with { type: "json" };
+import { aiCapabilities, aiDbSchema as aiSchema } from "@qino/qino/tests";
 
 import { dbSchema } from "../plugin.ts";
 

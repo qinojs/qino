@@ -1,5 +1,8 @@
 export * from "../module/core/tests/deps.ts";
 export { aiAdapters, aiCapabilities, dbSchema as aiDbSchema } from "../module/ai/tests/deps.ts";
+export { store as chatgptStore } from "../module/ai.chatgpt/tests/deps.ts";
+export { embeddingTable, fakeApp as embedFakeApp } from "../module/ai.embed/tests/fake.ts";
+export { dbSchema as statsDbSchema, init as statsInit, record as statsRecord } from "../module/ai.stats/tests/deps.ts";
 export { fakeCms, render as cmsRender } from "../module/cms/tests/deps.ts";
 export { dbSchema as messagingDbSchema, templatePlaceholders } from "../module/messaging/tests/deps.ts";
 export { dbSchema as paymentDbSchema } from "../fin/fin.payment/tests/deps.ts";

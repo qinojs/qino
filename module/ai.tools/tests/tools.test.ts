@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { ApiError, App, getCtx } from "@qino/qino";
+import { test } from "node:test";
+import { ApiError, App, fs, getCtx } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { run } from "../mod.ts";
@@ -51,7 +52,7 @@ const tools = [
 
 /** A real app with ai, the fake model and user 7, for `fn`. */
 async function withApp(fn: (app: App) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["cron", "ai"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
@@ -73,7 +74,7 @@ async function withApp(fn: (app: App) => Promise<void>) {
 
 const ask = (content: string) => ({ messages: [{ role: "user" as const, content }], tools, usrId: 7 });
 
-Deno.test("ai.tools: runs the tools the model calls, in order, until it answers", () => withApp(async (testApp) => {
+test("ai.tools: runs the tools the model calls, in order, until it answers", () => withApp(async (testApp) => {
   order.length = 0;
   const streamed: string[] = [], came: unknown[] = [];
   const onMessage = (m: any, modelProvider?: number) => came.push([m.role, modelProvider]);
@@ -85,7 +86,7 @@ Deno.test("ai.tools: runs the tools the model calls, in order, until it answers"
   assertEquals(came, [["assistant", 1], ["tool", undefined], ["tool", undefined], ["assistant", 1]]); // each as it comes
 }));
 
-Deno.test("ai.tools: a run stays with the model that answered first, for its prompt cache", () => withApp(async (testApp) => {
+test("ai.tools: a run stays with the model that answered first, for its prompt cache", () => withApp(async (testApp) => {
   const n = await testApp.db.table("ai_model").insert({ name: "n" });
   await testApp.db.table("ai_model_provider").insert({ model_id: n, provider_id: 1 });
   for (const capability of ["text", "tools"]) await testApp.db.table("ai_model_capability").insert({ model_id: n, capability });
@@ -94,7 +95,7 @@ Deno.test("ai.tools: a run stays with the model that answered first, for its pro
   assertEquals([out.text, out.model], ["m", "m"]); // n became better, but m kept the run
 }));
 
-Deno.test("ai.tools: a run stays with the provider that answered first", () => withApp(async (testApp) => {
+test("ai.tools: a run stays with the provider that answered first", () => withApp(async (testApp) => {
   const other = await testApp.db.table("ai_provider").insert({ name: "other", type: "fake", endpoint: "" });
   await testApp.db.exec`UPDATE ai_model_provider SET cost_input = 1, cost_output = 1`;
   await testApp.db.table("ai_model_provider").insert({ model_id: 1, provider_id: other, cost_input: 9, cost_output: 9 });
@@ -102,34 +103,34 @@ Deno.test("ai.tools: a run stays with the provider that answered first", () => w
   assertEquals([out.text, out.modelProvider], ["fake", 1]); // the other provider became cheaper
 }));
 
-Deno.test("ai.tools: the tools act as the user, not as the caller's request", () => withApp(async (testApp) => {
+test("ai.tools: the tools act as the user, not as the caller's request", () => withApp(async (testApp) => {
   assertEquals((await run(testApp, ask("who"))).text, "[7,true]");
   await assertRejects(() => run(testApp, { ...ask("who"), usrId: 0 }), Error, "needs a user");
 }));
 
-Deno.test("ai.tools: failures are told to the model; a server error only as such", () => withApp(async (testApp) => {
+test("ai.tools: failures are told to the model; a server error only as such", () => withApp(async (testApp) => {
   assertEquals((await run(testApp, ask("busy crash nope"))).text,
     '{"error":"busy","code":"taken"} {"error":"Tool failed"} {"error":"Unknown tool: nope"}');
 }));
 
-Deno.test("ai.tools: a result too long is told, not given", () => withApp(async (testApp) => {
+test("ai.tools: a result too long is told, not given", () => withApp(async (testApp) => {
   assertEquals((await run(testApp, ask("huge"))).text, '{"error":"Too long: 200002 characters, at most 100000. Ask for less."}');
 }));
 
-Deno.test("ai.tools: the steps are bounded", () => withApp(async (testApp) => {
+test("ai.tools: the steps are bounded", () => withApp(async (testApp) => {
   order.length = 0;
   await assertRejects(() => run(testApp, { ...ask("loop"), maxSteps: 3 }), Error, "after 3 steps");
   assertEquals(order.length, 3);
 }));
 
-Deno.test("ai.tools: each step asks for the provider's cache, unless told not to", () => withApp(async (testApp) => {
+test("ai.tools: each step asks for the provider's cache, unless told not to", () => withApp(async (testApp) => {
   cached.length = 0;
   await run(testApp, ask("echo"));
   await run(testApp, { ...ask("echo"), cache: false });
   assertEquals(cached, [true, true, false, false]);
 }));
 
-Deno.test("ai.tools: notes come before each step, kept as the steps", () => withApp(async (testApp) => {
+test("ai.tools: notes come before each step, kept as the steps", () => withApp(async (testApp) => {
   const waiting = [[], [{ role: "system" as const, content: "noted" }]], kept: string[] = [];
   const out = await run(testApp, { ...ask("echo"), notes: () => waiting.shift() ?? [], onMessage: (m) => kept.push(m.role) });
   assertEquals(out.messages.map((m) => m.role), ["assistant", "tool", "system", "assistant"]); // after the first step

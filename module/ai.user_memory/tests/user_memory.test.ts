@@ -1,4 +1,5 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { collections, create, drop, index } from "@qino/qino/ai.embed";
 import { hit } from "@qino/qino/score";
@@ -20,7 +21,7 @@ const fake: Adapter = {
 };
 
 async function withApp(fn: (app: App) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "ai.tools", "cron", "score", "ai.embed", "ai.discover", "ai.agent", "ai.user_memory"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
@@ -41,7 +42,7 @@ async function withApp(fn: (app: App) => Promise<void>) {
   }
 }
 
-Deno.test("ai.user_memory: what is about the user is theirs, with every agent, in their sessions only", () => withApp(async (app) => {
+test("ai.user_memory: what is about the user is theirs, with every agent, in their sessions only", () => withApp(async (app) => {
   const lead = await Agent.create(app, { system: "lead" }), designer = await Agent.create(app, { system: "designer" });
   const ann = await lead.start(7);
   assertStringIncludes((await ann.ask("remember:always German")).text, '{"id":"u1"}'); // the user's
@@ -59,7 +60,7 @@ Deno.test("ai.user_memory: what is about the user is theirs, with every agent, i
   assertEquals(await app.db.col`SELECT content FROM ai_user_memory`, []);
 }));
 
-Deno.test("ai.user_memory: what the user says strengthens their memories close to it, in the background", () => withApp(async (app) => {
+test("ai.user_memory: what the user says strengthens their memories close to it, in the background", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   for (const content of ["always apples", "always a round logo"]) {
     const id = Number(await app.db.table("ai_user_memory").insert({ usr_id: 7, content }));
@@ -73,7 +74,7 @@ Deno.test("ai.user_memory: what the user says strengthens their memories close t
   assertEquals(await order(), [2, 1]);
 }));
 
-Deno.test("ai.user_memory: what is close to what the user says and not given yet comes to mind, as a note", () => withApp(async (app) => {
+test("ai.user_memory: what is close to what the user says and not given yet comes to mind, as a note", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   await session.ask("hi");
   const id = Number(await app.db.table("ai_user_memory").insert({ usr_id: 7, content: "always a round logo" })); // not given: kept later

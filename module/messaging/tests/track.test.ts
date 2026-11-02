@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertThrows } from "@std/assert";
 import { Output } from "@qino/qino";
 
@@ -7,7 +8,7 @@ import { testApp as app } from "./deps.ts";
 
 import type { Ctx } from "@qino/qino";
 
-Deno.test("every recipient gets their own marker, and a made-up one is not one of ours", async () => {
+test("every recipient gets their own marker, and a made-up one is not one of ours", async () => {
   const a = await app();
   const links = [{ url: "https://qino.test/s/c1", kind: "click" as const }, { url: "https://qino.test/s/c2", kind: "load" as const }];
   const mark = await markers(a, links)(42);
@@ -23,7 +24,7 @@ Deno.test("every recipient gets their own marker, and a made-up one is not one o
   await a.db.close();
 });
 
-Deno.test("the template's links are shortened with the message's own, and both carry the marker", async () => {
+test("the template's links are shortened with the message's own, and both carry the marker", async () => {
   const a = await app();
   await a.db.table("message_template").insert({
     name: "letter", channel: "email", main: true, format: "md",
@@ -38,7 +39,7 @@ Deno.test("the template's links are shortened with the message's own, and both c
   await a.db.close();
 });
 
-Deno.test("a hit writes who reached which address; a tag this key cannot read is not ours", async () => {
+test("a hit writes who reached which address; a tag this key cannot read is not ours", async () => {
   const a = await app();
   await a.db.table("message").insert({ channel: "email", direction: "out", data: "null", time: 1 });
   await a.db.table("message_delivery").insert({ message_id: 1, address: "one@qino.test", time: 1 });
@@ -52,7 +53,7 @@ Deno.test("a hit writes who reached which address; a tag this key cannot read is
   await a.db.close();
 });
 
-Deno.test("html carries an open beacon, plain text and telegram do not", async () => {
+test("html carries an open beacon, plain text and telegram do not", async () => {
   const a = await app();
   const { render: mail } = await renderer(a, { text: "**hi**", format: "md" }, "email");
   const html = (await mail({ deliveryId: 3 })).html ?? "";
@@ -65,7 +66,7 @@ Deno.test("html carries an open beacon, plain text and telegram do not", async (
   await a.db.close();
 });
 
-Deno.test("the beacon answers with a transparent gif nobody caches", async () => {
+test("the beacon answers with a transparent gif nobody caches", async () => {
   const a = await app();
   assertEquals(servePixel({ req: { appPath: "somewhere/else" } } as unknown as Ctx), undefined);
   const out = assertThrows(() => servePixel({ req: { appPath: PIXEL } } as unknown as Ctx), Output);

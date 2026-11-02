@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { api, dbSchema } from "../plugin.ts";
@@ -7,7 +8,7 @@ import type { ApiNode } from "@qino/qino";
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.image_editor: module metadata is wired", () => {
+test("cms.image_editor: module metadata is wired", () => {
   assertEquals(name, "cms.image_editor");
   assertEquals(dependencies, ["cms", "cms.versions"]);
   // hpos/vpos focus point is merged onto the (versioned) `file` table as floats.
@@ -16,7 +17,7 @@ Deno.test("cms.image_editor: module metadata is wired", () => {
   assertEquals(file.vpos.type, "number");
 });
 
-Deno.test("cms.image_editor: api exposes meta/history/restore endpoints", () => {
+test("cms.image_editor: api exposes meta/history/restore endpoints", () => {
   assertEquals(typeof (api.meta[":file"] as ApiNode).get!.execute, "function");
   assertEquals(typeof (api.meta[":file"] as ApiNode).put!.execute, "function");
   assertEquals(typeof (api.history[":file"] as ApiNode).get!.execute, "function");

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { toTools } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -16,7 +17,7 @@ function collectVerbs(tree: Record<string, unknown>, out: Array<Record<string, u
   return out;
 }
 
-Deno.test("cms: api tree exposes expected core tools", () => {
+test("cms: api tree exposes expected core tools", () => {
   const tools = toTools(api);
   const names = new Set(tools.map((tool) => tool.name));
   for (const name of [
@@ -35,7 +36,7 @@ Deno.test("cms: api tree exposes expected core tools", () => {
   }
 });
 
-Deno.test("cms: node API tools include path parameters and required input", () => {
+test("cms: node API tools include path parameters and required input", () => {
   const tools = toTools(api);
   const title = tools.find((tool) => tool.name === "node_title_put");
   assertEquals(title?.parameters, {
@@ -59,12 +60,12 @@ Deno.test("cms: node API tools include path parameters and required input", () =
   });
 });
 
-Deno.test("cms: api tool names remain unique", () => {
+test("cms: api tool names remain unique", () => {
   const names = toTools(api).map((tool) => tool.name);
   assertEquals(new Set(names).size, names.length);
 });
 
-Deno.test("cms: api verbs declare access and descriptions", () => {
+test("cms: api verbs declare access and descriptions", () => {
   for (const verb of collectVerbs(api)) {
     assertEquals(typeof verb.execute, "function");
     assertEquals(typeof verb.access, "function");

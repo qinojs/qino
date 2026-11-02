@@ -1,8 +1,10 @@
+import { test } from "node:test";
+import { fs } from "@qino/qino";
 import { runInNewContext } from "node:vm";
 import { assertEquals, fakeT } from "@qino/qino/tests";
 
-Deno.test("passkey form submits without navigating away and restores its button on failure", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/main.js", import.meta.url));
+test("passkey form submits without navigating away and restores its button on failure", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/main.js");
   let submit: (event: { preventDefault(): void }) => Promise<void>;
   let prevented = false;
   const button = { disabled: false, textContent: "Sign in with passkey" };

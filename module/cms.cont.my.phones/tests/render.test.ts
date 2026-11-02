@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -5,7 +6,7 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.cont.my.phones renders the signed-in phone flow", async () => {
+test("cms.cont.my.phones renders the signed-in phone flow", async () => {
   assertEquals(name, "cms.cont.my.phones");
   assertEquals(dependencies, ["cms", "messaging.sms", "u2"]);
   const node = { app: { t: fakeT }, settings: {} } as never;

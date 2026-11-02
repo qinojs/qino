@@ -1,10 +1,11 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { generateToken, hashToken, keyPrefix } from "../lib/keys.ts";
 
-Deno.test("auth.api_keys: a key is one device — same client and session on every request, no cookies", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("auth.api_keys: a key is one device — same client and session on every request, no cookies", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("auth.api_keys");
   await app.init();
   try {
@@ -27,8 +28,8 @@ Deno.test("auth.api_keys: a key is one device — same client and session on eve
   }
 });
 
-Deno.test("auth.api_keys: parallel first requests of a new key share one client and one session", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("auth.api_keys: parallel first requests of a new key share one client and one session", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("auth.api_keys");
   await app.init();
   try {

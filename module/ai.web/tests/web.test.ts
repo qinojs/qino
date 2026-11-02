@@ -1,12 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { App, fs, runAs, sha256hex } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 import { collections, drop } from "@qino/qino/ai.embed";
 
 const BRAVE = { web: { results: [{ title: "Qino", url: "https://qino.test/", description: "A CMS", extra: 1 }] } };
 
-Deno.test("ai.web: search asks the first engine with a key", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("ai.web: search asks the first engine with a key", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   const fetchOrg = globalThis.fetch, asked: Request[] = [];
@@ -37,8 +38,8 @@ Deno.test("ai.web: search asks the first engine with a key", async () => {
   }
 });
 
-Deno.test("ai.web: read a page by the chosen reader, keep it, find it", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("ai.web: read a page by the chosen reader, keep it, find it", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   const fetchOrg = globalThis.fetch, asked: string[] = [];
@@ -97,8 +98,8 @@ const SITE: Record<string, string> = {
   "https://site.test/docs/c": "# C",
 };
 
-Deno.test("ai.web: crawl reads the pages below a url, at most max; pages finds them by root", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("ai.web: crawl reads the pages below a url, at most max; pages finds them by root", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   const fetchOrg = globalThis.fetch, asked: string[] = [];

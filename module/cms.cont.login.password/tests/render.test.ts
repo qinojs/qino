@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
@@ -37,13 +38,13 @@ async function makeCtx(loggedIn = false) {
   return ctx;
 }
 
-Deno.test("cms.cont.login.password: metadata is wired", () => {
+test("cms.cont.login.password: metadata is wired", () => {
   assertEquals(name, "cms.cont.login.password");
   assertEquals(cms.node.settingsSchema.properties.saveLogin.type, "boolean");
   assertEquals(cms.node.settingsSchema.properties.saveLogin.default, true);
 });
 
-Deno.test("cms.cont.login.password: render shows login form for guests", async () => {
+test("cms.cont.login.password: render shows login form for guests", async () => {
   const ctx = await makeCtx(false);
   const node = {
     edit: () => false,
@@ -65,7 +66,7 @@ Deno.test("cms.cont.login.password: render shows login form for guests", async (
   assertEquals(out.includes("[pw]"), true);
 });
 
-Deno.test("cms.cont.login.password: render redirects logged-in users when configured", async () => {
+test("cms.cont.login.password: render redirects logged-in users when configured", async () => {
   const ctx = await makeCtx(true);
   const node = {
     edit: () => false,
@@ -83,7 +84,7 @@ Deno.test("cms.cont.login.password: render redirects logged-in users when config
   assertEquals(ctx.res.headers.get("Location"), "/target");
 });
 
-Deno.test("cms.cont.login.password: render escapes fixed users", async () => {
+test("cms.cont.login.password: render escapes fixed users", async () => {
   const guestCtx = await makeCtx(false);
   const guestNode = {
     edit: () => false,
@@ -98,7 +99,7 @@ Deno.test("cms.cont.login.password: render escapes fixed users", async () => {
   assertEquals(login.includes("<script>"), false);
 });
 
-Deno.test("cms.cont.login.password: signed-in users see no form without a redirect", async () => {
+test("cms.cont.login.password: signed-in users see no form without a redirect", async () => {
   const ctx = await makeCtx(true);
   const node = { edit: () => false, app: {}, cms: {}, settings: settings() };
   const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any, { ctx })));

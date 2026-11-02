@@ -1,8 +1,9 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { ipKey } from "../lib/ipKey.ts";
 
-Deno.test("ipKey: IPv4 as is, IPv6 as its /64", () => {
+test("ipKey: IPv4 as is, IPv6 as its /64", () => {
   assertEquals(ipKey("1.2.3.4"), "1.2.3.4");
   assertEquals(ipKey("::ffff:1.2.3.4"), "::ffff:1.2.3.4");
   assertEquals(ipKey("2a02:1210:3c4d:4200:bc73:f023:7666:bd65"), "2a02:1210:3c4d:4200::/64");

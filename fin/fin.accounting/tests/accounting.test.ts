@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { attach, cancel, create, creditNote, finalize, issue, refOf, setSent, update, writeOff } from "@qino/qino/fin.invoice";
 import { today } from "@qino/qino/fin";
@@ -17,7 +18,7 @@ async function saldo(app: App, period: { from?: string; to?: string } = {}) {
   return Object.fromEntries(rows.filter((r) => Number(r.balance)).map((r) => [String(r.number), Number(r.balance)]));
 }
 
-Deno.test("an entry adds up to zero, names known accounts, and stays out of closed periods", async () => {
+test("an entry adds up to zero, names known accounts, and stays out of closed periods", async () => {
   await withApp(async (app) => {
     const rent = { date: "2026-10-07", text: "Rent", lines: [{ account: "6000", amount: 1000 }, { account: "1020", amount: -1000 }] };
     await book(app, rent);
@@ -30,7 +31,7 @@ Deno.test("an entry adds up to zero, names known accounts, and stays out of clos
   });
 });
 
-Deno.test("a reversal takes an entry back, once", async () => {
+test("a reversal takes an entry back, once", async () => {
   await withApp(async (app) => {
     const id = await book(app, { date: "2026-10-07", text: "Wrong", lines: [{ account: "6500", amount: 500 }, { account: "1000", amount: -500 }] });
     await reverse(app, id, { date: "2026-10-08" });
@@ -39,7 +40,7 @@ Deno.test("a reversal takes an entry back, once", async () => {
   });
 });
 
-Deno.test("the balance sheet sums all time, the result only the period", async () => {
+test("the balance sheet sums all time, the result only the period", async () => {
   await withApp(async (app) => {
     await book(app, { date: "2025-12-15", text: "Sale 2025", lines: [{ account: "1020", amount: 300 }, { account: "3400", amount: -300 }] });
     await book(app, { date: "2026-02-01", text: "Sale 2026", lines: [{ account: "1020", amount: 200 }, { account: "3400", amount: -200 }] });
@@ -48,7 +49,7 @@ Deno.test("the balance sheet sums all time, the result only the period", async (
   });
 });
 
-Deno.test("invoices and their payments book themselves, in parts, with fees, and a cancel takes it back", async () => {
+test("invoices and their payments book themselves, in parts, with fees, and a cancel takes it back", async () => {
   await withApp(async (app) => {
     const id = Number((await issue(app, await create(app, {
       currency: "CHF", date: "2026-10-01", lines: [{ name: "Design", price: 100000, taxRate: 8.1 }],
@@ -67,7 +68,7 @@ Deno.test("invoices and their payments book themselves, in parts, with fees, and
   });
 });
 
-Deno.test("a recorded payment is booked on the day the money moved, a closed period on today", async () => {
+test("a recorded payment is booked on the day the money moved, a closed period on today", async () => {
   await withApp(async (app) => {
     const invoice = async () => Number((await issue(app, await create(app, {
       currency: "CHF", date: "2026-03-01", lines: [{ name: "Hosting", price: 24000 }],
@@ -82,7 +83,7 @@ Deno.test("a recorded payment is booked on the day the money moved, a closed per
   });
 });
 
-Deno.test("a fee without its account books nothing rather than too much money", async () => {
+test("a fee without its account books nothing rather than too much money", async () => {
   await withApp(async (app) => {
     await app.settings["fin.accounting"].accounts.fees("");
     const id = Number((await issue(app, await create(app, {
@@ -102,7 +103,7 @@ Deno.test("a fee without its account books nothing rather than too much money", 
   });
 });
 
-Deno.test("a received invoice is a debt, paid from the bank", async () => {
+test("a received invoice is a debt, paid from the bank", async () => {
   await withApp(async (app) => {
     const original = await app.dbFiles.add(new File(["%PDF"], "rent.pdf", { type: "application/pdf" }));
     const draft = await create(app, { direction: "in", number: "R-1", currency: "CHF", lines: [{ name: "Rent", price: 180000 }] });
@@ -115,7 +116,7 @@ Deno.test("a received invoice is a debt, paid from the bank", async () => {
   });
 });
 
-Deno.test("a payment recorded by mistake is canceled: the bill is open again, its entry taken back", async () => {
+test("a payment recorded by mistake is canceled: the bill is open again, its entry taken back", async () => {
   await withApp(async (app) => {
     const draft = await create(app, { direction: "in", number: "S-2", currency: "CHF", lines: [{ name: "Software", price: 5000 }] });
     const id = Number((await issue(app, draft))?.id);
@@ -131,7 +132,7 @@ Deno.test("a payment recorded by mistake is canceled: the bill is open again, it
   });
 });
 
-Deno.test("a bill a partner paid privately: the company owes it to them", async () => {
+test("a bill a partner paid privately: the company owes it to them", async () => {
   await withApp(async (app) => {
     const draft = await create(app, { direction: "in", number: "S-1", currency: "CHF", lines: [{ name: "Software", price: 5000 }] });
     const id = Number((await issue(app, draft))?.id);
@@ -140,14 +141,14 @@ Deno.test("a bill a partner paid privately: the company owes it to them", async 
   });
 });
 
-Deno.test("another currency is left to be booked by hand", async () => {
+test("another currency is left to be booked by hand", async () => {
   await withApp(async (app) => {
     await issue(app, await create(app, { currency: "EUR", lines: [{ name: "Design", price: 100000 }] }));
     assertEquals(await saldo(app), {});
   });
 });
 
-Deno.test("an invoice line may name its account; the others book on the default one", async () => {
+test("an invoice line may name its account; the others book on the default one", async () => {
   await withApp(async (app) => {
     const lines = [
       { name: "Design", price: 100000, taxRate: 8.1 },
@@ -167,7 +168,7 @@ Deno.test("an invoice line may name its account; the others book on the default 
   });
 });
 
-Deno.test("closing a year puts its result onto equity, closes the books, and opens again", async () => {
+test("closing a year puts its result onto equity, closes the books, and opens again", async () => {
   await withApp(async (app) => {
     const sale = (date: string, amount: number) =>
       book(app, { date, text: "Sale", lines: [{ account: "1020", amount }, { account: "3400", amount: -amount }] });
@@ -193,7 +194,7 @@ Deno.test("closing a year puts its result onto equity, closes the books, and ope
   });
 });
 
-Deno.test("the business year runs on from the last closing, any day; without one it is the calendar year", async () => {
+test("the business year runs on from the last closing, any day; without one it is the calendar year", async () => {
   await withApp(async (app) => {
     assertEquals(await businessYear(app, "2027-03-15"), { from: "2027-01-01", to: "2027-12-31" });
     await app.settings["fin.accounting"].closedUntil("2025-06-30");
@@ -202,7 +203,7 @@ Deno.test("the business year runs on from the last closing, any day; without one
   });
 });
 
-Deno.test("a credit note books revenue and tax back; paying it back books the money out", async () => {
+test("a credit note books revenue and tax back; paying it back books the money out", async () => {
   await withApp(async (app) => {
     const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
     const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);
@@ -217,7 +218,7 @@ Deno.test("a credit note books revenue and tax back; paying it back books the mo
   });
 });
 
-Deno.test("a pro forma books nothing; the invoice it becomes does", async () => {
+test("a pro forma books nothing; the invoice it becomes does", async () => {
   await withApp(async (app) => {
     const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
     const id = Number((await issue(app, await create(app, { currency: "CHF", type: "proforma", lines })))?.id);
@@ -227,7 +228,7 @@ Deno.test("a pro forma books nothing; the invoice it becomes does", async () => 
   });
 });
 
-Deno.test("written off: the loss and its tax back; paid after all: taken back again", async () => {
+test("written off: the loss and its tax back; paid after all: taken back again", async () => {
   await withApp(async (app) => {
     const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }, { name: "Book", price: 10000, taxRate: 2.6 }];
     const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);
@@ -247,7 +248,7 @@ Deno.test("written off: the loss and its tax back; paid after all: taken back ag
   });
 });
 
-Deno.test("an invoice that went out is canceled by a credit note: booked back in its own period", async () => {
+test("an invoice that went out is canceled by a credit note: booked back in its own period", async () => {
   await withApp(async (app) => {
     const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
     const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);

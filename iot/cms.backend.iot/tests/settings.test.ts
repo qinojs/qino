@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { provider } from "@qino/qino/iot";
 
@@ -7,7 +8,7 @@ import { fixture } from "./fixture.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("iot backend edits persisted instances and retains secrets", async () => {
+test("iot backend edits persisted instances and retains secrets", async () => {
   const { app, provider: id, close } = await fixture(), node = { app, id: 5, url: () => Promise.resolve("/backend/iot#cmspid9") } as unknown as Node;
   try {
     const output = String(await settings(node));

@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext, fakeRender, fakeCms } from "@qino/qino/tests";
 
@@ -31,28 +32,28 @@ async function setup(access: Record<number, number>, changed: Array<{ node_id: n
   return ctx;
 }
 
-Deno.test("213: getForNode returns empty for a user without edit access", async () => {
+test("213: getForNode returns empty for a user without edit access", async () => {
   const ctx = await setup({ 5: 1 }, []); // access 1 (READ) < 2
   await requestStorage.run(ctx, async () => {
     assertEquals(await getForNode(ctx, 5), []);
   });
 });
 
-Deno.test("213: logDetails returns null when no affected page is editable", async () => {
+test("213: logDetails returns null when no affected page is editable", async () => {
   const ctx = await setup({ 5: 1, 6: 0 }, [{ node_id: 5, page_id: 5 }, { node_id: 6, page_id: 6 }]);
   await requestStorage.run(ctx, async () => {
     assertEquals(await logDetails(ctx, 42), null);
   });
 });
 
-Deno.test("213: logDetails returns null when the log touched no known node", async () => {
+test("213: logDetails returns null when the log touched no known node", async () => {
   const ctx = await setup({ 5: 3 }, []); // no node_changed rows for this log
   await requestStorage.run(ctx, async () => {
     assertEquals(await logDetails(ctx, 42), null);
   });
 });
 
-Deno.test("213: logDetails exposes details + only editable-node messages", async () => {
+test("213: logDetails exposes details + only editable-node messages", async () => {
   const ctx = await setup(
     { 5: 0, 6: 2 }, // page 5 hidden, page 6 editable
     [

@@ -1,12 +1,13 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { collection, index } from "@qino/qino/ai.embed";
-import { embeddingTable, fakeApp } from "@qino/m/ai.embed/tests/fake.ts";
+import { embeddingTable, embedFakeApp as fakeApp } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.ai.embed: collections can be managed and searched", async () => {
+test("cms.backend.ai.embed: collections can be managed and searched", async () => {
   const article = { additionalProperties: { properties: { id: { type: "integer", "x-index": "primary" } } } };
   const articleId = { type: "integer", "x-qg-parent": "article", "x-qg-on-parent-delete": "cascade" };
   const { app, db } = await fakeApp("sqlite::memory:", { article, embedding_article_text: embeddingTable({ article_id: articleId }) });

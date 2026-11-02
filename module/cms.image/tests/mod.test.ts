@@ -1,12 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
-import { requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { fs, requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { cms_image } from "../mod.ts";
 import { imageData } from "../imageData.ts";
 
-Deno.test("cms.image: SVG dimensions use root attributes and viewBox", async () => {
-  const dir = await Deno.makeTempDir();
+test("cms.image: SVG dimensions use root attributes and viewBox", async () => {
+  const dir = await fs.tempDir();
   const path = dir + "/image.svg";
   const file = { path, get: () => "image/svg+xml", transform: () => ({ path }), url: () => "/original.svg" };
   try {
@@ -20,17 +21,17 @@ Deno.test("cms.image: SVG dimensions use root attributes and viewBox", async () 
       ['width="100" viewBox="0 0 0 0"', 800, 600],
       ['', 800, 600],
     ] as const) {
-      await Deno.writeTextFile(path, `<!-- <svg width="999"> --><svg ${attributes}><svg width="999"/></svg>`);
+      await fs.write(path, `<!-- <svg width="999"> --><svg ${attributes}><svg width="999"/></svg>`);
       const data = await imageData(file as any, {}, dir + "/cache/");
       assertEquals([data.w, data.h], [w, h], attributes);
     }
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms.image: finished SVGs use the requested quality inline and across display sizes", async () => {
-  const dir = await Deno.makeTempDir();
+test("cms.image: finished SVGs use the requested quality inline and across display sizes", async () => {
+  const dir = await fs.tempDir();
   try {
     const ctx = await testContext({ app: { modules: { get: () => ({ cache: dir + "/cache/" }) } } });
     const file = {
@@ -46,8 +47,8 @@ Deno.test("cms.image: finished SVGs use the requested quality inline and across 
       },
     };
     const source = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><text>Grün</text></svg>';
-    await Deno.writeTextFile(file.path, source.replace('</svg>', '<!--' + 'x'.repeat(4096) + '--></svg>'));
-    await Deno.writeTextFile(dir + "/optimized.svg", source);
+    await fs.write(file.path, source.replace('</svg>', '<!--' + 'x'.repeat(4096) + '--></svg>'));
+    await fs.write(dir + "/optimized.svg", source);
     const inline = String(await requestStorage.run(ctx, () => cms_image(file as any, { width: 200, quality: 37, fit: "cover" })));
     assertEquals(inline.includes(' data-fixed-src'), false);
     assertEquals(inline.includes('style="--image-width:200px;--aspect-ratio:200/100"'), true);
@@ -56,7 +57,7 @@ Deno.test("cms.image: finished SVGs use the requested quality inline and across 
     assertEquals(inline.includes('object-position'), false);
     assertEquals(inline.includes('src="data:image/svg+xml,' + encodeURIComponent(source) + '"'), true);
 
-    await Deno.writeTextFile(dir + "/optimized.svg", source.replace('</svg>', '<!--' + 'x'.repeat(2048) + '--></svg>'));
+    await fs.write(dir + "/optimized.svg", source.replace('</svg>', '<!--' + 'x'.repeat(2048) + '--></svg>'));
     for (const [width, ratio] of [[100, "100/50"], [500, "400/200"]] as const) {
       const out = String(await requestStorage.run(ctx, () => cms_image(file as any, { width, height: 200, fit: "contain", quality: 37 })));
       assertEquals(out.includes('src="/dbFile/1/u-svg/q-37/logo.svg"'), true);
@@ -65,17 +66,17 @@ Deno.test("cms.image: finished SVGs use the requested quality inline and across 
       assertEquals(out.includes('data:image/png'), false);
     }
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms.image: cms_image renders escaped image component from cached data", async () => {
-  const dir = await Deno.makeTempDir();
+test("cms.image: cms_image renders escaped image component from cached data", async () => {
+  const dir = await fs.tempDir();
   try {
-    await Deno.mkdir(dir + "/cache/cms.image/", { recursive: true });
+    await fs.mkdir(dir + "/cache/cms.image/");
     const md5 = "abc123";
     const cacheFile = dir + `/cache/cms.image/data-v2-${md5}.45.55.320.180.42.60.30..json`;
-    await Deno.writeTextFile(cacheFile, JSON.stringify({
+    await fs.write(cacheFile, JSON.stringify({
       w: 320,
       h: 180,
       vpos: 45,
@@ -112,17 +113,17 @@ Deno.test("cms.image: cms_image renders escaped image component from cached data
     assertEquals(out.includes('alt="&lt;Alt&gt;"'), true);
     assertEquals([...ctx.res.html.legacyScripts], ["/m/cms.image/pub/cms-image.js"]);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms.image: cms_image derives alt text from file name", async () => {
-  const dir = await Deno.makeTempDir();
+test("cms.image: cms_image derives alt text from file name", async () => {
+  const dir = await fs.tempDir();
   try {
-    await Deno.mkdir(dir + "/cache/cms.image/", { recursive: true });
+    await fs.mkdir(dir + "/cache/cms.image/");
     const md5 = "def456";
     const cacheFile = dir + `/cache/cms.image/data-v2-${md5}.50.50.100.50.42.60.30.contain.json`;
-    await Deno.writeTextFile(cacheFile, JSON.stringify({
+    await fs.write(cacheFile, JSON.stringify({
       w: 100,
       h: 50,
       vpos: 50,
@@ -151,6 +152,6 @@ Deno.test("cms.image: cms_image derives alt text from file name", async () => {
     assertEquals(out.includes("max=true"), true);
     assertEquals(out.includes('alt="Product Photo"'), true);
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

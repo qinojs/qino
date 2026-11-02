@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { strFromU8, unzipSync } from "fflate";
 
 import { assert, assertEquals } from "./deps.ts";
 import { csv } from "../lib/sheet/csv.ts";
 import { xlsx } from "../lib/sheet/xlsx.ts";
 
-Deno.test("csv: RFC 4180 with a BOM; formulas stay text, numbers numbers", () => {
+test("csv: RFC 4180 with a BOM; formulas stay text, numbers numbers", () => {
   assertEquals(
     csv([["Name", "Note"], ['A "quote"', "=SUM(1)"], ["+1", -5], ["@x", "\tx"], ["a,b", ["x", "y"]], [null, "line\nbreak"]]),
     "\uFEFF" + [
@@ -18,7 +19,7 @@ Deno.test("csv: RFC 4180 with a BOM; formulas stay text, numbers numbers", () =>
   );
 });
 
-Deno.test("csv: no value breaks out of its cell or row", () => {
+test("csv: no value breaks out of its cell or row", () => {
   const evil = ['x","=1+1","y', 'a"\r\n"b', '"', '",', "\r\n=2", ";,\t|"];
   const out = csv([evil]);
   // each value is one quoted cell: quotes doubled, a formula start kept as text, nothing else special
@@ -29,7 +30,7 @@ Deno.test("csv: no value breaks out of its cell or row", () => {
   assertEquals(read, evil.map((v) => /^[=+\-@\t\r\n]/.test(v) ? "'" + v : v));
 });
 
-Deno.test("xlsx: one sheet; numbers stay numbers, text is text and never a formula", async () => {
+test("xlsx: one sheet; numbers stay numbers, text is text and never a formula", async () => {
   const wide = Array.from({ length: 28 }, (_, i) => i);
   const files = unzipSync(await xlsx([["=SUM(1)", -5, '<b>"x"</b> & y', "a\u0001b", ["p", "q"], null], wide]));
   for (const part of ["[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/_rels/workbook.xml.rels"]) assert(files[part], part);

@@ -1,4 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { assertEquals } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { sql } from "../deps.ts";
@@ -33,7 +35,7 @@ async function app() {
 
 const ids = (db: Db) => db.query`SELECT id FROM text ORDER BY id`.then((r) => r.map((x) => Number(x.id)));
 
-Deno.test("healthChecks: only the text nothing points at counts as unused", async () => {
+test("healthChecks: only the text nothing points at counts as unused", async () => {
   await using a = await app();
   const found = await (await healthChecks(a)).cleanup["not linked texts"]() as any;
   assertEquals(found.info, "found 1");
@@ -41,7 +43,7 @@ Deno.test("healthChecks: only the text nothing points at counts as unused", asyn
   assertEquals(await ids(a.db), [1, 2]); // page_text link and page title both keep their text
 });
 
-Deno.test("healthChecks: a text's own language rows are not a use of it", async () => {
+test("healthChecks: a text's own language rows are not a use of it", async () => {
   await using a = await app();
   await a.db.exec`DELETE FROM page_text`;
   const found = await (await healthChecks(a)).cleanup["not linked texts"]() as any;
@@ -54,7 +56,7 @@ Deno.test("healthChecks: a text's own language rows are not a use of it", async 
 const onUrl = <T>(url: string, fn: () => T): T =>
   requestStorage.run({ req: { url: new URL(url), appUrl: "/" } } as any, fn);
 
-Deno.test("healthChecks: the address you are on differs from core.url", async () => {
+test("healthChecks: the address you are on differs from core.url", async () => {
   await using a = await app();
   a.settings = fakeSettings({ core: fakeSettings({ url: "https://set.example/" }) });
   const check = (await healthChecks(a)).warning["public address is not the one you are on"];
@@ -64,7 +66,7 @@ Deno.test("healthChecks: the address you are on differs from core.url", async ()
   assertEquals(Object.keys(found.solutions), ["set it to: https://other.example/"]);
 });
 
-Deno.test("healthChecks: an open host list offers the public host and its www twin", async () => {
+test("healthChecks: an open host list offers the public host and its www twin", async () => {
   await using a = await app();
   let hosts = "";
   a.settings = fakeSettings({ core: fakeSettings({ url: "https://www.set.example/", hosts: Object.assign((v: string) => hosts = v, { then: (r: any) => r(hosts) }) }) });
@@ -76,8 +78,8 @@ Deno.test("healthChecks: an open host list offers the public host and its www tw
   assertEquals(await (await healthChecks(a)).notice["any host is accepted"](), undefined, "a dev install");
 });
 
-Deno.test("healthChecks: a corrupt SQLite database is reported", async () => {
-  const file = await Deno.makeTempFile({ suffix: ".sqlite" });
+test("healthChecks: a corrupt SQLite database is reported", async () => {
+  const file = await fs.tempFile();
   const open = async (migrate = false) => {
     const db = new Db(`sqlite:${file}`);
     if (migrate) await db.migrate(schema);
@@ -92,22 +94,23 @@ Deno.test("healthChecks: a corrupt SQLite database is reported", async () => {
       await a.db.exec`CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)`;
       await a.db.exec`CREATE INDEX t_v ON t (v)`;
       for (let i = 0; i < 200; i++) await a.db.exec`INSERT INTO t (v) VALUES (${"x".repeat(100) + i})`;
+      await a.db.exec`PRAGMA wal_checkpoint(TRUNCATE)`; // Bun keeps the WAL on close: the pages must be in the file
     }
     // overwrite a page of t at the end of the file
-    const bytes = await Deno.readFile(file);
+    const bytes = await fs.bytes(file);
     const pageSize = (bytes[16] << 8) | bytes[17];
     bytes.fill(0xff, bytes.length - 2 * pageSize, bytes.length - pageSize);
-    await Deno.writeFile(file, bytes);
+    await fs.write(file, bytes);
     await using a = await open();
     const found = await (await healthChecks(a)).error["corrupt tables"]() as any;
     assertEquals(found.info.startsWith("database: "), true);
     assertEquals(found.solutions, undefined); // no repair outside MySQL
   } finally {
-    await Deno.remove(file);
+    await fs.remove(file);
   }
 });
 
-Deno.test("healthChecks: settings their module no longer declares are listed and deleted, free objects aren't", async () => {
+test("healthChecks: settings their module no longer declares are listed and deleted, free objects aren't", async () => {
   await using a = await app();
   const settingsSchema = { properties: {
     kept: { type: "string" },

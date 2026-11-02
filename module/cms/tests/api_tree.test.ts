@@ -1,13 +1,14 @@
+import { test } from "node:test";
 import { checkCollisions, toTools, walk } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { api } from "../api.ts";
 
-Deno.test("cms api tree: has no route collisions", () => {
+test("cms api tree: has no route collisions", () => {
   for (const r of walk(api)) checkCollisions(r);
 });
 
-Deno.test("cms api tree: exposes expected stable tool names", () => {
+test("cms api tree: exposes expected stable tool names", () => {
   const names = new Set(toTools(api).map((tool) => tool.name));
   for (const name of [
     "tree_get",

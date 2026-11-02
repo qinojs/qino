@@ -1,11 +1,11 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
-const quiet = { sanitizeOps: false, sanitizeResources: false };
 
-Deno.test({ name: "form: what the form sends beside its fields is kept, within bounds; spam is marked", ...quiet, fn: async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("form: what the form sends beside its fields is kept, within bounds; spam is marked", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form");
   await app.init();
@@ -28,6 +28,6 @@ Deno.test({ name: "form: what the form sends beside its fields is kept, within b
     assertEquals((await app.db.col`SELECT spam FROM form_entry ORDER BY id`).map(Number), [0, 1], "a filled honeypot is kept as spam");
   } finally {
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
-} });
+});

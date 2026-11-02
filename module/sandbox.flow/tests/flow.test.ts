@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, App, getCtx, s } from "@qino/qino";
+import { test } from "node:test";
+import { Access, App, fs, getCtx, s } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { listen, run } from "../mod.ts";
@@ -8,7 +9,7 @@ import type { Flow } from "../mod.ts";
 
 /** A real app with user 7 and three routes as tools: test_who_get, test_echo_post, test_rename_post. */
 async function withApp(fn: (app: App) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   await app.init();
   const rename = ({ name }: any) => app.db.table("usr").update(7, { given_name: name });
   app.apiTree = {
@@ -30,7 +31,7 @@ async function withApp(fn: (app: App) => Promise<void>) {
 const on = { host: "db", event: "table:update-after" };
 const flow = (code: string, more: Partial<Flow> = {}): Flow => ({ description: "test", on, owner: 7, code, ...more });
 
-Deno.test("sandbox.flow: the code gets the event, tools run as the owner, the trace tells", () =>
+test("sandbox.flow: the code gets the event, tools run as the owner, the trace tells", () =>
   withApp(async (app) => {
     const trace = await run(app, flow(`
       const n = event * 2;
@@ -40,13 +41,13 @@ Deno.test("sandbox.flow: the code gets the event, tools run as the owner, the tr
     assertEquals(trace.calls, [{ tool: "test_who_get", args: undefined, result: 7 }]);
   }));
 
-Deno.test("sandbox.flow: an error ends the run", () =>
+test("sandbox.flow: an error ends the run", () =>
   withApp(async (app) => {
     const failed = await run(app, flow(`throw new Error("boom")`), 1);
     assertEquals([failed.end, failed.error], ["error", "boom"]);
   }));
 
-Deno.test("sandbox.flow: only allowed tools exist; a test run records what would change", () =>
+test("sandbox.flow: only allowed tools exist; a test run records what would change", () =>
   withApp(async (app) => {
     const trace = await run(app, flow(`return [
       Object.keys(tools),
@@ -61,7 +62,7 @@ Deno.test("sandbox.flow: only allowed tools exist; a test run records what would
     ]);
   }));
 
-Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores what its own run causes", () =>
+test("sandbox.flow: listens to its event, sees the event as data, ignores what its own run causes", () =>
   withApp(async (app) => {
     const traces: any[] = [];
     const stop = new AbortController();
@@ -82,7 +83,7 @@ Deno.test("sandbox.flow: listens to its event, sees the event as data, ignores w
     assertEquals(await app.db.one`SELECT given_name FROM usr WHERE id = 7`, "Bob");
   }));
 
-Deno.test("sandbox.flow: a run leaves its state to the next; a test keeps none", () =>
+test("sandbox.flow: a run leaves its state to the next; a test keeps none", () =>
   withApp(async (app) => {
     const count = flow(`state.n = (state.n ?? 0) + event; return state.n;`, { test: false });
     const first = await run(app, count, 2);
@@ -94,7 +95,7 @@ Deno.test("sandbox.flow: a run leaves its state to the next; a test keeps none",
     assertEquals([(await run(app, tried, 0)).state, tried.state], [undefined, { n: 0 }]);
   }));
 
-Deno.test("sandbox.flow: an event while a request makes its session does not break the request", () =>
+test("sandbox.flow: an event while a request makes its session does not break the request", () =>
   withApp(async (app) => {
     const stop = new AbortController();
     listen(app, flow(`return;`, { on: { host: "db", event: "table:insert-after" } }), { signal: stop.signal });

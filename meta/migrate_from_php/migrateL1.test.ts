@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -5,7 +6,7 @@ import { migrateL1 } from "./migrateL1.ts";
 
 import type { App } from "@qino/qino";
 
-Deno.test("migrateL1: a l1 list becomes cms.cont.dbtable, renamed columns followed, its filter folded in", async () => {
+test("migrateL1: a l1 list becomes cms.cont.dbtable, renamed columns followed, its filter folded in", async () => {
   const db = new Db("sqlite::memory:");
   await db.exec`CREATE TABLE page (id INTEGER PRIMARY KEY, module TEXT, settings TEXT)`;
   await db.exec`CREATE TABLE page_text (page_id INTEGER, name TEXT, text_id INTEGER)`;

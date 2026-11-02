@@ -1,7 +1,8 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { redactQuery } from "../lib/ctx/init.ts";
 
-Deno.test("log: query values that grant access are redacted, the rest is kept", () => {
+test("log: query values that grant access are redacted, the rest is kept", () => {
   const cases: [string, string][] = [
     // a signed dbFile link stays replayable once it is in the log; short values vanish entirely
     ["https://x.tld/dbFile/7/a.jpg?exp=123&sig=abc", "https://x.tld/dbFile/7/a.jpg?exp=123&sig=-----"],

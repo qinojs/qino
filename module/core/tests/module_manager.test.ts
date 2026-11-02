@@ -1,4 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { pathToFileURL } from "node:url";
 
 import { assert, assertEquals, assertRejects } from "./deps.ts";
@@ -16,7 +18,7 @@ const fakeDb = () => ({
   table: () => ({ ensure: () => Promise.resolve(), delete: () => Promise.resolve() }),
 });
 
-Deno.test("moduleIcon trusts the manifest, and a remote module serves from the app's own url", () => {
+test("moduleIcon trusts the manifest, and a remote module serves from the app's own url", () => {
   const source = "https://cdn.example/modules/remote.icon/plugin.ts";
   const remote = new Module({} as any, "remote.icon", {}, { files: ["pub/module.svg"] }, source);
   const plain = new Module({} as any, "plain", {}, {}, source);
@@ -30,130 +32,120 @@ Deno.test("moduleIcon trusts the manifest, and a remote module serves from the a
   });
 });
 
-Deno.test({
-  name: "ModuleManager imports modules and initializes by dependencies",
-  sanitizeOps: false,
-  sanitizeResources: false,
-  fn: async () => {
-    const root = await Deno.makeTempDir();
-    const dir = root + "/";
-    const localModDir = dir + "m/";
-    await Deno.mkdir(localModDir + "local.foo/", { recursive: true });
-    await Deno.mkdir(dir + "private/private.foo/", { recursive: true });
-    await Deno.mkdir(dir + "private/private.js/", { recursive: true });
-    await Deno.mkdir(dir + "remote-ish/", { recursive: true });
+test("ModuleManager imports modules and initializes by dependencies", async () => {
+  const root = await fs.tempDir();
+  const dir = root + "/";
+  const localModDir = dir + "m/";
+  await fs.mkdir(localModDir + "local.foo/");
+  await fs.mkdir(dir + "private/private.foo/");
+  await fs.mkdir(dir + "private/private.js/");
+  await fs.mkdir(dir + "remote-ish/");
 
-    await Deno.writeTextFile(localModDir + "local.foo/plugin.ts", `
-    export const value = "local";
-  `);
-    await Deno.writeTextFile(dir + "private/private.foo/plugin.ts", `
-    export const value = "private";
-    export async function install({ app }) {
-      app.installed.push("private.foo");
+  await fs.write(localModDir + "local.foo/plugin.ts", `
+  export const value = "local";
+`);
+  await fs.write(dir + "private/private.foo/plugin.ts", `
+  export const value = "private";
+  export async function install({ app }) {
+    app.installed.push("private.foo");
+  }
+`);
+  await fs.write(dir + "private/private.foo/manifest.json", `{ "name": "private.foo", "dependencies": ["local.foo"] }`);
+  await fs.write(dir + "remote-ish/plugin.ts", `
+  export const value = "file-url";
+`);
+  await fs.write(dir + "remote-ish/manifest.json", `{ "name": "remote-ish" }`);
+  await fs.write(dir + "private/private.js/plugin.js", `
+  export const value = "js";
+`);
+  await fs.write(dir + "private/private.js/manifest.json", `{ "name": "private.js" }`);
+
+  const app = {
+    dir,
+    db: fakeDb(),
+    installed: [],
+    settings: { [$item]: { setSchema() {}, addEventListener() {} } },
+  };
+  const modules = new ModuleManager(app as any);
+  const local = await modules.import(pathToFileURL(localModDir + "local.foo/plugin.ts").href);
+  assertEquals(local.name, "local.foo");
+  assertEquals(local.plugin.value, "local");
+  assert(local.source.endsWith("/local.foo/plugin.ts"));
+
+  await assertRejects(
+    () => modules.import("./private/private.foo/"),
+    Error,
+    "Use app.modules.add",
+  );
+
+  assertEquals(local.data,  dir + "data/local.foo/");
+  assertEquals(local.cache, dir + "cache/local.foo/");
+  assertEquals(local.tmp,   dir + "tmp/local.foo/");
+
+  const privateModule = await modules.import(pathToFileURL(dir + "private/private.foo/plugin.ts").href);
+  assertEquals(privateModule.name, "private.foo");
+  assertEquals(privateModule.plugin.value, "private");
+  assert(modules.get("local.foo"));
+
+  const jsModule = await modules.import(pathToFileURL(dir + "private/private.js/plugin.js").href);
+  assertEquals(jsModule.name, "private.js");
+  assertEquals(jsModule.plugin.value, "js");
+
+  const fileUrlModule = await modules.import(pathToFileURL(dir + "remote-ish/plugin.ts").href);
+  assertEquals(fileUrlModule.name, "remote-ish");
+  assertEquals(fileUrlModule.plugin.value, "file-url");
+
+  assertEquals(modules.get("private.foo")?.plugin.value, "private");
+  assert(modules.get("private.foo")?.source.endsWith("/private.foo/plugin.ts"));
+  await modules.init();
+  assertEquals(app.installed, ["private.foo"]);
+
+  await fs.remove(root, { recursive: true });
+});
+
+test("ModuleManager unlink tears down signal-bound listeners; re-link rebinds", async () => {
+  const root = await fs.tempDir();
+  const modDir = root + "/m/";
+  await fs.mkdir(modDir + "sig.foo/");
+  // init() registers a listener bound to the per-module signal
+  await fs.write(modDir + "sig.foo/plugin.ts", `
+    export function init(app, { signal }) {
+      app.on("ping", (e) => { e.count++; }, { signal });
     }
   `);
-    await Deno.writeTextFile(dir + "private/private.foo/manifest.json", `{ "name": "private.foo", "dependencies": ["local.foo"] }`);
-    await Deno.writeTextFile(dir + "remote-ish/plugin.ts", `
-    export const value = "file-url";
-  `);
-    await Deno.writeTextFile(dir + "remote-ish/manifest.json", `{ "name": "remote-ish" }`);
-    await Deno.writeTextFile(dir + "private/private.js/plugin.js", `
-    export const value = "js";
-  `);
-    await Deno.writeTextFile(dir + "private/private.js/manifest.json", `{ "name": "private.js" }`);
 
-    const app = {
-      dir,
-      db: fakeDb(),
-      installed: [],
-      settings: { [$item]: { setSchema() {}, addEventListener() {} } },
-    };
-    const modules = new ModuleManager(app as any);
-    const local = await modules.import(pathToFileURL(localModDir + "local.foo/plugin.ts").href);
-    assertEquals(local.name, "local.foo");
-    assertEquals(local.plugin.value, "local");
-    assert(local.source.endsWith("/local.foo/plugin.ts"));
+  const bus = new Emitter<{ ping: { count: number } }>();
+  const app = {
+    dir: root + "/",
+    db: fakeDb(),
+    apiTree: {} as Record<string, unknown>,
+    settings: { [$item]: { setSchema() {}, addEventListener() {} } },
+    on: bus.on.bind(bus),
+    fire: bus.fire.bind(bus),
+  };
 
-    await assertRejects(
-      () => modules.import("./private/private.foo/"),
-      Error,
-      "Use app.modules.add",
-    );
+  const modules = new ModuleManager(app as any);
+  modules.add("./m/sig.foo/plugin.ts");
+  await modules.init();
+  assertEquals((await app.fire("ping", { count: 0 })).count, 1); // linked → handler runs
 
-    assertEquals(local.data,  dir + "data/local.foo/");
-    assertEquals(local.cache, dir + "cache/local.foo/");
-    assertEquals(local.tmp,   dir + "tmp/local.foo/");
+  modules.unlink("sig.foo");
+  assertEquals((await app.fire("ping", { count: 0 })).count, 0); // unlinked → signal aborted, listener gone
 
-    const privateModule = await modules.import(pathToFileURL(dir + "private/private.foo/plugin.ts").href);
-    assertEquals(privateModule.name, "private.foo");
-    assertEquals(privateModule.plugin.value, "private");
-    assert(modules.get("local.foo"));
+  await modules.link("sig.foo");
+  assertEquals((await app.fire("ping", { count: 0 })).count, 1); // re-linked → fresh signal rebinds
 
-    const jsModule = await modules.import(pathToFileURL(dir + "private/private.js/plugin.js").href);
-    assertEquals(jsModule.name, "private.js");
-    assertEquals(jsModule.plugin.value, "js");
-
-    const fileUrlModule = await modules.import(pathToFileURL(dir + "remote-ish/plugin.ts").href);
-    assertEquals(fileUrlModule.name, "remote-ish");
-    assertEquals(fileUrlModule.plugin.value, "file-url");
-
-    assertEquals(modules.get("private.foo")?.plugin.value, "private");
-    assert(modules.get("private.foo")?.source.endsWith("/private.foo/plugin.ts"));
-    await modules.init();
-    assertEquals(app.installed, ["private.foo"]);
-
-    await Deno.remove(root, { recursive: true });
-  },
+  await fs.remove(root, { recursive: true });
 });
 
-Deno.test({
-  name: "ModuleManager unlink tears down signal-bound listeners; re-link rebinds",
-  sanitizeOps: false,
-  sanitizeResources: false,
-  fn: async () => {
-    const root = await Deno.makeTempDir();
-    const modDir = root + "/m/";
-    await Deno.mkdir(modDir + "sig.foo/", { recursive: true });
-    // init() registers a listener bound to the per-module signal
-    await Deno.writeTextFile(modDir + "sig.foo/plugin.ts", `
-      export function init(app, { signal }) {
-        app.on("ping", (e) => { e.count++; }, { signal });
-      }
-    `);
-
-    const bus = new Emitter<{ ping: { count: number } }>();
-    const app = {
-      dir: root + "/",
-      db: fakeDb(),
-      apiTree: {} as Record<string, unknown>,
-      settings: { [$item]: { setSchema() {}, addEventListener() {} } },
-      on: bus.on.bind(bus),
-      fire: bus.fire.bind(bus),
-    };
-
-    const modules = new ModuleManager(app as any);
-    modules.add("./m/sig.foo/plugin.ts");
-    await modules.init();
-    assertEquals((await app.fire("ping", { count: 0 })).count, 1); // linked → handler runs
-
-    modules.unlink("sig.foo");
-    assertEquals((await app.fire("ping", { count: 0 })).count, 0); // unlinked → signal aborted, listener gone
-
-    await modules.link("sig.foo");
-    assertEquals((await app.fire("ping", { count: 0 })).count, 1); // re-linked → fresh signal rebinds
-
-    await Deno.remove(root, { recursive: true });
-  },
-});
-
-Deno.test("ModuleManager rejects invalid plugins", async () => {
-  const root = await Deno.makeTempDir();
+test("ModuleManager rejects invalid plugins", async () => {
+  const root = await fs.tempDir();
   try {
-    await Deno.mkdir(root + "/bad/", { recursive: true });
-    await Deno.writeTextFile(root + "/plugin.ts", `export function init() {}`);
-    await Deno.writeTextFile(root + "/manifest.json", `{ "name": 1 }`);
-    await Deno.writeTextFile(root + "/bad/plugin.ts", `export function init() {}`);
-    await Deno.writeTextFile(root + "/bad/manifest.json", `{ "name": "bad.dependencies", "dependencies": "core" }`);
+    await fs.mkdir(root + "/bad/");
+    await fs.write(root + "/plugin.ts", `export function init() {}`);
+    await fs.write(root + "/manifest.json", `{ "name": 1 }`);
+    await fs.write(root + "/bad/plugin.ts", `export function init() {}`);
+    await fs.write(root + "/bad/manifest.json", `{ "name": "bad.dependencies", "dependencies": "core" }`);
 
     const modules = new ModuleManager({} as any);
     await assertRejects(
@@ -172,25 +164,25 @@ Deno.test("ModuleManager rejects invalid plugins", async () => {
       "Plugin import needs a file",
     );
   } finally {
-    await Deno.remove(root, { recursive: true });
+    await fs.remove(root, { recursive: true });
   }
 });
 
-Deno.test("Store selects modules by directory name", async () => {
-  const root = await Deno.makeTempDir();
+test("Store selects modules by directory name", async () => {
+  const root = await fs.tempDir();
   try {
-    await Deno.mkdir(root + "/hello.world/", { recursive: true });
-    await Deno.mkdir(root + "/hello.analytics/", { recursive: true });
-    await Deno.writeTextFile(root + "/store.json", JSON.stringify({
+    await fs.mkdir(root + "/hello.world/");
+    await fs.mkdir(root + "/hello.analytics/");
+    await fs.write(root + "/store.json", JSON.stringify({
       modules: {
         "hello.world": {},
         "hello.analytics": {},
       },
     }));
-    await Deno.writeTextFile(root + "/hello.world/plugin.ts", `
+    await fs.write(root + "/hello.world/plugin.ts", `
       export function init(app) { app.loaded.push("hello.world"); }
     `);
-    await Deno.writeTextFile(root + "/hello.analytics/plugin.ts", `
+    await fs.write(root + "/hello.analytics/plugin.ts", `
       export function init(app) { app.loaded.push("hello.analytics"); }
     `);
 
@@ -219,27 +211,27 @@ Deno.test("Store selects modules by directory name", async () => {
     await all.modules.init();
     assertEquals(all.loaded, ["hello.analytics", "hello.world"]);
   } finally {
-    await Deno.remove(root, { recursive: true });
+    await fs.remove(root, { recursive: true });
   }
 });
 
-Deno.test("ModuleManager init reports missing and circular dependencies", async () => {
-  const root = await Deno.makeTempDir();
+test("ModuleManager init reports missing and circular dependencies", async () => {
+  const root = await fs.tempDir();
   try {
-    await Deno.mkdir(root + "/missing/", { recursive: true });
-    await Deno.mkdir(root + "/not.imported/", { recursive: true });
-    await Deno.mkdir(root + "/a/", { recursive: true });
-    await Deno.mkdir(root + "/b/", { recursive: true });
-    await Deno.writeTextFile(root + "/missing/plugin.ts", `
+    await fs.mkdir(root + "/missing/");
+    await fs.mkdir(root + "/not.imported/");
+    await fs.mkdir(root + "/a/");
+    await fs.mkdir(root + "/b/");
+    await fs.write(root + "/missing/plugin.ts", `
     `);
-    await Deno.writeTextFile(root + "/missing/manifest.json", `{ "name": "missing.dep", "dependencies": ["not.imported"] }`);
-    await Deno.writeTextFile(root + "/not.imported/plugin.ts", "");
-    await Deno.writeTextFile(root + "/a/plugin.ts", `
+    await fs.write(root + "/missing/manifest.json", `{ "name": "missing.dep", "dependencies": ["not.imported"] }`);
+    await fs.write(root + "/not.imported/plugin.ts", "");
+    await fs.write(root + "/a/plugin.ts", `
     `);
-    await Deno.writeTextFile(root + "/a/manifest.json", `{ "name": "cycle.a", "dependencies": ["cycle.b"] }`);
-    await Deno.writeTextFile(root + "/b/plugin.ts", `
+    await fs.write(root + "/a/manifest.json", `{ "name": "cycle.a", "dependencies": ["cycle.b"] }`);
+    await fs.write(root + "/b/plugin.ts", `
     `);
-    await Deno.writeTextFile(root + "/b/manifest.json", `{ "name": "cycle.b", "dependencies": ["cycle.a"] }`);
+    await fs.write(root + "/b/manifest.json", `{ "name": "cycle.b", "dependencies": ["cycle.a"] }`);
 
     // Nothing locates the missing dependency, so init() has to report it.
     const app = {
@@ -283,6 +275,6 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
       "Circular module dependency",
     );
   } finally {
-    await Deno.remove(root, { recursive: true });
+    await fs.remove(root, { recursive: true });
   }
 });

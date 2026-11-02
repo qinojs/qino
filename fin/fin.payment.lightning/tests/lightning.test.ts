@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { create, slip, sync } from "@qino/qino/fin.payment";
 
@@ -21,7 +22,7 @@ function lnbits(state: { paid: boolean }) {
   };
 }
 
-Deno.test("a Lightning invoice in the payment's currency, its slip, and paid once LNbits says so", async () => {
+test("a Lightning invoice in the payment's currency, its slip, and paid once LNbits says so", async () => {
   await withApp(async (app) => {
     const state = { paid: false };
     await withFetch(lnbits(state), async (calls) => {
@@ -44,7 +45,7 @@ Deno.test("a Lightning invoice in the payment's currency, its slip, and paid onc
   });
 });
 
-Deno.test("an invoice nobody paid in time expires", async () => {
+test("an invoice nobody paid in time expires", async () => {
   await withApp(async (app) => {
     await withFetch(lnbits({ paid: false }), async () => {
       const { id } = await create(app, { method: "lightning", amount: 100, currency: "CHF", return: "/" });

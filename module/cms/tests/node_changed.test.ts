@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, fakeRender } from "@qino/qino/tests";
 
@@ -45,7 +46,7 @@ async function withCtx(fn: () => Promise<void>) {
   await requestStorage.run(ctx, fn);
 }
 
-Deno.test("node_changed: page update captures one row for the page itself", async () => {
+test("node_changed: page update captures one row for the page itself", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 5: { type: "p", basis: 1 } } });
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
@@ -55,7 +56,7 @@ Deno.test("node_changed: page update captures one row for the page itself", asyn
   assertEquals(inserts[0], { log: 42, node: 5, page: 5, data: { table: "page", op: "update", cols: ["visible"] } });
 });
 
-Deno.test("node_changed: page delete keeps node_id but anchors page_id at a surviving ancestor", async () => {
+test("node_changed: page delete keeps node_id but anchors page_id at a surviving ancestor", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 8: { type: "p", basis: 3 }, 3: { type: "p", basis: 1 } } });
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
@@ -66,7 +67,7 @@ Deno.test("node_changed: page delete keeps node_id but anchors page_id at a surv
   assertEquals(inserts[0], { log: 42, node: 8, page: 3, data: { table: "page", op: "delete" } });
 });
 
-Deno.test("node_changed: page_text insert links to its page", async () => {
+test("node_changed: page_text insert links to its page", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 7: { type: "c", basis: 3 }, 3: { type: "p", basis: 1 } } });
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
@@ -78,7 +79,7 @@ Deno.test("node_changed: page_text insert links to its page", async () => {
   assertEquals(inserts[0].data.name, "main");
 });
 
-Deno.test("node_changed: text update resolves node via page_text + title link", async () => {
+test("node_changed: text update resolves node via page_text + title link", async () => {
   const { app, handlers, inserts } = fakeApp({
     tree: { 7: { type: "c", basis: 3 }, 3: { type: "p", basis: 1 } },
     links: { "FROM page_text WHERE text_id": [{ page_id: 7 }] },
@@ -91,7 +92,7 @@ Deno.test("node_changed: text update resolves node via page_text + title link", 
   assertEquals(inserts[0].node, 7);
 });
 
-Deno.test("node_changed: text insert with no link yet produces no row", async () => {
+test("node_changed: text insert with no link yet produces no row", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: {} }); // no page_text link
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
@@ -100,7 +101,7 @@ Deno.test("node_changed: text insert with no link yet produces no row", async ()
   assertEquals(inserts.length, 0);
 });
 
-Deno.test("node_changed: adding a new language to an existing text is tracked", async () => {
+test("node_changed: adding a new language to an existing text is tracked", async () => {
   const { app, handlers, inserts } = fakeApp({
     tree: { 7: { type: "c", basis: 3 }, 3: { type: "p", basis: 1 } },
     links: { "FROM page_text WHERE text_id": [{ page_id: 7 }] }, // text 99 already linked to node 7
@@ -114,7 +115,7 @@ Deno.test("node_changed: adding a new language to an existing text is tracked", 
   assertEquals(inserts[0].node, 7);
 });
 
-Deno.test("node_changed: unrelated table is ignored", async () => {
+test("node_changed: unrelated table is ignored", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: {} });
   initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
@@ -123,7 +124,7 @@ Deno.test("node_changed: unrelated table is ignored", async () => {
   assertEquals(inserts.length, 0);
 });
 
-Deno.test("node_changed: no request context → no capture", async () => {
+test("node_changed: no request context → no capture", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 5: { type: "p", basis: 0 } } });
   initNodeChanged(app, new AbortController().signal);
   await handlers["table:update-after"](fakeEvent("page", 5, { visible: 1 })); // no requestStorage.run

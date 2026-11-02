@@ -1,9 +1,10 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms: new children append, also past sort gaps and from xml", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms: new children append, also past sort gaps and from xml", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms");
   await app.init();
@@ -20,12 +21,12 @@ Deno.test("cms: new children append, also past sort gaps and from xml", async ()
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("cms: child finds the page of that name, creates it with defaults otherwise; layouts live in system/layout", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms: child finds the page of that name, creates it with defaults otherwise; layouts live in system/layout", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms");
   await app.init();
@@ -45,6 +46,6 @@ Deno.test("cms: child finds the page of that name, creates it with defaults othe
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

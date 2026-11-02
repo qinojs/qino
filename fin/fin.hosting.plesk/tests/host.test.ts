@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 
 import { domainSourceTypes } from "../plugin.ts";
@@ -5,7 +6,7 @@ import { domainSourceTypes } from "../plugin.ts";
 
 const sites = (url: string | null, user: string | null, secret: string) => domainSourceTypes.plesk.domains({ name: "s3", type: "plesk", url, user, secret });
 
-Deno.test("fin.hosting.plesk: a server's websites with their aliases, signed in by password or key", async () => {
+test("fin.hosting.plesk: a server's websites with their aliases, signed in by password or key", async () => {
   const fetch = globalThis.fetch;
   const asked: string[] = [];
   globalThis.fetch = (input, init) => {

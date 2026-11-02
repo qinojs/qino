@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertMatch, assertNotEquals, assertRejects } from "@std/assert";
 
 import { tid } from "../lib/tid.ts";
@@ -5,7 +6,7 @@ import { socialProvider } from "../mod.ts";
 
 const app = (settings: Record<string, unknown> = {}) => ({ settings: { "social.bluesky": settings } }) as never;
 
-Deno.test("social.bluesky stays dormant without an account and validates before calling the PDS", async () => {
+test("social.bluesky stays dormant without an account and validates before calling the PDS", async () => {
   assertEquals(socialProvider.name, "bluesky");
   assertEquals(await socialProvider.targets(app()), []);
   await assertRejects(() => socialProvider.publish(app(), "did:plc:qino", "", "qino-social-1"), Error, "text is empty");
@@ -16,7 +17,7 @@ Deno.test("social.bluesky stays dormant without an account and validates before 
   );
 });
 
-Deno.test("social.bluesky maps a retry key to a stable valid TID", async () => {
+test("social.bluesky maps a retry key to a stable valid TID", async () => {
   const key = await tid("qino-social-5");
   assertMatch(key, /^[234567abcdefghij][234567abcdefghijklmnopqrstuvwxyz]{12}$/);
   assertEquals(await tid("qino-social-5"), key);

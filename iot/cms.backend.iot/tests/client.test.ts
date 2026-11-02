@@ -1,9 +1,11 @@
+import { test } from "node:test";
+import { fs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { dataOf, read } from "../pub/action.js";
 
-Deno.test("iot backend submits once from the form, parses typed data and displays failures without executing", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/main.js", import.meta.url));
+test("iot backend submits once from the form, parses typed data and displays failures without executing", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/main.js");
   const listeners: Record<string, (event: unknown) => Promise<void>> = {};
   const calls: unknown[] = [], messages: string[] = [];
   let refreshes = 0, prevented = 0;
@@ -27,7 +29,7 @@ Deno.test("iot backend submits once from the form, parses typed data and display
     api: { post: (input: unknown) => { calls.push(input); return new Promise((resolve) => { release = resolve; }); } },
     html: { part: () => ({ get: () => Promise.resolve("") }) },
   }) } };
-  const helper = await Deno.readTextFile(new URL("../../../module/cms.backend/pub/js/node.mjs", import.meta.url));
+  const helper = await fs.text(import.meta.dirname + "/../../../module/cms.backend/pub/js/node.mjs");
   const nodePanel = new Function("api", "cms", "show", helper.replace(/^import[^\n]*\n/, "").replace("export function", "function")
     .replace(/const alert = async[^\n]*/, "const alert = show;") + "\nreturn nodePanel;")(api, cms, (message: string) => { messages.push(message); });
   new Function("cms", "nodePanel", "dataOf", "read", "location", source.replace(/^import[^\n]*\n/gm, ""))(
@@ -117,7 +119,7 @@ Deno.test("iot backend submits once from the form, parses typed data and display
 
 });
 
-Deno.test("iot backend reads action fields typed and leaves empty ones out", () => {
+test("iot backend reads action fields typed and leaves empty ones out", () => {
   const field = (name: string, type: string, value: string) => ({ name: "data." + name, value, dataset: { type } });
   const form = (fields: unknown[], free?: unknown) => ({ elements: { data: free }, querySelectorAll: () => fields });
   assertEquals(dataOf(form([
@@ -130,7 +132,7 @@ Deno.test("iot backend reads action fields typed and leaves empty ones out", () 
   assertEquals(message, "extra: invalid JSON");
 });
 
-Deno.test("iot backend reads free command values as JSON where they parse", () => {
+test("iot backend reads free command values as JSON where they parse", () => {
   const field = (value: string) => ({ name: "value", value, dataset: { type: "auto" } });
   assertEquals(["153", "true", '{"a":1}', "on", ""].map((value) => read(field(value))), [153, true, { a: 1 }, "on", ""]);
 });

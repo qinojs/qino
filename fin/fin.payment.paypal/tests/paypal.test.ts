@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { create, refund, sync } from "@qino/qino/fin.payment";
 
@@ -34,7 +35,7 @@ function paypal(order: { status: string }) {
   };
 }
 
-Deno.test("an order approved on PayPal is captured on return, with PayPal's fee, and refunded by its capture", async () => {
+test("an order approved on PayPal is captured on return, with PayPal's fee, and refunded by its capture", async () => {
   await withApp(async (app) => {
     const order = { status: "PAYER_ACTION_REQUIRED" };
     await withFetch(paypal(order), async (calls) => {
@@ -56,7 +57,7 @@ Deno.test("an order approved on PayPal is captured on return, with PayPal's fee,
   });
 });
 
-Deno.test("a webhook only names the order, which is asked", async () => {
+test("a webhook only names the order, which is asked", async () => {
   await withApp(async (app) => {
     const order = { status: "PAYER_ACTION_REQUIRED" };
     await withFetch(paypal(order), async () => {

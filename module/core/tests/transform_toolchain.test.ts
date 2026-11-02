@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { assertEquals } from "./deps.ts";
 import { FileTransformer } from "../lib/transform/FileTransformer.ts";
 
@@ -11,7 +13,7 @@ const stamp: TransformerDef = {
   handles: () => true,
   transform: async (ctx) => {
     const out = ctx.tmpDir + "/out.bin";
-    await Deno.writeTextFile(out, "x");
+    await fs.write(out, "x");
     ctx.currentPath = out;
   },
 };
@@ -30,26 +32,26 @@ async function keyOf(dir: string, build: (t: FileTransformer) => void) {
   return (await t.transform(dir + "/src.bin", {})).key!;
 }
 
-Deno.test("FileTransformer: the toolchain is part of the cache key", async (t) => {
-  const dir = await Deno.makeTempDir();
-  await Deno.writeFile(dir + "/src.bin", new Uint8Array([1, 2, 3]));
+test("FileTransformer: the toolchain is part of the cache key", async (t) => {
+  const dir = await fs.tempDir();
+  await fs.write(dir + "/src.bin", new Uint8Array([1, 2, 3]));
   try {
-    await t.step("same toolchain, same key — the cache still works", async () => {
+    await t.test("same toolchain, same key — the cache still works", async () => {
       assertEquals(await keyOf(dir, () => {}), await keyOf(dir, () => {}));
     });
 
-    await t.step("a registered engine changes the key", async () => {
+    await t.test("a registered engine changes the key", async () => {
       const plain = await keyOf(dir, () => {});
       const withEngine = await keyOf(dir, (tf) => tf.registerTranscriptEngine(engine("stt", 1)));
       assertEquals(plain === withEngine, false);
     });
 
-    await t.step("engine priority is part of it — a higher one takes over and rewrites output", async () => {
+    await t.test("engine priority is part of it — a higher one takes over and rewrites output", async () => {
       const low = await keyOf(dir, (tf) => tf.registerTranscriptEngine(engine("stt", 1)));
       const high = await keyOf(dir, (tf) => tf.registerTranscriptEngine(engine("stt", 9)));
       assertEquals(low === high, false);
     });
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

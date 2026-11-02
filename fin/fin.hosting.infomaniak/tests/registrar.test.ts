@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 
 import { domainSourceTypes } from "../plugin.ts";
@@ -5,7 +6,7 @@ import { domainSourceTypes } from "../plugin.ts";
 
 const domains = (secret: string, user?: number) => domainSourceTypes.infomaniak.domains({ name: "infomaniak", type: "infomaniak", secret, user });
 
-Deno.test("fin.hosting.infomaniak: the domains of every page, of the account asked for, with their end", async () => {
+test("fin.hosting.infomaniak: the domains of every page, of the account asked for, with their end", async () => {
   const fetch = globalThis.fetch;
   const asked: string[] = [];
   globalThis.fetch = (input, init) => {

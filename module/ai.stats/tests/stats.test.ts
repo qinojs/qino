@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { aiDbSchema, assertEquals, Emitter } from "@qino/qino/tests";
 
@@ -20,7 +21,7 @@ async function setup() {
   return { db, app: { db, on: events.on.bind(events), fire: events.fire.bind(events) } as unknown as App };
 }
 
-Deno.test("ai.stats: measured calls beat the benchmark's speed, and fade", async () => {
+test("ai.stats: measured calls beat the benchmark's speed, and fade", async () => {
   const { db, app } = await setup();
   const stop = new AbortController();
   init(app, { signal: stop.signal });

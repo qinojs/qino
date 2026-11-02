@@ -1,10 +1,11 @@
-import { App, unixTime } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, unixTime } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { thinHistory } from "../maintenance.ts";
 
-Deno.test("cms.versions: thinHistory keeps the newest entry of a bucket, and entries in other buckets", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.versions: thinHistory keeps the newest entry of a bucket, and entries in other buckets", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.versions");
   await app.init();
@@ -25,6 +26,6 @@ Deno.test("cms.versions: thinHistory keeps the newest entry of a bucket, and ent
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

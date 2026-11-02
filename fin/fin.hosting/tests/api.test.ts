@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { invoke } from "@qino/qino";
 import { subscribe } from "@qino/qino/fin.subscription";
@@ -6,7 +7,7 @@ import { asUser, users, withFinApp } from "../../tests/app.ts";
 import { api } from "../api.ts";
 import { link, save } from "../mod.ts";
 
-Deno.test("fin.hosting: a user reads their own domains with what they are billed by, keeps none", async () => {
+test("fin.hosting: a user reads their own domains with what they are billed by, keeps none", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription", "fin.hosting"], async (app) => {
     const { anna, ben, boss } = await users(app);
     await save(app, "anna.ch", { usrId: anna });

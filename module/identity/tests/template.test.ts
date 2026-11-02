@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 
 import { templatePlaceholders } from "../lib/template.ts";
@@ -10,7 +11,7 @@ const app = { settings: { identity: {
   organization: { address: { addressLocality: "Zürich" } },
 } } } as unknown as App;
 
-Deno.test("identity: CMS templates receive explicitly public identity settings", async () => {
+test("identity: CMS templates receive explicitly public identity settings", async () => {
   assertEquals(await templatePlaceholders["contact.telephone"](app, undefined), { text: "+41 44 123 45 67" });
   assertEquals(await templatePlaceholders["organization.address.addressLocality"](app, undefined), { text: "Zürich" });
   assertEquals(await templatePlaceholders["contact.email"](app, undefined), undefined);

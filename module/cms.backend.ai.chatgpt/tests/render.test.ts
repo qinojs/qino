@@ -1,7 +1,8 @@
-import { App, html } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, html } from "@qino/qino";
 import { cms as cmsFor } from "@qino/qino/cms";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
-import { store } from "@qino/m/ai.chatgpt/tests/deps.ts";
+import { chatgptStore as store } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 
@@ -10,7 +11,7 @@ import type { Node } from "@qino/qino/cms";
 
 /** A real app with ai.chatgpt; the page node is a stand-in, the page only reads its app and form fields. */
 async function withPage(fn: (render: (ctx: Ctx, vars?: Record<string, unknown>) => Promise<string>, app: App) => Promise<void>) {
-  const dir = await Deno.makeTempDir();
+  const dir = await fs.tempDir();
   const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
@@ -20,7 +21,7 @@ async function withPage(fn: (render: (ctx: Ctx, vars?: Record<string, unknown>) 
     // translating needs a full request; the page's words in English do
     Object.defineProperty(app, "t", { value: (s: TemplateStringsArray, ...v: unknown[]) => Promise.resolve(String.raw(s, ...v)) });
     await fn(async (ctx, vars) => String(await cms.node.render(node, { ctx, vars })), app);
-  } finally { await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+  } finally { await app.db.close(); await fs.remove(dir, { recursive: true }); }
 }
 
 const ctxOf = (userId: number, url = "http://127.0.0.1:8080/cms1/backend/ai/chatgpt", superuser = false) => ({
@@ -31,7 +32,7 @@ const ctxOf = (userId: number, url = "http://127.0.0.1:8080/cms1/backend/ai/chat
 const connect = (app: App, user: number) => store(app, user, { client_id: "oaiapp_test", subject: "sub", email: "user@example.org",
   id_token: "", access_token: "token", refresh_token: "refresh", scopes: [], expires_at: Date.now() + 3600_000 });
 
-Deno.test("AI backend ChatGPT page exposes the sign-in button without a typed URL", () => withPage(async (render, app) => {
+test("AI backend ChatGPT page exposes the sign-in button without a typed URL", () => withPage(async (render, app) => {
   const output = await render(ctxOf(2));
   assertStringIncludes(output, "Continue with ChatGPT");
   assertStringIncludes(output, "/cms1/ai-chatgpt/start?return_to=");
@@ -45,7 +46,7 @@ Deno.test("AI backend ChatGPT page exposes the sign-in button without a typed UR
   } finally { globalThis.fetch = original; }
 }));
 
-Deno.test("AI backend ChatGPT page: only one's own connected plan can answer when no one is signed in", () => withPage(async (render, app) => {
+test("AI backend ChatGPT page: only one's own connected plan can answer when no one is signed in", () => withPage(async (render, app) => {
   const original = globalThis.fetch;
   globalThis.fetch = () => Promise.resolve(Response.json({ models: [] }));
   try {
@@ -62,8 +63,8 @@ Deno.test("AI backend ChatGPT page: only one's own connected plan can answer whe
   } finally { globalThis.fetch = original; }
 }));
 
-Deno.test("Installing the ChatGPT backend module creates its navigable AI page", async () => {
-  const dir = await Deno.makeTempDir();
+test("Installing the ChatGPT backend module creates its navigable AI page", async () => {
+  const dir = await fs.tempDir();
   const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
@@ -71,5 +72,5 @@ Deno.test("Installing the ChatGPT backend module creates its navigable AI page",
     await source.install("cms.backend.ai.chatgpt");
     assert(app.modules.linked("cms.backend.ai.chatgpt"));
     assert(await cmsFor(app).nodeByModule("cms.backend.ai.chatgpt"));
-  } finally { await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+  } finally { await app.db.close(); await fs.remove(dir, { recursive: true }); }
 });

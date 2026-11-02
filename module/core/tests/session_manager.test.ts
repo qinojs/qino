@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, testContext } from "./deps.ts";
 import { unixTime } from "../lib/util.ts";
 import { Session, SessionManager } from "../lib/SessionManager.ts";
@@ -39,7 +40,7 @@ function fakeDb() {
   };
 }
 
-Deno.test("SessionManager: load returns existing session when token is known", async () => {
+test("SessionManager: load returns existing session when token is known", async () => {
   const db = fakeDb();
   db.setRow({ id: 7, data: '{"core":{"userId":5}}', access: unixTime() });
   const sessions = new SessionManager(fakeApp(db));
@@ -51,7 +52,7 @@ Deno.test("SessionManager: load returns existing session when token is known", a
   assertEquals(res.data.core.userId(), 5);
 });
 
-Deno.test("SessionManager: load creates session without valid cookie", async () => {
+test("SessionManager: load creates session without valid cookie", async () => {
   const db = fakeDb();
   const sessions = new SessionManager(fakeApp(db));
 
@@ -66,7 +67,7 @@ Deno.test("SessionManager: load creates session without valid cookie", async () 
   assertEquals(values.data, "{}");
 });
 
-Deno.test("SessionManager: regenerateId resets an existing session", async () => {
+test("SessionManager: regenerateId resets an existing session", async () => {
   const db = fakeDb();
   db.setRow({ id: 9 });
   const sessions = new SessionManager(fakeApp(db));
@@ -81,7 +82,7 @@ Deno.test("SessionManager: regenerateId resets an existing session", async () =>
   assertEquals(values.data, "{}");
 });
 
-Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", async () => {
+test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", async () => {
   const sessions = new SessionManager(fakeApp(fakeDb()));
   const ctx = await testContext({ url: "https://qino.test/app/", appUrl: "/app/", sess: { token: "token", isNew: true } });
 
@@ -89,7 +90,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path moun
   assertEquals(ctx.res.headers.get("Set-Cookie"), "__Secure-qinoSess=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
 });
 
-Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", async () => {
+test("SessionManager: setCookieIfNew uses __Host- prefix at root", async () => {
   const sessions = new SessionManager(fakeApp(fakeDb()));
   const ctx = await testContext({ url: "https://qino.test/", sess: { token: "token", isNew: true } });
 
@@ -97,7 +98,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", async ()
   assertEquals(ctx.res.headers.get("Set-Cookie"), "__Host-qinoSess=token; Path=/; HttpOnly;SameSite=Lax; Secure");
 });
 
-Deno.test("SessionManager: setCookieIfNew sends a plain cookie on http: requests", async () => {
+test("SessionManager: setCookieIfNew sends a plain cookie on http: requests", async () => {
   const sessions = new SessionManager(fakeApp(fakeDb()));
   const ctx = await testContext({ url: "http://qino.test/", sess: { token: "token", isNew: true } });
 
@@ -105,7 +106,7 @@ Deno.test("SessionManager: setCookieIfNew sends a plain cookie on http: requests
   assertEquals(ctx.res.headers.get("Set-Cookie"), "qinoSess=token; Path=/; HttpOnly;SameSite=Lax");
 });
 
-Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session", async () => {
+test("SessionManager: setCookieIfNew sends the cookie only once per session", async () => {
   const sessions = new SessionManager(fakeApp(fakeDb()));
   const ctx = await testContext({ sess: { token: "token", isNew: true, cookieSent: false } });
 
@@ -114,7 +115,7 @@ Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session
   assertEquals(ctx.res.headers.getSetCookie().length, 1);
 });
 
-Deno.test("Session: touch debounces its own access updates", async () => {
+test("Session: touch debounces its own access updates", async () => {
   const db = fakeDb();
   const sess = new Session(db as any, 3, "tok", "{}", false);
 
@@ -129,7 +130,7 @@ Deno.test("Session: touch debounces its own access updates", async () => {
   assertEquals(values.usr_id, 4);
 });
 
-Deno.test("Session: parallel sessions touch independently", async () => {
+test("Session: parallel sessions touch independently", async () => {
   const db = fakeDb();
   const a = new Session(db as any, 1, "a", "{}", false);
   const b = new Session(db as any, 2, "b", "{}", false);
@@ -142,7 +143,7 @@ Deno.test("Session: parallel sessions touch independently", async () => {
   assertEquals(updates.length, 2);
 });
 
-Deno.test("SessionManager: a session idle past the limit is not resumed", async () => {
+test("SessionManager: a session idle past the limit is not resumed", async () => {
   const db = fakeDb();
   db.setRow({ id: 7, data: "{}", access: unixTime() - 31 * 24 * 60 * 60 }); // past the 30-day default
   const sessions = new SessionManager(fakeApp(db));
@@ -152,7 +153,7 @@ Deno.test("SessionManager: a session idle past the limit is not resumed", async 
   assertEquals(res.id, "1");
 });
 
-Deno.test("SessionManager: settings.core.sess.maxIdle overrides the default", async () => {
+test("SessionManager: settings.core.sess.maxIdle overrides the default", async () => {
   const db = fakeDb();
   db.setRow({ id: 7, data: "{}", access: unixTime() - 60 });
   const app = fakeApp(db);
@@ -162,7 +163,7 @@ Deno.test("SessionManager: settings.core.sess.maxIdle overrides the default", as
   assertEquals(res.isNew, true);
 });
 
-Deno.test("SessionManager: an unreadable access time expires the session", async () => {
+test("SessionManager: an unreadable access time expires the session", async () => {
   const db = fakeDb();
   db.setRow({ id: 7, data: "{}" }); // no access column -> must not read as "still fresh"
   const res = await new SessionManager(fakeApp(db)).load("token-1");

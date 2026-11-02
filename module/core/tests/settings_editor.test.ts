@@ -1,8 +1,10 @@
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { runInNewContext } from "node:vm";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("SettingsEditor saves the input captured before shadow DOM event retargeting", async () => {
-  const source = await Deno.readTextFile(new URL("../pub/js/SettingsEditor.mjs", import.meta.url));
+test("SettingsEditor saves the input captured before shadow DOM event retargeting", async () => {
+  const source = await fs.text(import.meta.dirname + "/../pub/js/SettingsEditor.mjs");
   const listeners = new Map<string, (event: { target: unknown }) => void>();
   const writes: unknown[] = [];
   let timer: () => Promise<void>;

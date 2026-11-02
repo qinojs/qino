@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -6,19 +7,19 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.backend.superuser: metadata is wired", () => {
+test("cms.backend.superuser: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser");
   assertEquals(dependencies, ["cms.backend"]);
 });
 
-Deno.test("cms.backend.superuser: render handles empty child list", async () => {
+test("cms.backend.superuser: render handles empty child list", async () => {
   const page = { children: () => new Map() };
   const node = { page: () => page };
   const out = String(await cms.node.render(node as any));
   assertEquals(out.includes("No widgets available"), true);
 });
 
-Deno.test("cms.backend.superuser: render links child modules", async () => {
+test("cms.backend.superuser: render links child modules", async () => {
   const child = {
     vs: { visible: 1 },
     access: () => 1,

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { create, refund, sync } from "@qino/qino/fin.payment";
 
@@ -24,7 +25,7 @@ function stripe(session: Record<string, unknown>, bodies: string[]) {
   };
 }
 
-Deno.test("a Checkout session in minor units; paid with its fee, refunded through its intent", async () => {
+test("a Checkout session in minor units; paid with its fee, refunded through its intent", async () => {
   await withApp(async (app) => {
     const session: Record<string, unknown> = { status: "open", payment_status: "unpaid" };
     const bodies: string[] = [];
@@ -49,7 +50,7 @@ Deno.test("a Checkout session in minor units; paid with its fee, refunded throug
   });
 });
 
-Deno.test("a webhook counts only with Stripe's signature", async () => {
+test("a webhook counts only with Stripe's signature", async () => {
   await withApp(async (app) => {
     const session: Record<string, unknown> = { status: "open", payment_status: "unpaid" };
     await withFetch(stripe(session, []), async () => {

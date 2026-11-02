@@ -1,10 +1,11 @@
-import { App, invoke, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, invoke, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { api } from "../api.ts";
 
-Deno.test("user.profile: one's own name and address", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("user.profile: one's own name and address", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   await app.init();
@@ -21,6 +22,6 @@ Deno.test("user.profile: one's own name and address", async () => {
 
   } finally {
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

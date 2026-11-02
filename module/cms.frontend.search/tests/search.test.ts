@@ -1,12 +1,13 @@
-import { App, getCtx, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, getCtx, runAs } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { invalidateStandards } from "@qino/qino/cms.accessRules";
 import { apiRequest, assert, assertEquals } from "@qino/qino/tests";
 
 import type { search } from "../search.ts";
 
-Deno.test("cms.frontend.search: administration search respects node, file, user and module permissions", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.frontend.search: administration search respects node, file, user and module permissions", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.frontend.search").add("cms.cont.text")
     .add("cms.backend.users").add("cms.accessRules");
@@ -130,6 +131,6 @@ Deno.test("cms.frontend.search: administration search respects node, file, user 
     for (const mod of app.modules.linked().toReversed()) if (mod.name !== "core") app.modules.unlink(mod.name);
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

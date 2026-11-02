@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { addContact, ApiError, contactKey, contacts, Db, removeContact, setMainContact } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, contactDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 import { ChannelError, outbox, pendingContacts } from "@qino/qino/messaging";
@@ -33,12 +34,12 @@ function codeFrom(text: string) {
   return code;
 }
 
-Deno.test("phone numbers normalize to E.164", () => {
+test("phone numbers normalize to E.164", () => {
   assertEquals(contactKey("phone", " 0041 (79) 123-45-67 "), "+41791234567");
   assertThrows(() => contactKey("phone", "079 123 45 67"), ApiError);
 });
 
-Deno.test("built-in Twilio and HTTP providers send their documented request shapes", async () => {
+test("built-in Twilio and HTTP providers send their documented request shapes", async () => {
   const calls: { url: string; init?: RequestInit }[] = [];
   const original = globalThis.fetch;
   globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {
@@ -80,7 +81,7 @@ Deno.test("built-in Twilio and HTTP providers send their documented request shap
   }
 });
 
-Deno.test("a user can verify multiple phones but cannot claim another user's number", async () => {
+test("a user can verify multiple phones but cannot claim another user's number", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const messages: { to: string; text: string }[] = [];
@@ -112,7 +113,7 @@ Deno.test("a user can verify multiple phones but cannot claim another user's num
   assertEquals((await pendingContacts(app, "phone", 1)).length, 1); // both claims stand, each with its own code
 });
 
-Deno.test("one verified phone becomes main and users can switch or delete the main number", async () => {
+test("one verified phone becomes main and users can switch or delete the main number", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const codes: Record<string, string> = {};
@@ -140,7 +141,7 @@ Deno.test("one verified phone becomes main and users can switch or delete the ma
   assertEquals((await contacts(app.db, 1, "phone"))[0].address, first.address);
 });
 
-Deno.test("trusted administration can approve a phone without its code", async () => {
+test("trusted administration can approve a phone without its code", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   setProvider(app, { send: () => Promise.resolve() });
@@ -151,7 +152,7 @@ Deno.test("trusted administration can approve a phone without its code", async (
   assertEquals(await pendingContacts(app, "phone", 1), []);
 });
 
-Deno.test("verification resends are limited and wrong attempts buy a growing wait", async () => {
+test("verification resends are limited and wrong attempts buy a growing wait", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const messages: string[] = [];
@@ -166,7 +167,7 @@ Deno.test("verification resends are limited and wrong attempts buy a growing wai
   await assertRejects(() => verifyPhone(app, 1, "+41791234567", codeFrom(messages[0])), ApiError, "Too many attempts");
 });
 
-Deno.test("send reaches only verified phones selected by user, group or all", async () => {
+test("send reaches only verified phones selected by user, group or all", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const delivered: string[] = [];
@@ -200,7 +201,7 @@ Deno.test("send reaches only verified phones selected by user, group or all", as
   ]);
 });
 
-Deno.test("a failure of ours never marks the number", async () => {
+test("a failure of ours never marks the number", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   await addContact(db, 1, "phone", "+41791234567");
@@ -222,7 +223,7 @@ Deno.test("a failure of ours never marks the number", async () => {
   assertEquals((await contacts(db, 1, "phone"))[0].error, null);
 });
 
-Deno.test("only a plain refusal from an http provider blames the number", async () => {
+test("only a plain refusal from an http provider blames the number", async () => {
   const status = (code: number) => new Response("no", { status: code });
   const original = globalThis.fetch;
   const app = {
@@ -244,7 +245,7 @@ Deno.test("only a plain refusal from an http provider blames the number", async 
   }
 });
 
-Deno.test("what our own failure held back goes out on the next run", async () => {
+test("what our own failure held back goes out on the next run", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const sms: SmsProvider = { send: () => Promise.resolve() };

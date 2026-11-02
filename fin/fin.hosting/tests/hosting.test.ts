@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
 import { cancel, plan, subscribe, update } from "@qino/qino/fin.subscription";
@@ -17,14 +18,14 @@ const planOf = (app: App, name: string) => plan(app, { name, price: 2500, curren
 const hosting = (app: App, usrId: number, name = "Hosting") =>
   subscribe(app, { usrId, name, price: 24000, currency: "CHF", start: "2026-01-01" });
 
-Deno.test("fin.hosting: a domain is stored lower case, as punycode, without scheme, path or trailing dot", () => {
+test("fin.hosting: a domain is stored lower case, as punycode, without scheme, path or trailing dot", () => {
   assertEquals(normalize("Example.CH."), "example.ch");
   assertEquals(normalize("https://www.example.ch/de/home?x=1"), "www.example.ch");
   assertEquals(normalize("müller.ch"), "xn--mller-kva.ch");
   for (const bad of ["", "localhost", "example", "a b.ch", "mailto:x@y.ch", "1.2.3.4"]) assertEquals(normalize(bad), "", bad);
 });
 
-Deno.test("fin.hosting: domains with owner, registrar and aliases one level deep", async () => {
+test("fin.hosting: domains with owner, registrar and aliases one level deep", async () => {
   await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
     assertEquals(await save(app, "Example.ch", { usrId: anna, registrar: " Hostpoint " }), "example.ch");
@@ -53,7 +54,7 @@ Deno.test("fin.hosting: domains with owner, registrar and aliases one level deep
   });
 });
 
-Deno.test("fin.hosting: subscriptions are linked by ref, only the owner's, and grouped by domain", async () => {
+test("fin.hosting: subscriptions are linked by ref, only the owner's, and grouped by domain", async () => {
   await withFinApp(FIN, async (app) => {
     const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
     await save(app, "example.ch", { usrId: anna });
@@ -68,7 +69,7 @@ Deno.test("fin.hosting: subscriptions are linked by ref, only the owner's, and g
   });
 });
 
-Deno.test("fin.hosting: a domain is held by aliases, running subscriptions and unpaid invoices", async () => {
+test("fin.hosting: a domain is held by aliases, running subscriptions and unpaid invoices", async () => {
   await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
     await save(app, "example.ch", { usrId: anna });
@@ -93,7 +94,7 @@ Deno.test("fin.hosting: a domain is held by aliases, running subscriptions and u
   });
 });
 
-Deno.test("fin.hosting: an alias is its domain's customer's, may cost on its own, and bills never point at the wrong customer", async () => {
+test("fin.hosting: an alias is its domain's customer's, may cost on its own, and bills never point at the wrong customer", async () => {
   await withFinApp(FIN, async (app) => {
     const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
     await save(app, "example.ch", { usrId: anna });
@@ -120,7 +121,7 @@ Deno.test("fin.hosting: an alias is its domain's customer's, may cost on its own
   });
 });
 
-Deno.test("fin.hosting: a subscription named after a domain is for it — domain added and linked, as it is saved", async () => {
+test("fin.hosting: a subscription named after a domain is for it — domain added and linked, as it is saved", async () => {
   await withFinApp(FIN, async (app) => {
     const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
     const named = await hosting(app, anna, "Hosting Neu.CH"); // subscribe fires subscription:save
@@ -145,14 +146,14 @@ Deno.test("fin.hosting: a subscription named after a domain is for it — domain
   });
 });
 
-Deno.test("fin.hosting: a ref names the domain and what it pays for", () => {
+test("fin.hosting: a ref names the domain and what it pays for", () => {
   assertEquals(parseRef(refOf("example.ch", "hosting")), { name: "example.ch", kind: "hosting" });
   assertEquals(parseRef(refOf("example.ch")), { name: "example.ch", kind: undefined });
   assertEquals([parseRef("fin.invoice:7"), parseRef("fin.hosting:"), parseRef("fin.hosting:x.ch/other")], [undefined, undefined, undefined]);
   assertEquals(kindOf({ ref: refOf("example.ch", "domain") }), "domain");
 });
 
-Deno.test("fin.hosting: registration and hosting are billed apart, ours not at all; an alias has no hosting", async () => {
+test("fin.hosting: registration and hosting are billed apart, ours not at all; an alias has no hosting", async () => {
   await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
     await save(app, "both.ch", { usrId: anna, registrar: "infomaniak", host: "plesk:s3" });
@@ -174,7 +175,7 @@ Deno.test("fin.hosting: registration and hosting are billed apart, ours not at a
   });
 });
 
-Deno.test("fin.hosting: the registrars say which domains are ours to register; what is open stands out", async () => {
+test("fin.hosting: the registrars say which domains are ours to register; what is open stands out", async () => {
   await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
     await save(app, "theirs.ch", { usrId: anna }); // the customer keeps it elsewhere: nothing to bill
@@ -206,7 +207,7 @@ Deno.test("fin.hosting: the registrars say which domains are ours to register; w
   });
 });
 
-Deno.test("fin.hosting: a host's domains are hosted, with the aliases it lists; what it no longer lists is not", async () => {
+test("fin.hosting: a host's domains are hosted, with the aliases it lists; what it no longer lists is not", async () => {
   await withFinApp(FIN, async (app) => {
     const anna = await customer(app, "Anna");
     await save(app, "example.ch", { usrId: anna, registrar: "infomaniak" });
@@ -241,7 +242,7 @@ Deno.test("fin.hosting: a host's domains are hosted, with the aliases it lists; 
   });
 });
 
-Deno.test("fin.hosting: a synced domain is held; prune removes what nothing links to", async () => {
+test("fin.hosting: a synced domain is held; prune removes what nothing links to", async () => {
   await withFinApp([...FIN, "fin.hosting.infomaniak", "fin.hosting.plesk"], async (app) => {
     const anna = await customer(app, "Anna");
     await saveSource(app, { name: "infomaniak", type: "infomaniak", secret: "t0k" });
@@ -266,7 +267,7 @@ Deno.test("fin.hosting: a synced domain is held; prune removes what nothing link
   });
 });
 
-Deno.test("fin.hosting: a subdomain is its parent's owner's, by default", async () => {
+test("fin.hosting: a subdomain is its parent's owner's, by default", async () => {
   await withFinApp(FIN, async (app) => {
     const [anna, ben] = [await customer(app, "Anna"), await customer(app, "Ben")];
     await save(app, "example.ch", { usrId: anna });
@@ -287,7 +288,7 @@ Deno.test("fin.hosting: a subdomain is its parent's owner's, by default", async 
   });
 });
 
-Deno.test("fin.hosting: sources are kept by name, of a type a module brings; a secret is kept unless given", async () => {
+test("fin.hosting: sources are kept by name, of a type a module brings; a secret is kept unless given", async () => {
   await withFinApp([...FIN, "fin.hosting.plesk"], async (app) => {
     await assertRejects(() => saveSource(app, { name: "x", type: "nowhere" }), Error, "no source type nowhere");
     await assertRejects(() => saveSource(app, { name: " ", type: "plesk" }), Error, "needs a name");

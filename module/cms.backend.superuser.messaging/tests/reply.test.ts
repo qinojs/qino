@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, emailMessagingChannel as email, fakeT, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
@@ -6,7 +7,7 @@ import { backendDashboardWidget, cms, render } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("messaging detail replies to the selected user's Telegram chat", async () => {
+test("messaging detail replies to the selected user's Telegram chat", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...telegramSchema.properties, ...contactDbSchema.properties } });
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
@@ -120,7 +121,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   }
 });
 
-Deno.test("the message detail counts opens and clicks, and lists what was reached", async () => {
+test("the message detail counts opens and clicks, and lists what was reached", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...contactDbSchema.properties } });
   await db.exec`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;

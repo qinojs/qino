@@ -1,4 +1,5 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
@@ -6,8 +7,8 @@ import { cms } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
 
-Deno.test("cms.backend.superuser.security.suspects lists suspicious IPs and releases them", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.backend.superuser.security.suspects lists suspicious IPs and releases them", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("security");
   await app.init();
@@ -39,6 +40,6 @@ Deno.test("cms.backend.superuser.security.suspects lists suspicious IPs and rele
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

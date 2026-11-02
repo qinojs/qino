@@ -1,7 +1,9 @@
+import { test } from "node:test";
+import { fs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
-Deno.test("chart period controls convert local time to ISO and prevent overlapping reloads", async () => {
-  const source = (await Deno.readTextFile(new URL("../pub/main.js", import.meta.url))).replace(/^import[^\n]*\n/, "");
+test("chart period controls convert local time to ISO and prevent overlapping reloads", async () => {
+  const source = (await fs.text(import.meta.dirname + "/../pub/main.js")).replace(/^import[^\n]*\n/, "");
   const listeners: Record<string, (event: unknown) => unknown> = {}, calls: unknown[][] = [];
   const start = "2026-01-01T00:00:00.000Z", end = "2026-01-02T00:00:00.000Z";
   const form = { dataset: { start, end }, elements: { start: { value: "" }, end: { value: "" } } };

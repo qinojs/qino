@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { today } from "@qino/qino/fin";
 import { cancel, create, issue, writeOff } from "@qino/qino/fin.invoice";
@@ -8,7 +9,7 @@ import { vatReturn } from "../mod.ts";
 const MODULES = ["fin.payment", "fin.invoice", "fin.accounting", "fin.accounting.ch"];
 const period = { from: "2026-10-01", to: "2026-12-31" };
 
-Deno.test("the VAT return adds up the books per rate and category, effective or at the net tax rate", async () => {
+test("the VAT return adds up the books per rate and category, effective or at the net tax rate", async () => {
   await withFinApp(MODULES, async (app) => {
     type Lines = { name: string; price: number; taxRate: number; taxCategory?: string; account?: string }[];
     const issued = (date: string, lines: Lines, values = {}) =>
@@ -38,7 +39,7 @@ Deno.test("the VAT return adds up the books per rate and category, effective or 
   });
 });
 
-Deno.test("a loss written off is a reduction of consideration (235), off the turnover at its rate", async () => {
+test("a loss written off is a reduction of consideration (235), off the turnover at its rate", async () => {
   await withFinApp(MODULES, async (app) => {
     const old = await issue(app, await create(app, {
       currency: "CHF", date: "2026-09-10", lines: [{ name: "Design", price: 100000, taxRate: 8.1 }],

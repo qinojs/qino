@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, cmsRender as render, Emitter, fakeCms, testContext } from "@qino/qino/tests";
 
@@ -63,7 +64,7 @@ async function children(state: Awaited<ReturnType<typeof setup>>, parent: number
   return nodes;
 }
 
-Deno.test("cms.versions: current access selects current or historical data", async () => {
+test("cms.versions: current access selects current or historical data", async () => {
   const current = { id: 1, basis: 0, version: "current" };
   const historical = { id: 1, basis: 0, version: "historical" };
 
@@ -78,7 +79,7 @@ Deno.test("cms.versions: current access selects current or historical data", asy
   assertEquals(editor.calls, [1]);
 });
 
-Deno.test("cms.versions: current-only and deleted nodes follow current access", async () => {
+test("cms.versions: current-only and deleted nodes follow current access", async () => {
   const current = { id: 2, basis: 1, version: "current" };
   const historical = { id: 3, basis: 1, version: "historical" };
 
@@ -89,7 +90,7 @@ Deno.test("cms.versions: current-only and deleted nodes follow current access", 
   assertEquals([...await children(editor, 1, [historical])].map(([id]) => id), [3]);
 });
 
-Deno.test("cms.versions: moved content follows the selected version's position", async () => {
+test("cms.versions: moved content follows the selected version's position", async () => {
   const current = { id: 4, basis: 2, version: "current" };
   const historical = { id: 4, basis: 1, version: "historical" };
   const setupData = await setup({ 4: current }, { 4: 1 }, { 4: historical });
@@ -102,7 +103,7 @@ Deno.test("cms.versions: moved content follows the selected version's position",
   assertEquals([...await children(editor, 1, [historical])].map(([, node]) => node.vs.version), ["historical"]);
 });
 
-Deno.test("cms.versions: historical responses stay privately cacheable", async () => {
+test("cms.versions: historical responses stay privately cacheable", async () => {
   const ctx = await testContext({ app: { settings: { cms: {} }, languages: { all: ["en"] } } });
   const page = {
     vs: { searchable: 1 }, exists: () => true, access: () => 1, isReadable: () => true,

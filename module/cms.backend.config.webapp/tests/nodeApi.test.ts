@@ -1,10 +1,11 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
 
-Deno.test("cms.backend.config.webapp saves normalized and typed settings", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.backend.config.webapp saves normalized and typed settings", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("webapp");
   await app.init();
@@ -22,6 +23,6 @@ Deno.test("cms.backend.config.webapp saves normalized and typed settings", async
     await assertRejects(() => api(node, { save: { display: "windowed" } }), Error, "Invalid display mode");
   } finally {
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

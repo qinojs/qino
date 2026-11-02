@@ -1,12 +1,13 @@
-import { App, invoke, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, invoke, requestStorage } from "@qino/qino";
 import { assert, assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { api } from "../api.ts";
 
 const PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
-Deno.test("user.image: one's own image; signed-in users see it, guests do not", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("user.image: one's own image; signed-in users see it, guests do not", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.modules.add(new URL("../plugin.ts", import.meta.url));
   await app.init();
@@ -30,6 +31,6 @@ Deno.test("user.image: one's own image; signed-in users see it, guests do not", 
     assertEquals(await file.exists(), undefined, "the old image is gone");
   } finally {
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

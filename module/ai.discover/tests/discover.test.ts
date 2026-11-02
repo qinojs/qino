@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, App, NotFoundError, runAs, s } from "@qino/qino";
+import { test } from "node:test";
+import { Access, App, fs, NotFoundError, runAs, s } from "@qino/qino";
 import { assert, assertEquals, assertRejects } from "@qino/qino/tests";
 import { collections, create, drop } from "@qino/qino/ai.embed";
 
@@ -12,7 +13,7 @@ const fake: Adapter = {
 
 /** A real app with ai.discover, user 7, superuser 8, and routes as tools: one for users, one for superusers. */
 async function withApp(fn: (app: App, as: (usr: number, call: () => Promise<any>) => Promise<any>) => Promise<void>, embed = true) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "cron", "ai.embed", "ai.discover"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
@@ -38,7 +39,7 @@ async function withApp(fn: (app: App, as: (usr: number, call: () => Promise<any>
 
 const api = (app: App) => (app.api as any)["ai.discover"];
 
-Deno.test("ai.discover: tables, events and tools by name, each in detail", () => withApp(async (app, as) => {
+test("ai.discover: tables, events and tools by name, each in detail", () => withApp(async (app, as) => {
   const tables = await as(7, () => api(app).tables.get());
   assert(tables.some((t: any) => t.name === "usr"));
   const usr = await as(7, () => api(app).table("usr").get());
@@ -52,14 +53,14 @@ Deno.test("ai.discover: tables, events and tools by name, each in detail", () =>
   await assertRejects(() => as(7, () => api(app).table("nope").get()), NotFoundError);
 }));
 
-Deno.test("ai.discover: tools only those the caller may call", () => withApp(async (app, as) => {
+test("ai.discover: tools only those the caller may call", () => withApp(async (app, as) => {
   const names = async (usr: number) => (await as(usr, () => api(app).tools.get())).map((t: any) => t.name);
   assert(!(await names(7)).includes("test_purge_post"));
   assert((await names(8)).includes("test_purge_post"));
   await assertRejects(() => as(7, () => api(app).tool("test_purge_post").get()), NotFoundError);
 }));
 
-Deno.test("ai.discover: search by meaning, indexed on first use", () => withApp(async (app, as) => {
+test("ai.discover: search by meaning, indexed on first use", () => withApp(async (app, as) => {
   const [first] = await as(7, () => api(app).tools.get(undefined, { search: "say hello, greet" }));
   assertEquals(first.name, "test_greet_post");
   const kept = Number(await app.db.one`SELECT COUNT(*) FROM embedding_ai_discover WHERE kind = ${"tools"}`);
@@ -70,7 +71,7 @@ Deno.test("ai.discover: search by meaning, indexed on first use", () => withApp(
   assert(!hits.some((t: any) => t.name === "test_purge_post"));
 }));
 
-Deno.test("ai.discover: without an embedding collection, search by words", () => withApp(async (app, as) => {
+test("ai.discover: without an embedding collection, search by words", () => withApp(async (app, as) => {
   const hits = (await as(7, () => api(app).tables.get(undefined, { search: "collection_id" }))).map((t: any) => t.name);
   assert(hits.includes("embedding_ai_discover") && !hits.includes("usr"));
 }, false));

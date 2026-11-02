@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { ApiError, Db } from "@qino/qino";
 import { authAttemptDbSchema } from "@qino/qino/tests";
@@ -14,7 +15,7 @@ async function app() {
   return { db, settings: { core: { _secret: "test-secret" } } } as any;
 }
 
-Deno.test("a claim is proven by its code and spent either way it ends", async () => {
+test("a claim is proven by its code and spent either way it ends", async () => {
   const a = await app();
   const code = await requestCode(a, "email", 1, "one@qino.test");
   assertEquals((await pendingContacts(a, "email", 1)).map((c) => c.address), ["one@qino.test"]);
@@ -26,7 +27,7 @@ Deno.test("a claim is proven by its code and spent either way it ends", async ()
   await assertRejects(() => redeemCode(a, "email", 1, "one@qino.test", code), ApiError, "Nothing to verify");
 });
 
-Deno.test("an address receives one code at a time, and wrong codes buy a growing wait", async () => {
+test("an address receives one code at a time, and wrong codes buy a growing wait", async () => {
   const a = await app();
   const code = await requestCode(a, "phone", 1, "+41791234567");
   // the address is protected, not the claim: a second asker waits too, so nobody gets spammed
@@ -45,7 +46,7 @@ Deno.test("an address receives one code at a time, and wrong codes buy a growing
   await assertRejects(() => requestCode(a, "email", 2, "+41791234567"), ApiError, "email address");
 });
 
-Deno.test("a stranger's claim cannot lock the owner out of verifying their own address", async () => {
+test("a stranger's claim cannot lock the owner out of verifying their own address", async () => {
   const a = await app();
   await requestCode(a, "phone", 2, "+41791234567"); // whoever they are
   await a.db.table("usr_contact_verification").update({ type: "phone", address: "+41791234567", usr_id: 2 }, { sent: 1 });
@@ -58,7 +59,7 @@ Deno.test("a stranger's claim cannot lock the owner out of verifying their own a
   assertEquals((await pendingContacts(a, "phone", 2)).length, 1); // theirs stands, and proves nothing
 });
 
-Deno.test("an expired claim is dropped and can be taken over", async () => {
+test("an expired claim is dropped and can be taken over", async () => {
   const a = await app();
   await requestCode(a, "phone", 1, "+41791234567");
   await a.db.table("usr_contact_verification").update({ type: "phone", address: "+41791234567", usr_id: 1 }, { expires: 1, sent: 1 });

@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
 import { requireStepUp } from "../lib/auth/factors.ts";
@@ -22,11 +23,11 @@ function ctxWith(via: Record<string, number>, factors: unknown[] = [factor("pass
 
 const thrown = async (p: Promise<unknown>) => await assertRejects(() => p, ApiError) as ApiError;
 
-Deno.test("requireStepUp: a fresh proof passes, and says so in one value", async () => {
+test("requireStepUp: a fresh proof passes, and says so in one value", async () => {
   assertEquals(await requireStepUp(await ctxWith({ password: now() - 10 }), { maxAge: 300 }), true);
 });
 
-Deno.test("requireStepUp: an old proof throws, offering what would satisfy it", async () => {
+test("requireStepUp: an old proof throws, offering what would satisfy it", async () => {
   const e = await thrown(requireStepUp(await ctxWith({ password: now() - 1000 }), { maxAge: 300 }));
   assertEquals(e.code, "step_up_required");
   assertEquals(e.status, 403);
@@ -35,20 +36,20 @@ Deno.test("requireStepUp: an old proof throws, offering what would satisfy it", 
   assertEquals((e.data as any).maxAge, 300);
 });
 
-Deno.test("requireStepUp: remember and login_as are records of access, not proofs", async () => {
+test("requireStepUp: remember and login_as are records of access, not proofs", async () => {
   await thrown(requireStepUp(await ctxWith({ remember: now(), login_as: now() }), { maxAge: 300 }));
 });
 
-Deno.test("requireStepUp: a factor without stepUp neither counts nor is offered", async () => {
+test("requireStepUp: a factor without stepUp neither counts nor is offered", async () => {
   const e = await thrown(requireStepUp(await ctxWith({ oauth: now() }, [factor("oauth", { stepUp: false }), factor("password")])));
   assertEquals((e.data as any).factors.map((f: any) => f.name), ["password"]);
 });
 
-Deno.test("requireStepUp: someone with no factor at all passes — else they could never set up a first one", async () => {
+test("requireStepUp: someone with no factor at all passes — else they could never set up a first one", async () => {
   assertEquals(await requireStepUp(await ctxWith({}, [factor("password", { has: () => Promise.resolve(false) })])), true);
 });
 
-Deno.test("requireStepUp: the offer is ordered, strongest first", async () => {
+test("requireStepUp: the offer is ordered, strongest first", async () => {
   const e = await thrown(requireStepUp(await ctxWith({}, [
     factor("backup_codes", { order: 90 }),
     factor("webauthn", { order: 10 }),
@@ -57,7 +58,7 @@ Deno.test("requireStepUp: the offer is ordered, strongest first", async () => {
   assertEquals((e.data as any).factors.map((f: any) => f.name), ["webauthn", "password", "backup_codes"]);
 });
 
-Deno.test("requireStepUp: only factors the user has are offered", async () => {
+test("requireStepUp: only factors the user has are offered", async () => {
   const e = await thrown(requireStepUp(await ctxWith({}, [
     factor("password"),
     factor("totp", { has: () => Promise.resolve(false) }),
@@ -66,7 +67,7 @@ Deno.test("requireStepUp: only factors the user has are offered", async () => {
   assertEquals((e.data as any).factors.map((f: any) => f.name), ["password", "webauthn"]);
 });
 
-Deno.test("requireStepUp: a credential is offered nothing, and a proof in its session does not count", async () => {
+test("requireStepUp: a credential is offered nothing, and a proof in its session does not count", async () => {
   const e = await thrown(requireStepUp(await ctxWith({ password: now() - 10 }, [factor("password")], { statelessAuth: true })));
   assertEquals((e.data as any).factors, []);
 });

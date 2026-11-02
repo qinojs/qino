@@ -1,10 +1,11 @@
-import { App, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 import { configure, entities, save } from "@qino/qino/iot";
 import { history } from "@qino/qino/iot.history";
 
-Deno.test("manual providers need no URL and expose independent typed measurements through the protected APIs", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-manual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+test("manual providers need no URL and expose independent typed measurements through the protected APIs", async () => {
+  const dir = await fs.tempDir({ prefix: "qino-iot-manual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
   for (const name of ["iot", "iot.manual", "iot.history", "iot.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
   app.modules.add(new URL("../../../module/cron/plugin.ts", import.meta.url)); // from the module store
   try {
@@ -35,5 +36,5 @@ Deno.test("manual providers need no URL and expose independent typed measurement
     assertEquals((await entities(app, first))[0].state, 0);
     const guest = await testContext({ app, set: { app } });
     await requestStorage.run(guest, () => assertRejects(() => app.api["iot.record"].datapoint(id).post({ time: start, value: 99 }), Error, "Access denied"));
-  } finally { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+  } finally { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await fs.remove(dir, { recursive: true }); }
 });

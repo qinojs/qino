@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 
 import { factors, proof } from "../mod.ts";
@@ -36,29 +37,29 @@ function ctx(userId: number): Ctx & { via: Record<string, number> } {
   return { app, userId, via, sess } as any;
 }
 
-Deno.test("only what a linked module declares is a factor", () => {
+test("only what a linked module declares is a factor", () => {
   assertEquals(factors(app).map((f) => f.name), ["webauthn", "oauth", "backup_codes"]);
   assertEquals(factors(app).map((f) => f.module), ["webauthn", "oauth", "auth.backup_codes"]);
 });
 
-Deno.test("proving the user you already are is a step-up, not a login", async () => {
+test("proving the user you already are is a step-up, not a login", async () => {
   const c = ctx(7);
   assertEquals(await proof(c, "webauthn", 7), undefined); // nothing missing
   assertEquals(typeof c.via.webauthn, "number");
 });
 
-Deno.test("a factor may prove an identity without being allowed to refresh one", async () => {
+test("a factor may prove an identity without being allowed to refresh one", async () => {
   const c = ctx(7);
   assertEquals(await proof(c, "oauth", 7), []); // declares login, not stepUp: nothing here helps
   assertEquals(c.via, {});
 });
 
-Deno.test("a factor that cannot stand alone starts no login", async () => {
+test("a factor that cannot stand alone starts no login", async () => {
   const c = ctx(0); // nobody signed in, and no login under way to complete
   assertEquals(await proof(c, "backup_codes", 7), []);
   assertEquals(c.sess.data.core.pending(), undefined);
 });
 
-Deno.test("an undeclared factor is a programming error, not a denial", async () => {
+test("an undeclared factor is a programming error, not a denial", async () => {
   await assertRejects(() => proof(ctx(7), "totp", 7), Error, 'no factor "totp"');
 });

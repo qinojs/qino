@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { requestStorage, sql } from "@qino/qino";
 import { assertEquals, assertRejects, fakeCms } from "@qino/qino/tests";
 
@@ -5,7 +6,7 @@ import { tableEntriesCopyTo } from "../lib/Spaces.ts";
 import { copyNode } from "../lib/CmsVers.ts";
 import { getVers, setVers, versedTables } from "../lib/Vers.ts";
 
-Deno.test("cms.versions: failed copy restores request version state", async () => {
+test("cms.versions: failed copy restores request version state", async () => {
   const ctx = { state: {}, app: {} as { db?: unknown } };
   const table = {
     valuesToFragment: () => sql``,
@@ -31,7 +32,7 @@ Deno.test("cms.versions: failed copy restores request version state", async () =
   assertEquals(getVers(ctx as never), { space: 7, log: 8, tableEntriesCopying: false });
 });
 
-Deno.test("cms.versions: failed node copy restores state and caches", async () => {
+test("cms.versions: failed node copy restores state and caches", async () => {
   let cmsClears = 0;
   let textClears = 0;
   let fileClears = 0;

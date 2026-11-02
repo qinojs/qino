@@ -1,11 +1,12 @@
-import { Db, sql } from "@qino/qino";
+import { test } from "node:test";
+import { Db, fs, sql } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { migrateForm1 } from "./migrateForm1.ts";
 
 import type { App } from "@qino/qino";
 
-Deno.test("migrateForm1: form1 becomes cms.cont.form, its fields are named after their labels", async () => {
+test("migrateForm1: form1 becomes cms.cont.form, its fields are named after their labels", async () => {
   const db = new Db("sqlite::memory:");
   await db.query`CREATE TABLE qg_setting (id INTEGER PRIMARY KEY AUTOINCREMENT, basis INTEGER, ${sql.id("offset")} TEXT, value TEXT)`;
   await db.query`CREATE TABLE page (id INTEGER PRIMARY KEY, basis INTEGER, name TEXT, module TEXT, settings TEXT)`;
@@ -24,7 +25,7 @@ Deno.test("migrateForm1: form1 becomes cms.cont.form, its fields are named after
     await db.exec`INSERT INTO text_lang VALUES (${id}, ${lang}, ${text})`;
   }
 
-  await migrateForm1({ db, dir: await Deno.makeTempDir() + "/" } as unknown as App);
+  await migrateForm1({ db, dir: await fs.tempDir() + "/" } as unknown as App);
 
   const page = async (id: number): Promise<Record<string, unknown>> => {
     const row: Record<string, unknown> = (await db.row`SELECT basis, name, module, settings FROM page WHERE id = ${id}`)!;
@@ -44,7 +45,7 @@ Deno.test("migrateForm1: form1 becomes cms.cont.form, its fields are named after
   await db.close();
 });
 
-Deno.test("migrateForm1: an area with layout around its fields stays the form's content", async () => {
+test("migrateForm1: an area with layout around its fields stays the form's content", async () => {
   const db = new Db("sqlite::memory:");
   await db.query`CREATE TABLE qg_setting (id INTEGER PRIMARY KEY AUTOINCREMENT, basis INTEGER, ${sql.id("offset")} TEXT, value TEXT)`;
   await db.query`CREATE TABLE page (id INTEGER PRIMARY KEY, basis INTEGER, name TEXT, module TEXT, settings TEXT)`;
@@ -62,7 +63,7 @@ Deno.test("migrateForm1: an area with layout around its fields stays the form's 
   await db.exec`INSERT INTO page_text VALUES (1, 'button_submit', 2)`; // never shown, the button was off
   await db.exec`INSERT INTO text_lang VALUES (2, 'de', 'Formular absenden')`;
 
-  await migrateForm1({ db, dir: await Deno.makeTempDir() + "/" } as unknown as App);
+  await migrateForm1({ db, dir: await fs.tempDir() + "/" } as unknown as App);
 
   const row = (id: number) => db.row`SELECT basis, name, module FROM page WHERE id = ${id}`;
   assertEquals(await row(2), { basis: 1, name: "main", module: "cms.cont.flexible" }); // layout kept

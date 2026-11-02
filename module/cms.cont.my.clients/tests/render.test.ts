@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -19,7 +20,7 @@ const query = (parts: TemplateStringsArray) => Promise.resolve(parts[0].includes
 const node = { app: { t: fakeT, db: { query } } } as never;
 const ctx = { user: {}, userId: 7, clientId: "5", req: { clientIp: "1.2.3.4" } } as never;
 
-Deno.test("cms.cont.my.clients lists the user's devices", async () => {
+test("cms.cont.my.clients lists the user's devices", async () => {
   assertEquals(name, "cms.cont.my.clients");
   assertEquals(dependencies, ["cms", "u2"]);
 
@@ -32,6 +33,6 @@ Deno.test("cms.cont.my.clients lists the user's devices", async () => {
   assert(!output.includes("data-logout=\"6\" data-self"));
 });
 
-Deno.test("cms.cont.my.clients asks guests to sign in", async () => {
+test("cms.cont.my.clients asks guests to sign in", async () => {
   assertStringIncludes(String(await cms.node.render(node, { ctx: {} } as never)), "Please sign in.");
 });

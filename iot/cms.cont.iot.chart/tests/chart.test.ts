@@ -1,4 +1,5 @@
-import { App, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
 import { configure, save } from "@qino/qino/iot";
 import { record } from "@qino/qino/iot.record";
@@ -9,8 +10,8 @@ import { cms } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function fixture() {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-chart-test-" }), app = new App({ dir, db: "sqlite::memory:" });
-  await Deno.writeTextFile(`${dir}/plugin.ts`, `export const iotProvider = {
+  const dir = await fs.tempDir({ prefix: "qino-iot-chart-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  await fs.write(`${dir}/plugin.ts`, `export const iotProvider = {
     name: "fake", entities: async () => [], actions: async () => [], call: async () => null,
   };`);
   for (const name of ["iot", "iot.history", "iot.record"]) app.modules.add(new URL(`../../${name}/plugin.ts`, import.meta.url));
@@ -18,12 +19,12 @@ async function fixture() {
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init(); app.t = fakeT;
   const provider = await save(app, { name: "House", adapter: "fake" });
-  return { app, provider, close: async () => { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
+  return { app, provider, close: async () => { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await fs.remove(dir, { recursive: true }); } };
 }
 
 const start = Date.parse("2026-01-01T00:00:00Z");
 
-Deno.test("iot chart SVG uses elapsed time, interrupts paths and escapes units", () => {
+test("iot chart SVG uses elapsed time, interrupts paths and escapes units", () => {
   const output = String(chart([{ time: start, value: 1 }, { time: start + 60_000, value: 2 }, { time: start + 120_000, value: null }, { time: start + 540_000, value: 4 }], { start, end: start + 600_000, unit: '<script>attack()</script>' }));
   assertStringIncludes(output, "M60.0,220.0L130.0,153.3M690.0,20.0");
   assertStringIncludes(output, "&lt;script&gt;attack()&lt;/script&gt;");
@@ -31,7 +32,7 @@ Deno.test("iot chart SVG uses elapsed time, interrupts paths and escapes units",
   assertEquals(chart([{ time: start, value: null }], { start, end: start + 600_000 }), undefined);
 });
 
-Deno.test("iot chart CMS uses numeric datapoints and bounded history; page access governs visibility", async () => {
+test("iot chart CMS uses numeric datapoints and bounded history; page access governs visibility", async () => {
   const { app, provider, close } = await fixture();
   try {
     const id = await configure(app, { provider, entity: "meter", unit: "kWh", record: true });

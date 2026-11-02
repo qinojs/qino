@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { fs, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -14,40 +15,40 @@ const fakeNode = (dir: string, edit: boolean) => ({ id: 7, edit: () => edit, app
 const render = (node: any, ctx: any) => requestStorage.run(ctx, () => cms.node.render(node, { ctx, vars: {} }));
 
 async function withSource(source: string) {
-  const dir = await Deno.makeTempDir() + "/";
-  await Deno.mkdir(`${dir}data/${name}/pub/`, { recursive: true });
-  await Deno.writeTextFile(`${dir}data/${name}/7.ts`, source);
+  const dir = await fs.tempDir() + "/";
+  await fs.mkdir(`${dir}data/${name}/pub/`);
+  await fs.write(`${dir}data/${name}/7.ts`, source);
   return dir;
 }
 
-Deno.test("cms.cont.ts: the default export of the file renders the node", async () => {
+test("cms.cont.ts: the default export of the file renders the node", async () => {
   const dir = await withSource("export default (node) => `<div>id ${node.id}</div>`;");
   assertEquals(await render(fakeNode(dir, false), fakeCtx()), "<div>id 7</div>");
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.cont.ts: html is handed to the file, so it needs no import", async () => {
+test("cms.cont.ts: html is handed to the file, so it needs no import", async () => {
   const dir = await withSource("export default (node, { html }) => html.async`<b>${'<script>'}</b>`;");
   assertEquals(await render(fakeNode(dir, false), fakeCtx()), "<b>&lt;script&gt;</b>");
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.cont.ts: a file without a default export is an error", async () => {
+test("cms.cont.ts: a file without a default export is an error", async () => {
   const dir = await withSource("export const x = 1;");
   await assertRejects(() => render(fakeNode(dir, false), fakeCtx()), Error, "no default exported function");
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.cont.ts: without a file a visitor sees nothing", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.ts: without a file a visitor sees nothing", async () => {
+  const dir = await fs.tempDir() + "/";
   assertEquals(await render(fakeNode(dir, false), fakeCtx()), "<div></div>");
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.cont.ts: the first render in edit mode creates a working file", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.ts: the first render in edit mode creates a working file", async () => {
+  const dir = await fs.tempDir() + "/";
   const ctx = fakeCtx();
   assertEquals((await render(fakeNode(dir, true), ctx)).includes("Node 7"), true);
   assertEquals([...ctx.res.html.styles], [`/app/d/${name}/pub/7.css`]);
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });

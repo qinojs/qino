@@ -1,4 +1,5 @@
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { collections, create, drop } from "@qino/qino/ai.embed";
 import { assertEquals } from "@qino/qino/tests";
@@ -9,8 +10,8 @@ import { api } from "../plugin.ts";
 // "cat" means one thing, all else another.
 const embed = (_call: unknown, { texts }: { texts: string[] }) => Promise.resolve(texts.map((t) => /cat/i.test(t) ? [1, 0] : [0, 1]));
 
-Deno.test("cms.embed: pages found by meaning, each once, only those readable and searchable", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.embed: pages found by meaning, each once, only those readable and searchable", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.embed");
   await app.init();
@@ -47,6 +48,6 @@ Deno.test("cms.embed: pages found by meaning, each once, only those readable and
     delete app.modules.get("ai")!.plugin.aiAdapters.fake;
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

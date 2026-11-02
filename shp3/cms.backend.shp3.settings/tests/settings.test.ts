@@ -1,5 +1,6 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { shp3 } from "@qino/qino/shp3";
 
 import nodeApi from "../nodeApi.ts";
@@ -8,7 +9,7 @@ import { cms as panel } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function shop() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   await app.init();
@@ -19,7 +20,7 @@ async function shop() {
 const call = (app: App, vars: Record<string, unknown>, access = 2) =>
   nodeApi({ access: () => Promise.resolve(access), app } as unknown as Node, vars);
 
-Deno.test("backend.shp3.settings: writes only the settings it offers", async () => {
+test("backend.shp3.settings: writes only the settings it offers", async () => {
   await using app = await shop();
   await call(app, { setting: "location.country", value: "CH" });
   assertEquals(String(await app.settings.shp3.location.country), "CH");
@@ -32,7 +33,7 @@ Deno.test("backend.shp3.settings: writes only the settings it offers", async () 
   assertEquals(String(await app.settings.shp3.location.country), "CH");
 });
 
-Deno.test("backend.shp3.settings: methods are configured, and dragging writes their order", async () => {
+test("backend.shp3.settings: methods are configured, and dragging writes their order", async () => {
   await using app = await shop();
   await shp3(app).registerMethod("payments", "invoice", "Invoice");
   await shp3(app).registerMethod("payments", "advance", "Advance");
@@ -51,7 +52,7 @@ Deno.test("backend.shp3.settings: methods are configured, and dragging writes th
   assertEquals(await call(app, { method: "invoice", kind: "wire", field: "enabled", value: true }), false);
 });
 
-Deno.test("backend.shp3.settings: a country is marked and rated, an unknown one refused", async () => {
+test("backend.shp3.settings: a country is marked and rated, an unknown one refused", async () => {
   await using app = await shop();
   assertEquals(await call(app, { country: "CH", field: "shp3_enabled", value: true }), 1);
   assertEquals(await call(app, { country: "CH", field: "shp3_default_vat_rate", value: "8.1" }), 1);
@@ -65,7 +66,7 @@ Deno.test("backend.shp3.settings: a country is marked and rated, an unknown one 
   assertEquals(await call(app, { country: "CH", field: "shp3_currency", value: "x" }), false);
 });
 
-Deno.test("backend.shp3.settings: switching the main currency rescales every factor", async () => {
+test("backend.shp3.settings: switching the main currency rescales every factor", async () => {
   await using app = await shop();
   const db = app.db;
   assertEquals(await db.one`SELECT factor FROM shp3_currency WHERE id = ${"EUR"}`, 0.91); // CHF is main
@@ -79,7 +80,7 @@ Deno.test("backend.shp3.settings: switching the main currency rescales every fac
   assertEquals(await call(app, { currency: "EUR", field: "nonsense", value: 1 }), false);
 });
 
-Deno.test("backend.shp3.settings: the panel renders every box, nothing left unresolved", async () => {
+test("backend.shp3.settings: the panel renders every box, nothing left unresolved", async () => {
   await using app = await shop();
   await app.db.table("country").update({ id: "CH", shp3_enabled: true });
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
@@ -94,7 +95,7 @@ Deno.test("backend.shp3.settings: the panel renders every box, nothing left unre
   });
 });
 
-Deno.test("backend.shp3.settings: a factor the rate job owns is not edited here", async () => {
+test("backend.shp3.settings: a factor the rate job owns is not edited here", async () => {
   await using app = await shop();
   assertEquals(await call(app, { currency: "EUR", field: "factor", value: 0.95 }), 1); // no job: the shop's own
 
@@ -112,7 +113,7 @@ Deno.test("backend.shp3.settings: a factor the rate job owns is not edited here"
   });
 });
 
-Deno.test("backend.shp3.settings: every currency is offered, the shop picks", async () => {
+test("backend.shp3.settings: every currency is offered, the shop picks", async () => {
   await using app = await shop();
   await app.db.table("country").update({ id: "JP", shp3_enabled: true }); // pays in JPY
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });

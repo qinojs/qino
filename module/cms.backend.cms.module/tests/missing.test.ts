@@ -1,4 +1,5 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 import { assert, assertStringIncludes } from "@qino/qino/tests";
 
@@ -6,8 +7,8 @@ import { backendDashboardWidget, cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.cms.module: modules nodes name but nothing renders are listed and marked", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("cms.backend.cms.module: modules nodes name but nothing renders are listed and marked", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.text").add("cms.cont.section");
   await app.init();
   try {

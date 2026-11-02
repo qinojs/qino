@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { fakeSettings } from "@qino/qino/tests";
 
@@ -42,7 +43,7 @@ const tx = (status: string, extra: Record<string, unknown> = {}) => ({
 
 const offer = { amount: 1, currency: "CHF" };
 
-Deno.test("methods follow the setting, or leave the choice to Saferpay's page; none without an account", async () => {
+test("methods follow the setting, or leave the choice to Saferpay's page; none without an account", async () => {
   await withSaferpay({}, async (app) => assertEquals(await saferpay.methods(app, offer), []), { password: "" });
   await withSaferpay({}, async (app) => {
     assertEquals(await saferpay.methods(app, offer), [{ name: "", label: "Saferpay" }]);
@@ -52,7 +53,7 @@ Deno.test("methods follow the setting, or leave the choice to Saferpay's page; n
   }, { methods: "TWINT, visa" });
 });
 
-Deno.test("start initializes the payment page with our addresses and keeps the token", async () => {
+test("start initializes the payment page with our addresses and keeps the token", async () => {
   const answers = { "PaymentPage/Initialize": { Token: "tok", RedirectUrl: "https://pay.test/x" } };
   await withSaferpay(answers, async (app, calls) => {
     const base = "https://site.test/payment/";
@@ -68,7 +69,7 @@ Deno.test("start initializes the payment page with our addresses and keeps the t
   });
 });
 
-Deno.test("an authorized payment is captured and paid", async () => {
+test("an authorized payment is captured and paid", async () => {
   const answers = {
     "PaymentPage/Assert": tx("AUTHORIZED"),
     "Transaction/Capture": { CaptureId: "cap1", Status: "CAPTURED" },
@@ -85,7 +86,7 @@ Deno.test("an authorized payment is captured and paid", async () => {
   });
 });
 
-Deno.test("a payment Saferpay captured itself is taken over without capturing again", async () => {
+test("a payment Saferpay captured itself is taken over without capturing again", async () => {
   await withSaferpay({ "PaymentPage/Assert": tx("CAPTURED", { CaptureId: "cap0" }) }, async (app, calls) => {
     const state = await saferpay.sync(app, row());
     assertEquals([state.status, state.data?.capture], ["paid", "cap0"]);
@@ -93,7 +94,7 @@ Deno.test("a payment Saferpay captured itself is taken over without capturing ag
   });
 });
 
-Deno.test("refusals end the payment, an unfinished one stays, our own errors are thrown", async () => {
+test("refusals end the payment, an unfinished one stays, our own errors are thrown", async () => {
   const refuse = (ErrorName: string) => ({ "PaymentPage/Assert": { ErrorName } });
   const cases: [string, unknown][] = [
     ["TRANSACTION_NOT_STARTED", undefined],
@@ -109,7 +110,7 @@ Deno.test("refusals end the payment, an unfinished one stays, our own errors are
   });
 });
 
-Deno.test("a concurrent capture leaves the result to the one that won", async () => {
+test("a concurrent capture leaves the result to the one that won", async () => {
   const answers = {
     "PaymentPage/Assert": tx("AUTHORIZED"),
     "Transaction/Capture": { ErrorName: "TRANSACTION_ALREADY_CAPTURED" },
@@ -117,14 +118,14 @@ Deno.test("a concurrent capture leaves the result to the one that won", async ()
   await withSaferpay(answers, async (app) => assertEquals(await saferpay.sync(app, row()), {}));
 });
 
-Deno.test("a settled payment is not asked again", async () => {
+test("a settled payment is not asked again", async () => {
   await withSaferpay({}, async (app, calls) => {
     assertEquals(await saferpay.sync(app, row({ status: "paid" })), {});
     assertEquals(calls, []);
   });
 });
 
-Deno.test("a refund is authorized against the capture, then captured", async () => {
+test("a refund is authorized against the capture, then captured", async () => {
   const answers = {
     "Transaction/Refund": { Transaction: { Id: "ref1", Status: "AUTHORIZED" } },
     "Transaction/Capture": { Status: "CAPTURED" },
@@ -139,14 +140,14 @@ Deno.test("a refund is authorized against the capture, then captured", async () 
   });
 });
 
-Deno.test("without credentials nothing is sent", async () => {
+test("without credentials nothing is sent", async () => {
   await withSaferpay({}, async (app, calls) => {
     await assertRejects(() => saferpay.sync(app, row()), Error, "required");
     assertEquals(calls, []);
   }, { password: "" });
 });
 
-Deno.test("the test environment is the default, live only when set", async () => {
+test("the test environment is the default, live only when set", async () => {
   const answers = { "PaymentPage/Assert": tx("PENDING") };
   for (const [live, host] of [[undefined, "test.saferpay.com"], [true, "www.saferpay.com"]]) {
     await withSaferpay(answers, async (app, calls) => {

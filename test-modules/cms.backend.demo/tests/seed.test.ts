@@ -1,4 +1,5 @@
-import { App, sql } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, sql } from "@qino/qino";
 import { assert, assertEquals, fakeT } from "@qino/qino/tests";
 
 import { reset, wipe } from "../mod.ts";
@@ -13,14 +14,14 @@ async function census(app: App) {
 }
 
 async function demoApp() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("starter.cms");
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");
   await app.init();
   return app;
 }
 
-Deno.test("cms.backend.demo: seeds, and a wipe leaves the installation exactly as it was", async () => {
+test("cms.backend.demo: seeds, and a wipe leaves the installation exactly as it was", async () => {
   const app = await demoApp();
   try {
     const before = await census(app);
@@ -46,7 +47,7 @@ Deno.test("cms.backend.demo: seeds, and a wipe leaves the installation exactly a
   }
 });
 
-Deno.test("cms.backend.demo: the same seed builds the same site twice", async () => {
+test("cms.backend.demo: the same seed builds the same site twice", async () => {
   const app = await demoApp();
   try {
     const titles = async () => (await app.db.query`SELECT text FROM text_lang ORDER BY text`).map((row) => row.text).join("|");
@@ -59,7 +60,7 @@ Deno.test("cms.backend.demo: the same seed builds the same site twice", async ()
   }
 });
 
-Deno.test("cms.backend.demo: the panel lists the seeders and what the last run wrote", async () => {
+test("cms.backend.demo: the panel lists the seeders and what the last run wrote", async () => {
   const app = await demoApp();
   try {
     app.t = fakeT;
@@ -77,8 +78,8 @@ Deno.test("cms.backend.demo: the panel lists the seeders and what the last run w
   }
 });
 
-Deno.test("cms.backend.demo: finance — invoices in every state, a statement, and a wipe leaves nothing", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("cms.backend.demo: finance — invoices in every state, a statement, and a wipe leaves nothing", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("starter.cms");
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.demo");
   app.stores.add(import.meta.resolve("../../../fin/store.json"))

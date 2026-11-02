@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { link, OURS, save } from "@qino/qino/fin.hosting";
 import { subscribe } from "@qino/qino/fin.subscription";
@@ -17,7 +18,7 @@ type Answer = { ok: boolean; message?: string; url?: string };
 const customer = (app: App, organization: string) =>
   app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, given_name: "", family_name: "", organization }).then(Number);
 
-Deno.test("domains: the list shows owner, aliases, host and billing, flags what is not billed for registration or hosting", async () => {
+test("domains: the list shows owner, aliases, host and billing, flags what is not billed for registration or hosting", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/domains");
     const anna = await customer(app, "Anna AG");
@@ -60,7 +61,7 @@ Deno.test("domains: the list shows owner, aliases, host and billing, flags what 
   });
 });
 
-Deno.test("domains: one is added, changed, linked, unlinked and removed; refusals come back as message", async () => {
+test("domains: one is added, changed, linked, unlinked and removed; refusals come back as message", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/domains");
     const as = (run: () => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;
@@ -93,7 +94,7 @@ Deno.test("domains: one is added, changed, linked, unlinked and removed; refusal
   });
 });
 
-Deno.test("domains: an alias's page offers no customer and no host — they are its domain's — but its own subscriptions to link", async () => {
+test("domains: an alias's page offers no customer and no host — they are its domain's — but its own subscriptions to link", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/domains");
     const anna = await customer(app, "Anna AG");
@@ -110,7 +111,7 @@ Deno.test("domains: an alias's page offers no customer and no host — they are 
   });
 });
 
-Deno.test("domains: sources are added, changed without showing the secret, and removed", async () => {
+test("domains: sources are added, changed without showing the secret, and removed", async () => {
   await withFinApp([...FIN, "fin.hosting.plesk"], async (app) => {
     const node = backendNode(app, "/backend/domains");
     const as = (run: () => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;

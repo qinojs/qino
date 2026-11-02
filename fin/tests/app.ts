@@ -1,5 +1,5 @@
 // A real app for the fin tests: translations, identity, the document and the backend need one.
-import { App, requestStorage } from "@qino/qino";
+import { App, fs, requestStorage } from "@qino/qino";
 import { testContext } from "@qino/qino/tests";
 
 import type { Node } from "@qino/qino/cms";
@@ -9,7 +9,7 @@ const BASE = ["cron", "identity", "locale.country", "locale.currency", "pdf", "s
 
 /** Boot an app with the base module fin and these (fin's, or others by name), run `fn`, tear it down again. */
 export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>): Promise<void> {
-  const dir = await Deno.makeTempDir({ prefix: "qino-fin-test-" });
+  const dir = await fs.tempDir({ prefix: "qino-fin-test-" });
   const app = new App({ dir, db: "sqlite::memory:" });
   for (const name of BASE) app.modules.add(new URL(`../../module/${name}/plugin.ts`, import.meta.url));
   // fin's own modules from this store, any other (messaging.email …) from the module store
@@ -31,7 +31,7 @@ export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>)
     // the other way round than linked, so nothing goes before what needs it; this stops the job timers
     for (const mod of app.modules.linked().toReversed()) if (mod.name !== "core") app.modules.unlink(mod.name);
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 }
 

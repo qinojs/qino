@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { create as invoice, issue, refOf } from "@qino/qino/fin.invoice";
 import { cancel, create, methods, refund } from "@qino/qino/fin.payment";
@@ -5,7 +6,7 @@ import { cancel, create, methods, refund } from "@qino/qino/fin.payment";
 import { withFinApp } from "../../tests/app.ts";
 import { add, balance, moves, payOut } from "../mod.ts";
 
-Deno.test("credit is added, pays an invoice where it covers it, and comes back with a refund", async () => {
+test("credit is added, pays an invoice where it covers it, and comes back with a refund", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.payment.credit"], async (app) => {
     const usr = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster",
@@ -29,7 +30,7 @@ Deno.test("credit is added, pays an invoice where it covers it, and comes back w
   });
 });
 
-Deno.test("paid out onto credit: an outgoing payment, and the credit it adds, refer to each other", async () => {
+test("paid out onto credit: an outgoing payment, and the credit it adds, refer to each other", async () => {
   await withFinApp(["fin.payment", "fin.payment.credit"], async (app) => {
     const usr = Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, family_name: "Muster" }));
     const payment = await payOut(app, usr, { amount: 1500, currency: "CHF", ref: "fin.invoice:9", text: "G2027-1" });
@@ -43,7 +44,7 @@ Deno.test("paid out onto credit: an outgoing payment, and the credit it adds, re
   });
 });
 
-Deno.test("paid out onto credit by mistake: canceled, the credit goes back — not where it is spent", async () => {
+test("paid out onto credit by mistake: canceled, the credit goes back — not where it is spent", async () => {
   await withFinApp(["fin.payment", "fin.payment.credit"], async (app) => {
     const usr = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster",

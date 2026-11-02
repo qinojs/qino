@@ -1,8 +1,10 @@
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { App, getCtx, requestStorage, runAs } from "../mod.ts";
 import { assertEquals, assertRejects } from "./deps.ts";
 
-Deno.test("runAs: a context of its own, with the user's rights, through its actor", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("runAs: a context of its own, with the user's rights, through its actor", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   await app.init();
   try {
     await app.db.table("usr").insert({ id: 7, username: "ann@example.test", active: true });

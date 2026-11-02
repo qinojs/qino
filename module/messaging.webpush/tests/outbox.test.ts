@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { generateVAPIDKeys } from "web-push-neo";
 import { b64url, Db, randB64 } from "@qino/qino";
 import { assert, assertEquals, messagingDbSchema } from "@qino/qino/tests";
@@ -44,7 +45,7 @@ function pushService(answers: number[]) {
   return { calls, restore: () => globalThis.fetch = original };
 }
 
-Deno.test("webpush: a push service having a bad day is retried, and the notification survives it", async () => {
+test("webpush: a push service having a bad day is retried, and the notification survives it", async () => {
   const a = await app();
   const service = pushService([503]);
   try {
@@ -71,7 +72,7 @@ Deno.test("webpush: a push service having a bad day is retried, and the notifica
   }
 });
 
-Deno.test("webpush: a subscription the browser dropped meanwhile is final, not owed", async () => {
+test("webpush: a subscription the browser dropped meanwhile is final, not owed", async () => {
   const a = await app();
   const service = pushService([503]);
   try {

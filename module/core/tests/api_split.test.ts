@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { apiRequest, assertEquals, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, apiClient, invoke, toTools } from "../lib/api/mod.ts";
@@ -21,7 +22,7 @@ const api = {
   },
 };
 
-Deno.test("api split facade mirrors invoke, fetch, tools and client", async () => {
+test("api split facade mirrors invoke, fetch, tools and client", async () => {
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/item/3", { detail: "yes" }), { id: 3, detail: "yes" });
 

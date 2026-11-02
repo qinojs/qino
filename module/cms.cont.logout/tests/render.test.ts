@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
@@ -27,7 +28,7 @@ async function makeCtx(loggedIn = false) {
   return ctx;
 }
 
-Deno.test("cms.cont.logout: render shows logout form for logged-in users", async () => {
+test("cms.cont.logout: render shows logout form for logged-in users", async () => {
   const ctx = await makeCtx(true);
   const node = {
     edit: () => false,
@@ -41,7 +42,7 @@ Deno.test("cms.cont.logout: render shows logout form for logged-in users", async
   assertEquals(out.includes('name=csrfToken value="tok"'), true);
 });
 
-Deno.test("cms.cont.logout: escapes the logout token", async () => {
+test("cms.cont.logout: escapes the logout token", async () => {
   const userCtx = await makeCtx(true);
   userCtx.sess = { data: { core: { userId: () => 7, csrfToken: () => `t"><script>x</script>` } } } as any;
   const userNode = {
@@ -56,7 +57,7 @@ Deno.test("cms.cont.logout: escapes the logout token", async () => {
   assertEquals(logout.includes("<script>"), false);
 });
 
-Deno.test("cms.cont.logout: guests see no logout form", async () => {
+test("cms.cont.logout: guests see no logout form", async () => {
   const ctx = await makeCtx(false);
   const node = { edit: () => false };
   const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any, { ctx })));

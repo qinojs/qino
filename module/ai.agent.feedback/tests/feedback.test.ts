@@ -1,4 +1,5 @@
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
@@ -17,8 +18,8 @@ const fake: Adapter = {
   },
 };
 
-Deno.test("ai.agent.feedback: an agent reports to the developers, with its session; anyone signed in through the api", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("ai.agent.feedback: an agent reports to the developers, with its session; anyone signed in through the api", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "ai.tools", "cron", "score", "ai.embed", "ai.discover", "ai.agent", "ai.agent.feedback"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;

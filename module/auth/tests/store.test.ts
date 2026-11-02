@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { Db } from "@qino/qino";
 
@@ -14,7 +15,7 @@ async function app(): Promise<App> {
   return { db, [Symbol.asyncDispose]: () => db.close() } as any;
 }
 
-Deno.test("stored: several rows of one type are one factor with several secrets", async () => {
+test("stored: several rows of one type are one factor with several secrets", async () => {
   await using a = await app();
   await store(a, 7, "backup_codes", { hash: "one" });
   await store(a, 7, "backup_codes", { hash: "two" });
@@ -25,7 +26,7 @@ Deno.test("stored: several rows of one type are one factor with several secrets"
   assertEquals(await stored(a, 8, "totp"), []);
 });
 
-Deno.test("drop: keyed by the user, so a foreign row is out of reach", async () => {
+test("drop: keyed by the user, so a foreign row is out of reach", async () => {
   await using a = await app();
   await store(a, 7, "totp", { secret: "mine" });
   const [row] = await stored(a, 7, "totp");
@@ -37,7 +38,7 @@ Deno.test("drop: keyed by the user, so a foreign row is out of reach", async () 
   assertEquals(await drop(a, 7, "totp", id), 0, "and once gone it is gone");
 });
 
-Deno.test("drop: without an id it takes the whole kind, and only that kind", async () => {
+test("drop: without an id it takes the whole kind, and only that kind", async () => {
   await using a = await app();
   await store(a, 7, "backup_codes", { hash: "one" });
   await store(a, 7, "backup_codes", { hash: "two" });

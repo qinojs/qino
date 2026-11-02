@@ -1,4 +1,5 @@
 // deno-lint-ignore-file require-await
+import { test } from "node:test";
 import { Access, AccessError, ApiError, NotFoundError, ValidationError, bildJsonItem, invoke, html, requestStorage } from "@qino/qino";
 import { apiRequest, assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
@@ -118,7 +119,7 @@ async function setup(access = 3) {
   return { ctx, nodes };
 }
 
-Deno.test("cms api: node title/text/flags write through resolved node", async () => {
+test("cms api: node title/text/flags write through resolved node", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
@@ -144,7 +145,7 @@ Deno.test("cms api: node title/text/flags write through resolved node", async ()
   assertEquals(node.writes.online_end, null);
 });
 
-Deno.test("cms api: text fields are listed and read back without being created", async () => {
+test("cms api: text fields are listed and read back without being created", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
@@ -158,7 +159,7 @@ Deno.test("cms api: text fields are listed and read back without being created",
   assertEquals(Object.keys(node.textValues), ["main"]); // the read did not create "unknown"
 });
 
-Deno.test("cms api: named text fields are created for a writer and answered alone", async () => {
+test("cms api: named text fields are created for a writer and answered alone", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
   node.textValues.other = "de:kept";
@@ -170,7 +171,7 @@ Deno.test("cms api: named text fields are created for a writer and answered alon
   assertEquals(Object.keys(node.textValues).sort(), ["intro", "other", "title"]);
 });
 
-Deno.test("cms api: naming text fields creates nothing without write access", async () => {
+test("cms api: naming text fields creates nothing without write access", async () => {
   const { ctx, nodes } = await setup(1); // read access only
   const node = nodes.get(1)!;
 
@@ -180,7 +181,7 @@ Deno.test("cms api: naming text fields creates nothing without write access", as
   assertEquals(Object.keys(node.textValues), []);
 });
 
-Deno.test("cms api: text reads pass the output allowlist", async () => {
+test("cms api: text reads pass the output allowlist", async () => {
   const { ctx, nodes } = await setup();
   nodes.get(1)!.textValues.main = '<strong>Title</strong><img src=x onerror="alert(1)"><script>alert(2)</script>';
 
@@ -195,7 +196,7 @@ Deno.test("cms api: text reads pass the output allowlist", async () => {
   });
 });
 
-Deno.test("cms api: html and html parts render through node helpers", async () => {
+test("cms api: html and html parts render through node helpers", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/node/1/html", { vars: { a: 1 } }), '<div>{"a":1}</div>');
@@ -205,7 +206,7 @@ Deno.test("cms api: html and html parts render through node helpers", async () =
   });
 });
 
-Deno.test("cms api: contents returns readable content tree", async () => {
+test("cms api: contents returns readable content tree", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
   const child = new FakeNode(10, 1, { type: "c", module: "cms.cont.text", name: "main" });
@@ -223,7 +224,7 @@ Deno.test("cms api: contents returns readable content tree", async () => {
   });
 });
 
-Deno.test("cms api: contents post returns rendered html and the block's shape", async () => {
+test("cms api: contents post returns rendered html and the block's shape", async () => {
   const { ctx } = await setup();
   ctx.app.modules.get = (name) => name === "cms.text" ? {} as never : undefined;
   await requestStorage.run(ctx, async () => {
@@ -238,7 +239,7 @@ Deno.test("cms api: contents post returns rendered html and the block's shape", 
   });
 });
 
-Deno.test("cms api: contents post rejects unknown modules before creating a block", async () => {
+test("cms api: contents post rejects unknown modules before creating a block", async () => {
   const { ctx, nodes } = await setup();
   ctx.app.modules.get = () => undefined;
   nodes.get(1)!.createCont = () => { throw new Error("Must not create a block"); };
@@ -251,7 +252,7 @@ Deno.test("cms api: contents post rejects unknown modules before creating a bloc
   });
 });
 
-Deno.test("cms api: files lists placeholders", async () => {
+test("cms api: files lists placeholders", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     const file = { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" };
@@ -259,7 +260,7 @@ Deno.test("cms api: files lists placeholders", async () => {
   });
 });
 
-Deno.test("cms api: delete all files includes placeholders", async () => {
+test("cms api: delete all files includes placeholders", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
@@ -270,13 +271,13 @@ Deno.test("cms api: delete all files includes placeholders", async () => {
   assertEquals(node.deletedFiles, ["file.jpg", "placeholder.jpg"]);
 });
 
-Deno.test("cms api: file slots are addressed apart from files sub-routes", async () => {
+test("cms api: file slots are addressed apart from files sub-routes", async () => {
   const { ctx, nodes } = await setup();
   await requestStorage.run(ctx, () => invoke(api, "DELETE", "/node/1/file/all"));
   assertEquals(nodes.get(1)!.deletedFiles, ["all"]);
 });
 
-Deno.test("cms api: user access and group access write through node", async () => {
+test("cms api: user access and group access write through node", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
@@ -289,7 +290,7 @@ Deno.test("cms api: user access and group access write through node", async () =
   assertEquals(node.groupChanges, [[6, 1]]);
 });
 
-Deno.test("cms api: resolve rejects missing and unreadable nodes", async () => {
+test("cms api: resolve rejects missing and unreadable nodes", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     await assertRejects(() => invoke(api, "GET", "/node/99"), NotFoundError);
@@ -297,7 +298,7 @@ Deno.test("cms api: resolve rejects missing and unreadable nodes", async () => {
   });
 });
 
-Deno.test("cms api: offline nodes are readable for writers only", async () => {
+test("cms api: offline nodes are readable for writers only", async () => {
   for (const [access, readable] of [[1, false], [2, true]] as const) {
     const { ctx, nodes } = await setup(access);
     nodes.get(1)!.online = false;
@@ -309,14 +310,14 @@ Deno.test("cms api: offline nodes are readable for writers only", async () => {
   }
 });
 
-Deno.test("cms api: node write access is required for mutations", async () => {
+test("cms api: node write access is required for mutations", async () => {
   const { ctx } = await setup(1);
   await requestStorage.run(ctx, async () => {
     await assertRejects(() => invoke(api, "PUT", "/node/1/title", { value: "Nope" }), AccessError);
   });
 });
 
-Deno.test("cms api: helper errors are typed and keep their HTTP status and message", async () => {
+test("cms api: helper errors are typed and keep their HTTP status and message", async () => {
   const { ctx } = await setup();
   ctx.app.db.transaction = (fn) => fn();
   Object.assign(cmsInstances.get(ctx.app)!, { nodeByPath: () => null });
@@ -337,7 +338,7 @@ Deno.test("cms api: helper errors are typed and keep their HTTP status and messa
   });
 });
 
-Deno.test("cms api: validation rejects wrong params and payloads before writing", async () => {
+test("cms api: validation rejects wrong params and payloads before writing", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
@@ -351,7 +352,7 @@ Deno.test("cms api: validation rejects wrong params and payloads before writing"
   assertEquals(node.writes, {});
 });
 
-Deno.test("cms api: modules lists content and layout modules, module adds the schema", async () => {
+test("cms api: modules lists content and layout modules, module adds the schema", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/modules"), [
@@ -363,7 +364,7 @@ Deno.test("cms api: modules lists content and layout modules, module adds the sc
   });
 });
 
-Deno.test("cms api: modules hides what the user may not insert", async () => {
+test("cms api: modules hides what the user may not insert", async () => {
   const { ctx } = await setup();
   // deno-lint-ignore no-explicit-any
   (cmsInstances.get(ctx.app) as any).fire = (_n: string, e: any) => ({ ...e, access: 2 }); // below ADMIN
@@ -372,7 +373,7 @@ Deno.test("cms api: modules hides what the user may not insert", async () => {
   });
 });
 
-Deno.test("cms api: admin access is required for access mutations", async () => {
+test("cms api: admin access is required for access mutations", async () => {
   const { ctx } = await setup(2);
   await requestStorage.run(ctx, async () => {
     await assertRejects(() => invoke(api, "PUT", "/node/1/access", { value: 1 }), AccessError);
@@ -381,13 +382,13 @@ Deno.test("cms api: admin access is required for access mutations", async () => 
   });
 });
 
-Deno.test("cms api: a request is stored the way routing matches it", () => {
+test("cms api: a request is stored the way routing matches it", () => {
   assertEquals(cleanRequest(" /menu/ "), "menu");
   assertEquals(cleanRequest("//a//b//"), "a//b");
   assertEquals(cleanRequest("/"), ""); // "/" is the entry link, and that is the empty request
 });
 
-Deno.test("cms api: a copy keeps everything but the name, which stays with the original", async () => {
+test("cms api: a copy keeps everything but the name, which stays with the original", async () => {
   const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
   node.vs.name = "system";

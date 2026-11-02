@@ -1,9 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, fakeCms } from "@qino/qino/tests";
 
 import { init } from "../plugin.ts";
 
-Deno.test("cms.templateParser: a remote module resolves template.html beside plugin.ts", async () => {
+test("cms.templateParser: a remote module resolves template.html beside plugin.ts", async () => {
   const real = globalThis.fetch;
   const base = `https://qino.test/${crypto.randomUUID()}/`;
   let listener: (e: any) => Promise<void> = async () => {};

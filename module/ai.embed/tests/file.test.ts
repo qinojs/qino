@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { fs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { create, indexFile, indexFiles, search } from "../mod.ts";
@@ -10,13 +12,13 @@ import type { App } from "@qino/qino";
 const all = { file_text: true, file_image: true } as const;
 const hits = async (app: App) => (await search(app, all, "cat", { limit: 20 })).map((h) => `${h.name}/${h.key.file_id}`).sort();
 
-Deno.test("ai.embed: indexes files, catches up on missing ones only", async () => {
-  const dir = await Deno.makeTempDir();
+test("ai.embed: indexes files, catches up on missing ones only", async () => {
+  const dir = await fs.tempDir();
   const file = { additionalProperties: { properties: { id: { type: "integer", "x-index": "primary" }, text: { type: "string" }, mime: { type: "string" }, md5: { type: "string" } } } };
   const { app, db, calls, settings } = await fakeApp("sqlite::memory:", { file, ...fileSchema.properties });
   try {
     await db.exec`INSERT INTO file VALUES (7, 'cat picture', 'image/png', ${"a".repeat(32)}), (8, NULL, 'image/png', ${"b".repeat(32)}), (9, '', 'application/zip', ${"c".repeat(32)})`;
-    await Deno.writeFile(`${dir}/image.png`, new Uint8Array([1]));
+    await fs.write(`${dir}/image.png`, new Uint8Array([1]));
     const extracted: number[] = [];
     Object.assign(app, { dbFiles: { file: (id: number) => Promise.resolve({
       exists: () => Promise.resolve(true), path: `${dir}/image.png`, mime: "image/png",
@@ -45,6 +47,6 @@ Deno.test("ai.embed: indexes files, catches up on missing ones only", async () =
     assertEquals(await hits(app), ["file_image/7", "file_image/8", "file_text/7"]);
   } finally {
     await db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

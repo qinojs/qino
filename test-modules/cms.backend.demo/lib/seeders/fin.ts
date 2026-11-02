@@ -90,11 +90,12 @@ async function issued(s: Seed, qr: boolean, lines: Line[], date: number, draft: 
   };
   // a user gets an address once (fin's columns); the invoice copies the user's, as the editor does
   const user = who && await addressed(s, who.id, address);
+  const party = user ?? { name: person.organization || `${person.given_name} ${person.family_name}`, address };
   const id = await create(s.app, {
     currency: "CHF",
     date: day(date),
     usrId: who?.id,
-    party: user ?? { name: person.organization || `${person.given_name} ${person.family_name}`, address },
+    party,
     lines: s.rnd.some(WORK, s.rnd.int(1, 4)).map(([name, unit, price, taxRate]) => ({
       name,
       unit: unit || undefined,
@@ -121,7 +122,7 @@ async function issued(s: Seed, qr: boolean, lines: Line[], date: number, draft: 
     const order = { method: "qrbill", amount: total, currency: "CHF", ref: refOf(id), description, return: "/" };
     const { id: payment } = await pay(s.app, order);
     const reference = String(await s.db.one`SELECT external_id FROM payment WHERE id = ${payment}`);
-    lines.push({ id: `demo-qr-${payment}`, date: day(when), amount, reference, partyName: name });
+    lines.push({ id: `demo-qr-${payment}`, date: day(when), amount, reference, partyName: party.name });
   } else {
     // paid online too where a provider is linked — recorded as done, so nothing asks it again
     const [provider, method] = s.rnd.pick(ways(s));

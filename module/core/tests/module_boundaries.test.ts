@@ -1,3 +1,6 @@
+import { test } from "node:test";
+import { stat } from "node:fs/promises";
+import { fs } from "../lib/fs.ts";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { assertEquals, assertStringIncludes } from "./deps.ts";
@@ -16,7 +19,7 @@ const stores = [moduleDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
 const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
-  for await (const entry of Deno.readDir(dir)) {
+  for (const entry of await fs.list(dir)) {
     const path = dir + entry.name;
     if (entry.isDirectory) {
       yield* files(path + "/");
@@ -91,9 +94,9 @@ function exports(source: string) {
 /** Every mod.ts, as module name -> absolute path. */
 async function barrels() {
   const found = new Map<string, string>();
-  for (const entry of Deno.readDirSync(moduleDir)) {
+  for (const entry of await fs.list(moduleDir)) {
     const path = `${moduleDir}${entry.name}/mod.ts`;
-    if (entry.isDirectory && await Deno.stat(path).then(() => true, () => false)) found.set(entry.name, path);
+    if (entry.isDirectory && await stat(path).then(() => true, () => false)) found.set(entry.name, path);
   }
   return found;
 }
@@ -109,8 +112,8 @@ const OPEN = new Set<string>();
 
 /** The module folders below a store directory, as `<store dir><module>/`. */
 async function* moduleDirs(dir: string): AsyncGenerator<string> {
-  for await (const entry of Deno.readDir(dir)) {
-    if (entry.isDirectory && await Deno.stat(`${dir}${entry.name}/manifest.json`).then(() => true, () => false)) {
+  for (const entry of await fs.list(dir)) {
+    if (entry.isDirectory && await stat(`${dir}${entry.name}/manifest.json`).then(() => true, () => false)) {
       yield `${dir}${entry.name}/`;
     }
   }
@@ -120,7 +123,7 @@ async function* moduleDirs(dir: string): AsyncGenerator<string> {
  *  the module, not its suite — the same cut the module copier makes. */
 async function modulePaths(dir: string, base = dir) {
   const found: string[] = [];
-  for await (const entry of Deno.readDir(dir)) {
+  for (const entry of await fs.list(dir)) {
     if (entry.isDirectory) {
       if (dir === base && entry.name === "tests") continue;
       found.push(...await modulePaths(`${dir}${entry.name}/`, base));
@@ -129,11 +132,11 @@ async function modulePaths(dir: string, base = dir) {
   return found.sort();
 }
 
-Deno.test("every module manifest has a description", async () => {
+test("every module manifest has a description", async () => {
   const missing = [];
   for (const store of stores) {
     for await (const dir of moduleDirs(store)) {
-      const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+      const manifest = JSON.parse(await fs.text(dir + "manifest.json"));
       if (!manifest.description?.trim()) missing.push(dir.slice(store.length));
     }
   }
@@ -143,37 +146,37 @@ Deno.test("every module manifest has a description", async () => {
 // A remote consumer cannot list a directory, so a published module has to enumerate itself. Nothing
 // keeps that list correct but this test: add an asset, forget the manifest, and it says so — with
 // the array to paste. Modules that are not published carry no `files` and are not checked.
-Deno.test("a manifest that lists its files lists all of them", async () => {
+test("a manifest that lists its files lists all of them", async () => {
   for (const store of stores) {
     for await (const dir of moduleDirs(store)) {
-      const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+      const manifest = JSON.parse(await fs.text(dir + "manifest.json"));
       if (!manifest.files) continue;
       assertEquals(manifest.files.toSorted(), await modulePaths(dir), `files of ${dir.slice(store.length)}`);
     }
   }
 });
 
-Deno.test("module icons expose the fragment rendered by moduleIcon", async () => {
+test("module icons expose the fragment rendered by moduleIcon", async () => {
   for (const store of stores) {
     for await (const dir of moduleDirs(store)) {
-      const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+      const manifest = JSON.parse(await fs.text(dir + "manifest.json"));
       if (!manifest.files?.includes("pub/module.svg")) continue;
-      assertStringIncludes(await Deno.readTextFile(dir + "pub/module.svg"), 'id="main"', dir.slice(store.length));
+      assertStringIncludes(await fs.text(dir + "pub/module.svg"), 'id="main"', dir.slice(store.length));
     }
   }
 });
 
 async function assertStore(dir: string) {
-  const store = JSON.parse(await Deno.readTextFile(dir + "store.json"));
+  const store = JSON.parse(await fs.text(dir + "store.json"));
   const plugins = [];
-  for await (const entry of Deno.readDir(dir)) {
-    const hasPlugin = entry.isDirectory && await Deno.stat(`${dir}${entry.name}/plugin.ts`).then((stat) => stat.isFile, () => false);
+  for (const entry of await fs.list(dir)) {
+    const hasPlugin = entry.isDirectory && await stat(`${dir}${entry.name}/plugin.ts`).then((stat) => stat.isFile(), () => false);
     if (hasPlugin) plugins.push(entry.name);
   }
   assertEquals(Object.keys(store.modules).sort(), plugins.sort());
 }
 
-Deno.test("module stores list every plugin directory", async () => {
+test("module stores list every plugin directory", async () => {
   await assertStore(moduleDir);
   await assertStore(finDir);
   await assertStore(iotDir);
@@ -182,41 +185,37 @@ Deno.test("module stores list every plugin directory", async () => {
 
 // item.js is pinned twice: `@qino/item/` (jsr) serves deno, `@qino/item-cdn/` serves the browser,
 // because no browser can load a `jsr:` url. Bump one and the other keeps serving the old files.
-Deno.test("the two item.js pins name the same version", async () => {
-  const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
+test("the two item.js pins name the same version", async () => {
+  const config = JSON.parse(await fs.text(qinoDir + "deno.json"));
   const version = (s: string) => s.match(/@[\^~v]?([\d.]+)\//)?.[1];
   assertEquals(version(config.imports["@qino/item-cdn/"]), version(config.imports["@qino/item/"]));
   assertEquals(itemRoot, config.imports["@qino/item-cdn/"]);
 });
 
-Deno.test("browser u2Root matches the import map", async () => {
-  const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
+test("browser u2Root matches the import map", async () => {
+  const config = JSON.parse(await fs.text(qinoDir + "deno.json"));
   assertEquals(u2Root, config.imports["@qino/u2/"]);
 });
 
 // A browser must be able to load them as modules: right MIME type, and CORS for a cross-origin
 // import. That is exactly what jsr.io does not do, and why these are jsDelivr URLs.
-Deno.test({
-  name: "the browser CDN roots are loadable cross-origin",
-  ignore: !(() => { try { return Deno.env.get("NET_TESTS"); } catch { return false; } })(),
-  fn: async () => {
-    for (const url of [itemRoot + "item.js", u2Root + "js/dialog/dialog.js"]) {
-      const res = await fetch(url);
-      assertEquals(res.ok, true, url);
-      assertEquals(res.headers.get("access-control-allow-origin"), "*", url);
-      const mime = res.headers.get("content-type")?.split(";")[0];
-      assertEquals(mime === "text/javascript" || mime === "application/javascript", true, `${url} → ${mime}`);
-      await res.body?.cancel();
-    }
-  },
+test("the browser CDN roots are loadable cross-origin", { skip: !(() => { try { return process.env.NET_TESTS; } catch { return false; } })() }, async () => {
+  for (const url of [itemRoot + "item.js", u2Root + "js/dialog/dialog.js"]) {
+    const res = await fetch(url);
+    assertEquals(res.ok, true, url);
+    assertEquals(res.headers.get("access-control-allow-origin"), "*", url);
+    const mime = res.headers.get("content-type")?.split(";")[0];
+    assertEquals(mime === "text/javascript" || mime === "application/javascript", true, `${url} → ${mime}`);
+    await res.body?.cancel();
+  }
 });
 
-Deno.test("test-store plugins are importable", async () => {
-  const store = JSON.parse(await Deno.readTextFile(testModuleDir + "store.json"));
+test("test-store plugins are importable", async () => {
+  const store = JSON.parse(await fs.text(testModuleDir + "store.json"));
   for (const name of Object.keys(store.modules)) await import(pathToFileURL(`${testModuleDir}${name}/plugin.ts`).href);
 });
 
-Deno.test("modules only consume public APIs of other modules", async () => {
+test("modules only consume public APIs of other modules", async () => {
   const errors = [];
   const roots: string[] = [];
   for (const store of sourceDirs) for await (const root of moduleDirs(store)) roots.push(root);
@@ -224,7 +223,7 @@ Deno.test("modules only consume public APIs of other modules", async () => {
   for (const sourceDir of sourceDirs) {
     for await (const file of files(sourceDir)) {
       const sourceRoot = owner(file);
-      for (const spec of imports(await Deno.readTextFile(file)).keys()) {
+      for (const spec of imports(await fs.text(file)).keys()) {
         const target = targetPath(spec, file);
         if (!target) continue;
         const targetRoot = owner(target);
@@ -274,10 +273,10 @@ function linked(manifests: Map<string, string[]>, mod: string) {
 
 // A type import only has to compile, a value import has to *be there* at runtime. So this is the
 // rule that keeps a module from crashing in an installation that never asked for its neighbour.
-Deno.test("modules only take values from modules they depend on", async () => {
+test("modules only take values from modules they depend on", async () => {
   const manifests = new Map<string, string[]>();
   for await (const dir of moduleDirs(moduleDir)) {
-    const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+    const manifest = JSON.parse(await fs.text(dir + "manifest.json"));
     manifests.set(dir.slice(moduleDir.length, -1), manifest.dependencies ?? []);
   }
 
@@ -288,7 +287,7 @@ Deno.test("modules only take values from modules they depend on", async () => {
     const mod = fileRel.split("/")[0];
     if (!manifests.has(mod)) continue;
     const allowed = linked(manifests, mod);
-    for (const spec of valueImports(await Deno.readTextFile(file))) {
+    for (const spec of valueImports(await fs.text(file))) {
       const target = targetPath(spec, file);
       if (!target) continue;
       if (!target.startsWith(moduleDir)) continue;
@@ -305,12 +304,12 @@ Deno.test("modules only take values from modules they depend on", async () => {
 // just as unresolvable across a package split. Starters build site content, so they ship with the cms.
 const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.") || mod.startsWith("starter.");
 
-Deno.test("the qino layer never imports from the cms layer", async () => {
+test("the qino layer never imports from the cms layer", async () => {
   const errors = [];
   for await (const file of files(moduleDir)) {
     const fileRel = file.slice(moduleDir.length);
     if (isCms(fileRel.split("/")[0])) continue;
-    for (const spec of imports(await Deno.readTextFile(file)).keys()) {
+    for (const spec of imports(await fs.text(file)).keys()) {
       const target = targetPath(spec, file);
       if (!target) continue;
       if (!target.startsWith(moduleDir)) continue;
@@ -330,11 +329,11 @@ const EXTERNAL = new Set([
   "cms.backend.ai/mod.ts CATALOG", // site modules outside this tree set up the known providers they have keys for
 ]);
 
-Deno.test("no mod.ts exports anything nobody imports", async () => {
+test("no mod.ts exports anything nobody imports", async () => {
   const used = new Map<string, Set<string>>();
   for (const sourceDir of sourceDirs) {
     for await (const file of files(sourceDir)) {
-      for (const [spec, names] of imports(await Deno.readTextFile(file))) {
+      for (const [spec, names] of imports(await fs.text(file))) {
         const target = targetPath(spec, file);
         if (!target?.startsWith(moduleDir)) continue;
         const set = used.getOrInsertComputed(target, () => new Set<string>());
@@ -344,7 +343,7 @@ Deno.test("no mod.ts exports anything nobody imports", async () => {
   }
   const errors = [];
   for (const [name, path] of await barrels()) {
-    const names = exports(await Deno.readTextFile(path));
+    const names = exports(await fs.text(path));
     const hits = used.get(path);
     if (!names || hits?.has("*")) continue;
     for (const n of [...names].sort()) {

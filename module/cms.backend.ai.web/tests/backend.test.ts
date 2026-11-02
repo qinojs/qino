@@ -1,12 +1,13 @@
-import { App, runAs, unixTime } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs, unixTime } from "@qino/qino";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 import { cms, list } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.ai.web: the reader, the keys and the pages read", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("cms.backend.ai.web: the reader, the keys and the pages read", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "cron", "ai.embed", "ai.web"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   try {

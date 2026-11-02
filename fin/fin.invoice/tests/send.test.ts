@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { today } from "@qino/qino/fin";
 import { setTransport } from "@qino/qino/messaging.email";
@@ -5,7 +6,7 @@ import { setTransport } from "@qino/qino/messaging.email";
 import { withFinApp } from "../../tests/app.ts";
 import { create, issue, send, setSent } from "../mod.ts";
 
-Deno.test("sent: the first time it reaches someone, or as said by hand", async () => {
+test("sent: the first time it reaches someone, or as said by hand", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "messaging", "messaging.email"], async (app) => {
     await app.settings["messaging.email"].address("office@atelier.test");
     const mails: unknown[] = [];

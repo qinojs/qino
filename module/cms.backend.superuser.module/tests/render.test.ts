@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertStringIncludes } from "@qino/qino/tests";
 
@@ -38,7 +39,7 @@ function fixture(query = {}) {
   return { node: { app, vs: { module: "cms.backend.superuser.module" } }, ctx };
 }
 
-Deno.test("module administration combines stores and module metadata", async () => {
+test("module administration combines stores and module metadata", async () => {
   const { node, ctx } = fixture();
   const out = await requestStorage.run(ctx as any, () => cms.node.render(node as any).then(String));
   assertStringIncludes(out, "Module stores");
@@ -48,7 +49,7 @@ Deno.test("module administration combines stores and module metadata", async () 
   if (out.includes("Exports")) throw new Error("Exports belong on the detail page only");
 });
 
-Deno.test("module administration keeps the module detail view", async () => {
+test("module administration keeps the module detail view", async () => {
   const { node, ctx } = fixture({ mod: "demo.module" });
   const out = await requestStorage.run(ctx as any, () => cms.node.render(node as any).then(String));
   assertStringIncludes(out, "Demo description");

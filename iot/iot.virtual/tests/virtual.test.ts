@@ -1,4 +1,5 @@
-import { App } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 import { reported, commands, entities, save, saveCommand } from "@qino/qino/iot";
 
@@ -6,8 +7,8 @@ import { apply, iotProvider, saveVirtual, virtuals } from "../mod.ts";
 
 // The source adapter carries the template's adapter name, so the Android template applies to it.
 async function fixture() {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-virtual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
-  await Deno.writeTextFile(`${dir}/plugin.ts`, `
+  const dir = await fs.tempDir({ prefix: "qino-iot-virtual-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  await fs.write(`${dir}/plugin.ts`, `
 export const calls = [];
 export const iotProvider = {
   name: "homeassistant",
@@ -25,11 +26,11 @@ export const iotProvider = {
   const provider = await save(app, { name: "Virtual", adapter: "virtual" });
   return {
     app, source, provider, calls: fake.calls as unknown[],
-    close: async () => { await app.db.close(); await Deno.remove(dir, { recursive: true }); },
+    close: async () => { await app.db.close(); await fs.remove(dir, { recursive: true }); },
   };
 }
 
-Deno.test("virtual entities read their source, set through their command and validate the value", async () => {
+test("virtual entities read their source, set through their command and validate the value", async () => {
   const { app, source, provider, calls, close } = await fixture();
   try {
     const order = await saveCommand(app, {
@@ -62,7 +63,7 @@ Deno.test("virtual entities read their source, set through their command and val
   } finally { await close(); }
 });
 
-Deno.test("virtual entities pass on their source's observations and changes", async () => {
+test("virtual entities pass on their source's observations and changes", async () => {
   const { app, source, provider, close } = await fixture();
   try {
     const id = await saveVirtual(app, { provider, name: "Mirror", source_provider: source, source_entity: "sensor.x" });
@@ -84,7 +85,7 @@ Deno.test("virtual entities pass on their source's observations and changes", as
   } finally { await close(); }
 });
 
-Deno.test("the Android template creates a device's commands and virtual entities once", async () => {
+test("the Android template creates a device's commands and virtual entities once", async () => {
   const { app, source, provider, close } = await fixture();
   try {
     const ids = await apply(app, "android", { provider, source, device: "phone" });

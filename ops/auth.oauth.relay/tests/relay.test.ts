@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 import { createHmac } from "node:crypto";
 import { b64url, Output } from "@qino/qino";
@@ -32,7 +33,7 @@ async function run(ctx: any) {
   throw new Error("expected an Output signal");
 }
 
-Deno.test("auth.oauth.relay: forwards code and state to the app named in the state", async () => {
+test("auth.oauth.relay: forwards code and state to the app named in the state", async () => {
   const s = state(CALLBACK);
   const res = await run(ctxWith({ code: "c1", state: s }));
   assertEquals(res.status, 303);
@@ -42,28 +43,28 @@ Deno.test("auth.oauth.relay: forwards code and state to the app named in the sta
   assertEquals(to.searchParams.get("state"), s);
 });
 
-Deno.test("auth.oauth.relay: a form_post becomes a GET with the same fields", async () => {
+test("auth.oauth.relay: a form_post becomes a GET with the same fields", async () => {
   const res = await run(ctxWith({}, { code: "c2", state: state(CALLBACK), user: '{"name":{}}' }));
   const to = new URL(res.location);
   assertEquals(to.searchParams.get("code"), "c2");
   assertEquals(to.searchParams.get("user"), '{"name":{}}');
 });
 
-Deno.test("auth.oauth.relay: refuses unlisted hosts, plain http and broken states", async () => {
+test("auth.oauth.relay: refuses unlisted hosts, plain http and broken states", async () => {
   assertEquals((await run(ctxWith({ code: "c", state: state("https://evil.test/cb") }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: state("http://kunde.example.ch/oauth/callback/google") }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: "rnd.%%%" }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: "rnd" }))).status, 400);
 });
 
-Deno.test("auth.oauth.relay: only forwards to auth.oauth callbacks, not other pages of an allowed host", async () => {
+test("auth.oauth.relay: only forwards to auth.oauth callbacks, not other pages of an allowed host", async () => {
   assertEquals((await run(ctxWith({ code: "c", state: state("https://kunde.example.ch/go?to=https://evil.test") }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: state("https://kunde.example.ch/oauth/callback/x/y") }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: state(CALLBACK + "?next=/x") }))).status, 400);
   assertEquals((await run(ctxWith({ code: "c", state: state("https://kunde.example.ch/app/oauth/callback/x") }))).status, 303);
 });
 
-Deno.test("auth.oauth.relay: a state signed with the client secret of one of its providers needs no host entry", async () => {
+test("auth.oauth.relay: a state signed with the client secret of one of its providers needs no host entry", async () => {
   const url = "https://other.test/oauth/callback/google";
   const keys = ["GOCSPX-one", "-----BEGIN PRIVATE KEY----- MIGT -----END PRIVATE KEY-----"];
   assertEquals((await run(ctxWith({ code: "c", state: signedState(url, "GOCSPX-one") }, null, "", keys))).status, 303);

@@ -1,4 +1,5 @@
-import { App, Ctx, requestStorage, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage, runAs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -7,7 +8,7 @@ import { cms as dbtable } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function setup() {
-  const dir = await Deno.makeTempDir() + "/";
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.dbtable");
   await app.init();
@@ -25,7 +26,7 @@ async function setup() {
   const close = async () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   };
   return { app, page, run, close };
 }
@@ -43,7 +44,7 @@ const list = (node: Node) => node.createCont({
   },
 });
 
-Deno.test("cms.cont.dbtable: fields along references, bounded by a fixed field, searched", async () => {
+test("cms.cont.dbtable: fields along references, bounded by a fixed field, searched", async () => {
   const { page, run, close } = await setup();
   try {
     const node = await list(page);
@@ -61,7 +62,7 @@ Deno.test("cms.cont.dbtable: fields along references, bounded by a fixed field, 
   }
 });
 
-Deno.test("cms.cont.dbtable: a row the list does not reach is not touched", async () => {
+test("cms.cont.dbtable: a row the list does not reach is not touched", async () => {
   const { app, page, run, close } = await setup();
   try {
     const node = await list(page);
@@ -82,7 +83,7 @@ Deno.test("cms.cont.dbtable: a row the list does not reach is not touched", asyn
   }
 });
 
-Deno.test("cms.cont.dbtable: the widget adds a column along a reference and removes it", async () => {
+test("cms.cont.dbtable: the widget adds a column along a reference and removes it", async () => {
   const { app, page, close } = await setup();
   try {
     const node = await list(page);

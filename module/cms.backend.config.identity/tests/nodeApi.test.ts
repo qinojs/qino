@@ -1,17 +1,18 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
-import { App } from "@qino/qino";
+import { App, fs } from "@qino/qino";
 import { file } from "@qino/qino/identity";
 
 import api from "../nodeApi.ts";
 
 async function testApp() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("identity");
   await app.init();
   return app;
 }
 
-Deno.test("cms.backend.config.identity saves settings and owns its DbFiles", async () => {
+test("cms.backend.config.identity saves settings and owns its DbFiles", async () => {
   await using app = await testApp();
   const node = { app } as never;
   await api(node, { save: { name: " Portal ", "organization.address.addressCountry": " ch " } });
@@ -37,7 +38,7 @@ Deno.test("cms.backend.config.identity saves settings and owns its DbFiles", asy
 });
 
 // identity.file() holds the whole table; a write anywhere has to drop that cache.
-Deno.test("cms.backend.config.identity: an uploaded asset shows up right away", async () => {
+test("cms.backend.config.identity: an uploaded asset shows up right away", async () => {
   await using app = await testApp();
   const node = { app } as never;
   assertEquals(await file(app, "logo"), undefined); // warms the cache while the table is empty

@@ -1,13 +1,14 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { aiDbSchema, assertEquals, assertStringIncludes, Emitter, fakeT } from "@qino/qino/tests";
-import { dbSchema as statsSchema, init } from "@qino/m/ai.stats/tests/deps.ts";
+import { statsDbSchema as statsSchema, statsInit as init } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.ai.calls: records failures and shows usage without rendering provider HTML", async () => {
+test("cms.backend.ai.calls: records failures and shows usage without rendering provider HTML", async () => {
   const db = new Db("sqlite::memory:");
   const combined = { properties: { ...aiDbSchema.properties, ...statsSchema.properties } };
   await db.migrate(combined);
@@ -40,7 +41,7 @@ Deno.test("cms.backend.ai.calls: records failures and shows usage without render
   }
 });
 
-Deno.test("cms.backend.ai.calls: empty tables say so", async () => {
+test("cms.backend.ai.calls: empty tables say so", async () => {
   const db = new Db("sqlite::memory:");
   const combined = { properties: { ...aiDbSchema.properties, ...statsSchema.properties } };
   await db.migrate(combined);

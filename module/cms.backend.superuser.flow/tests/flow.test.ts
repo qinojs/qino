@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { history } from "@qino/qino/sandbox.flow";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -17,14 +18,14 @@ const row = {
   code: "return '<script>'",
 };
 
-Deno.test("cms.backend.superuser.flow: metadata is wired", () => {
+test("cms.backend.superuser.flow: metadata is wired", () => {
   assertEquals(manifest.name, "cms.backend.superuser.flow");
   assertEquals(manifest.dependencies, ["cms.backend", "sandbox.flow"]);
   assertEquals(Object.keys(cms.node.parts), ["list", "detail"]);
   assertEquals(typeof cms.node.api, "function");
 });
 
-Deno.test("cms.backend.superuser.flow: list and detail show the flow, escaped", async () => {
+test("cms.backend.superuser.flow: list and detail show the flow, escaped", async () => {
   const list = String(await renderList(plain, [row]));
   assertEquals(list.includes('<tr data-flow="3">'), true);
   assertEquals(list.includes("greet &lt;b&gt;&quot;you&quot;&lt;/b&gt;"), true);
@@ -47,7 +48,7 @@ Deno.test("cms.backend.superuser.flow: list and detail show the flow, escaped", 
   assertEquals(String(await renderDetail(plain, undefined)).includes("Pick a flow."), true);
 });
 
-Deno.test("cms.backend.superuser.flow: the test run starts from the event's schema and tells its fields", async () => {
+test("cms.backend.superuser.flow: the test run starts from the event's schema and tells its fields", async () => {
   const schema = {
     type: "object",
     properties: {
@@ -64,7 +65,7 @@ Deno.test("cms.backend.superuser.flow: the test run starts from the event's sche
   assertEquals(detail.includes(field), true);
 });
 
-Deno.test("cms.backend.superuser.flow: the runs kept, and how many were not for it", async () => {
+test("cms.backend.superuser.flow: the runs kept, and how many were not for it", async () => {
   const run = { time: new Date(), end: "done", calls: [], result: "<b>" };
   const detail = String(await renderDetail(plain, row, { history: { runs: [run], filtered: 7 } }));
   assertEquals(detail.includes("7× not for it"), true);
@@ -73,8 +74,8 @@ Deno.test("cms.backend.superuser.flow: the runs kept, and how many were not for 
   assertEquals(String(await renderDetail(plain, row)).includes("No runs yet."), true);
 });
 
-Deno.test("cms.backend.superuser.flow: switches, tries, saves and deletes a flow", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("cms.backend.superuser.flow: switches, tries, saves and deletes a flow", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.modules.add(new URL("../../sandbox/plugin.ts", import.meta.url));
   app.modules.add(new URL("../../sandbox.flow/plugin.ts", import.meta.url));
   await app.init();

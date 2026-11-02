@@ -1,11 +1,12 @@
+import { test } from "node:test";
 import { createHash } from "node:crypto";
 
 import { assertEquals } from "./deps.ts";
 import { File } from "../lib/File.ts";
 import { fs } from "../lib/fs.ts";
 
-Deno.test("File: basename, size and md5", async () => {
-  const dir = await Deno.makeTempDir();
+test("File: basename, size and md5", async () => {
+  const dir = await fs.tempDir();
   try {
     const path = dir + "/hello.txt";
     const file = new File(path);
@@ -18,30 +19,30 @@ Deno.test("File: basename, size and md5", async () => {
     assertEquals(await file.size(), 5);
     assertEquals(await file.md5(), "5d41402abc4b2a76b9719d911017c592");
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("File: copyTo keeps the contents", async () => {
-  const dir = await Deno.makeTempDir();
+test("File: copyTo keeps the contents", async () => {
+  const dir = await fs.tempDir();
   try {
     const txt = new File(dir + "/a.txt");
-    await Deno.writeTextFile(txt.path, "plain");
+    await fs.write(txt.path, "plain");
 
     assertEquals(await txt.copyTo(dir + "/copy.txt"), true);
-    assertEquals(await Deno.readTextFile(dir + "/copy.txt"), "plain");
+    assertEquals(await fs.text(dir + "/copy.txt"), "plain");
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("File: empty and spaced filenames keep stable metadata", async () => {
-  const dir = await Deno.makeTempDir();
+test("File: empty and spaced filenames keep stable metadata", async () => {
+  const dir = await fs.tempDir();
   try {
     const empty = new File(dir + "/empty file.txt");
     const same = new File(dir + "/same content.txt");
-    await Deno.writeTextFile(empty.path, "");
-    await Deno.writeTextFile(same.path, "");
+    await fs.write(empty.path, "");
+    await fs.write(same.path, "");
 
     assertEquals(empty.basename(), "empty file.txt");
     assertEquals(empty.basename(".html"), "empty file.txt");
@@ -49,24 +50,24 @@ Deno.test("File: empty and spaced filenames keep stable metadata", async () => {
     assertEquals(await empty.md5(), "d41d8cd98f00b204e9800998ecf8427e");
     assertEquals(await same.md5(), await empty.md5());
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("File: md5 of a multi-chunk file matches the whole-file hash", async () => {
-  const dir = await Deno.makeTempDir();
+test("File: md5 of a multi-chunk file matches the whole-file hash", async () => {
+  const dir = await fs.tempDir();
   try {
     const path = dir + "/big";
-    await Deno.writeFile(path, new Uint8Array(5_000_000).fill(7)); // several read chunks
-    const buffered = createHash("md5").update(await Deno.readFile(path)).digest("hex");
+    await fs.write(path, new Uint8Array(5_000_000).fill(7)); // several read chunks
+    const buffered = createHash("md5").update(await fs.bytes(path)).digest("hex");
     assertEquals(await new File(path).md5(), buffered);
     assertEquals(await new File(dir).md5(), ""); // a directory is not a file
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("File: missing files return safe defaults", async () => {
+test("File: missing files return safe defaults", async () => {
   const file = new File("/tmp/qino-missing-file-" + crypto.randomUUID());
   assertEquals(await file.exists(), undefined);
   assertEquals(await file.mtime(), undefined);

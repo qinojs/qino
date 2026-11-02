@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals } from "./deps.ts";
 import { fs } from "../lib/fs.ts";
 import { serveFile } from "../lib/serveFile.ts";
@@ -11,7 +12,7 @@ async function inDir(fn: (dir: string) => Promise<void>) {
 const get = (path: string, headers: HeadersInit = {}, method = "GET") =>
   serveFile(new Request("http://x/", { method, headers }), path);
 
-Deno.test("serveFile: whole file with type, length and validators", () => inDir(async (dir) => {
+test("serveFile: whole file with type, length and validators", () => inDir(async (dir) => {
   await fs.write(dir + "/a.css", "body{}");
   const res = await get(dir + "/a.css");
   assertEquals(res.status, 200);
@@ -23,16 +24,16 @@ Deno.test("serveFile: whole file with type, length and validators", () => inDir(
   assertEquals(typeof res.headers.get("last-modified"), "string");
 }));
 
-Deno.test("serveFile: the length is of what is sent, also after a foreign write", () => inDir(async (dir) => {
+test("serveFile: the length is of what is sent, also after a foreign write", () => inDir(async (dir) => {
   await fs.write(dir + "/a.js", "old");
   await get(dir + "/a.js").then((res) => res.text());
-  await Deno.writeTextFile(dir + "/a.js", "longer"); // the cached stat still says 3
+  await fs.write(dir + "/a.js", "longer"); // the cached stat still says 3
   const res = await get(dir + "/a.js");
   assertEquals(res.headers.get("content-length"), "6");
   assertEquals(await res.text(), "longer");
 }));
 
-Deno.test("serveFile: 404 for missing files and directories, 405 for other methods", () => inDir(async (dir) => {
+test("serveFile: 404 for missing files and directories, 405 for other methods", () => inDir(async (dir) => {
   assertEquals((await get(dir + "/missing.txt")).status, 404);
   assertEquals((await get(dir)).status, 404);
   await fs.write(dir + "/a.txt", "x");
@@ -41,7 +42,7 @@ Deno.test("serveFile: 404 for missing files and directories, 405 for other metho
   assertEquals(res.headers.get("allow"), "GET, HEAD");
 }));
 
-Deno.test("serveFile: HEAD has the length but no body", () => inDir(async (dir) => {
+test("serveFile: HEAD has the length but no body", () => inDir(async (dir) => {
   await fs.write(dir + "/a.txt", "hello");
   const res = await get(dir + "/a.txt", {}, "HEAD");
   assertEquals(res.status, 200);
@@ -49,7 +50,7 @@ Deno.test("serveFile: HEAD has the length but no body", () => inDir(async (dir) 
   assertEquals(res.headers.get("content-length"), "5");
 }));
 
-Deno.test("serveFile: 304 for a matching If-None-Match or If-Modified-Since", () => inDir(async (dir) => {
+test("serveFile: 304 for a matching If-None-Match or If-Modified-Since", () => inDir(async (dir) => {
   await fs.write(dir + "/a.txt", "hello");
   const first = await get(dir + "/a.txt");
   await first.body?.cancel();
@@ -62,7 +63,7 @@ Deno.test("serveFile: 304 for a matching If-None-Match or If-Modified-Since", ()
   await stale.body?.cancel();
 }));
 
-Deno.test("serveFile: single byte ranges", () => inDir(async (dir) => {
+test("serveFile: single byte ranges", () => inDir(async (dir) => {
   const path = dir + "/a.txt";
   await fs.write(path, "0123456789");
   const range = (r: string, more: HeadersInit = {}) => get(path, { range: r, ...more });
@@ -94,7 +95,7 @@ Deno.test("serveFile: single byte ranges", () => inDir(async (dir) => {
   await res.body?.cancel();
 }));
 
-Deno.test("serveFile: given headers replace the defaults", () => inDir(async (dir) => {
+test("serveFile: given headers replace the defaults", () => inDir(async (dir) => {
   await fs.write(dir + "/a.bin", "hello");
   const headers = new Headers({ "ETag": '"mine"', "Content-Type": "text/plain" });
   const res = await serveFile(new Request("http://x/", { headers: { "if-none-match": '"mine"' } }), dir + "/a.bin", headers);

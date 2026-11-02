@@ -5,6 +5,11 @@
   "engines": {
     "node": ">=26"
   },
+  "scripts": {
+    "test:node": "node --test --test-force-exit",
+    "test:bun": "bun test --isolate",
+    "test:deno": "deno task test"
+  },
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai": "./module/ai/mod.ts",
@@ -133,6 +138,7 @@
     "web-push-neo": "0.1.2"
   },
   "devDependencies": {
+    "@std/assert": "npm:@jsr/std__assert@^1",
     "@types/mime-types": "^3",
     "@types/sanitize-html": "^2"
   }

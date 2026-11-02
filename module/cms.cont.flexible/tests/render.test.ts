@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -18,11 +19,11 @@ const nodeSettings = (inited?: boolean) => {
   };
 };
 
-Deno.test("cms.cont.flexible: metadata is wired", () => {
+test("cms.cont.flexible: metadata is wired", () => {
   assertEquals(name, "cms.cont.flexible");
 });
 
-Deno.test("cms.cont.flexible: render concatenates child html", async () => {
+test("cms.cont.flexible: render concatenates child html", async () => {
   const node = {
     app: appWith(""),
     conts: () => [
@@ -33,7 +34,7 @@ Deno.test("cms.cont.flexible: render concatenates child html", async () => {
   assertEquals(await cms.node.render(node as any), "<div><p>A</p><p>B</p></div>");
 });
 
-Deno.test("cms.cont.flexible: render initializes default child when empty", async () => {
+test("cms.cont.flexible: render initializes default child when empty", async () => {
   const calls: string[] = [];
   let initialized = false;
   const settings = nodeSettings();
@@ -53,7 +54,7 @@ Deno.test("cms.cont.flexible: render initializes default child when empty", asyn
   assertEquals(settings["default module"](), "cms.cont.text"); // the panel's picker starts there
 });
 
-Deno.test("cms.cont.flexible: an emptied container stays empty", async () => {
+test("cms.cont.flexible: an emptied container stays empty", async () => {
   const calls: string[] = [];
   const node = {
     app: appWith("cms.cont.text"),

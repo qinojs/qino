@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assert, assertEquals, messagingDbSchema } from "@qino/qino/tests";
 import { record } from "@qino/qino/messaging";
@@ -27,11 +28,11 @@ const mail = (...lines: string[]) => ({
   headerLines: lines.map((line) => ({ key: line.slice(0, line.indexOf(":")).toLowerCase(), line })),
 });
 
-Deno.test("spamOf: nothing said is clean", () => withApp(async (app) => {
+test("spamOf: nothing said is clean", () => withApp(async (app) => {
   assertEquals(await spamOf(app, mail("Authentication-Results: mx.qino.test; dmarc=pass"), { from: "a@b.test", to }), 0);
 }));
 
-Deno.test("spamOf: only the receiving server's own check counts", () => withApp(async (app) => {
+test("spamOf: only the receiving server's own check counts", () => withApp(async (app) => {
   const forged = mail("Authentication-Results: mx.qino.test; dmarc=fail", "Authentication-Results: x; spf=pass");
   assert(await spamOf(app, forged, { from: "a@b.test", to }) >= 0.9);
   const forwarded = mail("Authentication-Results: mx.qino.test; dmarc=pass", "Authentication-Results: x; dmarc=fail");
@@ -39,13 +40,13 @@ Deno.test("spamOf: only the receiving server's own check counts", () => withApp(
   assert(await spamOf(app, mail("Authentication-Results: mx.qino.test; spf=fail"), { from: "a@b.test", to }) < 0.5);
 }));
 
-Deno.test("spamOf: the server's filter flags spam", () => withApp(async (app) => {
+test("spamOf: the server's filter flags spam", () => withApp(async (app) => {
   assert(await spamOf(app, mail("X-Spam-Status: Yes, score=7.1"), { from: "a@b.test", to }) >= 0.9);
   assert(await spamOf(app, mail("X-Spam-Flag: YES"), { from: "a@b.test", to }) >= 0.9);
   assertEquals(await spamOf(app, mail("X-Spam-Status: No, score=0.3"), { from: "a@b.test", to }), 0);
 }));
 
-Deno.test("spamOf: a known sender is judged like anyone — an account can be taken over", () => withApp(async (app) => {
+test("spamOf: a known sender is judged like anyone — an account can be taken over", () => withApp(async (app) => {
   const flagged = mail("X-Spam-Flag: YES");
   const failed = mail("Authentication-Results: mx.qino.test; dmarc=fail");
   assert(await spamOf(app, flagged, { from: "a@b.test", usrId: 1, to }) >= 0.9);

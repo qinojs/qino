@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -42,7 +43,7 @@ async function setup(type: string) {
 const items = ["a", "b", "c"].map((id) => ({ id, input: { messages: [{ role: "user", content: id }] } }));
 const answered = (fired: [string, any][]) => fired.filter(([name]) => name === "ai:batched").map(([, e]) => e);
 
-Deno.test("ai: a batch goes to the provider's batch API, its answers come with the next poll after it ended", async () => {
+test("ai: a batch goes to the provider's batch API, its answers come with the next poll after it ended", async () => {
   const { app, db, fired } = await setup("batching");
   await batch(app, "text", { owner: "test", items });
   assertEquals(await db.col`SELECT owner FROM ai_batch`, ["test"]);
@@ -62,7 +63,7 @@ Deno.test("ai: a batch goes to the provider's batch API, its answers come with t
   await db.close();
 });
 
-Deno.test("ai: without a batch API the calls are kept and run in the background, answered the same way", async () => {
+test("ai: without a batch API the calls are kept and run in the background, answered the same way", async () => {
   const { app, db, fired } = await setup("plain");
   await batch(app, "text", { owner: "test", items });
   assertEquals(await db.col`SELECT id FROM ai_batch_item ORDER BY id`, ["a", "b", "c"]); // kept before they run
@@ -72,7 +73,7 @@ Deno.test("ai: without a batch API the calls are kept and run in the background,
   await db.close();
 });
 
-Deno.test("ai: kept calls a restart left are run by the next poll", async () => {
+test("ai: kept calls a restart left are run by the next poll", async () => {
   const { app, db, fired } = await setup("plain");
   const id = await db.table("ai_batch").insert({ owner: "test", capability: "text", model_provider_id: 0, handle: "", items: "[]", opts: "{}", time: 1 });
   await db.table("ai_batch_item").insert({ batch_id: id, id: "left", input: JSON.stringify(items[0].input) });
@@ -83,7 +84,7 @@ Deno.test("ai: kept calls a restart left are run by the next poll", async () => 
   await db.close();
 });
 
-Deno.test("ai: the OpenAI batch API gets a JSONL file and its answers are read line by line", async () => {
+test("ai: the OpenAI batch API gets a JSONL file and its answers are read line by line", async () => {
   const requests: [string, string, unknown][] = [];
   const output = [
     { custom_id: "x", response: { status_code: 200, body: { data: [{ embedding: [1, 0] }], usage: { prompt_tokens: 4 } } } },
@@ -113,7 +114,7 @@ Deno.test("ai: the OpenAI batch API gets a JSONL file and its answers are read l
   assertEquals(requests.filter(([method]) => method === "DELETE").map(([, path]) => path), ["/files/out", "/files/in"]); // cleaned up
 });
 
-Deno.test("ai: the OpenRouter batch API gets the calls inline, its answers come with the ended batch", async () => {
+test("ai: the OpenRouter batch API gets the calls inline, its answers come with the ended batch", async () => {
   const requests: [string, string, unknown][] = [];
   let status = "in_progress";
   const call = {

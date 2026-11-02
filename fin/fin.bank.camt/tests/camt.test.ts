@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertThrows } from "@std/assert";
 
 import { parse } from "../mod.ts";
@@ -49,7 +50,7 @@ const statement = `<?xml version="1.0" encoding="UTF-8"?>
   </BkToCstmrStmt>
 </Document>`;
 
-Deno.test("a statement becomes its account and lines; batches are split, signs follow debit and credit", () => {
+test("a statement becomes its account and lines; batches are split, signs follow debit and credit", () => {
   const [result] = parse(statement);
   assertEquals([result.account, result.currency], ["CH5604835012345678009", "CHF"]);
   assertEquals(result.transactions, [
@@ -74,7 +75,7 @@ Deno.test("a statement becomes its account and lines; batches are split, signs f
   ]);
 });
 
-Deno.test("a notification reads alike, prefixed elements and currencies with other decimals too", () => {
+test("a notification reads alike, prefixed elements and currencies with other decimals too", () => {
   const xml = `<c:Document xmlns:c="urn:iso:std:iso:20022:tech:xsd:camt.054.001.08"><c:BkToCstmrDbtCdtNtfctn><c:Ntfctn>
     <c:Id>N1</c:Id><c:Acct><c:Id><c:IBAN>KW81CBKU0000000000001234560101</c:IBAN></c:Id><c:Ccy>KWD</c:Ccy></c:Acct>
     <c:Ntry><c:Amt Ccy="KWD">1.5</c:Amt><c:CdtDbtInd>CRDT</c:CdtDbtInd><c:BookgDt><c:Dt>2026-10-07</c:Dt></c:BookgDt>
@@ -85,7 +86,7 @@ Deno.test("a notification reads alike, prefixed elements and currencies with oth
   assertEquals(result.transactions.map((t) => [t.id, t.amount]), [["K-1", 1500]]); // KWD has three decimals
 });
 
-Deno.test("without the bank's reference, an entry is known by what it says: in both documents alike", () => {
+test("without the bank's reference, an entry is known by what it says: in both documents alike", () => {
   const doc = (kind: string, id: string) => `<Document><BkToCstmr><${kind}><Id>${id}</Id>
     <Acct><Id><IBAN>CH5604835012345678009</IBAN></Id><Ccy>CHF</Ccy></Acct>
     ${[1, 1, 2].map((n) => `<Ntry><Amt Ccy="CHF">${n}0.00</Amt><CdtDbtInd>CRDT</CdtDbtInd>
@@ -97,6 +98,6 @@ Deno.test("without the bank's reference, an entry is known by what it says: in b
   assertEquals(new Set(statement).size, 3); // two alike in one document are two
 });
 
-Deno.test("anything else is refused", () => {
+test("anything else is refused", () => {
   assertThrows(() => parse("<Document><Other/></Document>"), Error, "camt.053");
 });

@@ -1,9 +1,10 @@
-import { App, Ctx, requestStorage, unhee } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage, unhee } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assert, assertEquals } from "@qino/qino/tests";
 
-Deno.test("cms.cont.search: live searches replace their own entry, clearing starts another, and the backend shows them", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.cont.search: live searches replace their own entry, clearing starts another, and the backend shows them", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.backend.cms.search");
   await app.init();
@@ -60,6 +61,6 @@ Deno.test("cms.cont.search: live searches replace their own entry, clearing star
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

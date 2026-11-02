@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { book } from "@qino/qino/fin.accounting";
 import { strFromU8, unzipSync } from "fflate";
@@ -12,7 +13,7 @@ import type { App } from "@qino/qino";
 const withApp = (fn: (app: App) => Promise<void>) =>
   withFinApp(["fin.payment", "fin.invoice", "fin.accounting", "fin.accounting.ch"], fn);
 
-Deno.test("the books of a period export as a ZIP: journal, balances, receipts", async () => {
+test("the books of a period export as a ZIP: journal, balances, receipts", async () => {
   await withApp(async (app) => {
     const receipt = await app.dbFiles.add(new File(["rent"], "Miete Oktober.pdf", { type: "application/pdf" }));
     const lines = [{ account: "6000", amount: 180000, taxCode: "8.1" }, { account: "1020", amount: -180000 }];
@@ -28,7 +29,7 @@ Deno.test("the books of a period export as a ZIP: journal, balances, receipts", 
   });
 });
 
-Deno.test("a book in another currency is written in that currency's decimals", async () => {
+test("a book in another currency is written in that currency's decimals", async () => {
   await withApp(async (app) => {
     await app.settings.fin.mainCurrency("JPY");
     const lines = [{ account: "6000", amount: 1000 }, { account: "1020", amount: -1000 }];
@@ -38,7 +39,7 @@ Deno.test("a book in another currency is written in that currency's decimals", a
   });
 });
 
-Deno.test("the page asks for the period and hands the ZIP over", async () => {
+test("the page asks for the period and hands the ZIP over", async () => {
   await withApp(async (app) => {
     const node = backendNode(app, "/backend/export");
     const page = String(await inRequest(app, "http://qino.test/backend/export", () => render(node)));

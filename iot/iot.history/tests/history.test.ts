@@ -1,4 +1,5 @@
-import { App, requestStorage, toTools } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage, toTools } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 import { configure, save } from "@qino/qino/iot";
 
@@ -7,9 +8,9 @@ import { api } from "../api.ts";
 
 const period = { start: "2026-10-03T02:00:00+02:00", end: "2026-10-04T02:00:00+02:00", source: "provider" as const };
 
-Deno.test("IoT history resolves persisted datapoints, validates periods and protects upstream access", async () => {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-history-test-" }), app = new App({ dir, db: "sqlite::memory:" });
-  await Deno.writeTextFile(`${dir}/plugin.ts`, `export const iotProvider = {
+test("IoT history resolves persisted datapoints, validates periods and protects upstream access", async () => {
+  const dir = await fs.tempDir({ prefix: "qino-iot-history-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  await fs.write(`${dir}/plugin.ts`, `export const iotProvider = {
     name: "archive", entities: async () => [], actions: async () => [], call: async () => null,
     history: async (_app, _id, entity, period) => [{ id: entity, name: entity, state: 0, available: true, attributes: {}, updated: period.start }],
   };`);
@@ -30,5 +31,5 @@ Deno.test("IoT history resolves persisted datapoints, validates periods and prot
     });
     const guest = await testContext({ app, set: { app } });
     await requestStorage.run(guest, () => assertRejects(() => read.execute({ datapoint: id, ...period }, guest), Error, "Access denied"));
-  } finally { await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+  } finally { await app.db.close(); await fs.remove(dir, { recursive: true }); }
 });

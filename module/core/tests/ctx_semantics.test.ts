@@ -1,15 +1,16 @@
 // Ctx semantics. Body and deadline: req_body.test.ts / ctx_timeout.test.ts.
+import { test } from "node:test";
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { Output } from "../lib/util.ts";
 import { parseCookies } from "../lib/ctx/Req.ts";
 
-Deno.test("req paths: appUrl gets a trailing slash, moduleUrl derives from it", async () => {
+test("req paths: appUrl gets a trailing slash, moduleUrl derives from it", async () => {
   const ctx = await testContext({ url: "http://qino.test/cms1/de/page", appUrl: "/cms1" });
   assertEquals(ctx.req.appUrl, "/cms1/");
   assertEquals(ctx.req.moduleUrl, "/cms1/m/");
 });
 
-Deno.test("req paths: appPath is decoded, without base prefix and query", async () => {
+test("req paths: appPath is decoded, without base prefix and query", async () => {
   const ctx = await testContext({ url: "http://qino.test/cms1/a%2Fb/c?q=1", appUrl: "/cms1/" });
   assertEquals(ctx.req.appPath, "a/b/c");
 
@@ -17,19 +18,19 @@ Deno.test("req paths: appPath is decoded, without base prefix and query", async 
   assertEquals(root.req.appPath, "");
 });
 
-Deno.test("req paths: requests outside appUrl are rejected", async () => {
+test("req paths: requests outside appUrl are rejected", async () => {
   for (const path of ["/application/page", "/other/"]) {
     const err = await assertRejects(() => testContext({ url: "http://qino.test" + path, appUrl: "/app/" }), Output);
     assertEquals((err as Output).status, 404);
   }
 });
 
-Deno.test("ctx paths: malformed percent-encoding rejects with a 400 Output", async () => {
+test("ctx paths: malformed percent-encoding rejects with a 400 Output", async () => {
   const err = await assertRejects(() => testContext({ url: "http://qino.test/%zz" }), Output);
   assertEquals((err as Output).status, 400);
 });
 
-Deno.test("ctx query: first value wins, frozen, prototype-safe", async () => {
+test("ctx query: first value wins, frozen, prototype-safe", async () => {
   const ctx = await testContext({ url: "http://qino.test/?a=1&a=2&__proto__=x" });
   assertEquals(ctx.req.query.a, "1");
   assertEquals(ctx.req.query.__proto__, "x"); // plain data key, not the prototype
@@ -37,24 +38,24 @@ Deno.test("ctx query: first value wins, frozen, prototype-safe", async () => {
   assert(Object.isFrozen(ctx.req.query));
 });
 
-Deno.test("ctx query: queryAll keeps every repeated value in order, frozen", async () => {
+test("ctx query: queryAll keeps every repeated value in order, frozen", async () => {
   const ctx = await testContext({ url: "http://qino.test/?a=1&b=x&a=2" });
   assertEquals(ctx.req.queryAll, { a: ["1", "2"], b: ["x"] });
   assert(Object.isFrozen(ctx.req.queryAll));
   assert(Object.isFrozen(ctx.req.queryAll.a));
 });
 
-Deno.test("ctx cookies: request cookies land on ctx.req.cookies", async () => {
+test("ctx cookies: request cookies land on ctx.req.cookies", async () => {
   const ctx = await testContext({ headers: { cookie: "a=1; b=hello%20world" } });
   assertEquals(ctx.req.cookies.a, "1");
   assertEquals(ctx.req.cookies.b, "hello world");
 });
 
-Deno.test("cookies: broken percent-encoding stays raw", () => {
+test("cookies: broken percent-encoding stays raw", () => {
   assertEquals(parseCookies("bad=%zz; ok=1"), { bad: "%zz", ok: "1" });
 });
 
-Deno.test("req url: shared immutable instance, host keeps the port, hostname does not", async () => {
+test("req url: shared immutable instance, host keeps the port, hostname does not", async () => {
   const ctx = await testContext({ url: "http://qino.test:8080/a%2Fb?q=1" });
   assertEquals(ctx.req.url.host, "qino.test:8080");
   assertEquals(ctx.req.url.hostname, "qino.test");
@@ -65,27 +66,27 @@ Deno.test("req url: shared immutable instance, host keeps the port, hostname doe
   assert(ctx.req.url.toURL() !== ctx.req.url.toURL()); // mutation goes through independent copies
 });
 
-Deno.test("ctx response defaults: 200, empty body, empty headers", async () => {
+test("ctx response defaults: 200, empty body, empty headers", async () => {
   const ctx = await testContext();
   assertEquals(ctx.res.status, 200);
   assertEquals(ctx.res.body, "");
   assertEquals([...ctx.res.headers].length, 0);
 });
 
-Deno.test("ctx html: lazy — hasHtml stays false until first access", async () => {
+test("ctx html: lazy — hasHtml stays false until first access", async () => {
   const ctx = await testContext();
   assertEquals(ctx.res.hasHtml, false);
   ctx.res.html.title = "t";
   assertEquals(ctx.res.hasHtml, true);
 });
 
-Deno.test("ctx csp: request-local, not shared between contexts", async () => {
+test("ctx csp: request-local, not shared between contexts", async () => {
   const a = await testContext();
   const b = await testContext();
   assert(a.res.csp !== b.res.csp);
 });
 
-Deno.test("Output: toResponse carries status, body and built headers", () => {
+test("Output: toResponse carries status, body and built headers", () => {
   const out = new Output("nope", { status: 403, headers: { "X-Test": "1" } });
   const res = out.toResponse();
   assertEquals(res.status, 403);

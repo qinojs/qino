@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { AccessError, Db, invoke, toTools, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
@@ -28,12 +29,12 @@ function makeApp() {
 }
 
 
-Deno.test("auth.webauthn: module metadata is wired", () => {
+test("auth.webauthn: module metadata is wired", () => {
   assertEquals(name, "auth.webauthn");
   assertEquals(settingsSchema.properties.rpId.type, "string");
 });
 
-Deno.test("auth.webauthn: api exposes expected api endpoints", () => {
+test("auth.webauthn: api exposes expected api endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
     "register_challenge_post",
@@ -73,7 +74,7 @@ Deno.test("auth.webauthn: api exposes expected api endpoints", () => {
   });
 });
 
-Deno.test("auth.webauthn: user-only endpoints reject guests", async () => {
+test("auth.webauthn: user-only endpoints reject guests", async () => {
   const { app } = makeApp();
   const c = await testContext({ app });
   await requestStorage.run(c, async () => {
@@ -83,7 +84,7 @@ Deno.test("auth.webauthn: user-only endpoints reject guests", async () => {
   });
 });
 
-Deno.test("auth.webauthn: public login challenge stores challenge state without extra queries", async () => {
+test("auth.webauthn: public login challenge stores challenge state without extra queries", async () => {
   const { app, challenges, execs } = makeApp();
   const c = await testContext({ app });
   const out = await requestStorage.run(c, () =>
@@ -100,7 +101,7 @@ Deno.test("auth.webauthn: public login challenge stores challenge state without 
   assertEquals(execs.length, 0);
 });
 
-Deno.test("auth.webauthn: rpId defaults to the host of core.url without www", async () => {
+test("auth.webauthn: rpId defaults to the host of core.url without www", async () => {
   const { app } = makeApp();
   app.settings = { core: { url: "https://www.example.ch/" }, "auth.webauthn": {} };
   const c = await testContext({ app });
@@ -110,13 +111,13 @@ Deno.test("auth.webauthn: rpId defaults to the host of core.url without www", as
   assertEquals(out.publicKey.rpId, "example.ch");
 });
 
-Deno.test("auth.webauthn: cron purges expired challenges", async () => {
+test("auth.webauthn: cron purges expired challenges", async () => {
   const { app, execs } = makeApp();
   await cron.challenges.run(app as any);
   assertEquals(execs.length, 1);
 });
 
-Deno.test("auth.webauthn: a user has the factor only with a passkey of their own", async () => {
+test("auth.webauthn: a user has the factor only with a passkey of their own", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate(dbSchema);
   await db.loadTables();
@@ -131,7 +132,7 @@ Deno.test("auth.webauthn: a user has the factor only with a passkey of their own
   }
 });
 
-Deno.test("auth.webauthn: the request origin passes under rpId or in core.hosts", async () => {
+test("auth.webauthn: the request origin passes under rpId or in core.hosts", async () => {
   const app = { settings: { core: { hosts: "polarity.se", url: "https://schwups.ch/" } } };
   const at = (url: string) => expectedOrigins({ app, req: { url: new URL(url) } } as any, "polarity.ch");
   assertEquals(await at("https://schwups.ch/x"), ["https://schwups.ch"], "the host of core.url counts too");
@@ -140,7 +141,7 @@ Deno.test("auth.webauthn: the request origin passes under rpId or in core.hosts"
   assertEquals(await at("https://evil.ch/x"), []);
 });
 
-Deno.test("auth.webauthn: /.well-known/webauthn lists core.hosts as related origins", async () => {
+test("auth.webauthn: /.well-known/webauthn lists core.hosts as related origins", async () => {
   let route: (e: any) => Promise<void> = async () => {};
   const app = { settings: { core: { hosts: "polarity.se\n*.polarity.se www.polarity.se", url: "https://polarity.se/" } }, on: (_: string, fn: any) => route = fn };
   init(app as any, { signal: new AbortController().signal });

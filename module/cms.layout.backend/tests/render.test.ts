@@ -1,9 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 
-Deno.test("cms.layout.backend: finds the backend by its path", async () => {
+test("cms.layout.backend: finds the backend by its path", async () => {
   let path: string[] = [];
   const root = {
     children: () => new Map(),
@@ -33,7 +34,7 @@ Deno.test("cms.layout.backend: finds the backend by its path", async () => {
   assertEquals(out.includes('href="/de/backend"'), true);
 });
 
-Deno.test("cms.layout.backend: renders submenu indicators with u2-ico", async () => {
+test("cms.layout.backend: renders submenu indicators with u2-ico", async () => {
   const child = {
     children: () => new Map([[2, {}]]),
     conts: () => [],
@@ -71,7 +72,7 @@ Deno.test("cms.layout.backend: renders submenu indicators with u2-ico", async ()
   assertEquals(ctx.res.csp["connect-src"]["https://cdn.jsdelivr.net/npm/@material-icons/svg@1.0.33/"], undefined);
 });
 
-Deno.test("cms.layout.backend: the active branch opens as deep as it goes", async () => {
+test("cms.layout.backend: the active branch opens as deep as it goes", async () => {
   /** A page with one child, `depth` levels down. */
   const chain = (depth: number, name = "Level 1"): unknown => ({
     children: () => new Map(depth > 1 ? [[depth, chain(depth - 1, `Level ${5 - depth + 1}`)]] : []),

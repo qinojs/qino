@@ -1,11 +1,12 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
-import { App } from "@qino/qino";
+import { App, fs } from "@qino/qino";
 
 import { currency, updateRates } from "../mod.ts";
 import { cron } from "../plugin.ts";
 
-Deno.test("locale.currency: a row per currency, rates on top", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("locale.currency: a row per currency, rates on top", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   try {
@@ -21,7 +22,7 @@ Deno.test("locale.currency: a row per currency, rates on top", async () => {
   }
 });
 
-Deno.test("locale.currency: names, symbols and amounts come from Intl", () => {
+test("locale.currency: names, symbols and amounts come from Intl", () => {
   assertEquals(currency.name("CHF", "de"), "Schweizer Franken");
   assertEquals(currency.symbol("EUR", "de"), "€");
   assertEquals(currency.format(12.5, "CHF", "de-CH").replace(/\s/, " "), "CHF 12.50"); // Intl separates with NBSP
@@ -52,8 +53,8 @@ function serve(...answers: { match?: string; body: string; status?: number }[]) 
   return { asked, stop: () => { globalThis.fetch = real; } };
 }
 
-Deno.test("locale.currency: rates arrive as units per 1 USD", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("locale.currency: rates arrive as units per 1 USD", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   const source = serve({ body: ECB_XML });
@@ -75,8 +76,8 @@ Deno.test("locale.currency: rates arrive as units per 1 USD", async () => {
   }
 });
 
-Deno.test("locale.currency: a source that cannot answer says so", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("locale.currency: a source that cannot answer says so", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   try {
@@ -96,8 +97,8 @@ Deno.test("locale.currency: a source that cannot answer says so", async () => {
   }
 });
 
-Deno.test("locale.currency: the job asks how old the rates may get", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("locale.currency: the job asks how old the rates may get", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   const set = app.settings["locale.currency"];
@@ -126,8 +127,8 @@ Deno.test("locale.currency: the job asks how old the rates may get", async () =>
   }
 });
 
-Deno.test("locale.currency: a source that is down hands over to the next", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("locale.currency: a source that is down hands over to the next", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   // the ECB is down, the JSON source answers — USD-based, so the rates land as they are
@@ -158,8 +159,8 @@ const BAZG_XML = `<?xml version="1.0" encoding="UTF-8"?>
   <devise code="jpy"><waehrung>100 JPY</waehrung><kurs>0.52000</kurs></devise>
 </wechselkurse>`;
 
-Deno.test("locale.currency: the rates of a day, from a source that knows past days, asked once", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("locale.currency: the rates of a day, from a source that knows past days, asked once", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   const source = serve({ match: "bazg", body: BAZG_XML }); // frankfurter, asked first, does not answer

@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
 import { errMsg, fs, html, isModuleName } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
@@ -45,7 +46,7 @@ async function copyTemplate(template: Module, dir: string, name: string) {
   for (const file of files) {
     if (!isModuleFile(file)) throw new Error(`Template "${template.name}" lists an invalid file: ${String(file)}`);
     const url = new URL(file.split("/").map(encodeURIComponent).join("/"), base);
-    const res = await fetch(url);
+    const res = url.protocol === "file:" ? new Response(await fs.bytes(fileURLToPath(url))) : await fetch(url);
     if (!res.ok) throw new Error(`Cannot copy "${file}" from template "${template.name}": ${res.status} ${res.statusText}`);
     const target = dir + file;
     await fs.mkdir(target.slice(0, target.lastIndexOf("/") + 1));

@@ -1,5 +1,6 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
 import { adoptCart } from "../lib/cart.ts";
@@ -11,7 +12,7 @@ const round = (v: number, digits = 2) => Math.round(v * 10 ** digits) / 10 ** di
 
 // Prices include VAT (the default), so a 12.00 cup is 11.10 net at 8.1 %.
 async function shop(...modules: string[]) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("messaging").add("messaging.email").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   for (const m of modules) app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);
@@ -27,7 +28,7 @@ async function shop(...modules: string[]) {
 
 const newOrder = (app: App) => app.db.table("shp3_order").add<Order>({ ship_country: "CH", currency: "CHF" });
 
-Deno.test("shp3: a cart adds up, places, and freezes its values", async () => {
+test("shp3: a cart adds up, places, and freezes its values", async () => {
   await using app = await shop();
   const order = (await newOrder(app))!;
 
@@ -52,7 +53,7 @@ Deno.test("shp3: a cart adds up, places, and freezes its values", async () => {
   await assertRejects(() => order.place(), Error, "already placed");
 });
 
-Deno.test("shp3: a price event bends the price", async () => {
+test("shp3: a price event bends the price", async () => {
   await using app = await shop();
   // Half price from ten pieces on — the kind of rule a discount module adds.
   shp3(app).on("price-discount", (e: { quantity?: number; price: number }) => {
@@ -67,7 +68,7 @@ Deno.test("shp3: a price event bends the price", async () => {
   assertEquals(round(item.onePrice()), 11.1);
 });
 
-Deno.test("shp3: generated items join the total and are written when placing", async () => {
+test("shp3: generated items join the total and are written when placing", async () => {
   await using app = await shop();
   shp3(app).on("generated-items", (e: { items: unknown[] }) => {
     e.items.push({ name: "shipping", title: "Shipping", price: 7, vat_rate: 8.1, sort: 1 });
@@ -82,7 +83,7 @@ Deno.test("shp3: generated items join the total and are written when placing", a
   assertEquals(round(rows[0].price), 6.48); // the 7.00 gross was stored net
 });
 
-Deno.test("shp3: a product without its own rate takes the country's", async () => {
+test("shp3: a product without its own rate takes the country's", async () => {
   await using app = await shop();
   await app.db.table("shp3_product_mwst").insert({ product_id: 11, country: "DE", rate: 7 });
   const plate = (await app.db.table("shp3_product").get<Product>(11))!;
@@ -91,7 +92,7 @@ Deno.test("shp3: a product without its own rate takes the country's", async () =
   assertEquals(await plate.vatRateFor("SO"), 0); // a country with no rate at all
 });
 
-Deno.test("shp3: payment and shipping methods come from the settings", async () => {
+test("shp3: payment and shipping methods come from the settings", async () => {
   await using app = await shop("shp3.payment.invoice", "shp3.payment.advance", "shp3.shipping.pickup");
   const order = (await newOrder(app))!;
   assertEquals(await order.allowedShippings(), {}); // nothing to carry, nothing to choose
@@ -113,7 +114,7 @@ Deno.test("shp3: payment and shipping methods come from the settings", async () 
   assertEquals(Object.keys(await order.allowedPayments()), ["advance"]);
 });
 
-Deno.test("shp3: shipping is a line of the order and pickup is free", async () => {
+test("shp3: shipping is a line of the order and pickup is free", async () => {
   await using app = await shop("shp3.shipping.pickup");
   const order = (await newOrder(app))!;
   await order.itemAdd(10, 1);
@@ -124,7 +125,7 @@ Deno.test("shp3: shipping is a line of the order and pickup is free", async () =
   assertEquals((await order.costs()).gross, 12);
 });
 
-Deno.test("shp3: stock caps the amount and drops when the order is placed", async () => {
+test("shp3: stock caps the amount and drops when the order is placed", async () => {
   await using app = await shop("shp3.stock");
   await app.db.table("shp3_product").update(10, { stock: 5, stock_is_fix: true });
   const order = (await newOrder(app))!;
@@ -135,7 +136,7 @@ Deno.test("shp3: stock caps the amount and drops when the order is placed", asyn
   assertEquals(await app.db.one`SELECT stock FROM shp3_product WHERE id = ${10}`, 0);
 });
 
-Deno.test("shp3: an order with errors is not placed", async () => {
+test("shp3: an order with errors is not placed", async () => {
   await using app = await shop("shp3.shipping.pickup", "shp3.payment.invoice");
   // The checks speak to the customer, so they need the request's language.
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
@@ -156,7 +157,7 @@ Deno.test("shp3: an order with errors is not placed", async () => {
   });
 });
 
-Deno.test("shp3: the price passes four phases, in order", async () => {
+test("shp3: the price passes four phases, in order", async () => {
   await using app = await shop();
   const seen: string[] = [];
   for (const phase of ["initial", "additions", "discount", "final"]) {
@@ -173,7 +174,7 @@ Deno.test("shp3: the price passes four phases, in order", async () => {
   assertEquals(seen, ["initial:12", "additions:100", "discount:120", "final:60"]);
 });
 
-Deno.test("shp3: a product whose page is not public or offline cannot be sold", async () => {
+test("shp3: a product whose page is not public or offline cannot be sold", async () => {
   await using app = await shop();
   await app.db.table("page").insert({ id: 12, name: "Bowl", access: 1, online_end: 1000 }); // offline since 1970
   await app.db.table("shp3_product").insert({ id: 12, price: 5 });
@@ -192,7 +193,7 @@ Deno.test("shp3: a product whose page is not public or offline cannot be sold", 
   });
 });
 
-Deno.test("shp3: a rounding step survives the float noise of a legacy FLOAT column", async () => {
+test("shp3: a rounding step survives the float noise of a legacy FLOAT column", async () => {
   await using app = await shop();
   // What the real database hands over for 0.01 and 0.05 once a FLOAT column became DOUBLE.
   await app.db.table("shp3_currency").update("CHF", { smallest: 0.009999999776482582, smallest_closing: 0.05000000074505806 });
@@ -202,7 +203,7 @@ Deno.test("shp3: a rounding step survives the float noise of a legacy FLOAT colu
   assertEquals(chf.closing(10.33), 10.35);
 });
 
-Deno.test("shp3: an item takes the page title, falling through an empty translation", async () => {
+test("shp3: an item takes the page title, falling through an empty translation", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -218,7 +219,7 @@ Deno.test("shp3: an item takes the page title, falling through an empty translat
   });
 });
 
-Deno.test("shp3: the countries the shop sells to, and what they cost", async () => {
+test("shp3: the countries the shop sells to, and what they cost", async () => {
   await using app = await shop();
   const db = app.db;
   // nothing marked yet: the shop sells everywhere and stands nowhere
@@ -240,7 +241,7 @@ Deno.test("shp3: the countries the shop sells to, and what they cost", async () 
   assertEquals(await plate.vatRateFor("DE"), 19);
 });
 
-Deno.test("shp3: what the guest collected follows them into the login", async () => {
+test("shp3: what the guest collected follows them into the login", async () => {
   await using app = await shop();
   const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -262,7 +263,7 @@ Deno.test("shp3: what the guest collected follows them into the login", async ()
   });
 });
 
-Deno.test("shp3: fresh reference rates become the shop's factors", async () => {
+test("shp3: fresh reference rates become the shop's factors", async () => {
   await using app = await shop();
   const db = app.db;
   // CHF is the shop's main currency; the rates say what one USD buys

@@ -1,4 +1,5 @@
-import { App, runAs, unixTime } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
@@ -6,8 +7,8 @@ import { cms, failed, reports, topics } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("cms.backend.ai.feedback: reports by what they are about, to deal with; the tool calls that failed", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("cms.backend.ai.feedback: reports by what they are about, to deal with; the tool calls that failed", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "ai.tools", "cron", "score", "ai.embed", "ai.discover", "ai.agent", "ai.agent.feedback"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   try {

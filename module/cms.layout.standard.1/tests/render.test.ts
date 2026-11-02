@@ -1,5 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { requestStorage } from "@qino/qino";
+import { fileURLToPath } from "node:url";
+import { test } from "node:test";
+import { stat } from "node:fs/promises";
+import { fs, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
 import { moduleTemplate } from "@qino/qino/cms.templateParser";
 
@@ -30,8 +33,8 @@ const render = async (dir: string, edit = false) => {
   return { out, ctx };
 };
 
-Deno.test("cms.layout.standard.1: renders the shipped template and adds the u2 assets", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.layout.standard.1: renders the shipped template and adds the u2 assets", async () => {
+  const dir = await fs.tempDir() + "/";
   const { out, ctx } = await render(dir);
   assertStringIncludes(out, `<div id="container">`);
   assertStringIncludes(out, "<div>main</div>"); // the page content
@@ -41,28 +44,28 @@ Deno.test("cms.layout.standard.1: renders the shipped template and adds the u2 a
   const u2 = [...ctx.res.html.styles].find((s) => s.endsWith("css/norm/norm.css"))!;
   assertStringIncludes(u2, "u2@"); // pinned in the layout, not taken from core
   assertEquals(ctx.res.csp["script-src"][u2.replace("css/norm/norm.css", "")], true);
-  await Deno.remove(dir, { recursive: true });
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.layout.standard.1: the first render in edit mode gives the site its own copy", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.layout.standard.1: the first render in edit mode gives the site its own copy", async () => {
+  const dir = await fs.tempDir() + "/";
   const code = moduleTemplate(fakeNode(dir, {}).module);
   await render(dir, true);
-  assertEquals(await Deno.readTextFile(code.file), await Deno.readTextFile(code.shipped));
-  assertStringIncludes(await Deno.readTextFile(code.css), "#container");
-  await Deno.remove(dir, { recursive: true });
+  assertEquals(await fs.text(code.file), await fs.text(fileURLToPath(code.shipped)));
+  assertStringIncludes(await fs.text(code.css), "#container");
+  await fs.remove(dir, { recursive: true });
 });
 
-Deno.test("cms.layout.standard.1: the site's copy wins, and is kept as it is", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms.layout.standard.1: the site's copy wins, and is kept as it is", async () => {
+  const dir = await fs.tempDir() + "/";
   const code = moduleTemplate(fakeNode(dir, {}).module);
-  await Deno.mkdir(`${dir}data/${name}/`, { recursive: true });
-  await Deno.writeTextFile(code.file, "<div id=own><cms-cont name=main /></div>");
+  await fs.mkdir(`${dir}data/${name}/`);
+  await fs.write(code.file, "<div id=own><cms-cont name=main /></div>");
 
   const { out } = await render(dir, true);
   assertEquals(out, `<div id="own"><div>main</div></div>`);
-  assertEquals(await Deno.stat(code.css).catch(() => null), null); // a file deleted here is not written again
-  await Deno.remove(dir, { recursive: true });
+  assertEquals(await stat(code.css).catch(() => null), null); // a file deleted here is not written again
+  await fs.remove(dir, { recursive: true });
 });
 
 /** The panel calls this; the urls it hands out are editing capabilities. */
@@ -75,7 +78,7 @@ const editors = async (access: number) => {
   return await requestStorage.run(ctx as any, () => cms.node.api(node, { do: "getFileEditorLinks" }));
 };
 
-Deno.test("cms.layout.standard.1: the layout page decides who may open its files", async () => {
+test("cms.layout.standard.1: the layout page decides who may open its files", async () => {
   assertEquals(await editors(1), []); // read access on the layout page
   assertEquals(await editors(2), []); // edit access: content only, code needs admin
 

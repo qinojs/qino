@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertRejects, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, AccessError, NotFoundError, apiClient, invoke, toTools } from "../lib/api/mod.ts";
@@ -45,7 +46,7 @@ function withCtx<T>(fn: () => T) {
   return requestStorage.run(fakeCtx, fn);
 }
 
-Deno.test("api smoke: invoke resolves, validates defaults and surfaces typed errors", async () => {
+test("api smoke: invoke resolves, validates defaults and surfaces typed errors", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "GET", "/page/1"), { id: "1", title: "Home" });
     assertEquals(await invoke(api, "POST", "/page/1/copy", {}), { id: "1-copy" });
@@ -56,7 +57,7 @@ Deno.test("api smoke: invoke resolves, validates defaults and surfaces typed err
   });
 });
 
-Deno.test("api smoke: toTools exposes executable tool contracts", () => {
+test("api smoke: toTools exposes executable tool contracts", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), ["page_get", "page_copy_post"]);
   assertEquals(tools[1].parameters, {
@@ -69,7 +70,7 @@ Deno.test("api smoke: toTools exposes executable tool contracts", () => {
   });
 });
 
-Deno.test("api smoke: apiClient mirrors route tree", async () => {
+test("api smoke: apiClient mirrors route tree", async () => {
   await withCtx(async () => {
     const rpc = apiClient(api);
     assertEquals(await rpc.page("1").get(), { id: "1", title: "Home" });

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
 import { record } from "@qino/qino/fin.payment";
@@ -11,7 +12,7 @@ type Answer = { ok: boolean; message?: string; url?: string };
 const FIN = ["fin.payment", "fin.invoice", "fin.accounting", "fin.accounting.ch"];
 const BASE = "http://qino.test/backend/accounting";
 
-Deno.test("statements, journal and an entry by hand, its detail and its reversal", async () => {
+test("statements, journal and an entry by hand, its detail and its reversal", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/accounting");
     const year = new Date().getFullYear();
@@ -42,7 +43,7 @@ Deno.test("statements, journal and an entry by hand, its detail and its reversal
   });
 });
 
-Deno.test("a year is closed from its card, which lists what is still open, and opened again", async () => {
+test("a year is closed from its card, which lists what is still open, and opened again", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/accounting");
     const base = "http://qino.test/backend/accounting";
@@ -59,7 +60,7 @@ Deno.test("a year is closed from its card, which lists what is still open, and o
   });
 });
 
-Deno.test("the closing card compares the books with the open invoices, and finds money nobody booked", async () => {
+test("the closing card compares the books with the open invoices, and finds money nobody booked", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/accounting");
     await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Design", price: 10000 }] }));

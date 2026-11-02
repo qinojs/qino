@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { fs } from "@qino/qino";
 
@@ -21,7 +22,7 @@ const invoice = {
   date: "2026-10-07",
 };
 
-Deno.test("the document shows sender, recipient, lines and tax per rate, escaped", async () => {
+test("the document shows sender, recipient, lines and tax per rate, escaped", async () => {
   await withApp(async (app) => {
     const id = Number((await issue(app, await create(app, invoice)))?.id);
     const doc = (await document(app, id)).replaceAll("\u00a0", " "); // Intl keeps "CHF" and the amount together
@@ -41,7 +42,7 @@ Deno.test("the document shows sender, recipient, lines and tax per rate, escaped
   });
 });
 
-Deno.test("across a border both addresses show their country", async () => {
+test("across a border both addresses show their country", async () => {
   await withApp(async (app) => {
     const party = { name: "Client SA", address: { addressLocality: "Paris", addressCountry: "FR" } };
     const doc = await document(app, Number((await issue(app, await create(app, { ...invoice, party })))?.id));
@@ -50,8 +51,8 @@ Deno.test("across a border both addresses show their country", async () => {
   });
 });
 
-Deno.test("an issued invoice prints to a PDF kept as its file", async () => {
-  if ((await Deno.permissions.query({ name: "run" })).state !== "granted") return; // no browser to start
+test("an issued invoice prints to a PDF kept as its file", async () => {
+  if (globalThis.Deno && (await Deno.permissions.query({ name: "run" })).state !== "granted") return; // no browser to start
   await withApp(async (app) => {
     const id = Number((await issue(app, await create(app, invoice)))?.id);
     const pdf = await print(app, id).catch((e) => {
@@ -67,7 +68,7 @@ Deno.test("an issued invoice prints to a PDF kept as its file", async () => {
   });
 });
 
-Deno.test("with a method set, an issued invoice asks for its payment and carries its slip", async () => {
+test("with a method set, an issued invoice asks for its payment and carries its slip", async () => {
   await withApp(async (app) => {
     await app.settings["fin.payment.qrbill"].iban("CH44 3199 9123 0008 8901 2");
     await app.settings["fin.invoice"].method("qrbill");
@@ -80,7 +81,7 @@ Deno.test("with a method set, an issued invoice asks for its payment and carries
   });
 });
 
-Deno.test("a received invoice keeps its original as its file: attached, never replaced by a print", async () => {
+test("a received invoice keeps its original as its file: attached, never replaced by a print", async () => {
   await withApp(async (app) => {
     const original = await app.dbFiles.add(new File([new Uint8Array([37, 80, 68, 70])], "bill.pdf", { type: "application/pdf" }));
     const id = await create(app, { ...invoice, direction: "in", number: "R-77" });
@@ -93,7 +94,7 @@ Deno.test("a received invoice keeps its original as its file: attached, never re
   });
 });
 
-Deno.test("a received invoice revised: its draft keeps what was read and a copy of the original", async () => {
+test("a received invoice revised: its draft keeps what was read and a copy of the original", async () => {
   await withApp(async (app) => {
     const original = await app.dbFiles.add(new File(["%PDF"], "bill.pdf", { type: "application/pdf" }));
     const id = await create(app, { ...invoice, direction: "in", number: "R-77", data: { read: { total: 4726 } } });
@@ -104,14 +105,14 @@ Deno.test("a received invoice revised: its draft keeps what was read and a copy 
     assertEquals(JSON.parse(String(row?.data)), { read: { total: 4726 } });
     const copy = await app.dbFiles.file(Number(row?.file_id));
     assert(copy.id !== original.id); // a file of its own: replacing it leaves the canceled one's
-    assertEquals(new TextDecoder().decode(await Deno.readFile(copy.path)), "%PDF");
+    assertEquals(new TextDecoder().decode(await fs.bytes(copy.path)), "%PDF");
     await attach(app, draft, await app.dbFiles.add(new File(["x"], "better.pdf", { type: "application/pdf" })));
     assertEquals(Number(await app.db.one`SELECT file_id FROM invoice WHERE id = ${id}`), original.id);
     assert(await original.exists());
   });
 });
 
-Deno.test("a received invoice whose original is gone is revised without one", async () => {
+test("a received invoice whose original is gone is revised without one", async () => {
   await withApp(async (app) => {
     const original = await app.dbFiles.add(new File(["%PDF"], "bill.pdf", { type: "application/pdf" }));
     const id = await create(app, { ...invoice, direction: "in", number: "R-78" });
@@ -124,7 +125,7 @@ Deno.test("a received invoice whose original is gone is revised without one", as
   });
 });
 
-Deno.test("a replaced file is removed only where nothing else uses it", async () => {
+test("a replaced file is removed only where nothing else uses it", async () => {
   await withApp(async (app) => {
     const shared = await app.dbFiles.add(new File(["%PDF"], "bill.pdf", { type: "application/pdf" }));
     const [a, b] = [await create(app, { ...invoice, direction: "in" }), await create(app, { ...invoice, direction: "in" })];
@@ -137,7 +138,7 @@ Deno.test("a replaced file is removed only where nothing else uses it", async ()
   });
 });
 
-Deno.test("an invoice speaks its own language, with the texts the module brings", async () => {
+test("an invoice speaks its own language, with the texts the module brings", async () => {
   await withApp(async (app) => {
     app.languages.setLangs(["en", "de"]); // a site that speaks German
     const doc = await document(app, Number((await issue(app, await create(app, { ...invoice, lang: "de" })))?.id));
@@ -147,14 +148,14 @@ Deno.test("an invoice speaks its own language, with the texts the module brings"
   });
 });
 
-Deno.test("a language the site has no texts for falls back to its default one", async () => {
+test("a language the site has no texts for falls back to its default one", async () => {
   await withApp(async (app) => {
     const doc = await document(app, Number((await issue(app, await create(app, { ...invoice, lang: "ru" })))?.id));
     assertStringIncludes(doc, `<html lang="${app.languages.def}">`);
   });
 });
 
-Deno.test("one rate shows below the lines, no tax shows no tax rows", async () => {
+test("one rate shows below the lines, no tax shows no tax rows", async () => {
   await withApp(async (app) => {
     const of = (lines: { name: string; price: number; taxRate?: number }[]) =>
       create(app, { ...invoice, lines }).then((id) => document(app, id));
@@ -166,7 +167,7 @@ Deno.test("one rate shows below the lines, no tax shows no tax rows", async () =
   });
 });
 
-Deno.test("a credit note prints what it gives back, positive, and names its invoice", async () => {
+test("a credit note prints what it gives back, positive, and names its invoice", async () => {
   await withApp(async (app) => {
     const id = Number((await issue(app, await create(app, invoice)))?.id);
     const note = Number((await issue(app, await creditNote(app, id)))?.id);
@@ -180,7 +181,7 @@ Deno.test("a credit note prints what it gives back, positive, and names its invo
   });
 });
 
-Deno.test("the logo is inside the document: the print needs neither network nor public address", async () => {
+test("the logo is inside the document: the print needs neither network nor public address", async () => {
   await withApp(async (app) => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>`;
     const logo = await app.dbFiles.add(new File([svg], "logo.svg", { type: "image/svg+xml" }));
@@ -192,7 +193,7 @@ Deno.test("the logo is inside the document: the print needs neither network nor 
   });
 });
 
-Deno.test("a reminder lists the overdue invoices, its fee, and asks for all of it", async () => {
+test("a reminder lists the overdue invoices, its fee, and asks for all of it", async () => {
   await withApp(async (app) => {
     const id = Number((await issue(app, await create(app, { ...invoice, due: "2026-10-20" })))?.id);
     const listed = [{ id, open: 50000, level: 2 }];
@@ -211,7 +212,7 @@ Deno.test("a reminder lists the overdue invoices, its fee, and asks for all of i
   });
 });
 
-Deno.test("a pro forma says what it is, and an invoice made from it names it", async () => {
+test("a pro forma says what it is, and an invoice made from it names it", async () => {
   await withApp(async (app) => {
     const proforma = Number((await issue(app, await create(app, { ...invoice, type: "proforma" })))?.id);
     assertStringIncludes(await document(app, proforma), "<h1>Pro forma invoice P2026-1</h1>");

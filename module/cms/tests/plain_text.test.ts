@@ -1,11 +1,12 @@
-import { App, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { cmsInstances } from "../lib/CMS.ts";
 
-Deno.test("cms: plain() drops the markup and decodes entities", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("cms: plain() drops the markup and decodes entities", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms");
   await app.init();
@@ -21,6 +22,6 @@ Deno.test("cms: plain() drops the markup and decodes entities", async () => {
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

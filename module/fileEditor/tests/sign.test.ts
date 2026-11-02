@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { grant } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
@@ -14,19 +15,19 @@ const ctxOf = (sess = session()) => testContext({ sess });
 
 const FILE = "/app/module/x/mod.ts";
 
-Deno.test("fileEditor: a signature verifies for the file and session it was made for", async () => {
+test("fileEditor: a signature verifies for the file and session it was made for", async () => {
   const ctx = await ctxOf();
   const { exp, sig } = sign(ctx, FILE);
   assertEquals(check(ctx, FILE, exp, sig), "ok");
   assertEquals(check(ctx, "/app/module/x/other.ts", exp, sig), "forged");
 });
 
-Deno.test("fileEditor: another session cannot use the signature", async () => {
+test("fileEditor: another session cannot use the signature", async () => {
   const { exp, sig } = sign(await ctxOf(), FILE);
   assertEquals(check(await ctxOf(), FILE, exp, sig), "forged");
 });
 
-Deno.test("fileEditor: forged, missing and stretched signatures fail", async () => {
+test("fileEditor: forged, missing and stretched signatures fail", async () => {
   const ctx = await ctxOf();
   const { exp, sig } = sign(ctx, FILE);
   assertEquals(check(ctx, FILE, exp, sig.slice(0, -1) + (sig.at(-1) === "a" ? "b" : "a")), "forged");
@@ -37,7 +38,7 @@ Deno.test("fileEditor: forged, missing and stretched signatures fail", async () 
   assertEquals(check(ctx, FILE, undefined, undefined), "unsigned"); // a bare URL is not an attempt at forgery
 });
 
-Deno.test("fileEditor: an expired deadline is refused even with a correct mac", async () => {
+test("fileEditor: an expired deadline is refused even with a correct mac", async () => {
   const ctx = await ctxOf();
   const resource = `fileEditor\0${FILE}`;
   const fresh = grant.sign(ctx.sess, resource, { ttl: 10 });
@@ -46,7 +47,7 @@ Deno.test("fileEditor: an expired deadline is refused even with a correct mac", 
   assertEquals(check(ctx, FILE, stale.exp, stale.sig), "expired"); // only the deadline says no
 });
 
-Deno.test("fileEditor: a non-numeric deadline never reaches the mac", async () => {
+test("fileEditor: a non-numeric deadline never reaches the mac", async () => {
   const ctx = await ctxOf();
   const { exp, sig } = sign(ctx, FILE);
   for (const bad of ["1e12", " " + exp, exp + " ", "-1", "0x10", "99999999999999"]) {

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { createHash } from "node:crypto";
 import { b64url, Db, Output, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
@@ -88,7 +89,7 @@ async function grantCode(db: Db) {
   return location(res).searchParams.get("code")!;
 }
 
-Deno.test("oauth_server: metadata describes the mounted app", async () => {
+test("oauth_server: metadata describes the mounted app", async () => {
   const ctx = await makeCtx(await makeDb(), { path: ".well-known/oauth-authorization-server" });
   const m = await metadata(ctx);
   assertEquals(m.issuer, "http://qino.test");
@@ -100,7 +101,7 @@ Deno.test("oauth_server: metadata describes the mounted app", async () => {
   assertEquals(resourceMetadata(ctx), { resource: "http://qino.test", authorization_servers: ["http://qino.test"] });
 });
 
-Deno.test("oauth_server: dynamic registration accepts https and loopback only", async () => {
+test("oauth_server: dynamic registration accepts https and loopback only", async () => {
   const db = await makeDb();
   const ok = await run(register, makeCtx(db, { path: "register", json: { client_name: "Demo Client", redirect_uris: [REDIRECT] } }));
   assertEquals(ok.status, 201);
@@ -116,7 +117,7 @@ Deno.test("oauth_server: dynamic registration accepts https and loopback only", 
   assertEquals(json(bad).error, "invalid_redirect_uri");
 });
 
-Deno.test("oauth_server: authorize refuses unknown clients and unregistered redirect_uris", async () => {
+test("oauth_server: authorize refuses unknown clients and unregistered redirect_uris", async () => {
   const db = await makeDb();
   const unknown = await run(authorize, makeCtx(db, { path: "authorize", query: authQuery({ client_id: "nope" }) }));
   assertEquals(unknown.status, 400);
@@ -127,7 +128,7 @@ Deno.test("oauth_server: authorize refuses unknown clients and unregistered redi
   assertStringIncludes(wrong.text, "not registered");
 });
 
-Deno.test("oauth_server: protocol errors go back to the authentic client", async () => {
+test("oauth_server: protocol errors go back to the authentic client", async () => {
   const db = await makeDb();
   const noPkce = await run(authorize, makeCtx(db, { path: "authorize", query: authQuery({ code_challenge: "", code_challenge_method: "" }) }));
   assertEquals(noPkce.status, 302);
@@ -139,7 +140,7 @@ Deno.test("oauth_server: protocol errors go back to the authentic client", async
   assertEquals(location(denied).searchParams.get("error"), "access_denied");
 });
 
-Deno.test("oauth_server: authorize asks for the core login, then for consent", async () => {
+test("oauth_server: authorize asks for the core login, then for consent", async () => {
   const db = await makeDb();
   const anon = await run(authorize, makeCtx(db, { path: "authorize", query: authQuery() }));
   assertEquals(anon.status, 200);
@@ -151,7 +152,7 @@ Deno.test("oauth_server: authorize asks for the core login, then for consent", a
   assertStringIncludes(consent.text, "user@qino.test");
 });
 
-Deno.test("oauth_server: consent needs a valid form token", async () => {
+test("oauth_server: consent needs a valid form token", async () => {
   const db = await makeDb();
   const res = await run(authorize, makeCtx(db, {
     path: "authorize",
@@ -163,7 +164,7 @@ Deno.test("oauth_server: consent needs a valid form token", async () => {
   assertStringIncludes(res.text, "form token");
 });
 
-Deno.test("oauth_server: code exchange verifies PKCE and yields a usable access token", async () => {
+test("oauth_server: code exchange verifies PKCE and yields a usable access token", async () => {
   const db = await makeDb();
   const code = await grantCode(db);
   assert(code);
@@ -181,7 +182,7 @@ Deno.test("oauth_server: code exchange verifies PKCE and yields a usable access 
   assertEquals(await verify(app, "access", body.refresh_token), undefined); // a refresh token is no bearer credential
 });
 
-Deno.test("oauth_server: a code is single-use and bound to verifier, client and redirect_uri", async () => {
+test("oauth_server: a code is single-use and bound to verifier, client and redirect_uri", async () => {
   const db = await makeDb();
   const exchange = async (over: Record<string, string>) =>
     await run(token, makeCtx(db, { path: "token", form: codeForm(await grantCode(db), over) }));
@@ -200,7 +201,7 @@ Deno.test("oauth_server: a code is single-use and bound to verifier, client and 
   assertEquals(json(replay).error, "invalid_grant");
 });
 
-Deno.test("oauth_server: refresh rotates the token", async () => {
+test("oauth_server: refresh rotates the token", async () => {
   const db = await makeDb();
   const app = { db } as never;
   const refresh = await mint(app, { kind: "refresh", clientId: "1", usrId: 1, ttl: 600 });
@@ -215,7 +216,7 @@ Deno.test("oauth_server: refresh rotates the token", async () => {
   assertEquals(json(replay).error, "invalid_grant");
 });
 
-Deno.test("oauth_server: unsupported grants and non-POST are rejected", async () => {
+test("oauth_server: unsupported grants and non-POST are rejected", async () => {
   const db = await makeDb();
   const bad = await run(token, makeCtx(db, { path: "token", form: { grant_type: "password" } }));
   assertEquals(json(bad).error, "unsupported_grant_type");
@@ -223,7 +224,7 @@ Deno.test("oauth_server: unsupported grants and non-POST are rejected", async ()
   assertEquals(get.status, 405);
 });
 
-Deno.test("oauth_server: tokens of an inactive user stop working", async () => {
+test("oauth_server: tokens of an inactive user stop working", async () => {
   const db = await makeDb();
   const app = { db } as never;
   const access = await mint(app, { kind: "access", clientId: "1", usrId: 1, ttl: 600 });
@@ -232,14 +233,14 @@ Deno.test("oauth_server: tokens of an inactive user stop working", async () => {
   assertEquals(await verify(app, "access", access), undefined);
 });
 
-Deno.test("oauth_server: expired tokens never verify", async () => {
+test("oauth_server: expired tokens never verify", async () => {
   const db = await makeDb();
   const app = { db } as never;
   const access = await mint(app, { kind: "access", clientId: "1", usrId: 1, ttl: -1 });
   assertEquals(await verify(app, "access", access), undefined);
 });
 
-Deno.test("oauth_server: of two parallel redemptions of one refresh token, only one gets it", async () => {
+test("oauth_server: of two parallel redemptions of one refresh token, only one gets it", async () => {
   const db = await makeDb();
   const app = { db } as never;
   const refresh = await mint(app, { kind: "refresh", clientId: "1", usrId: 1, ttl: 600 });

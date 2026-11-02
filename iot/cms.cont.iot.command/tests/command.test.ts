@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
@@ -28,7 +29,7 @@ function nodeOf(parameter: string, settings: Record<string, unknown>, calls: unk
   return { app, settings: proxy } as unknown as Node;
 }
 
-Deno.test("IoT command block renders a button or a bounded value field and escapes names", async () => {
+test("IoT command block renders a button or a bounded value field and escapes names", async () => {
   const button = String(await cms.node.render(nodeOf("", {}, [])));
   assertStringIncludes(button, "<button type=button data-run>&lt;Brightness&gt;</button>");
   const slider = String(await cms.node.render(nodeOf("data.command", { min: 0, max: 255 }, [])));
@@ -36,7 +37,7 @@ Deno.test("IoT command block renders a button or a bounded value field and escap
   assertEquals(slider.includes("<Brightness>"), false);
 });
 
-Deno.test("IoT command block runs only its command and keeps values within its range", async () => {
+test("IoT command block runs only its command and keeps values within its range", async () => {
   const calls: unknown[] = [], node = nodeOf("data.command", { min: 0, max: 255 }, calls);
   assertEquals(await cms.node.api(node, {}), null);
   assertEquals(await cms.node.api(node, { run: true, value: 153 }), { ok: true });

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db, requestStorage } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
 
@@ -28,12 +29,12 @@ async function renderSearch(db: Db, term: string) {
   return String(await requestStorage.run(ctx, () => render({ app: { db, t: fakeT } } as never)));
 }
 
-Deno.test("cms.backend.superuser.db.search: metadata is wired", () => {
+test("cms.backend.superuser.db.search: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.db.search");
   assertEquals(dependencies, ["cms.backend.superuser.db"]);
 });
 
-Deno.test("cms.backend.superuser.db.search: large tables only through their indexes", async () => {
+test("cms.backend.superuser.db.search: large tables only through their indexes", async () => {
   await using db = await testDb();
   // indexed field, word prefix — a substring of it stays unfound
   assertEquals(plan(await search(db, "hello")), [["big", "prefix:title"]]);
@@ -45,7 +46,7 @@ Deno.test("cms.backend.superuser.db.search: large tables only through their inde
   assertEquals(await search(db, "nothinghere"), []);
 });
 
-Deno.test("cms.backend.superuser.db.search: renders one table per hit, marked and timed", async () => {
+test("cms.backend.superuser.db.search: renders one table per hit, marked and timed", async () => {
   await using db = await testDb();
   const out = await renderSearch(db, "hello");
   assertStringIncludes(out, "<mark>Hello</mark> world");

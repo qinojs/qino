@@ -1,10 +1,11 @@
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { test } from "node:test";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { openForm } from "@qino/qino/cms.cont.form";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-Deno.test("an e-mail field refuses what is no address — the mail would fail for the site owner too", async () => {
-  const dir = await Deno.makeTempDir() + "/";
+test("an e-mail field refuses what is no address — the mail would fail for the site owner too", async () => {
+  const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.form");
   await app.init();
@@ -25,6 +26,6 @@ Deno.test("an e-mail field refuses what is no address — the mail would fail fo
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

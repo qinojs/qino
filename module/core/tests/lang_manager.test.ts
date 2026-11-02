@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, testContext } from "./deps.ts";
 import { LangManager } from "../lib/LangManager.ts";
 import { Db } from "../lib/db/Db.ts";
@@ -17,14 +18,14 @@ function langSess(lang: ReturnType<typeof sessionLang>) {
   return { data: { core: { userId: () => 0, lang } } };
 }
 
-Deno.test("LangManager: setLangs normalizes languages and exposes default", () => {
+test("LangManager: setLangs normalizes languages and exposes default", () => {
   const lm = new LangManager({} as never);
   lm.setLangs([" DE ", "", "EN"]);
   assertEquals(lm.all, ["de", "en"]);
   assertEquals(lm.def, "de");
 });
 
-Deno.test("LangManager: initCtx prefers URL language then browser language", async () => {
+test("LangManager: initCtx prefers URL language then browser language", async () => {
   const lm = new LangManager({} as never);
   lm.setLangs(["en", "de", "fr"]);
 
@@ -46,7 +47,7 @@ Deno.test("LangManager: initCtx prefers URL language then browser language", asy
   assertEquals(ctx2.langUsr, "fr");
 });
 
-Deno.test("LangManager: lang query overrides stored session language", async () => {
+test("LangManager: lang query overrides stored session language", async () => {
   const lm = new LangManager({} as never);
   lm.setLangs(["en", "de"]);
 
@@ -58,7 +59,7 @@ Deno.test("LangManager: lang query overrides stored session language", async () 
   assertEquals(lang(), "de");
 });
 
-Deno.test("LangManager: namespace start/stop changes active language", async () => {
+test("LangManager: namespace start/stop changes active language", async () => {
   const lm = new LangManager({} as never);
   lm.setLangs(["de", "en"]);
   const ctx: any = {
@@ -83,7 +84,7 @@ Deno.test("LangManager: namespace start/stop changes active language", async () 
   assertEquals(ctx.lang, "de"); // back to langUsr
 });
 
-Deno.test("LangManager: nested namespaces restore lang correctly", async () => {
+test("LangManager: nested namespaces restore lang correctly", async () => {
   const lm = new LangManager({} as never);
   lm.setLangs(["de", "en", "fr"]);
   const ctx: any = {
@@ -104,7 +105,7 @@ Deno.test("LangManager: nested namespaces restore lang correctly", async () => {
   assertEquals(ctx.lang, "de");
 });
 
-Deno.test("LangManager: t inserts new smalltext and replaces placeholders", async () => {
+test("LangManager: t inserts new smalltext and replaces placeholders", async () => {
   const queries: Array<[string, unknown[] | undefined]> = [];
   const inserts: Record<string, unknown>[] = [];
   const app = {
@@ -137,7 +138,7 @@ Deno.test("LangManager: t inserts new smalltext and replaces placeholders", asyn
   }]);
 });
 
-Deno.test("LangManager: export groups non-empty translations by namespace and language", async () => {
+test("LangManager: export groups non-empty translations by namespace and language", async () => {
   const rows = [
     { namespace: "", original: "Log in", de: "Anmelden", en: "", fr: "Connexion" },
     { namespace: "cms", original: "Structure", de: "Struktur", en: "", fr: "" },
@@ -152,7 +153,7 @@ Deno.test("LangManager: export groups non-empty translations by namespace and la
   });
 });
 
-Deno.test("LangManager: import seeds locale, skips empty, never overwrites, round-trips with export", async () => {
+test("LangManager: import seeds locale, skips empty, never overwrites, round-trips with export", async () => {
   const db = new Db("sqlite::memory:");
   await db.query`CREATE TABLE smalltext (hash TEXT, namespace TEXT, original TEXT, de TEXT DEFAULT '', fr TEXT DEFAULT '', en TEXT DEFAULT '', PRIMARY KEY (hash, namespace))`;
   await db.loadTables();
@@ -174,7 +175,7 @@ Deno.test("LangManager: import seeds locale, skips empty, never overwrites, roun
   await db.close();
 });
 
-Deno.test("LangManager: repeated locale import uses one read and no writes", async () => {
+test("LangManager: repeated locale import uses one read and no writes", async () => {
   await using db = new Db("sqlite::memory:");
   await db.exec`CREATE TABLE smalltext (hash TEXT, namespace TEXT, original TEXT, de TEXT DEFAULT '', PRIMARY KEY (hash, namespace))`;
   await db.loadTables();
@@ -197,7 +198,7 @@ Deno.test("LangManager: repeated locale import uses one read and no writes", asy
   assertEquals([reads, writes], [1, 0]);
 });
 
-Deno.test("LangManager: with() looks in its namespace, also for parallel fragments, and nowhere else", async () => {
+test("LangManager: with() looks in its namespace, also for parallel fragments, and nowhere else", async () => {
   const inserts: Record<string, unknown>[] = [];
   const app = {
     db: {

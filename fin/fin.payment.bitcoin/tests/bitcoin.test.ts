@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { create, methods, slip, sync } from "@qino/qino/fin.payment";
 
@@ -10,7 +11,7 @@ import type { App } from "@qino/qino";
 /** The BIP84 test vector's account key. */
 const ZPUB = "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs";
 
-Deno.test("addresses are derived as BIP84 does", () => {
+test("addresses are derived as BIP84 does", () => {
   assertEquals(address(ZPUB, 0), "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu");
   assertEquals(address(ZPUB, 1), "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g");
 });
@@ -35,7 +36,7 @@ function esplora(chain: { tip: number; txs: Record<string, unknown[]> }) {
 const tx = (to: string, value: number, height?: number) =>
   ({ status: { confirmed: height != null, block_height: height }, vout: [{ scriptpubkey_address: to, value }] });
 
-Deno.test("an address per payment, the price fixed in satoshis, seen, then confirmed", async () => {
+test("an address per payment, the price fixed in satoshis, seen, then confirmed", async () => {
   await withApp(async (app) => {
     const chain = { tip: 100, txs: {} as Record<string, unknown[]> };
     await withFetch(esplora(chain), async () => {
@@ -55,7 +56,7 @@ Deno.test("an address per payment, the price fixed in satoshis, seen, then confi
   });
 });
 
-Deno.test("nothing in time: expired", async () => {
+test("nothing in time: expired", async () => {
   await withApp(async (app) => {
     await withFetch(esplora({ tip: 1, txs: {} }), async () => {
       const { id } = await create(app, { method: "bitcoin", amount: 100, currency: "CHF", return: "/" });

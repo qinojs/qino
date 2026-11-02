@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { ResHtml, unb64url } from "@qino/qino";
 
@@ -16,7 +17,7 @@ const guarded = (content: string) => {
   return html;
 };
 
-Deno.test("emailguard: a text address keeps its visible form and loses its readable one", () => {
+test("emailguard: a text address keeps its visible form and loses its readable one", () => {
   const html = guarded("<p>Write to info@example.com today</p>");
   const cls = [...html.inlineStyles][0].match(/^\.(\w+)\{display:none\}$/)?.[1];
   assertEquals(typeof cls, "string");
@@ -26,7 +27,7 @@ Deno.test("emailguard: a text address keeps its visible form and loses its reada
   assertEquals(html.scripts.size, 0); // text needs no script
 });
 
-Deno.test("emailguard: a mailto href is encoded and restores to itself", () => {
+test("emailguard: a mailto href is encoded and restores to itself", () => {
   const html = guarded('<a href="mailto:info@example.com?subject=Hi">mail</a>');
   const key = (html.jsData.emailguard as { key: string }).key;
   const token = html.content.match(/mailto:([\w-]+)\?/)![1];
@@ -35,7 +36,7 @@ Deno.test("emailguard: a mailto href is encoded and restores to itself", () => {
   assertEquals([...html.scripts], ["/m/emailguard/pub/main.js"]);
 });
 
-Deno.test("emailguard: leaves code, comments and other attributes alone", () => {
+test("emailguard: leaves code, comments and other attributes alone", () => {
   const source = '<script>const a = "x@y.com";</script><!-- b@y.com --><img alt="c@y.com"><style>@media all{}</style>';
   const html = guarded(source);
   assertEquals(html.content, source);
@@ -43,17 +44,17 @@ Deno.test("emailguard: leaves code, comments and other attributes alone", () => 
   assertEquals(html.inlineStyles.size, 0);
 });
 
-Deno.test("emailguard: a body without an address is untouched", () => {
+test("emailguard: a body without an address is untouched", () => {
   const html = guarded("<p>@media is not an address</p>");
   assertEquals(html.content, "<p>@media is not an address</p>");
 });
 
-Deno.test("emailguard: an uppercase code block and a quoted attribute stay untouched", () => {
+test("emailguard: an uppercase code block and a quoted attribute stay untouched", () => {
   const source = '<SCRIPT>var m = "x@y.com";</SCRIPT><img alt="see 1 > 0, write to c@y.com">';
   assertEquals(guarded(source).content, source);
 });
 
-Deno.test("emailguard: several addresses in one body are all rewritten", () => {
+test("emailguard: several addresses in one body are all rewritten", () => {
   const html = guarded("<p>a@x.com</p><p>b@x.com</p>");
   assertEquals(html.content.match(/<span/g)?.length, 2);
 });

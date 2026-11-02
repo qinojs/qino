@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db, sql, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertThrows } from "@qino/qino/tests";
 
@@ -33,13 +34,13 @@ async function testDb() {
   return db;
 }
 
-Deno.test("score: metadata is wired", () => {
+test("score: metadata is wired", () => {
   assertEquals(name, "score");
   assertEquals(dependencies, ["core", "cron"]);
   assertEquals(cron.prune.every, "day");
 });
 
-Deno.test("score: a declared table gets its key, score and time", async () => {
+test("score: a declared table gets its key, score and time", async () => {
   await using db = await testDb();
   assertEquals(scores(db).map(({ name, keys, half }) => ({ name, keys, half })), [
     { name: "doc_view", keys: ["doc_id"], half: 30 * DAY },
@@ -50,7 +51,7 @@ Deno.test("score: a declared table gets its key, score and time", async () => {
   assertEquals(scores(db)[0].half, 7 * DAY);
 });
 
-Deno.test("score: hits accumulate and rank", async () => {
+test("score: hits accumulate and rank", async () => {
   await using db = await testDb();
   await hit(db, "doc_view", { doc_id: 1 });
   await hit(db, "doc_view", { doc_id: 2 });
@@ -61,7 +62,7 @@ Deno.test("score: hits accumulate and rank", async () => {
   assert(Math.abs(strength(db, "doc_view", (await stored(db, 2))!) - 2) < 1e-6);
 });
 
-Deno.test("score: recency beats a stale majority", async () => {
+test("score: recency beats a stale majority", async () => {
   await using db = await testDb();
   const now = unixTime();
   const rate = Math.LN2 / (30 * DAY);
@@ -73,7 +74,7 @@ Deno.test("score: recency beats a stale majority", async () => {
   assert(Math.abs(strength(db, "doc_view", (await stored(db, 1))!) - 10 / 64) < 1e-6);
 });
 
-Deno.test("score: sqlScore orders a joined query and keeps unscored rows last", async () => {
+test("score: sqlScore orders a joined query and keeps unscored rows last", async () => {
   await using db = await testDb();
   for (const id of [1, 2, 3, 4]) await db.exec`INSERT INTO doc (id, usr_id) VALUES (${id}, 33)`;
   await db.exec`INSERT INTO doc (id, usr_id) VALUES (9, 34)`;
@@ -87,7 +88,7 @@ Deno.test("score: sqlScore orders a joined query and keeps unscored rows last", 
   assertEquals(ids, [3, 2, 1]);
 });
 
-Deno.test("score: per user, by a key of more columns", async () => {
+test("score: per user, by a key of more columns", async () => {
   await using db = await testDb();
   for (const id of [1, 2]) await db.exec`INSERT INTO doc (id, usr_id) VALUES (${id}, 33)`;
   await hit(db, "doc_usr", { usr_id: 7, doc_id: 1 });
@@ -101,7 +102,7 @@ Deno.test("score: per user, by a key of more columns", async () => {
   assertEquals(await db.col`SELECT usr_id FROM score_doc_usr`, [7]);
 });
 
-Deno.test("score: forget weakens or drops, prune deletes", async () => {
+test("score: forget weakens or drops, prune deletes", async () => {
   await using db = await testDb();
   await hit(db, "doc_view", { doc_id: 1 }, 4);
   await forget(db, "doc_view", { doc_id: 1 }, 0.5);
@@ -117,7 +118,7 @@ Deno.test("score: forget weakens or drops, prune deletes", async () => {
   assertEquals(await ranked(db), [3]);
 });
 
-Deno.test("score: undeclared tables, wrong keys and negative weights are rejected", async () => {
+test("score: undeclared tables, wrong keys and negative weights are rejected", async () => {
   await using db = await testDb();
   assertThrows(() => hit(db, "page_view", { page_id: 1 }), Error, "No table");
   assertThrows(() => hit(db, "doc_usr", { doc_id: 1 }), Error, "key");
@@ -125,7 +126,7 @@ Deno.test("score: undeclared tables, wrong keys and negative weights are rejecte
   assertThrows(() => hit(db, "doc_view", { doc_id: 1 }, 0), Error, "weight");
 });
 
-Deno.test("score: a deleted row loses its scores", async () => {
+test("score: a deleted row loses its scores", async () => {
   await using db = await testDb();
   await db.exec`INSERT INTO doc (id, usr_id) VALUES (1, 33)`;
   await hit(db, "doc_view", { doc_id: 1 });

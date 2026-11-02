@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { App, requestStorage, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, requestStorage, runAs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
@@ -34,7 +35,7 @@ const fake: Adapter = {
 };
 
 async function withApp(fn: (app: App) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "ai.tools", "cron", "score", "ai.embed", "ai.discover", "ai.agent", "ai.agent.sleep"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
@@ -66,7 +67,7 @@ async function stage(app: App, wanted: string) {
 
 const contents = (app: App) => app.db.col`SELECT content FROM ai_agent_memory ORDER BY id`;
 
-Deno.test("ai.agent.sleep: at night what was said is gone over; the plan waits to be applied", () => withApp(async (app) => {
+test("ai.agent.sleep: at night what was said is gone over; the plan waits to be applied", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "brand designer" });
   for (const content of ["the logo is blue", "logo: blue", "the sky is green"]) await runAs(app, 7, "test", () => agent.remember(content));
   const session = await agent.start(7);
@@ -90,7 +91,7 @@ Deno.test("ai.agent.sleep: at night what was said is gone over; the plan waits t
   assertEquals(await app.db.one`SELECT COUNT(*) FROM ai_agent_sleep`, 1);
 }));
 
-Deno.test("ai.agent.sleep: the role is the yardstick of thinker and merger", () => withApp(async (app) => {
+test("ai.agent.sleep: the role is the yardstick of thinker and merger", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "brand designer" });
   await (await agent.start(7)).ask("please always answer in German");
   await new Promise((r) => setTimeout(r, 60));
@@ -101,7 +102,7 @@ Deno.test("ai.agent.sleep: the role is the yardstick of thinker and merger", () 
   for (const prompt of prompts) assertEquals(prompt.includes("<role>\nbrand designer\n</role>"), true);
 }));
 
-Deno.test("ai.agent.sleep: one agent can be sent to sleep alone; without new messages none sleeps", () => withApp(async (app) => {
+test("ai.agent.sleep: one agent can be sent to sleep alone; without new messages none sleeps", () => withApp(async (app) => {
   const [talked, silent] = [await Agent.create(app, { system: "a" }), await Agent.create(app, { system: "b" })];
   await (await talked.start(7)).ask("hello");
   await new Promise((r) => setTimeout(r, 60));
@@ -111,7 +112,7 @@ Deno.test("ai.agent.sleep: one agent can be sent to sleep alone; without new mes
   await stage(app, "planned");
 }));
 
-Deno.test("ai.agent.sleep: at night an agent sleeps only once enough was said", () => withApp(async (app) => {
+test("ai.agent.sleep: at night an agent sleeps only once enough was said", () => withApp(async (app) => {
   await app.settings["ai.agent.sleep"].minChars(2000);
   const agent = await Agent.create(app, { system: "a" });
   const session = await agent.start(7);
@@ -124,7 +125,7 @@ Deno.test("ai.agent.sleep: at night an agent sleeps only once enough was said", 
   await stage(app, "planned");
 }));
 
-Deno.test("ai.agent.sleep: a night no thinker answered failed, and the next goes over the same", () => withApp(async (app) => {
+test("ai.agent.sleep: a night no thinker answered failed, and the next goes over the same", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "a" });
   await (await agent.start(7)).ask("please always answer in German");
   await new Promise((r) => setTimeout(r, 60));
@@ -140,7 +141,7 @@ Deno.test("ai.agent.sleep: a night no thinker answered failed, and the next goes
   assertEquals(await stage(app, "planned"), "planned");
 }));
 
-Deno.test("ai.agent.sleep: the models run as who started the night, as a ChatGPT plan needs", () => withApp(async (app) => {
+test("ai.agent.sleep: the models run as who started the night, as a ChatGPT plan needs", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "a" });
   await (await agent.start(7)).ask("please always answer in German");
   await new Promise((r) => setTimeout(r, 60));

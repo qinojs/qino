@@ -1,5 +1,6 @@
+import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { App, Ctx, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 
 import nodeApi from "../nodeApi.ts";
 import { cms as panel } from "../plugin.ts";
@@ -7,7 +8,7 @@ import { cms as panel } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function app_() {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cron").add("locale.currency");
   await app.init();
   return app;
@@ -17,7 +18,7 @@ async function app_() {
 const call = (app: App, vars: Record<string, unknown>, access = 2) =>
   nodeApi({ access: () => Promise.resolve(access), app } as unknown as Node, vars);
 
-Deno.test("backend.locale.currency: the daily job is switched from here", async () => {
+test("backend.locale.currency: the daily job is switched from here", async () => {
   await using app = await app_();
   assertEquals(String(await app.settings["locale.currency"].update), "never"); // reaching out is opt-in
 
@@ -30,13 +31,13 @@ Deno.test("backend.locale.currency: the daily job is switched from here", async 
 });
 
 // What "now" does when it reaches the source is updateRates()' business and tested there.
-Deno.test("backend.locale.currency: fetching by hand needs write access", async () => {
+test("backend.locale.currency: fetching by hand needs write access", async () => {
   await using app = await app_();
   assertEquals(await call(app, { now: 1 }, 1), false);
   assertEquals(await call(app, { nonsense: 1 }), false);
 });
 
-Deno.test("backend.locale.currency: the panel lists what is stored", async () => {
+test("backend.locale.currency: the panel lists what is stored", async () => {
   await using app = await app_();
   await app.db.table("currency").update({ id: "CHF", rate_to_usd: 0.8 });
   await app.settings["locale.currency"].update("daily"); // read-only view
@@ -52,7 +53,7 @@ Deno.test("backend.locale.currency: the panel lists what is stored", async () =>
   });
 });
 
-Deno.test("backend.locale.currency: every currency is listed, with its symbol", async () => {
+test("backend.locale.currency: every currency is listed, with its symbol", async () => {
   await using app = await app_();
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
@@ -65,7 +66,7 @@ Deno.test("backend.locale.currency: every currency is listed, with its symbol", 
   });
 });
 
-Deno.test("backend.locale.currency: a rate can be set and cleared by hand", async () => {
+test("backend.locale.currency: a rate can be set and cleared by hand", async () => {
   await using app = await app_();
   assertEquals(await call(app, { rate: "chf", value: "0.8" }), 1); // lower case is a currency too
   assertEquals(await app.db.one`SELECT rate_to_usd FROM currency WHERE id = ${"CHF"}`, 0.8);
@@ -77,7 +78,7 @@ Deno.test("backend.locale.currency: a rate can be set and cleared by hand", asyn
   assertEquals(await call(app, { rate: "CHF", value: "1" }, 1), false); // read access only
 });
 
-Deno.test("backend.locale.currency: rates are editable while the job is off", async () => {
+test("backend.locale.currency: rates are editable while the job is off", async () => {
   await using app = await app_();
   await app.db.table("currency").update({ id: "CHF", rate_to_usd: 0.8 });
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });

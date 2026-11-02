@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { Node } from "../lib/Node.ts";
@@ -23,7 +24,7 @@ function node(settings?: string) {
   });
 }
 
-Deno.test("Node settings read schema defaults without storing them", async () => {
+test("Node settings read schema defaults without storing them", async () => {
   const untouched = await node().init();
   assertEquals(untouched.settings.width(), "u2-width");
   assertEquals(untouched.vs.settings, undefined);

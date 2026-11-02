@@ -1,10 +1,10 @@
-import { App } from "@qino/qino";
+import { App, fs } from "@qino/qino";
 import { fakeT } from "@qino/qino/tests";
 import { save } from "@qino/qino/iot";
 
 export async function fixture({ manual = false } = {}) {
-  const dir = await Deno.makeTempDir({ prefix: "qino-iot-backend-test-" }), app = new App({ dir, db: "sqlite::memory:" });
-  await Deno.writeTextFile(`${dir}/plugin.ts`, `
+  const dir = await fs.tempDir({ prefix: "qino-iot-backend-test-" }), app = new App({ dir, db: "sqlite::memory:" });
+  await fs.write(`${dir}/plugin.ts`, `
 export const iotProvider = {
   name: "fake", schema: { type: "object", additionalProperties: false, properties: {
     url: { type: "string", format: "uri" }, accessToken: { type: "string", writeOnly: true },
@@ -23,5 +23,5 @@ export const iotProvider = {
   app.modules.add(new URL(`file://${dir}/plugin.ts`), "fake.adapter");
   await app.init(); app.t = fakeT;
   const provider = await save(app, { name: "House", adapter: "fake", config: { url: "http://house.test/", accessToken: "saved-secret" } });
-  return { app, provider, close: async () => { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await Deno.remove(dir, { recursive: true }); } };
+  return { app, provider, close: async () => { app.modules.unlink("iot.record"); app.modules.unlink("cron"); await app.db.close(); await fs.remove(dir, { recursive: true }); } };
 }

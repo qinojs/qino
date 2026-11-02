@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 import { askDbAi } from "../lib/ai.ts";
@@ -17,8 +18,8 @@ const fake: Adapter = {
   },
 };
 
-Deno.test("db.query ai: tries statements without keeping anything; the user gets the query", async () => {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+test("db.query ai: tries statements without keeping anything; the user gets the query", async () => {
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["cron", "ai", "ai.tools"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;

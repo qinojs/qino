@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { toTools } from "@qino/qino";
 import { assertEquals, fakeCms, fakeRender } from "@qino/qino/tests";
 
@@ -7,7 +8,7 @@ import manifest from "../manifest.json" with { type: "json" };
 
 const { name, dependencies } = manifest;
 
-Deno.test("cms.filebrowser: metadata and api shape are wired", () => {
+test("cms.filebrowser: metadata and api shape are wired", () => {
   assertEquals(name, "cms.filebrowser");
   assertEquals(dependencies, ["cms"]);
   const tools = toTools(api);
@@ -19,7 +20,7 @@ Deno.test("cms.filebrowser: metadata and api shape are wired", () => {
   });
 });
 
-Deno.test("cms.filebrowser: init registers page:render-after asset hook", async () => {
+test("cms.filebrowser: init registers page:render-after asset hook", async () => {
   type Handler = (...args: any[]) => any;
   const handlers: Record<string, Handler[]> = {};
   const app = {
@@ -43,7 +44,7 @@ Deno.test("cms.filebrowser: init registers page:render-after asset hook", async 
   assertEquals(added, ["/m/cms.filebrowser/pub/init.mjs"]);
 });
 
-Deno.test("cms.filebrowser: on mysql the file text is searched through its fulltext index", async () => {
+test("cms.filebrowser: on mysql the file text is searched through its fulltext index", async () => {
   let sqlText = "";
   const app = {
     db: {
@@ -62,7 +63,7 @@ Deno.test("cms.filebrowser: on mysql the file text is searched through its fullt
   assertEquals(sqlText.includes("f.text LIKE"), false);
 });
 
-Deno.test("cms.filebrowser: search groups existing accessible files by md5", async () => {
+test("cms.filebrowser: search groups existing accessible files by md5", async () => {
   const dbFiles: Record<number, any> = {
     1: {
       name: "a.jpg",

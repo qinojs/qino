@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { requestStorage } from "@qino/qino";
 import { assertEquals, fakeT, testContext } from "@qino/qino/tests";
 
@@ -5,7 +6,7 @@ import { cms } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
-Deno.test("known accounts distinguish remembered logins from those needing a password", async () => {
+test("known accounts distinguish remembered logins from those needing a password", async () => {
   const ctx = await testContext({
     sess: { data: { core: { userId: () => 0, csrfToken: () => "tok" } } },
   });

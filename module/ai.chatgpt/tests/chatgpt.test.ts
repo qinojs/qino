@@ -1,4 +1,5 @@
-import { App, Redirect } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, Redirect } from "@qino/qino";
 import { AiError, candidates, text } from "@qino/qino/ai";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
@@ -8,7 +9,7 @@ import { init } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
 
-Deno.test("ChatGPT authorization uses dynamic registration, PKCE, and a stable host ID", async () => {
+test("ChatGPT authorization uses dynamic registration, PKCE, and a stable host ID", async () => {
   const attempt = pending(3, "dynamic_agent_client", "http://127.0.0.1:8000/ai-chatgpt/callback", "/my/chatgpt");
   const url = new URL(await authorize(attempt, "urn:uuid:sample", "Qino"));
   assertEquals(url.origin, "https://auth.openai.com");
@@ -20,7 +21,7 @@ Deno.test("ChatGPT authorization uses dynamic registration, PKCE, and a stable h
   assertEquals(url.searchParams.get("resource"), "https://api.openai.com/v1");
 });
 
-Deno.test("ChatGPT Responses history keeps function calls and tool results", () => {
+test("ChatGPT Responses history keeps function calls and tool results", () => {
   const value = input([
     { role: "system", content: "Be brief" },
     { role: "user", content: "Calculate" },
@@ -33,7 +34,7 @@ Deno.test("ChatGPT Responses history keeps function calls and tool results", () 
   assertEquals(value.input[3], { type: "function_call_output", call_id: "call-1", output: "3" });
 });
 
-Deno.test("ChatGPT stream failure reports the provider's code and message", async () => {
+test("ChatGPT stream failure reports the provider's code and message", async () => {
   const body = `data: ${JSON.stringify({ type: "response.failed", response: {
     error: { code: "subscription_sharing_usage_limit_exceeded", message: "Usage limit reached" },
   } })}\n\n`;
@@ -43,8 +44,8 @@ Deno.test("ChatGPT stream failure reports the provider's code and message", asyn
   assertEquals((await assertRejects(() => completed(new Response(streamed), () => {}), AiError)).final, true); // text went out
 });
 
-Deno.test("ChatGPT plan without a user falls back to another provider, as any provider does", async () => {
-  const dir = await Deno.makeTempDir();
+test("ChatGPT plan without a user falls back to another provider, as any provider does", async () => {
+  const dir = await fs.tempDir();
   const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
@@ -61,19 +62,19 @@ Deno.test("ChatGPT plan without a user falls back to another provider, as any pr
     assertEquals((await text(app, "Hi")).text, "from fake");
   } finally {
     delete app.modules.get("ai")?.plugin.aiAdapters.fake;
-    await app.db.close(); await Deno.remove(dir, { recursive: true });
+    await app.db.close(); await fs.remove(dir, { recursive: true });
   }
 });
 
-Deno.test("ChatGPT stream uses completed output items when the final response has no output", async () => {
+test("ChatGPT stream uses completed output items when the final response has no output", async () => {
   const message = { type: "message", content: [{ type: "output_text", text: "Test received. How can I help?" }] };
   const body = `event: response.output_item.done\ndata: ${JSON.stringify({ type: "response.output_item.done", output_index: 0, item: message })}\n\n` +
     `event: response.completed\ndata: ${JSON.stringify({ type: "response.completed", response: { status: "completed", output: [] } })}\n\n`;
   assertEquals((await completed(new Response(body))).output, [message]);
 });
 
-Deno.test("ChatGPT model catalog uses the plan-specific models array and slugs", async () => {
-  const dir = await Deno.makeTempDir();
+test("ChatGPT model catalog uses the plan-specific models array and slugs", async () => {
+  const dir = await fs.tempDir();
   const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   const original = globalThis.fetch;
@@ -101,11 +102,11 @@ Deno.test("ChatGPT model catalog uses the plan-specific models array and slugs",
     assertEquals((await candidates(app, "text", { messages: [], tools: [{}] })).some((model) => model.provider === "chatgpt-plan"), true);
     await models(app, 3);
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM ai_model_provider`), 2);
-  } finally { globalThis.fetch = original; await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+  } finally { globalThis.fetch = original; await app.db.close(); await fs.remove(dir, { recursive: true }); }
 });
 
-Deno.test("ChatGPT module ensures its own provider alongside the API-key provider", async () => {
-  const dir = await Deno.makeTempDir();
+test("ChatGPT module ensures its own provider alongside the API-key provider", async () => {
+  const dir = await fs.tempDir();
   const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
@@ -126,11 +127,11 @@ Deno.test("ChatGPT module ensures its own provider alongside the API-key provide
     app.modules.unlink("ai.chatgpt");
     await app.db.exec`UPDATE ai_provider SET type = ${"openai"} WHERE name = ${"chatgpt-plan"}`;
     await assertRejects(() => app.modules.link("ai.chatgpt"), Error, 'Provider "chatgpt-plan" already exists');
-  } finally { await app.db.close(); await Deno.remove(dir, { recursive: true }); }
+  } finally { await app.db.close(); await fs.remove(dir, { recursive: true }); }
 });
 
-Deno.test("ChatGPT account actions return to the same Qino app, never another site", async () => {
-  const dir = await Deno.makeTempDir();
+test("ChatGPT account actions return to the same Qino app, never another site", async () => {
+  const dir = await fs.tempDir();
   const original = globalThis.fetch;
   let route: (event: { ctx: Ctx }) => unknown = () => {};
   const app = { modules: { get: () => ({ data: dir + "/" }) }, db: {
@@ -154,11 +155,11 @@ Deno.test("ChatGPT account actions return to the same Qino app, never another si
     assertEquals(await redirect(), "/cms1/account");
     body.return_to = "//elsewhere.example/steal";
     assertEquals(await redirect(), "/cms1/ai-chatgpt");
-  } finally { globalThis.fetch = original; await Deno.remove(dir, { recursive: true }); }
+  } finally { globalThis.fetch = original; await fs.remove(dir, { recursive: true }); }
 });
 
-Deno.test("ChatGPT plan without a signed-in user answers through the user set in usr", async () => {
-  const dir = await Deno.makeTempDir();
+test("ChatGPT plan without a signed-in user answers through the user set in usr", async () => {
+  const dir = await fs.tempDir();
   const app = new App({ db: "sqlite::memory:", dir: dir + "/" });
   const source = app.stores.add(new URL("../../store.json", import.meta.url));
   try {
@@ -170,6 +171,6 @@ Deno.test("ChatGPT plan without a signed-in user answers through the user set in
     await app.settings["ai.chatgpt"].usr(7);
     await assertRejects(ask, AiError, "Connect a ChatGPT account", "user 7's plan is asked for (7 has none connected)");
   } finally {
-    await app.db.close(); await Deno.remove(dir, { recursive: true });
+    await app.db.close(); await fs.remove(dir, { recursive: true });
   }
 });

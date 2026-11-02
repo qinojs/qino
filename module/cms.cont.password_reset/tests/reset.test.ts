@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { Db, pwVerify, requestStorage } from "@qino/qino";
 import { fakeT, ticketDbSchema as ticketSchema } from "@qino/qino/tests";
@@ -31,7 +32,7 @@ async function app() {
   } as any;
 }
 
-Deno.test("the link sets the password once and logs out every session and remembered device", async () => {
+test("the link sets the password once and logs out every session and remembered device", async () => {
   await using a = await app();
   const node = { app: a } as unknown as Node;
   const handle = await issue(a, PURPOSE, { usrId: 1 });
@@ -64,7 +65,7 @@ Deno.test("the link sets the password once and logs out every session and rememb
   assertEquals(await pwVerify("a good password", String(await a.db.one`SELECT pw FROM usr WHERE id = ${1}`)), true);
 });
 
-Deno.test("an account gets three links an hour; each request counts a little suspicious, one past that more", async () => {
+test("an account gets three links an hour; each request counts a little suspicious, one past that more", async () => {
   await using a = await app();
   const weights: number[] = [];
   a.fire = (name: string, e: { weight: number }) => (name === "suspicious" && weights.push(e.weight), Promise.resolve(e));

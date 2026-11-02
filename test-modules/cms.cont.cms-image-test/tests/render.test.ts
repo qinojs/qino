@@ -1,15 +1,16 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { Parser } from "htmlparser2";
-import { requestStorage } from "@qino/qino";
+import { fs, requestStorage } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 
-Deno.test("cms-image test: every case includes a native image with its own size and layout options", async () => {
-  const dir = await Deno.makeTempDir();
+test("cms-image test: every case includes a native image with its own size and layout options", async () => {
+  const dir = await fs.tempDir();
   try {
     const path = dir + "/image.svg";
-    await Deno.writeTextFile(path, '<svg viewBox="0 0 400 200"/>');
+    await fs.write(path, '<svg viewBox="0 0 400 200"/>');
     const file = {
       get: (key: string) => ({ mime: "image/svg+xml", name: "image.svg", hpos: 25, vpos: 75 }[key]),
       exists: () => true,
@@ -43,6 +44,6 @@ Deno.test("cms-image test: every case includes a native image with its own size 
       assertEquals(lab.includes(`width="${width}"`), true);
     }
   } finally {
-    await Deno.remove(dir, { recursive: true });
+    await fs.remove(dir, { recursive: true });
   }
 });

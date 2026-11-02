@@ -1,10 +1,11 @@
+import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { resolveText } from "../lib/resolveText.ts";
 
 import type { CMS } from "../lib/CMS.ts";
 
-Deno.test("resolveText resolves file urls always, cmspid links only outside edit mode", async () => {
+test("resolveText resolves file urls always, cmspid links only outside edit mode", async () => {
   const cms = {
     node: () => Promise.resolve({ exists: () => true, url: () => "/target-page" }),
     app: {

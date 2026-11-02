@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import { test } from "node:test";
 import { assertEquals, fakeCms } from "@qino/qino/tests";
 
 import { backendDashboardWidget, cms } from "../plugin.ts";
@@ -55,12 +56,12 @@ function fixture() {
 const ctx = { clientId: 7, lang: "en", req: { appUrl: "/" } } as any;
 const listPart = (node: any, filter: any = {}) => cms.node.parts.history(node, { ctx, vars: { filter } }).then(String);
 
-Deno.test("history: metadata is wired", () => {
+test("history: metadata is wired", () => {
   assertEquals(name, "cms.backend.cms.history");
   assertEquals(dependencies, ["cms.backend", "cms"]);
 });
 
-Deno.test("history: only pages the caller may edit are listed; one event per request × node", async () => {
+test("history: only pages the caller may edit are listed; one event per request × node", async () => {
   const { rows, reg } = fixture();
   const out = await listPart(host(rows, reg));
 
@@ -80,7 +81,7 @@ Deno.test("history: only pages the caller may edit are listed; one event per req
   assertEquals(out.includes("9.9.9.9"), false);
 });
 
-Deno.test("history: access is judged on the content node, not just its page", async () => {
+test("history: access is judged on the content node, not just its page", async () => {
   const section = mkNode(10, 2, "Section");
   const page = mkNode(20, 2, "Page 20", [section]);
   const reg: Record<number, any> = {
@@ -98,20 +99,20 @@ Deno.test("history: access is judged on the content node, not just its page", as
   assertEquals(out.includes(`Text "secret"`), false); // READ-only content → hidden, even though the page is editable
 });
 
-Deno.test("history: type filter keeps only matching mutations", async () => {
+test("history: type filter keeps only matching mutations", async () => {
   const { rows, reg } = fixture();
   const out = await listPart(host(rows, reg), { type: "text" });
   assertEquals(out.includes(`Text "body" (de) changed`), true);
   assertEquals(out.includes("Visibility changed"), false); // the page mutation is filtered out
 });
 
-Deno.test("history: empty result renders the placeholder", async () => {
+test("history: empty result renders the placeholder", async () => {
   const out = await listPart(host([], {}));
   assertEquals(out.includes("No changes found."), true);
   assertEquals(out.includes("data-key"), false);
 });
 
-Deno.test("history: render wires the toolbar and column headers around the list", async () => {
+test("history: render wires the toolbar and column headers around the list", async () => {
   const { rows, reg } = fixture();
   const out = String(await cms.node.render(host(rows, reg), { ctx, vars: {} }));
   for (const col of ["When", "Who", "Where", "What", "Client"]) assertEquals(out.includes(">" + col), true);
@@ -119,7 +120,7 @@ Deno.test("history: render wires the toolbar and column headers around the list"
   assertEquals(out.includes(`data-key="2:20"`), true); // initial list embedded
 });
 
-Deno.test("history widget: latest change per user, newest first, access-filtered", async () => {
+test("history widget: latest change per user, newest first, access-filtered", async () => {
   const rows = [ // newest first (node_id == page_id here: page-level changes)
     { id: 9, node_id: 20, page_id: 20, time: 300, usr_id: 1, email: "a@b.c", given_name: "Al", family_name: "Ice" },
     { id: 8, node_id: 30, page_id: 30, time: 250, usr_id: 2, email: "bob@x.y", given_name: "", family_name: "" }, // page 30: no access

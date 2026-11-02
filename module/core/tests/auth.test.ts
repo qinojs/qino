@@ -1,9 +1,11 @@
+import { test } from "node:test";
+import { fs } from "../lib/fs.ts";
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { attempt, beforeProof, login, loginFromRequest, loginProof, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
 import { App, Ctx, requestStorage, unixTime } from "../mod.ts";
 import { initRequest } from "../lib/ctx/init.ts";
 
-Deno.test("loginFromRequest: login form requires token", async () => {
+test("loginFromRequest: login form requires token", async () => {
   const ctx = await testContext({
     sess: { data: { core: { userId: () => 0, csrfToken: () => "good" } } },
     app: { db: { row: () => { throw new Error("auth should not run"); } } },
@@ -14,7 +16,7 @@ Deno.test("loginFromRequest: login form requires token", async () => {
   assertEquals(ctx.loginError, undefined);
 });
 
-Deno.test("loginFromRequest: login form requires POST", async () => {
+test("loginFromRequest: login form requires POST", async () => {
   const ctx = await testContext({
     method: "PUT",
     sess: { data: { core: { userId: () => 0, csrfToken: () => "good" } } },
@@ -29,7 +31,7 @@ Deno.test("loginFromRequest: login form requires POST", async () => {
 /** A real app and a request in it. Session writes are fire-and-forget, so they are given the tick
  *  they need before the database goes away — otherwise they land on a closed connection. */
 async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json"));
   await app.init();
   try {
@@ -45,7 +47,7 @@ async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
   }
 }
 
-Deno.test("loginFromRequest: a failed login keeps the current user's remember-me", async () => {
+test("loginFromRequest: a failed login keeps the current user's remember-me", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("client_usr").insert({ client_id: 1, usr_id: 7, save_login: true });
     ctx.sess.data.core.userId(7);
@@ -62,7 +64,7 @@ Deno.test("loginFromRequest: a failed login keeps the current user's remember-me
 
 // logout() empties the very item login() hands to the listeners, so what they get has to be a
 // snapshot — otherwise a module carrying something over the login (a shop cart) finds it gone.
-Deno.test("login: auth:login carries the session as it was before the logout", async () => {
+test("login: auth:login carries the session as it was before the logout", async () => {
   await withApp(async (app, ctx) => {
     let seen: Record<string, any> | undefined;
     app.on("auth:login", (e) => { seen = e.oldSession; });
@@ -84,7 +86,7 @@ function linkFactors(app: App, authFactors: any[]) {
 
 const totp = { name: "totp", label: "Authenticator app", stepUp: true, has: () => Promise.resolve(true) };
 
-Deno.test("login: a second factor asked for parks the login instead of opening a session", async () => {
+test("login: a second factor asked for parks the login instead of opening a session", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("usr").update(7, { pw: await pwHash("secret") });
     await app.settings.core.loginTwoFactor(true);
@@ -104,7 +106,7 @@ Deno.test("login: a second factor asked for parks the login instead of opening a
   });
 });
 
-Deno.test("login: whoever has no second factor is let in with one — a demand nobody can meet is no protection", async () => {
+test("login: whoever has no second factor is let in with one — a demand nobody can meet is no protection", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("usr").update(7, { pw: await pwHash("secret") });
     await app.settings.core.loginTwoFactor(true);
@@ -115,7 +117,7 @@ Deno.test("login: whoever has no second factor is let in with one — a demand n
   });
 });
 
-Deno.test("login: wrong passwords buy a growing wait that every factor shares", async () => {
+test("login: wrong passwords buy a growing wait that every factor shares", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("usr").update(7, { pw: await pwHash("secret") });
 
@@ -128,7 +130,7 @@ Deno.test("login: wrong passwords buy a growing wait that every factor shares", 
   });
 });
 
-Deno.test("attempt: parallel guesses take turns, so the wait stops them as it would one by one", async () => {
+test("attempt: parallel guesses take turns, so the wait stops them as it would one by one", async () => {
   await withApp(async (app) => {
     let checked = 0;
     const guess = () => attempt(app, 7, () => Promise.resolve(void checked++)); // always wrong
@@ -141,7 +143,7 @@ Deno.test("attempt: parallel guesses take turns, so the wait stops them as it wo
   });
 });
 
-Deno.test("login: a half login does not wipe the wait — a known password buys no fresh guesses", async () => {
+test("login: a half login does not wipe the wait — a known password buys no fresh guesses", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("usr").update(7, { pw: await pwHash("secret") });
     await app.settings.core.loginTwoFactor(true);
@@ -156,7 +158,7 @@ Deno.test("login: a half login does not wipe the wait — a known password buys 
   });
 });
 
-Deno.test("login: the pass a lapsed session makes costs the account nothing", async () => {
+test("login: the pass a lapsed session makes costs the account nothing", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("usr").update(7, { pw: await pwHash("secret") });
     // what loginFromRequest does on every request of a client that is signed in nowhere
@@ -166,7 +168,7 @@ Deno.test("login: the pass a lapsed session makes costs the account nothing", as
   });
 });
 
-Deno.test("login: a proof that lands wipes the wait", async () => {
+test("login: a proof that lands wipes the wait", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("usr").update(7, { pw: await pwHash("secret") });
     for (let i = 0; i < 3; i++) assertEquals(await tryLogin(ctx, "ann@example.test", "wrong"), "password");
@@ -175,7 +177,7 @@ Deno.test("login: a proof that lands wipes the wait", async () => {
   });
 });
 
-Deno.test("login: how the identity was had is recorded, and the rotation drops it", async () => {
+test("login: how the identity was had is recorded, and the rotation drops it", async () => {
   await withApp(async (_app, ctx) => {
     const before = unixTime();
     assertEquals(await login(ctx, 7, "webauthn"), true);
@@ -192,7 +194,7 @@ Deno.test("login: how the identity was had is recorded, and the rotation drops i
 });
 
 // A wrong password and an unknown address weigh the same, or the delay would say which is which.
-Deno.test("loginFromRequest: a failed login reports the client as suspicious", async () => {
+test("loginFromRequest: a failed login reports the client as suspicious", async () => {
   await withApp(async (app, ctx) => {
     const seen: { weight?: number; reason?: string }[] = [];
     app.on("suspicious", (e) => void seen.push({ weight: e.weight, reason: e.reason }));
@@ -214,7 +216,7 @@ Deno.test("loginFromRequest: a failed login reports the client as suspicious", a
 });
 
 // Anyone knowing an address could otherwise park its owner in front of their own login.
-Deno.test("tryLogin: a client this user knows is not made to wait", async () => {
+test("tryLogin: a client this user knows is not made to wait", async () => {
   await withApp(async (app, ctx) => {
     await app.db.table("usr").row(7).$set({ pw: await pwHash("right") });
     for (let i = 0; i < 6; i++) await proofFailed(app, 7);
@@ -225,7 +227,7 @@ Deno.test("tryLogin: a client this user knows is not made to wait", async () => 
   });
 });
 
-Deno.test("initRequest: a deactivated user's session ends with the next request", async () => {
+test("initRequest: a deactivated user's session ends with the next request", async () => {
   await withApp(async (app, ctx) => {
     ctx.sess.data.core.userId(7);
     const request = async () => {

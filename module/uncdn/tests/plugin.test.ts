@@ -1,3 +1,5 @@
+import { test } from "node:test";
+import { stat as statFile } from "node:fs/promises";
 import https from "node:https";
 import { Readable, Writable } from "node:stream";
 import { fs, Output, ResCsp, ResHtml } from "@qino/qino";
@@ -19,7 +21,7 @@ async function routeFor(url: string, source: string, cache = "/tmp/uncdn-origin-
   return { ctx, route: (init?: RequestInit) => start({ request: new Request(url, init), base: ctx.req.appUrl }) };
 }
 
-Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () => {
+test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () => {
   const html = new ResHtml();
   const remote = "https://cdn.example/lib/";
   html.importMap.set("lib/", remote);
@@ -38,7 +40,7 @@ Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () =
   assertEquals(csp["style-src"][remote], undefined);
 });
 
-Deno.test("uncdn: a url mapped to itself is the handle for an import nothing can rewrite", () => {
+test("uncdn: a url mapped to itself is the handle for an import nothing can rewrite", () => {
   // qino.js imports item.js by its url; core maps that url to itself so this pass can take it over
   const html = new ResHtml();
   const remote = "https://cdn.example/item/";
@@ -52,7 +54,7 @@ Deno.test("uncdn: a url mapped to itself is the handle for an import nothing can
   assertEquals(csp["script-src"][remote], undefined); // the browser resolves it same-origin now
 });
 
-Deno.test("uncdn: a sheet in html.link is proxied, keeping its attributes", () => {
+test("uncdn: a sheet in html.link is proxied, keeping its attributes", () => {
   const html = new ResHtml();
   const remote = "https://cdn.example/lib/";
   html.link[remote + "print.css"] = { rel: "stylesheet", media: "print" };
@@ -67,7 +69,7 @@ Deno.test("uncdn: a sheet in html.link is proxied, keeping its attributes", () =
   assertEquals(csp["style-src"][remote], true); // the preconnect still points there
 });
 
-Deno.test("uncdn: a source no html asset names survives — an import inside a script may need it", () => {
+test("uncdn: a source no html asset names survives — an import inside a script may need it", () => {
   const html = new ResHtml();
   const csp = new ResCsp();
   csp["script-src"]["https://cdn.example/npm/lib/+esm"] = true; // imported from within a local module
@@ -76,7 +78,7 @@ Deno.test("uncdn: a source no html asset names survives — an import inside a s
   assertEquals(csp["script-src"]["https://cdn.example/npm/lib/+esm"], true);
 });
 
-Deno.test("uncdn: undeclared and query-string URLs stay external", () => {
+test("uncdn: undeclared and query-string URLs stay external", () => {
   const html = new ResHtml();
   html.scripts.add("https://other.example/x.js");        // not in CSP → left as-is
   const fonts = "https://fonts.googleapis.com/css?family=Inter";
@@ -93,7 +95,7 @@ Deno.test("uncdn: undeclared and query-string URLs stay external", () => {
 
 // The proxy path carries no scheme and is fetched back as https, so an http source
 // rewritten into it could never be served — a local dev root stays where it is.
-Deno.test("uncdn: an http source stays external", () => {
+test("uncdn: an http source stays external", () => {
   const html = new ResHtml();
   html.scripts.add("http://localhost/u2/js/rte/rte.js");
   html.styles.add("http://localhost/u2/css/base/base.css");
@@ -110,7 +112,7 @@ Deno.test("uncdn: an http source stays external", () => {
   assertEquals(csp["script-src"]["http://localhost/u2/"], true);
 });
 
-Deno.test("uncdn: lookalike origin is not covered by a declared source", async () => {
+test("uncdn: lookalike origin is not covered by a declared source", async () => {
   const { route } = await routeFor(
     "https://qino.test/uncdn/cdn.example.attacker.test/a.js",
     "https://cdn.example",
@@ -121,7 +123,7 @@ Deno.test("uncdn: lookalike origin is not covered by a declared source", async (
   assertEquals(thrown.body, "Not cached");
 });
 
-Deno.test("uncdn: declared source is fetched", async () => {
+test("uncdn: declared source is fetched", async () => {
   const { route } = await routeFor(
     "https://qino.test/uncdn/127.0.0.1/a.js",
     "https://127.0.0.1",
@@ -135,7 +137,7 @@ async function cacheTest(run: (fixture: {
   request: (init?: RequestInit) => Promise<Response>;
   downloads: () => number;
 }) => Promise<void>) {
-  const cache = await Deno.makeTempDir({ prefix: "uncdn-" }) + "/";
+  const cache = await fs.tempDir({ prefix: "uncdn-" }) + "/";
   const original = https.request;
   let downloads = 0;
   try {
@@ -164,13 +166,13 @@ async function cacheTest(run: (fixture: {
     });
   } finally {
     https.request = original;
-    await Deno.remove(cache, { recursive: true });
+    await fs.remove(cache, { recursive: true });
   }
 }
 
-Deno.test("uncdn: concurrent misses share a download and only publish complete files", async () => {
+test("uncdn: concurrent misses share a download and only publish complete files", async () => {
   await cacheTest(async ({ file, request, downloads }) => {
-    const writeFile = Deno.writeFile;
+    const write = fs.write;
     const stat = fs.stat;
     const writing = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
@@ -178,11 +180,11 @@ Deno.test("uncdn: concurrent misses share a download and only publish complete f
     let observeRead = false;
     const requests: Promise<Response>[] = [];
     try {
-      Deno.writeFile = async (path, data, options) => {
-        await writeFile(path, new TextEncoder().encode("partial"), options);
+      fs.write = async (path, data, options) => {
+        await write(path, new TextEncoder().encode("partial"), options);
         writing.resolve();
         await release.promise;
-        await writeFile(path, data, options);
+        await write(path, data, options);
       };
       // serveFile stats the cached file first — that stat is how the second request looks for it
       fs.stat = async (path, opt) => {
@@ -191,7 +193,7 @@ Deno.test("uncdn: concurrent misses share a download and only publish complete f
       };
       requests.push(request());
       await writing.promise;
-      await assertRejects(() => Deno.stat(file), Deno.errors.NotFound);
+      await assertRejects(() => statFile(file));
       observeRead = true;
       requests.push(request());
       await secondRead.promise;
@@ -199,42 +201,42 @@ Deno.test("uncdn: concurrent misses share a download and only publish complete f
       const responses = await Promise.all(requests);
       assertEquals(downloads(), 1);
       for (const response of responses) assertEquals(await response.text(), "complete asset");
-      assertEquals(await Deno.readTextFile(file), "complete asset");
-      assertEquals((await Array.fromAsync(Deno.readDir(file.slice(0, file.lastIndexOf("/"))))).map(e => e.name), ["a.js"]);
+      assertEquals(await fs.text(file), "complete asset");
+      assertEquals((await fs.list(file.slice(0, file.lastIndexOf("/")))).map(e => e.name), ["a.js"]);
       assertEquals(await (await request()).text(), "complete asset");
       assertEquals(downloads(), 1);
     } finally {
       release.resolve();
       await Promise.allSettled(requests);
-      Deno.writeFile = writeFile;
+      fs.write = write;
       fs.stat = stat;
     }
   });
 });
 
-for (const operation of ["writeFile", "rename"] as const) {
-  Deno.test(`uncdn: failed ${operation} cleans partial files and allows retry`, async () => {
+for (const operation of ["write", "rename"] as const) {
+  test(`uncdn: failed ${operation} cleans partial files and allows retry`, async () => {
     await cacheTest(async ({ file, request, downloads }) => {
-      const original = Deno[operation];
+      const original = fs[operation];
       try {
-        const writeFile = Deno.writeFile;
-        Object.assign(Deno, { [operation]: async (path: string | URL) => {
-          if (operation === "writeFile") await writeFile(path, new Uint8Array([1]));
+        const write = fs.write;
+        Object.assign(fs, { [operation]: async (path: string) => {
+          if (operation === "write") await write(path, new Uint8Array([1]));
           throw new Error("disk failure");
         } });
         await assertRejects(request, Error, "disk failure");
       } finally {
-        Object.assign(Deno, { [operation]: original });
+        Object.assign(fs, { [operation]: original });
       }
-      await assertRejects(() => Deno.stat(file), Deno.errors.NotFound);
-      assertEquals(await Array.fromAsync(Deno.readDir(file.slice(0, file.lastIndexOf("/")))), []);
+      await assertRejects(() => statFile(file));
+      assertEquals(await fs.list(file.slice(0, file.lastIndexOf("/"))), []);
       assertEquals(await (await request()).text(), "complete asset");
       assertEquals(downloads(), 2);
     });
   });
 }
 
-Deno.test("uncdn: a declared source only covers urls at a path boundary", () => {
+test("uncdn: a declared source only covers urls at a path boundary", () => {
   const html = new ResHtml();
   const lookalike = "https://cdn.example.attacker.test/a.js";
   html.scripts.add(lookalike);
@@ -247,7 +249,7 @@ Deno.test("uncdn: a declared source only covers urls at a path boundary", () => 
   assertEquals([...html.scripts], [lookalike, "/app/uncdn/cdn.example/a.js"]);
 });
 
-Deno.test("uncdn: a cached asset is revalidated with its etag", async () => {
+test("uncdn: a cached asset is revalidated with its etag", async () => {
   await cacheTest(async ({ request, downloads }) => {
     await (await request()).body?.cancel(); // miss: fetched and served from memory, no etag yet
     const hit = await request();

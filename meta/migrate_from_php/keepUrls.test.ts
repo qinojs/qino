@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { Db } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
@@ -5,7 +6,7 @@ import { keepUrls } from "./keepUrls.ts";
 
 import type { App } from "@qino/qino";
 
-Deno.test("keepUrls: every PHP URL redirects to its page; existing redirects stay, a second run adds nothing", async () => {
+test("keepUrls: every PHP URL redirects to its page; existing redirects stay, a second run adds nothing", async () => {
   const db = new Db("sqlite::memory:");
   await db.exec`CREATE TABLE text (id INTEGER, lang TEXT, text TEXT)`;
   await db.exec`CREATE TABLE page_url (page_id INTEGER, lang TEXT, url TEXT, custom INTEGER)`;

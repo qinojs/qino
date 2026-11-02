@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { App, runAs } from "@qino/qino";
+import { test } from "node:test";
+import { App, fs, runAs } from "@qino/qino";
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
@@ -21,7 +22,7 @@ const fake: Adapter = {
 };
 
 async function withApp(fn: (app: App) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   for (const mod of ["ai", "ai.tools", "cron", "score", "ai.embed", "ai.discover", "ai.agent", "ai.agent.sleep"]) app.modules.add(new URL(`../../${mod}/plugin.ts`, import.meta.url));
   await app.init();
   app.modules.get("ai")!.plugin.aiAdapters.fake = fake;
@@ -45,7 +46,7 @@ async function withApp(fn: (app: App) => Promise<void>) {
 const summaries = async (app: App) =>
   (await app.db.col`SELECT message FROM ai_session_message`).map((json) => JSON.parse(String(json))).filter((m) => m.summary);
 
-Deno.test("ai.agent.sleep: a long session is compacted, the record stays", () => withApp(async (app) => {
+test("ai.agent.sleep: a long session is compacted, the record stays", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   const long = (n: number) => `q${n} ` + "x".repeat(1500);
   let n = 0;
@@ -76,7 +77,7 @@ Deno.test("ai.agent.sleep: a long session is compacted, the record stays", () =>
   assertEquals([(await session.known()).has(`#${q1}`), (await session.known()).has(`#${from}`)], [false, true]); // so the session tells
 }));
 
-Deno.test("ai.agent.sleep: a short session is sent as it is", () => withApp(async (app) => {
+test("ai.agent.sleep: a short session is sent as it is", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   for (const q of ["a", "b", "c"]) await session.ask(q);
   await new Promise((r) => setTimeout(r, 10));
@@ -84,7 +85,7 @@ Deno.test("ai.agent.sleep: a short session is sent as it is", () => withApp(asyn
   assertEquals(sent.at(-1)!.filter((m) => m.role === "user").map((m) => m.content), ["a", "b", "c"]);
 }));
 
-Deno.test("ai.agent.sleep: compacted on request after the next answer, by its user or a superuser", () => withApp(async (app) => {
+test("ai.agent.sleep: compacted on request after the next answer, by its user or a superuser", () => withApp(async (app) => {
   const session = await (await Agent.create(app, { system: "lead" })).start(7);
   const compact = (usr: number) => runAs(app, usr, "test", () => app.api["ai.agent.sleep"].sessions(session.id).compact.post());
   await session.ask("a");
