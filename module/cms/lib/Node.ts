@@ -30,7 +30,7 @@ export class Node {
     #is = true;
 
     #title: DbText | null = null;
-    #texts: Map<string, DbText> | null = null;
+    #texts: Promise<Map<string, DbText>> | null = null;
     #files: Promise<Map<string, DbFile>> | null = null;
     #filesAll: Map<string, DbFile> | null = null;
     #urls: Promise<Map<string, Record<string, string>>> | null = null;
@@ -361,11 +361,10 @@ export class Node {
     }
 
     async texts(): Promise<Map<string, DbText>> {
-        if (this.#texts === null) {
-            const rows = await this.db.indexCol`SELECT name, text_id FROM ${sql.id(tableRef("page_text"))} WHERE page_id = ${this.id}`;
-            this.#texts = new Map();
-            for (const [name, id] of rows) this.#texts.set(name, this.app.dbTexts.text(Number(id)));
-        }
+        // the promise, so parallel callers share one map: each own one would lose what the others add
+        this.#texts ??= this.db.indexCol`SELECT name, text_id FROM ${sql.id(tableRef("page_text"))} WHERE page_id = ${this.id}`
+            .then((rows) => new Map([...rows].map(([name, id]) => [name, this.app.dbTexts.text(Number(id))])))
+            .catch((e) => { this.#texts = null; throw e; });
         return this.#texts;
     }
 
