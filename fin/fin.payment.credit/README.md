@@ -20,6 +20,8 @@ outgoing payment (`credit`) for its `ref`, and the credit it adds, in one go.
 Every move is a row (`payment_credit`): added positive, spent negative; the balance is their sum,
 and never goes below zero.
 
+Topping up: an invoice created with `data: { credit: true }` adds its total to the user's credit once it is paid.
+
 ## Decisions that may change
 
 - **Only the whole amount.** Credit is offered only where it covers the payment; paying part
