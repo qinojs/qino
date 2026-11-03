@@ -6,7 +6,7 @@ import { ipKey } from "./ipKey.ts";
 import type { App, Ctx } from "@qino/qino";
 
 /** A client younger than this many seconds may be a bot; at 0 it surely is. */
-const YOUNG = 20;
+const YOUNG = 17;
 /** From this score on it is spam either way: a model could only raise it, so it is not asked. */
 const SURE = 0.9;
 /** How many verdicts are kept per app, the latest. */
@@ -18,7 +18,7 @@ const QUESTION = "Is this message spam — unsolicited advertising, a scam, or j
 const verdicts = new WeakMap<App, Map<string, number>>();
 
 /** How new the sender is, 0 (old enough) to 1 (just now); falling squared, so only the really quick
- *  weigh much (5 s: 0.56, 10 s: 0.25). A signed-in user has the account's history. */
+ *  weigh much (5 s: 0.5, 10 s: 0.17). A signed-in user has the account's history. */
 async function youth(ctx: Ctx) {
   if (ctx.userId || !ctx.clientId) return 0;
   const first = await ctx.app.db.one`SELECT time FROM ${sql.id(tableRef("log"))} WHERE client_id = ${ctx.clientId} ORDER BY id ASC LIMIT 1`;

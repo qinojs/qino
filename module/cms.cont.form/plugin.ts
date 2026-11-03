@@ -112,7 +112,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 
   // Rendering the fields fills `form` with their values, so it must run before the checks below.
   const fields = await (await node.cont("main")).html();
-  const error = form.sent ? await others(node, form) : "";
+  let error = form.sent ? await others(node, form) : "";
   if (error) form.errors++;
 
   const warnings = [];
@@ -124,9 +124,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   }
 
   if (form.sent && !form.errors) {
-    // Spam is kept and marked, but not mailed; the visitor sees the same confirmation, which tells a
-    // bot nothing. Keeping comes first: a mail that does not go out must not lose the entry. It
-    // moves the uploads away, so the attachments are read before.
+    // Spam is kept and marked, but not mailed. Keeping comes first: a mail that does not go out must
+    // not lose the entry. It moves the uploads away, so the attachments are read before.
     form.spam = await spam(node, form, ctx);
     const mail = form.spam < SPAM;
     const attachments = !mail ? [] : await Promise.all(
@@ -135,13 +134,18 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
     await keepEntry(node, form);
     // the entry is kept: a failed mail must not cost the visitor the confirmation (or make them send again)
     if (mail) await send(node, form, attachments).catch((e) => console.error(`form ${node.id}: mail failed`, e));
-    const redirect = await cms.url(String(successPage ?? ""));
-    if (redirect) {
-      ctx.res.headers.set("Location", redirect);
-      ctx.res.status = 302;
-      return html.raw("<div class=u2-width></div>");
+    // A filled honeypot is a bot for sure, the confirmation tells it nothing. Anyone else may be a
+    // person, who has to know the message did not arrive.
+    if (mail || form.posted?.your_name) {
+      const redirect = await cms.url(String(successPage ?? ""));
+      if (redirect) {
+        ctx.res.headers.set("Location", redirect);
+        ctx.res.status = 302;
+        return html.raw("<div class=u2-width></div>");
+      }
+      return html.async`<div class=u2-width>${node.cont("success", "cms.cont.text")}</div>`;
     }
-    return html.async`<div class=u2-width>${node.cont("success", "cms.cont.text")}</div>`;
+    error = await t`Your message could not be sent. Please try again in a few seconds or contact us directly.`;
   }
 
   return html.async`<div class=u2-width>${warnings}
