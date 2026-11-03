@@ -48,9 +48,10 @@ test("cms.cont.login.password: render shows login form for guests", async () => 
   const ctx = await makeCtx(false);
   const node = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden"), db: { one: () => Promise.resolve(9) } },
     cms: {
       text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`),
+      node: () => ({ url: () => "/forgot" }),
     },
     settings: settings({ saveLogin: true }),
     text: () => textObj("Login failed"),
@@ -64,6 +65,7 @@ test("cms.cont.login.password: render shows login form for guests", async () => 
   assertEquals(out.includes("<input name=save_login type=checkbox value=1>"), true);
   assertEquals(out.includes("[user]"), true);
   assertEquals(out.includes("[pw]"), true);
+  assertEquals(out.includes('<a href="/forgot">'), true);
 });
 
 test("cms.cont.login.password: render redirects logged-in users when configured", async () => {
@@ -88,7 +90,7 @@ test("cms.cont.login.password: render escapes fixed users", async () => {
   const guestCtx = await makeCtx(false);
   const guestNode = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden"), db: { one: () => Promise.resolve(undefined) } },
     cms: { text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`) },
     settings: settings({ "fix user": `a"><script>alert(1)</script>` }),
     text: () => textObj(""),
@@ -97,6 +99,7 @@ test("cms.cont.login.password: render escapes fixed users", async () => {
   const login = String(await requestStorage.run(guestCtx, () => cms.node.render(guestNode as any, { ctx: guestCtx })));
   assertEquals(login.includes(`a&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;`), true);
   assertEquals(login.includes("<script>"), false);
+  assertEquals(login.includes("-forgot"), false);
 });
 
 test("cms.cont.login.password: signed-in users see no form without a redirect", async () => {

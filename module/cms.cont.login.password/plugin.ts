@@ -57,6 +57,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   // Main login form
   const fixUser = settings["fix user"]();
   const noAutofocus = settings["no autofocus"]();
+  // the way out for who forgot it, where the site offers one
+  const resetId = await node.app.db.one`SELECT id FROM page WHERE module = 'cms.cont.password_reset'`;
+  const resetUrl = resetId ? await (await node.cms.node(Number(resetId))).url() : "";
 
   return html.async`<div>
 ${errorHtml}
@@ -96,6 +99,9 @@ ${errorHtml}
     <tr class=-login>
       <th>
       <td><button name=core_login>${t`Log in`}</button>
+    ${resetUrl ? html.async`<tr class=-forgot>
+      <th>
+      <td><a href="${resetUrl}">${t`Forgot password?`}</a>` : ""}
   </table>
   </form>
 </div>`;
