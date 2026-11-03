@@ -137,3 +137,21 @@ test("close() is idempotent, so `await using` can close what a test already clos
   await db.close();                  // the sqlite handle throws ERR_INVALID_STATE without the guard
   await db[Symbol.asyncDispose]();
 });
+
+test("A transaction on a pool takes its connection after transaction:before", async () => {
+  const from = DbDriver.from, order: string[] = [];
+  const transaction = (fn: () => unknown) => (order.push("connection"), fn());
+  DbDriver.from = () => ({ dialect: "mysql", oneConnection: false, transaction }) as unknown as DbDriver;
+  try {
+    const db = new Db("mysql://x");
+    let ready!: () => void;
+    const waited = new Promise<void>((r) => ready = r);
+    db.on("transaction:before", () => waited);
+    const done = db.transaction(() => db.transaction(() => Promise.resolve()));
+    await new Promise((r) => setTimeout(r, 1));
+    assertEquals(order, []);
+    ready();
+    await done;
+    assertEquals(order, ["connection", "connection"]); // nested: joins, without waiting again
+  } finally { DbDriver.from = from; }
+});

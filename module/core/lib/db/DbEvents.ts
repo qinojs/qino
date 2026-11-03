@@ -13,6 +13,7 @@ const returnValue = s.optional(s.any().describe("Set to skip the write and retur
 
 /** Core events of a Db. */
 export const dbEvents = {
+  "transaction:before": { description: "A transaction is about to take a connection from the pool.", data: s.object({}) },
   "table:insert-before": { description: "A row is about to be inserted.", data: s.object({ table, data, returnValue }) },
   "table:insert-after": { description: "A row was inserted.", data: s.object({ table, id, data }) },
   "table:update-before": { description: "A row is about to be updated.", data: s.object({ table, id, data, returnValue }) },

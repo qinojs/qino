@@ -124,6 +124,7 @@ export class Db extends Emitter<DbEvents> {
   /** Run fn atomically; nested calls join the outer transaction. */
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
     if (this.#tx.getStore()?.hooks) return this.#driver.transaction(fn); // nested → join
+    if (!this.#driver.oneConnection) await this.fire("transaction:before"); // no pool otherwise, see `unit`
     const tx: { hooks: (() => unknown)[] | null } = { hooks: [] };
     try {
       const r = await this.#tx.run(tx, () => this.#driver.transaction(fn));

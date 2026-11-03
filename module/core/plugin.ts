@@ -220,6 +220,9 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     };
     app.db.on("table:insert-before", stampLogId("log_id"), { signal });
     app.db.on("table:update-before", stampLogId("log_id_ch"), { signal });
+    // Stamping waits for the log row, which may be queueing for a connection: wait with none in hand.
+    // Holding one meanwhile, enough such transactions would block the pool for good.
+    app.db.on("transaction:before", async () => { await requestStorage.getStore()?.logId; }, { signal });
 
     app.on("auth:login", async ({ usrId }) => {
       const ctx = getCtx();
