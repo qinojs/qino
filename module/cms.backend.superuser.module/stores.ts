@@ -32,9 +32,10 @@ const TONE: Record<string, string> = {
   link: "-link",
 };
 
-/** Icon of a module not yet imported — served by its store, so allow that origin for images. */
+/** Icon of a module not yet imported — served by its store, so allow that origin for images.
+ *  A local store serves nothing: a browser can't load its file: urls. */
 function remoteIcon(iconMod: { manifest: { files?: string[] }; modUrl: string }) {
-  if (!iconMod.manifest.files?.includes("pub/module.svg")) return;
+  if (!iconMod.manifest.files?.includes("pub/module.svg") || iconMod.modUrl.startsWith("file:")) return;
   getCtx().res.csp["img-src"][iconMod.modUrl] = true;
   return html`<img src="${iconMod.modUrl}pub/module.svg" width=20 height=20 alt="" style="display:block">`;
 }

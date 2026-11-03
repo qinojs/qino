@@ -20,7 +20,7 @@ const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md",
 
 async function mediaPreview(f: DbFile, exists: boolean) {
   if (!exists) return html`<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
-  return html`<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
+  return html`<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" loading=lazy alt="">`;
 }
 
 async function mediaView(f: DbFile) {
