@@ -11,34 +11,28 @@ const nodeId = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // tree node or null (skip icon/anchor)
 const root = cms.panelRoot;
+const registry = root.customElementRegistry;
+const newNode = () => document.createElement("u2-tree", { customElementRegistry: registry });
 const ready = Promise.all([
-  import("@qino/u2/el/tree/tree.js"),
+  registry.whenDefined("u2-tree"), // enhance() loads it once the root node is in the panel
   root.host.addStyle("cms.frontend/pub/panel/tree.css"),
 ]);
 
 export async function cmsTreeInit(json) {
-  await ready;
-
-  if (!root.querySelector("link[data-u2tree]")) {
-    const u2css = Object.assign(document.createElement("link"), { rel: "stylesheet", href: import.meta.resolve("@qino/u2/el/tree/tree.css") });
-    u2css.dataset.u2tree = "";
-    root.append(u2css); // u2 base CSS; the CMS look comes from tree.css (panelStyles)
-  }
-
   const treeEl = root.getElementById("tree");
-  treeEl.replaceChildren();
-
   let activeNode = null;
 
   // Hidden root: shared selection scope and holder of all (delegated) listeners. Re-init replaces
   // it with its listeners, so they don't pile up.
-  const rootNode = document.createElement("u2-tree");
+  const rootNode = newNode();
   rootNode.classList.add("-root");
-  rootNode.setAttribute("aria-expanded", "true");
+  treeEl.replaceChildren(rootNode);
+  await ready;
+  rootNode.setAttribute("aria-expanded", "true"); // only now: u2-tree drops it while it has no children
 
   // CMS JSON -> <u2-tree>; CMS fields in node.data, `type` -> `ptype`.
   function makeNode(n) {
-    const el = document.createElement("u2-tree");
+    const el = newNode();
     el.data = { ...n, id: String(n.id), ptype: n.type };
     el.dataset.id = String(n.id);
     if (n.myaccess >= 2) el.draggable = true;
@@ -219,7 +213,6 @@ export async function cmsTreeInit(json) {
     goTo,
   };
   for (const n of json) rootNode.append(makeNode(n));
-  treeEl.append(rootNode);
   activate(cms.Tree.getNodeById(String(cms.cont.active || nodeId)));
 }
 

@@ -288,4 +288,4 @@ api.on('PATCH cms/node/:id', ({ params: { id } }) => {
   cms.reloadNode(id);
 });
 
-if (!globalThis.CSS?.supports('selector(&)')) import('../js/browserCheck.js');
+if (!('customElementRegistry' in ShadowRoot.prototype)) import('../js/browserCheck.js');
