@@ -1,6 +1,6 @@
 import { test } from "node:test";
-import { App, fs, unixTime } from "@qino/qino";
-import { cms } from "@qino/qino/cms";
+import { App, fs, getCtx, runAs, unixTime } from "@qino/qino";
+import { cms, cmsCtx } from "@qino/qino/cms";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 test("blog lists published posts and serves escaped Atom and RSS feeds", async () => {
@@ -105,6 +105,40 @@ test("blog archive pages only load their visible posts", async () => {
     assertStringIncludes(second, `<link rel="canonical" href="${url}?cms_blog_page=2">`);
     const deUrl = "https://qino.test/" + await page.urlSeo("de");
     assertStringIncludes(second, `href="${deUrl}?cms_blog_page=2" rel="alternate" hreflang="de"`);
+  } finally {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await app.db.close();
+    await fs.remove(dir, { recursive: true });
+  }
+});
+
+test("editors create posts as drafts and see what is missing", async () => {
+  const dir = await fs.tempDir() + "/";
+  const app = new App({ db: "sqlite::memory:", dir });
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.blog").add("cms.cont.blog.post").add("cms.layout.standard.2");
+  await app.init();
+  await app.settings.core.url("https://qino.test/");
+  try {
+    const page = await (await cms(app).node(1)).createChild({ access: 1, searchable: true });
+    await page.title("en", "Blog");
+    const blog = await page.cont("main", "cms.cont.blog");
+    const admin = Number(await app.db.table("usr").insert({ username: "admin@example.test", active: 1, superuser: 1 }));
+    const asEditor = (fn: () => Promise<unknown>) => runAs(app, admin, "test", () => {
+      cmsCtx(getCtx()).editmode = 1;
+      return fn();
+    });
+
+    await asEditor(() => blog.html({ create: "1", title: "Fresh idea" }));
+    const [post] = (await page.children({ type: "p" })).values();
+    assertEquals(await post.title("en"), "Fresh idea");
+    assertEquals(post.vs.access, 0);
+    assertEquals((await (await post.cont("main")).conts())[0]?.vs.module, "cms.cont.blog.post");
+
+    const list = String(await asEditor(() => blog.html()));
+    assertStringIncludes(list, "Fresh idea</a> <small>Draft</small>");
+    assertStringIncludes(list, "No description");
+    assertStringIncludes(list, 'name=create');
+    assert(!(await (await app.fetch(new Request("https://qino.test/" + await page.urlSeo("en")))).text()).includes("Fresh idea"));
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();

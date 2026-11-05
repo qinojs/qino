@@ -8,6 +8,7 @@ export class ResHtml {
   title = "";
   titlePrefix = "";
   titleSuffix = "";
+  /** Keyed by name; `og:*`, `article:*` etc. render as `property`. */
   meta: Record<string, string> = { viewport: "width=device-width" };
   link: Record<string, Record<string, string>> = {};
   styles: Set<string> = new Set();
@@ -43,7 +44,11 @@ export class ResHtml {
     const hasScripts = this.scripts.size || this.legacyScripts.size || this.inlineScripts.size;
     let ret = '<meta charset=utf-8>\n';
 
-    for (const [name, value] of Object.entries(this.meta)) if (value) ret += `<meta name="${hee(name)}" content="${hee(value)}">\n`;
+    // Open Graph keys are RDFa properties, the rest (twitter:* too) are plain names
+    for (const [key, value] of Object.entries(this.meta)) {
+      const attr = /^(og|article|book|profile|music|video|fb):/.test(key) ? "property" : "name";
+      if (value) ret += `<meta ${attr}="${hee(key)}" content="${hee(value)}">\n`;
+    }
 
     ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 

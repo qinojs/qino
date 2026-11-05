@@ -8,6 +8,7 @@ test("blog post creates a moderated comment form only for an editor", async () =
   const app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.blog.post").add("cms.layout.standard.2");
   await app.init();
+  app.languages.setLangs(["en", "de", "fr"]);
   try {
     await app.settings.core.url("https://qino.test/");
     const root = await cms(app).node(1);
@@ -38,6 +39,8 @@ test("blog post creates a moderated comment form only for an editor", async () =
     assertEquals(entries.settings.moderated(), true);
     assertEquals(JSON.parse(String(form.vs.settings)).listing_nodes[entries.id], true);
     assertEquals(entries.settings.show_fields(), "name,comment");
+    assertEquals(await (await form.text("button_submit", "de")).get(), "Kommentar absenden");
+    assertEquals(await (await form.text("button_submit", "fr")).get(), "Post comment", "every language gets a text");
     await runAs(app, admin, "test", async () => {
       cmsCtx(getCtx()).editmode = 1;
       await post.html();

@@ -1,3 +1,2 @@
-:where([qcms-mod="cont.blog"]) { padding-block:3rem; }
 :where([qcms-mod="cont.blog"] article) { margin-block-start:2rem; }
 :where([qcms-mod="cont.blog"] time) { display:block; margin-block-start:.5rem; }

@@ -1,14 +1,14 @@
 # Newsletter signup
 
-Each node selects one `grp` ID in `grp_id` and its exact name in `group_label`. A group is eligible only if its name matches, its `grp.type` is
-`newsletter` and its ID appears in the app setting `cms.cont.newsletter.allowed_groups` (comma-separated
-IDs). The app setting defaults to empty, so subscriptions are disabled until a site owner explicitly
-allows groups. Multiple newsletters use separate groups and separate newsletter nodes.
+Each node signs up to one `grp` of type `newsletter`: the one in its `grp_id`, or, without one, the only
+newsletter group there is. Only groups of that type can be joined, so a node can never add anyone to
+another group. Multiple newsletters use separate groups and separate newsletter nodes. The node's own
+title is its heading, edited on the page; left empty, there is none.
 
 The visitor submits only an email address. A single-use confirmation ticket binds the normalized
 address, node and group. Opening the link does not redeem it; the visitor must press Confirm.
-Membership is written to `usr_grp` only after confirmation, with the group's eligibility and node
-binding checked again. Existing verified contacts keep their user account. A new address gets an
+Membership is written to `usr_grp` only after confirmation, with the node's group checked again.
+Existing verified contacts keep their user account. A new address gets an
 inactive, passwordless user with one verified `usr_contact`; it cannot sign in through this form.
 Sending a newsletter with `messaging.email.send(app, { grp: id }, ...)` then uses the existing
 group-specific unsubscribe link. Changing the node's group invalidates its outstanding tickets.

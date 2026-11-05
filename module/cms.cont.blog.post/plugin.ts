@@ -6,25 +6,24 @@ import type { Node } from "@qino/qino/cms";
 async function init(node: Node) {
   if (node.settings.__inited() || !await node.edit()) return;
   node.settings.__inited(true);
+  const { app } = node, t = app.t;
   const page = await node.page();
-  for (const lang of node.app.languages.all) {
-    const title = await page.title(lang);
-    if (title) await node.title(lang, title);
-  }
   const form = await node.cont("comments", "cms.cont.form");
   form.settings.__inited(true);
-  await form.text("button_submit", "en", "Post comment");
-  await form.text("button_submit", "de", "Kommentar absenden");
   const fields = await form.cont("main", "cms.cont.form.fields");
-  for (const [name, type, autocomplete] of [["name", "text", "name"], ["email", "email", "email"], ["comment", "textarea", ""]]) {
+  for (const [name, type, autocomplete] of [["name", "text", "name"], ["email", "email", "email"], ["comment", "textarea", ""]])
     await fields.settings.fields[name]({ type, required: true, ...(autocomplete && { autocomplete }) });
-    await fields.text(name + "_title", "en", name === "comment" ? "Comment" : name[0].toUpperCase() + name.slice(1));
-    await fields.text(name + "_title", "de", name === "comment" ? "Kommentar" : name === "name" ? "Name" : "E-Mail");
-  }
   await fields.settings.field_order("name,email,comment");
   const success = await form.cont("success", "cms.cont.text");
-  await success.text("main", "en", "<p>Thank you. Your comment will appear after review.</p>");
-  await success.text("main", "de", "<p>Vielen Dank. Ihr Kommentar erscheint nach der Freigabe.</p>");
+  for (const lang of app.languages.all) await app.languages.with({ ns: "cms.cont.blog.post", lang }, async () => {
+    const title = await page.title(lang);
+    if (title) await node.title(lang, title);
+    await form.text("button_submit", lang, await t`Post comment`);
+    await fields.text("name_title", lang, await t`Name`);
+    await fields.text("email_title", lang, await t`Email`);
+    await fields.text("comment_title", lang, await t`Comment`);
+    await success.text("main", lang, `<p>${hee(await t`Thank you. Your comment will appear after review.`)}</p>`);
+  });
   const entries = await node.cont("entries", "cms.cont.form.entries");
   await entries.settings({ form: form.id, moderated: true, show_fields: "name,comment" });
   await form.settings.listing_nodes({ [entries.id]: true });
@@ -35,10 +34,11 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   const page = await node.page();
   const title = (await page.showTitle()).plain();
   const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
-  const description = ctx.res.html.meta.description;
-  ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}"><meta property="og:type" content="article"><meta property="og:title" content="${hee(title)}"><meta property="og:url" content="${hee(canonical)}">${description ? `<meta property="og:description" content="${hee(description)}">` : ""}\n`;
+  ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
-  if (published) ctx.res.html.head += `<meta property="article:published_time" content="${new Date(published * 1000).toISOString()}">\n`;
+  Object.assign(ctx.res.html.meta, { "og:type": "article", "og:title": title, "og:url": canonical,
+    "og:description": ctx.res.html.meta.description,
+    "article:published_time": published ? new Date(published * 1000).toISOString() : "" });
 
   const children = await node.conts();
   const form = children.find((child) => child.vs.name === "comments");

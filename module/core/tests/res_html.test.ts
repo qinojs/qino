@@ -9,6 +9,8 @@ test("ResHtml: render renders escaped metadata and assets in head", () => {
   html.titleSuffix = " & Suf";
   html.meta.description = `A "quote" & more`;
   html.meta.empty = "";
+  html.meta["og:type"] = "article";
+  html.meta["twitter:card"] = "summary";
   html.link["/feed.xml?x=1&y=2"] = { rel: "alternate", title: `"Feed"` };
   html.styles.add("/style.css?x=1&y=2");
   html.legacyScripts.add("/main.js?x=1&y=2");
@@ -26,6 +28,8 @@ test("ResHtml: render renders escaped metadata and assets in head", () => {
   assertEquals(out.includes('<script type=application/json id=qino-data>{"hello":"\\u003cworld>"}</script>'), true);
   assertEquals(out.includes('<meta name="description" content="A &quot;quote&quot; &amp; more">'), true);
   assertEquals(out.includes("name=empty"), false);
+  assertEquals(out.includes('<meta property="og:type" content="article">'), true);
+  assertEquals(out.includes('<meta name="twitter:card" content="summary">'), true);
   assertEquals(out.includes('<title>Pre &lt;Title&gt; &amp; Suf</title>'), true);
   assertEquals(out.includes('<script src="/main.js?x=1&amp;y=2"></script>'), true);
   assertEquals(out.includes('<script type=module src="/module.mjs?x=1&amp;y=2"></script>'), true);

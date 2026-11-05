@@ -26,7 +26,8 @@ async function posts(node: Node, publicOnly: boolean, { offset = 0, limit = LIMI
     const title = (await child.showTitle()).plain();
     if (!title) continue;
     if (skipped++ < offset) continue;
-    out.push({ node: child, title, created });
+    const draft = !publicOnly && !(await child.isPublic() && await child.isOnline() && child.vs.searchable);
+    out.push({ node: child, title, created, draft });
     if (out.length >= limit) break;
   }
   return out;
@@ -39,13 +40,23 @@ function feedUrl(node: Node, canonical: string, format: "atom" | "rss") {
   return url.href;
 }
 
+/** A new post: a private child page with a post block, opened right away. */
+async function create(page: Node, title: string, ctx: Ctx) {
+  const post = await page.createChild({ access: 0 });
+  await post.title(ctx.lang, title);
+  await (await post.cont("main", "cms.cont.flexible")).createCont({ module: "cms.cont.blog.post" });
+  ctx.res.status = 303;
+  ctx.res.headers.set("Location", await post.url());
+}
+
 function pageUrl(canonical: string, page: number) {
   const url = new URL(canonical);
   if (page > 1) url.searchParams.set("cms_blog_page", String(page));
   return url.href;
 }
 
-async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
+async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
+  const t = node.app.t;
   const page = await node.page();
   const title = (await page.showTitle()).plain();
   const base = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
@@ -59,34 +70,40 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
       ctx.res.html.link[pageUrl(url, pageNo)] = attrs;
     }
   }
-  const description = ctx.res.html.meta.description;
   const atom = feedUrl(node, base, "atom"), rss = feedUrl(node, base, "rss");
   ctx.res.html.link[atom] = { rel: "alternate", type: "application/atom+xml", title };
   ctx.res.html.link[rss] = { rel: "alternate", type: "application/rss+xml", title };
-  ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}"><meta property="og:type" content="website"><meta property="og:title" content="${hee(title)}"><meta property="og:url" content="${hee(canonical)}">${description ? `<meta property="og:description" content="${hee(description)}">` : ""}\n`;
+  ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
+  Object.assign(ctx.res.html.meta, { "og:type": "website", "og:title": title, "og:url": canonical,
+    "og:description": ctx.res.html.meta.description });
 
   const edit = await node.edit();
+  const newTitle = String(vars.title ?? "").trim();
+  if (edit && vars.create && newTitle) await create(page, newTitle, ctx);
   const heading = edit || (await node.showTitle()).plain() ? node.cms.text(node, "title", { tag: "h1" }) : "";
   const items = [];
   const found = await posts(node, !edit, { offset: (pageNo - 1) * LIMIT, limit: LIMIT + 1 });
   for (const post of found.slice(0, LIMIT)) {
     const excerpt = await descriptionOf(post.node);
     const url = await post.node.url();
-    items.push(html`<article>
-      <h2><a href="${url}">${post.title}</a></h2>
+    items.push(html.async`<article>
+      <h2><a href="${url}">${post.title}</a>${post.draft ? html.async` <small>${t`Draft`}</small>` : ""}</h2>
       ${post.created ? html`<time datetime="${new Date(post.created * 1000).toISOString()}">${new Date(post.created * 1000).toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
-      ${excerpt ? html`<p>${excerpt}</p>` : ""}
+      ${excerpt ? html`<p>${excerpt}</p>` : edit ? html.async`<p><small>${t`No description`}</small></p>` : ""}
     </article>`);
   }
-  return html.async`<div class=u2-width>${heading}${items}
-    ${pageNo > 1 || found.length > LIMIT ? html.async`<nav aria-label="${node.app.t`Blog pages`}">
-      ${pageNo > 1 ? html.async`<a href="${pageUrl(base, pageNo - 1)}" rel=prev>${node.app.t`Newer posts`}</a>` : ""}
-      ${found.length > LIMIT ? html.async`<a href="${pageUrl(base, pageNo + 1)}" rel=next>${node.app.t`Older posts`}</a>` : ""}
+  const form = edit ? html.async`<form method=post>${node.cms.formFields(node)}
+    <input name=title required aria-label="${t`Title`}" placeholder="${t`Title`}"> <button name=create value=1>${t`New post`}</button>
+  </form>` : "";
+  return html.async`<div class=u2-width>${heading}${form}${items}
+    ${pageNo > 1 || found.length > LIMIT ? html.async`<nav aria-label="${t`Blog pages`}">
+      ${pageNo > 1 ? html.async`<a href="${pageUrl(base, pageNo - 1)}" rel=prev>${t`Newer posts`}</a>` : ""}
+      ${found.length > LIMIT ? html.async`<a href="${pageUrl(base, pageNo + 1)}" rel=next>${t`Older posts`}</a>` : ""}
     </nav>` : ""}
   </div>`;
 }
 
-function render(node: Node, args: { ctx: Ctx }) {
+function render(node: Node, args: { ctx: Ctx; vars: Record<string, unknown> }) {
   return node.app.languages.with({ ns: "cms.cont.blog" }, () => renderContent(node, args));
 }
 
