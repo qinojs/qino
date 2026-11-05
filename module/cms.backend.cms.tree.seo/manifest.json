@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.cms.tree.seo",
+  "description": "Compares title, description and share values of all pages in the CMS tree.",
+  "dependencies": ["cms.backend", "cms.backend.cms.tree", "cms.seo"],
+  "files": ["locale/de.json", "manifest.json", "plugin.ts", "pub/main.css", "pub/main.js", "pub/module.svg"]
+}

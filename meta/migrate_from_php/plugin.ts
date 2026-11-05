@@ -15,6 +15,7 @@ import type { App } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await unparkText(app.db); // the texts parked by migrate(), before anything reads them
+  await app.db.exec`UPDATE page_text SET name = ${"_description"} WHERE name = ${"_meta_description"}`;
   await dropLegacyColumns(app);
   await removeObsoleteSettings(app);
   const moved = await migrateAppSettings(app);

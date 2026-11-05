@@ -50,8 +50,7 @@ export async function render(ctx: Ctx): Promise<void> {
   const pageObj = await mainNode.page();
   const plain = async (name: string) => (await pageObj.showText(name)).plain();
   ctx.res.html.title = await plain("_title") || (await pageObj.showTitle()).plain();
-  ctx.res.html.meta.description = await plain("_meta_description");
-  ctx.res.html.meta.keywords    = await plain("_meta_keywords");
+  ctx.res.html.meta.description = await plain("_description");
 
   if (!pageObj.vs.searchable) ctx.res.html.meta.robots = "noindex, nofollow";
 

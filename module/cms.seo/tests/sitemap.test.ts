@@ -3,10 +3,10 @@ import { App, fs } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-test("cms adds public, searchable pages to the seo sitemap", async () => {
+test("cms.seo adds public, searchable pages to the sitemap", async () => {
   const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir, appUrl: "/site/" });
-  app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("seo");
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms.seo");
   await app.init();
   app.languages.setLangs(["en", "de"]);
   try {

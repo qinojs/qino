@@ -9,7 +9,6 @@ import { cmsCtx } from "./lib/CmsContext.ts";
 import { render } from "./lib/render.ts";
 
 import type { App, DbFile } from "@qino/qino";
-import type { Node } from "./lib/Node.ts";
 
 export { api } from "./api.ts";
 
@@ -126,28 +125,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         if (String(e.table) !== "file" || !("md5" in (e.data ?? {}))) return;
         for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${Number(e.id)}`)
             (await cms(app).node(Number(vs.page_id))).clearFileCache();
-    }, { signal });
-
-    // Public pages for the seo module; non-public or offline subtrees are skipped.
-    // lastmod: latest change of the page or its contents. image: the page file "main".
-    app.on("seo:sitemap", async ({ ctx, base, urls }) => {
-        const changed = new Map<number, number>();
-        for (const row of await app.db.query`SELECT nc.page_id, MAX(l.time) AS time FROM node_changed nc JOIN log l ON l.id = nc.log_id GROUP BY nc.page_id`)
-            changed.set(Number(row.page_id), Number(row.time));
-        const walk = async (node: Node) => {
-            for (const page of (await node.children({ type: "p" })).values()) {
-                if (!await page.isPublic() || !await page.isOnline()) continue;
-                if (page.vs.searchable) {
-                    const url: Record<string, string> = {};
-                    for (const lang of app.languages.all) url[lang] = base + await page.urlSeo(lang);
-                    const main = await page.hasFile("main");
-                    const image = main?.mime.startsWith("image/") ? ctx.req.url.origin + await main.url() : undefined;
-                    urls.push({ url, lastmod: changed.get(page.id), image });
-                }
-                await walk(page);
-            }
-        };
-        await walk(await cms(app).node(1));
     }, { signal });
 
     // File access check

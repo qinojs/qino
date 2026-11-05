@@ -36,9 +36,6 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
-  Object.assign(ctx.res.html.meta, { "og:type": "article", "og:title": title, "og:url": canonical,
-    "og:description": ctx.res.html.meta.description,
-    "article:published_time": published ? new Date(published * 1000).toISOString() : "" });
 
   const children = await node.conts();
   const form = children.find((child) => child.vs.name === "comments");

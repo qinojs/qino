@@ -7,8 +7,8 @@ import type { Node } from "@qino/qino/cms";
 const LIMIT = 20;
 
 async function descriptionOf(node: Node) {
-  return (await node.texts()).has("_meta_description")
-    ? (await node.showText("_meta_description")).plain() : "";
+  return (await node.texts()).has("_description")
+    ? (await node.showText("_description")).plain() : "";
 }
 
 async function posts(node: Node, publicOnly: boolean, { offset = 0, limit = LIMIT, dated = false } = {}) {
@@ -74,8 +74,6 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
   ctx.res.html.link[atom] = { rel: "alternate", type: "application/atom+xml", title };
   ctx.res.html.link[rss] = { rel: "alternate", type: "application/rss+xml", title };
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
-  Object.assign(ctx.res.html.meta, { "og:type": "website", "og:title": title, "og:url": canonical,
-    "og:description": ctx.res.html.meta.description });
 
   const edit = await node.edit();
   const newTitle = String(vars.title ?? "").trim();

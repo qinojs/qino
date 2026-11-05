@@ -19,8 +19,8 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
     const live = await page.createChild({ access: 1, searchable: true, online_start: 1726560000 });
     await live.title("en", "Coffee < tea");
     await live.title("de", "Kaffee < Tee");
-    await live.text("_meta_description", "en", "A short & useful post");
-    await live.text("_meta_description", "de", "Ein kurzer & nützlicher Beitrag");
+    await live.text("_description", "en", "A short & useful post");
+    await live.text("_description", "de", "Ein kurzer & nützlicher Beitrag");
     const brief = await page.createChild({ access: 1, searchable: true, online_start: 1726473600 });
     await brief.title("en", "Without an excerpt");
     const hidden = await page.createChild({ access: 0, searchable: true, online_start: 1726646400 });
@@ -38,10 +38,9 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
     assert(!/<h2><a[^>]*>Scheduled draft<\/a>/.test(document));
     assertStringIncludes(document, "application/atom+xml");
     assertStringIncludes(document, "application/rss+xml");
-    assertStringIncludes(document, 'property="og:type" content="website"');
     assertStringIncludes(document, `<link href="${url}" rel="alternate" hreflang="en">`);
     assertStringIncludes(document, `<link rel="canonical" href="${url}">`);
-    assertEquals(await app.db.one`SELECT text_id FROM page_text WHERE page_id = ${brief.id} AND name = '_meta_description'`, undefined);
+    assertEquals(await app.db.one`SELECT text_id FROM page_text WHERE page_id = ${brief.id} AND name = '_description'`, undefined);
     await blog.title("en", "Notes & <em>more</em>");
     assertStringIncludes(await (await app.fetch(new Request(url))).text(), "Notes &amp; <em>more</em></h1>");
 

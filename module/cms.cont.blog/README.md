@@ -3,7 +3,7 @@
 Put this block on a blog page. Its own title is its heading, edited on the page; left empty, there
 is none. Its direct child pages are posts, newest first. Each post uses a
 normal CMS page and can contain `cms.cont.blog.post` in its main container. Set the page's
-`_meta_description` for the excerpt. The publication start is the post date (new CMS pages have it
+`_description` for the excerpt. The publication start is the post date (new CMS pages have it
 by default). Offline, private and non-searchable pages stay out of the public list and feeds.
 Editors can see drafts in the list.
 The archive shows 20 posts per page and links to older and newer pages.

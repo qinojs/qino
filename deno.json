@@ -45,6 +45,7 @@
     "./cms.cont.ts": "./module/cms.cont.ts/mod.ts",
     "./cms.image": "./module/cms.image/mod.ts",
     "./cms.legacy": "./cms-legacy/mod.ts",
+    "./cms.seo": "./module/cms.seo/mod.ts",
     "./cms.templateParser": "./module/cms.templateParser/mod.ts",
     "./cms.text": "./module/cms.text/mod.ts",
     "./cms.versions": "./module/cms.versions/mod.ts",
