@@ -1,0 +1,6 @@
+/* Match the form module's honeypot: invisible to people, fillable by bots. */
+[qcms-mod="cont.newsletter"] input[name=your_name] { display:none !important; }
+
+:where([qcms-mod="cont.newsletter"] form) { display:flex; flex-wrap:wrap; align-items:end; gap:1rem; }
+:where([qcms-mod="cont.newsletter"] label) { flex:1 1 16rem; }
+:where([qcms-mod="cont.newsletter"] label input) { display:block; inline-size:100%; }

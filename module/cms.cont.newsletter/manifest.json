@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.newsletter",
+  "description": "Newsletter signup with confirmed email and restricted group membership.",
+  "dependencies": ["cms", "messaging.email", "ticket"],
+  "files": ["README.md", "locale/de.json", "manifest.json", "plugin.ts", "pub/main.css", "pub/module.svg"]
+}

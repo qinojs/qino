@@ -1,0 +1,12 @@
+{
+  "Confirm your newsletter subscription": "Newsletter-Anmeldung bestätigen",
+  "Open this link and confirm your newsletter subscription: {0}\n\nThe link is valid for 24 hours. If you did not request this, ignore this email.": "Öffne diesen Link und bestätige deine Newsletter-Anmeldung: {0}\n\nDer Link ist 24 Stunden gültig. Falls du dich nicht angemeldet hast, ignoriere diese E-Mail.",
+  "Your newsletter subscription is confirmed.": "Deine Newsletter-Anmeldung ist bestätigt.",
+  "This link is no longer valid.": "Dieser Link ist nicht mehr gültig.",
+  "Confirm newsletter subscription": "Newsletter-Anmeldung bestätigen",
+  "Configure a newsletter group and email delivery.": "Newsletter-Gruppe und E-Mail-Versand konfigurieren.",
+  "Newsletter signup is currently unavailable.": "Die Newsletter-Anmeldung ist derzeit nicht verfügbar.",
+  "If this address can be subscribed, a confirmation link is on its way.": "Falls diese Adresse angemeldet werden kann, ist ein Bestätigungslink unterwegs.",
+  "Email address": "E-Mail-Adresse",
+  "Subscribe to newsletter": "Newsletter abonnieren"
+}

@@ -1,0 +1,2 @@
+:where([qcms-mod="cont.blog.post"]) { padding-block:3rem; }
+:where([qcms-mod="cont.blog.post"] section) { margin-block-start:3rem; }
