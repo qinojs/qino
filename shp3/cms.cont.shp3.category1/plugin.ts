@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { ensureProduct, shp3 } from "@qino/qino/shp3";
 
-import type { HtmlString, Ctx } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -23,10 +23,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const withQuantity = await node.settings.quantity() !== false;
   const width = Number(await node.settings.width()) || 300;
 
-  const items: Promise<HtmlString>[] = [];
-  for (const child of products.values()) {
+  const items = [...products.values()].map(async (child) => {
     const product = await ensureProduct(child);
-    if (!product) continue;
+    if (!product) return "";
     // The regular price is the one before any time-limited offer — same amount, no moment.
     const [prices, regular] = await Promise.all([
       product.pricesFor({ currency, quantity: 1 }),
@@ -34,13 +33,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     ]);
     const cheaper = prices.gross < regular.gross;
 
-    items.push(html.async`<div class=-item itemid=${child.id}>
+    return html.async`<div class=-item itemid=${child.id}>
       <a href="${child.url()}" class=-info>
         ${image(child, width)}
         <h2 class=-title>${child.title(ctx.lang)}</h2>
         <div class=-price>
-          <span class=${cheaper ? "-offer" : "-normal"}>${currency ? currency.show(prices.gross) : prices.gross}</span>
-          ${cheaper ? html`<s class=-regular>${currency ? currency.show(regular.gross) : regular.gross}</s>` : ""}
+          <span class=${cheaper ? "-offer" : "-normal"}>${currency?.show(prices.gross) ?? prices.gross}</span>
+          ${cheaper ? html`<s class=-regular>${currency?.show(regular.gross) ?? regular.gross}</s>` : ""}
         </div>
       </a>
       <form shp3-add class=-buy>
@@ -48,8 +47,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         ${withQuantity ? html`<input type=number name=quantity min=1 step=1 value=1>` : ""}
         <button>${t`Add to cart`}</button>
       </form>
-    </div>`);
-  }
+    </div>`;
+  });
 
   return html.async`<div class=-items>${items}</div>`;
 }
