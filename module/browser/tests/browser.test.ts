@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { test } from "node:test";
-import { App, fs, runAs, sys } from "@qino/qino";
+import { ApiError, App, fs, runAs, sys } from "@qino/qino";
 import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { Playwright } from "../lib/playwright.ts";
@@ -113,6 +113,10 @@ test("browser: the api opens pages for their user only, and to http(s) only", { 
   await assertRejects(() => as(8, (b) => b.snapshot.get(undefined, { id })), Error, `No page ${id}`);
   assertEquals((await as(7, (b) => b.snapshot.get(undefined, { id }))).id, id);
   assertEquals(await as(7, (b) => b.console.get(undefined, { id })), []);
+  // what the browser says goes to the caller, a model too: an ApiError, not a "Tool failed"
+  const tunnel = `https://127.0.0.1:${port}/`; // the proxy lets no own address through
+  const failed = await assertRejects(() => as(7, (b) => b.goto.post({ id, url: tunnel })), ApiError);
+  assertEquals([failed.status, /ERR_TUNNEL_CONNECTION_FAILED/.test(failed.message)], [409, true]);
   assertEquals(await as(7, (b) => b.close.post({ id })), { closed: id });
   await assertRejects(() => as(7, (b) => b.snapshot.get(undefined, { id })), Error, `No page ${id}`);
   stop.abort();

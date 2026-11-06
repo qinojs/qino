@@ -40,9 +40,7 @@ export class Puppeteer {
     // <-loopback>: Chromium would go to localhost directly
     const via = proxy ? { proxyServer: proxy, proxyBypassList: ["<-loopback>"] } : {};
     const context = await this.#browser.createBrowserContext({ downloadBehavior: { policy: "deny" }, ...via });
-    const page = new PuppeteerPage(context);
-    page.opened(await context.newPage());
-    return page;
+    return PuppeteerPage.of(context);
   }
 
   on(event: "disconnected", fn: () => void): void {
@@ -55,8 +53,7 @@ export class Puppeteer {
 
 class PuppeteerPage extends Page {
   #context: any;
-  #tab: any; // where it acts
-  #known = new WeakSet();
+  #known = new WeakSet(); // tabs heard: the first one comes as a target too
   #refs = new Map<string, any>(); // the elements of the last snapshot
   #timeout?: number;
 
@@ -66,60 +63,32 @@ class PuppeteerPage extends Page {
     context.on("targetcreated", async (target: any) => target.type() === "page" && this.opened(await target.page()));
   }
 
-  /** A tab of the context: from now on it acts there. */
-  opened(tab: any) {
+  /** The page of `context`, with its first tab. */
+  static async of(context: any): Promise<PuppeteerPage> {
+    const page = new PuppeteerPage(context);
+    page.opened(await context.newPage());
+    return page;
+  }
+
+  /** Puppeteer has the timeout and the requests per tab. */
+  protected override opened(tab: any) {
     if (!tab || this.#known.has(tab)) return;
     this.#known.add(tab);
-    this.#tab = tab;
+    super.opened(tab);
     if (this.#timeout) tab.setDefaultTimeout(this.#timeout);
     const request = (req: any) => ({ method: req.method(), url: req.url(), type: req.resourceType().toLowerCase() });
-    tab.on("console", (msg: any) => this.logged(msg.type(), msg.text()));
-    tab.on("pageerror", (e: Error) => this.logged("error", errMsg(e)));
-    tab.on("dialog", (d: any) => this.dialog(d.message(), (accept, text) => accept ? d.accept(text) : d.dismiss()));
     tab.on("requestfinished", (req: any) => this.requested({ ...request(req), status: req.response()?.status() }));
     tab.on("requestfailed", (req: any) => this.requested({ ...request(req), error: req.failure()?.errorText }));
-    tab.on("close", async () => {
-      const left = await this.#context.pages().catch(() => []);
-      if (this.#tab === tab) this.#tab = left.at(-1);
-      if (!left.length) this.close();
-    });
   }
 
-  async #element(ref: string) {
-    const handle = await this.#refs.get(ref)?.elementHandle();
-    if (!handle) throw new NotFoundError(`No element ${ref}: take a new snapshot`);
-    return handle;
-  }
-
-  url(): string {
-    return this.#tab.url();
-  }
-  title(): Promise<string> {
-    return this.#tab.title();
-  }
-  goto(url: string): Promise<{ status(): number } | null> {
-    return this.#tab.goto(url);
-  }
-  goBack(): Promise<unknown> {
-    return this.#tab.goBack();
-  }
-  setContent(html: string): Promise<void> {
-    return this.#tab.setContent(html);
-  }
-  evaluate<T>(fn: string | ((...args: any[]) => T), ...args: unknown[]): Promise<T> {
-    return this.#tab.evaluate(fn, ...args);
-  }
   setDefaultTimeout(ms: number): void {
     this.#timeout = ms;
-    this.#tab.setDefaultTimeout(ms);
+    this.current.setDefaultTimeout(ms);
   }
   async waitForLoadState(): Promise<void> {
-    await this.#tab.waitForNetworkIdle({ idleTime: 100, timeout: 5_000 }).catch(() => {});
+    await this.current.waitForNetworkIdle({ idleTime: 100, timeout: 5_000 }).catch(() => {});
   }
-  pdf(options?: object): Promise<Uint8Array<ArrayBuffer>> {
-    return this.#tab.pdf(options);
-  }
-
+  /** Built from Puppeteer's accessibility tree, as Playwright's looks. */
   async snapshot(): Promise<string> {
     const refs = this.#refs = new Map(), lines: string[] = [];
     const walk = (node: any, depth: number) => {
@@ -136,50 +105,35 @@ class PuppeteerPage extends Page {
       lines.push(`${"  ".repeat(depth)}- ${words.filter(Boolean).join(" ")}`);
       for (const child of node.children ?? []) walk(child, depth + 1);
     };
-    const root = await this.#tab.accessibility.snapshot({ includeIframes: true });
+    const root = await this.current.accessibility.snapshot({ includeIframes: true });
     for (const child of root?.children ?? []) walk(child, 0);
     return lines.join("\n");
   }
   async click(ref: string): Promise<void> {
-    await (await this.#element(ref)).asLocator().click();
+    await (await this.element(ref)).asLocator().click();
   }
   async fill(ref: string, text: string): Promise<void> {
-    await (await this.#element(ref)).asLocator().fill(text);
+    await (await this.element(ref)).asLocator().fill(text);
   }
   async selectOption(ref: string, values: string[]): Promise<void> {
-    await (await this.#element(ref)).select(...values);
+    await (await this.element(ref)).select(...values);
   }
   async hover(ref: string): Promise<void> {
-    await (await this.#element(ref)).asLocator().hover();
+    await (await this.element(ref)).asLocator().hover();
   }
-  async tabs(): Promise<{ url: string; title: string }[]> {
-    const tabs = await this.#context.pages();
-    return Promise.all(tabs.map(async (tab: any) => ({ url: tab.url(), title: await tab.title() })));
+
+  protected pages(): Promise<any[]> {
+    return this.#context.pages();
   }
-  async tab(index: number): Promise<void> {
-    const tab = (await this.#context.pages())[index];
-    if (!tab) throw new NotFoundError(`No tab ${index}`);
-    this.#tab = tab;
-    await tab.bringToFront();
+  protected async element(ref: string): Promise<any> {
+    const handle = await this.#refs.get(ref)?.elementHandle();
+    if (!handle) throw new NotFoundError(`No element ${ref}: take a new snapshot`);
+    return handle;
   }
-  protected press(key: string): Promise<void> {
-    return this.#tab.keyboard.press(key);
+  protected session(): Promise<any> {
+    return this.current.createCDPSession();
   }
   protected end(): Promise<void> {
     return this.#context.close();
-  }
-  protected async box(ref: string): Promise<{ x: number; y: number; width: number; height: number }> {
-    return (await this.#element(ref)).evaluate((el: any) => {
-      const r = el.getBoundingClientRect(), view = el.ownerDocument.defaultView;
-      return { x: r.x + view.scrollX, y: r.y + view.scrollY, width: r.width, height: r.height };
-    });
-  }
-  protected async cdp(method: string, params: object): Promise<any> {
-    const session = await this.#tab.createCDPSession();
-    try {
-      return await session.send(method, params);
-    } finally {
-      session.detach().catch(() => {});
-    }
   }
 }

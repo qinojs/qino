@@ -41,10 +41,13 @@ try {
 ```
 
 - **Page:** a part of Playwright's Page, with its names: `goto`, `goBack`, `setContent`, `evaluate`,
-  `title`, `url`, `pdf`, `screenshot` (also by `ref`, and `maxSize`: rendered smaller), `keyboard.press`, `setDefaultTimeout`, `waitForLoadState`,
-  `consoleMessages`, `requests`, `on("close")`, `close`. For agents also `snapshot()`, the
-  accessibility tree as text with a `ref` for each element; `click`, `fill`, `selectOption`, `hover`
-  by those refs; `tabs`/`tab`, `handleDialog`, and `news()`, what an action answers with.
+  `title`, `url`, `pdf`, `screenshot` (also by `ref`; `maxSize`: rendered smaller), `keyboard.press`,
+  `setDefaultTimeout`, `waitForLoadState`, `consoleMessages`, `requests`, `on("close")`, `close`. For
+  agents also `snapshot()`, the accessibility tree as text with a `ref` for each element; `click`,
+  `fill`, `selectOption`, `hover` by those refs; `tabs`/`tab`, `handleDialog`, and `news()`, what an
+  action answers with.
+- **Failures** through the api are told as they are (a `ConflictError` with the browser's words: a
+  timeout, an element gone, a name not found), so a model can go on from them.
 - **Drivers:** [Playwright](lib/playwright.ts) where it loads (Node, Bun, Deno with `--allow-all`): its
   snapshot is what agents know. Else [Puppeteer](lib/puppeteer.ts) (Deno with the usual flags and
   `--allow-env`). Both give the same [Page](lib/Page.ts).

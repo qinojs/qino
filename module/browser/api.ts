@@ -1,4 +1,4 @@
-import { Access, ApiError, NotFoundError, s, sys, uid } from "@qino/qino";
+import { Access, ApiError, ConflictError, errMsg, NotFoundError, s, sys, uid } from "@qino/qino";
 
 import { open } from "./mod.ts";
 
@@ -14,9 +14,15 @@ const REF = s.string().describe("From the snapshot, e.g. e12");
  *  to see where things are; a zoom (an element, an area) as it is, in better quality. */
 const OVERVIEW = { maxSize: 768, quality: 75 }, ZOOM = { maxSize: 1568, quality: 90 };
 
-type Session = { usrId: number; page: Page; idle?: ReturnType<typeof setTimeout> };
-const sessions = new WeakMap<App, Map<string, Session>>();
-const of = (app: App) => sessions.get(app) ?? sessions.set(app, new Map()).get(app)!;
+type Kept = { usrId: number; page: Page; idle?: ReturnType<typeof setTimeout> };
+const kept = new WeakMap<App, Map<string, Kept>>();
+const of = (app: App) => kept.getOrInsertComputed(app, () => new Map());
+
+/** A failure of the browser (a timeout, an element gone, a name not found) told as it is: the caller, often a
+ *  model, goes on from it. Its first line: Playwright adds a log of the call. */
+const told = (e: unknown): never => {
+  throw e instanceof ApiError ? e : new ConflictError(errMsg(e).split("\n")[0]);
+};
 
 const web = (url: string) => {
   if (!/^https?:\/\//i.test(url)) throw new ApiError(400, "url: http or https");
@@ -24,7 +30,7 @@ const web = (url: string) => {
 };
 
 /** The user's own page by its id, kept open for another while. */
-function session(ctx: Ctx, id: string) {
+function own(ctx: Ctx, id: string) {
   const one = of(ctx.app).get(id);
   if (!one || one.usrId !== ctx.userId) throw new NotFoundError(`No page ${id}, or closed`);
   clearTimeout(one.idle);
@@ -56,10 +62,10 @@ function action(
       input: s.object({ id: s.string(), ...shape }),
       access: Access.USER,
       execute: async ({ id, ...args }: { id: string }, ctx: Ctx) => {
-        const page = session(ctx, id), done = act(page, args);
+        const page = own(ctx, id), done = act(page, args);
         done.catch(() => {}); // after a dialog nobody waits for it
-        await Promise.race([done, page.dialogOpened()]);
-        return state(id, page);
+        await Promise.race([done, page.dialogOpened()]).catch(told);
+        return state(id, page).catch(told);
       },
     },
   };
@@ -77,11 +83,11 @@ export const api: ApiTree = {
         const page = await open(ctx.app), id = uid();
         page.setDefaultTimeout(WAIT);
         // a page that does not load is closed: there is no id yet to close it by
-        if (url) await page.goto(url).catch(async (e) => (await page.close(), Promise.reject(e)));
+        if (url) await page.goto(url).catch(async (e) => (await page.close(), told(e)));
         of(ctx.app).set(id, { usrId: ctx.userId, page });
         page.on("close", () => of(ctx.app).delete(id));
-        session(ctx, id);
-        return state(id, page);
+        own(ctx, id); // its time unused starts
+        return state(id, page).catch(told);
       },
     },
   },
@@ -112,7 +118,7 @@ export const api: ApiTree = {
       description: "What the page shows now",
       query: s.object({ id: s.string() }),
       access: Access.USER,
-      execute: ({ id }: { id: string }, ctx: Ctx) => state(id, session(ctx, id)),
+      execute: ({ id }: { id: string }, ctx: Ctx) => state(id, own(ctx, id)).catch(told),
     },
   },
   screenshot: {
@@ -134,7 +140,7 @@ export const api: ApiTree = {
         Partial<Record<"x" | "y" | "width" | "height", number>>, ctx: Ctx) => {
         const clip = width && height ? { x: x ?? 0, y: y ?? 0, width, height } : undefined;
         const how = ref || clip ? ZOOM : OVERVIEW;
-        const jpeg = await session(ctx, id).screenshot({ fullPage, ref, clip, type: "jpeg", ...how });
+        const jpeg = await own(ctx, id).screenshot({ fullPage, ref, clip, type: "jpeg", ...how }).catch(told);
         return { type: "image", url: `data:image/jpeg;base64,${jpeg.toBase64()}` }; // ai's Part: the model sees it
       },
     },
@@ -144,7 +150,7 @@ export const api: ApiTree = {
       description: "The page's console: messages and errors since it opened",
       query: s.object({ id: s.string() }),
       access: Access.USER,
-      execute: ({ id }: { id: string }, ctx: Ctx) => session(ctx, id).consoleMessages(),
+      execute: ({ id }: { id: string }, ctx: Ctx) => own(ctx, id).consoleMessages(),
     },
   },
   network: {
@@ -153,7 +159,7 @@ export const api: ApiTree = {
       query: s.object({ id: s.string(), failed: s.optional(s.boolean()).describe("Only those that failed") }),
       access: Access.USER,
       execute: ({ id, failed }: { id: string; failed?: boolean }, ctx: Ctx) =>
-        session(ctx, id).requests().filter((r) => !failed || r.error || (r.status ?? 0) >= 400),
+        own(ctx, id).requests().filter((r) => !failed || r.error || (r.status ?? 0) >= 400),
     },
   },
   close: {
@@ -162,7 +168,7 @@ export const api: ApiTree = {
       input: s.object({ id: s.string() }),
       access: Access.USER,
       execute: async ({ id }: { id: string }, ctx: Ctx) => {
-        await session(ctx, id).close();
+        await own(ctx, id).close();
         return { closed: id };
       },
     },

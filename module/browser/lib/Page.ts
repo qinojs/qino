@@ -1,3 +1,6 @@
+// deno-lint-ignore-file no-explicit-any -- a driver's tabs are untyped: its types would pull in Node's
+import { errMsg, NotFoundError } from "@qino/qino";
+
 /** How many console messages and requests a page keeps, the latest. */
 const KEEP = 500;
 
@@ -13,9 +16,12 @@ type Area = { x: number; y: number; width: number; height: number };
 /**
  * A page as Playwright has it — the same names, a part of them — the same with every driver. For agents
  * also its `snapshot()` with refs to act by, and what it told meanwhile (`news()`): console, dialogs, tabs.
+ * Playwright and Puppeteer name their tabs' methods and events alike: what they share is here.
  */
 export abstract class Page {
-  keyboard: { press(key: string): Promise<void> } = { press: (key) => this.press(key) };
+  keyboard: { press(key: string): Promise<void> } = { press: (key) => this.current.keyboard.press(key) };
+  /** The tab it acts in: the last one opened, or the one chosen with `tab()`. */
+  protected current: any;
   #console: Message[] = [];
   #told = 0; // console messages already in news
   #requests: Request[] = [];
@@ -24,26 +30,9 @@ export abstract class Page {
   #closed: (() => void)[] = [];
   #done = false;
 
-  abstract url(): string;
-  abstract title(): Promise<string>;
-  abstract goto(url: string): Promise<{ status(): number } | null>;
-  abstract goBack(): Promise<unknown>;
-  abstract setContent(html: string): Promise<void>;
-  // deno-lint-ignore no-explicit-any
-  abstract evaluate<T>(fn: string | ((...args: any[]) => T), ...args: unknown[]): Promise<T>;
   abstract setDefaultTimeout(ms: number): void;
   /** Until what an action started (a navigation, requests) is done, or a while has passed. */
   abstract waitForLoadState(): Promise<void>;
-  abstract pdf(options?: {
-    format?: string;
-    landscape?: boolean;
-    margin?: { top?: string; right?: string; bottom?: string; left?: string };
-    printBackground?: boolean;
-    preferCSSPageSize?: boolean;
-    scale?: number;
-    pageRanges?: string;
-  }): Promise<Uint8Array<ArrayBuffer>>;
-
   /** The accessibility tree as text, an element a line with a ref to act by: `- button "Go" [ref=e3]`. */
   abstract snapshot(): Promise<string>;
   /** By a ref of the last snapshot, waiting until the element can take it. */
@@ -51,16 +40,43 @@ export abstract class Page {
   abstract fill(ref: string, text: string): Promise<void>;
   abstract selectOption(ref: string, values: string[]): Promise<void>;
   abstract hover(ref: string): Promise<void>;
-  /** The open tabs; the page acts in the last one opened, or the one chosen with `tab()`. */
-  abstract tabs(): Promise<{ url: string; title: string }[]>;
-  abstract tab(index: number): Promise<void>;
-  protected abstract press(key: string): Promise<void>;
+  /** The context's tabs, as the driver has them. */
+  protected abstract pages(): Promise<any[]>;
+  /** The element of a ref, as the driver has it: one to `evaluate` in. */
+  protected abstract element(ref: string): Promise<any>;
+  /** A DevTools protocol session with the tab it acts in. */
+  protected abstract session(): Promise<any>;
   protected abstract end(): Promise<void>;
-  /** Where the element of a ref is, in CSS pixels of the document. */
-  protected abstract box(ref: string): Promise<Area>;
-  /** A call of the DevTools protocol, in the tab it acts in. */
-  // deno-lint-ignore no-explicit-any
-  protected abstract cdp(method: string, params: object): Promise<any>;
+
+  url(): string {
+    return this.current.url();
+  }
+  title(): Promise<string> {
+    return this.current.title();
+  }
+  goto(url: string): Promise<{ status(): number } | null> {
+    return this.current.goto(url);
+  }
+  goBack(): Promise<unknown> {
+    return this.current.goBack();
+  }
+  setContent(html: string): Promise<void> {
+    return this.current.setContent(html);
+  }
+  evaluate<T>(fn: string | ((...args: any[]) => T), ...args: unknown[]): Promise<T> {
+    return this.current.evaluate(fn, ...args);
+  }
+  pdf(options?: {
+    format?: string;
+    landscape?: boolean;
+    margin?: { top?: string; right?: string; bottom?: string; left?: string };
+    printBackground?: boolean;
+    preferCSSPageSize?: boolean;
+    scale?: number;
+    pageRanges?: string;
+  }): Promise<Uint8Array<ArrayBuffer>> {
+    return this.current.pdf(options);
+  }
 
   /**
    * What the page shows, all of it (`fullPage`), an area (`clip`, CSS pixels of the page) or an element
@@ -74,15 +90,35 @@ export abstract class Page {
     quality?: number;
     maxSize?: number;
   } = {}): Promise<Uint8Array<ArrayBuffer>> {
-    const area = ref ? await this.box(ref) : clip ?? await this.evaluate<Area>(AREA(fullPage));
+    const area: Area = ref
+      ? await (await this.element(ref)).evaluate((el: any) => {
+        const r = el.getBoundingClientRect(), view = el.ownerDocument.defaultView;
+        return { x: r.x + view.scrollX, y: r.y + view.scrollY, width: r.width, height: r.height };
+      })
+      : clip ?? await this.evaluate<Area>(AREA(fullPage));
     const scale = maxSize ? Math.min(1, maxSize / Math.max(area.width, area.height)) : 1;
-    const { data } = await this.cdp("Page.captureScreenshot", {
-      format: type,
-      ...type === "jpeg" && { quality },
-      clip: { ...area, scale },
-      captureBeyondViewport: true,
-    });
-    return Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+    const session = await this.session();
+    try {
+      const { data } = await session.send("Page.captureScreenshot", {
+        format: type,
+        ...type === "jpeg" && { quality },
+        clip: { ...area, scale },
+        captureBeyondViewport: true,
+      });
+      return Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+    } finally {
+      session.detach().catch(() => {});
+    }
+  }
+
+  async tabs(): Promise<{ url: string; title: string }[]> {
+    return Promise.all((await this.pages()).map(async (tab) => ({ url: tab.url(), title: await tab.title() })));
+  }
+  async tab(index: number): Promise<void> {
+    const tab = (await this.pages())[index];
+    if (!tab) throw new NotFoundError(`No tab ${index}`);
+    this.current = tab;
+    await tab.bringToFront();
   }
 
   /** Console messages and errors, the latest `KEEP`. */
@@ -111,7 +147,7 @@ export abstract class Page {
   /** Accept (with `text` for a prompt) or dismiss the waiting dialog. */
   async handleDialog(accept: boolean, text?: string): Promise<void> {
     const dialog = this.#dialog;
-    if (!dialog) throw new Error("No dialog is waiting");
+    if (!dialog) throw new NotFoundError("No dialog is waiting");
     this.#dialog = undefined;
     await dialog.answer(accept, text);
   }
@@ -126,18 +162,30 @@ export abstract class Page {
     for (const fn of this.#closed) fn();
   }
 
-  // for the drivers: what the page told
-  protected logged(type: string, text: string) {
-    this.#console.push({ type: type === "warn" ? "warning" : type, text });
-    if (this.#console.length > KEEP) this.#console.shift(), this.#told = Math.max(0, this.#told - 1);
+  /** A tab of its context opened: from now on it acts there, and hears what it tells. */
+  protected opened(tab: any) {
+    this.current = tab;
+    tab.on("console", (msg: any) => this.#log(msg.type(), msg.text()));
+    tab.on("pageerror", (e: Error) => this.#log("error", errMsg(e)));
+    tab.on("dialog", (d: any) => {
+      this.#dialog = { message: d.message(), answer: (accept, text) => accept ? d.accept(text) : d.dismiss() };
+      this.#opened.resolve();
+      this.#opened = Promise.withResolvers();
+    });
+    tab.on("close", async () => {
+      const left = await this.pages().catch(() => []);
+      if (this.current === tab) this.current = left.at(-1);
+      if (!left.length) this.close();
+    });
   }
+  /** A request done, for the drivers: each hears them its own way. */
   protected requested(request: Request) {
     this.#requests.push(request);
     if (this.#requests.length > KEEP) this.#requests.shift();
   }
-  protected dialog(message: string, answer: (accept: boolean, text?: string) => Promise<void>) {
-    this.#dialog = { message, answer };
-    this.#opened.resolve();
-    this.#opened = Promise.withResolvers();
+
+  #log(type: string, text: string) {
+    this.#console.push({ type: type === "warn" ? "warning" : type, text }); // "warn": Puppeteer's name
+    if (this.#console.length > KEEP) this.#console.shift(), this.#told = Math.max(0, this.#told - 1);
   }
 }
