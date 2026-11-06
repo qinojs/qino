@@ -14,7 +14,7 @@ export const country = {
   /** The codes, sorted the way the language sorts the names — for a country picker. */
   async sorted(db: Db, lang: string): Promise<string[]> {
     const collator = new Intl.Collator(lang);
-    const ids = await db.col<string>`SELECT id FROM country`;
-    return ids.sort((a, b) => collator.compare(country.name(a, lang), country.name(b, lang)));
+    const named = (await db.col<string>`SELECT id FROM country`).map((id) => [id, country.name(id, lang)]);
+    return named.sort((a, b) => collator.compare(a[1], b[1])).map(([id]) => id);
   },
 };
