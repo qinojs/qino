@@ -28,7 +28,7 @@ export class Sandbox {
       }
     };
     walk(capabilities, []);
-    const call = async (key: string, args: unknown[]) => await this.#fns.get(key)!(...args);
+    const call = async (key: string, args: unknown[]) => this.#fns.get(key)!(...args);
     this.#engine = engine({ keys: [...this.#fns.keys()], call, timeout });
   }
 

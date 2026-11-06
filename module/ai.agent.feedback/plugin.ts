@@ -16,9 +16,9 @@ const HINT = (tool: string) => `## Feedback\nWhen something was not set up, a to
   `once per problem. Then go on with the task.`;
 
 /** The model that answered last in `session`: the one calling a tool there. */
-const modelOf = async (app: App, session: number) => await app.db.one`SELECT am.name FROM ai_session_message m
+const modelOf = (app: App, session: number) => app.db.one<string>`SELECT am.name FROM ai_session_message m
   JOIN ai_model_provider mp ON mp.id = m.model_provider_id JOIN ai_model am ON am.id = mp.model_id
-  WHERE m.session_id = ${session} ORDER BY m.id DESC LIMIT 1` as string | undefined;
+  WHERE m.session_id = ${session} ORDER BY m.id DESC LIMIT 1`;
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // every agent may report, its agent, session and model kept with it: it need not tell its model
