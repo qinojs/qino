@@ -110,7 +110,7 @@ async function feeLines(app: App, items: Row[], fee: number) {
   if (fee <= 0) return [];
   const weights = new Map<string, { taxRate: number; taxCategory: string; weight: number }>();
   for (const item of items) {
-    const share = Number(item.total) ? (Number(item.total) - Number(item.paid)) / Number(item.total) : 0;
+    const total = Number(item.total), share = total ? (total - Number(item.paid)) / total : 0;
     for (const line of await lines(app, Number(item.id))) {
       const [taxRate, taxCategory] = [Number(line.tax_rate), String(line.tax_category || "S")];
       const key = `${taxCategory}:${taxRate}`;

@@ -57,7 +57,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       const u = sqlSearch(user, ["given_name", "family_name", "username", "organization"], { exact: ["id"] });
       where.push(sql`log.sess_id IN (SELECT id FROM sess WHERE usr_id IN (SELECT id FROM usr WHERE ${u.where}))`);
     } else if (/^\d+$/.test(s)) {
-      where.push(sql`(log.id = ${Number(s)} OR log.client_id = ${Number(s)} OR log.sess_id = ${Number(s)})`); // same table → index merge
+      const id = Number(s);
+      where.push(sql`(log.id = ${id} OR log.client_id = ${id} OR log.sess_id = ${id})`); // same table → index merge
     } else if (/^\d{1,3}(\.\d{1,3}){0,3}\.?$/.test(s) || /^[\da-f]{0,4}(:[\da-f]{0,4})+$/i.test(s)) {
       where.push(sql`log.ip_id IN (SELECT id FROM log_ip WHERE ip LIKE ${s + "%"})`); // prefix → index seek
     } else if (db.dialect === "mysql") {

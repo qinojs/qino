@@ -77,13 +77,13 @@ export const paymentProvider: Provider = {
   },
 
   async start(app, payment, urls) {
-    const currency = String(payment.currency);
+    const currency = String(payment.currency), id = String(payment.id);
     const order = await call(app, "/v2/checkout/orders", {
       intent: "CAPTURE",
       purchase_units: [{
-        reference_id: String(payment.id),
-        custom_id: String(payment.id),
-        description: String(payment.description || payment.ref || `Payment ${payment.id}`).slice(0, 127),
+        reference_id: id,
+        custom_id: id,
+        description: String(payment.description || payment.ref || `Payment ${id}`).slice(0, 127),
         amount: { currency_code: currency, value: decimal(Number(payment.amount), currency) },
       }],
       payment_source: {

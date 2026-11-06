@@ -323,7 +323,8 @@ export class Order extends ShopRow {
     let net = 0;
     const add = (rowPrice: number, rate: number) => {
       net += rowPrice;
-      taxes[String(rate)] = (taxes[String(rate)] ?? 0) + rowPrice * (rate / 100);
+      const key = String(rate);
+      taxes[key] = (taxes[key] ?? 0) + rowPrice * (rate / 100);
     };
     for (const item of await this.items()) add(item.rowPrice(), await item.calcVatRate());
     for (const item of await this.generatedItems()) add(item.price, item.vat_rate);

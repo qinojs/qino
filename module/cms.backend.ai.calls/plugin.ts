@@ -15,8 +15,10 @@ const number = (value: unknown) => Number(value ?? 0).toLocaleString("en-US");
 const cost = (value: unknown) => value == null ? "–" : Number(value).toLocaleString("en-US", { maximumSignificantDigits: 4 });
 /** A model or provider in its own color, the same everywhere, to find it again at a glance. */
 const colored = (value: unknown) => html`<span style="color:${uniqueColor(value)}">${value}</span>`;
-const success = (row: Record<string, unknown>) =>
-  html`<progress value="${Number(row.calls) - Number(row.errors)}" max="${Math.max(1, Number(row.calls))}"></progress> ${number(Number(row.calls) - Number(row.errors))} / ${number(row.calls)}`;
+const success = (row: Record<string, unknown>) => {
+  const calls = Number(row.calls), done = calls - Number(row.errors);
+  return html`<progress value="${done}" max="${Math.max(1, calls)}"></progress> ${number(done)} / ${number(row.calls)}`;
+};
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "AI calls", de: "KI-Aufrufe" });
