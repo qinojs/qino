@@ -15,7 +15,7 @@ export async function document(
   invoice: Row,
   lines: Row[],
   listed: Row[] = [],
-  slips: () => Promise<string[]> = () => Promise.resolve([]),
+  slips: () => Promise<string[]> = async () => [],
 ): Promise<string> {
   const lang = languageOf(app, invoice);
   // a credit note reads as what it gives back: its negative amounts shown positive
