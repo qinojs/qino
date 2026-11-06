@@ -171,7 +171,7 @@ export const api: ApiTree = {
             if (!ways.some((way) => way === method || way.split(".")[0] === method)) {
               throw new ConflictError("not payable that way");
             }
-            return await pay(ctx.app, {
+            return pay(ctx.app, {
               method: String(method),
               amount: await owed(ctx.app, row),
               currency: String(row.currency),

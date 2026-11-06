@@ -19,7 +19,7 @@ export async function add(
     throw new Error("fin.payment.credit: amounts are integers in minor units");
   }
   if (!/^[A-Z]{3}$/.test(currency)) throw new Error("fin.payment.credit: currency is ISO 4217");
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     if (amount < 0 && await balance(app, usrId, currency) + amount < 0) {
       throw new Error("fin.payment.credit: not enough credit");
     }
@@ -40,7 +40,7 @@ export async function payOut(
   usrId: number,
   { amount, currency, ref, text = "" }: { amount: number; currency: string; ref?: string; text?: string },
 ): Promise<number> {
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     const payment = await record(app, { direction: "out", provider: "credit", amount, currency, ref, usrId });
     await add(app, usrId, { amount, currency, text, ref: refOf(payment) });
     return payment;

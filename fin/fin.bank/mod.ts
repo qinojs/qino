@@ -69,7 +69,7 @@ export async function assign(app: App, txId: number, ref: string): Promise<numbe
   if (!tx) throw new Error(`fin.bank: no line ${txId}`);
   if (tx.payment_id) throw new Error("fin.bank: the line is already assigned");
   const amount = Number(tx.amount);
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     const payment = await record(app, {
       direction: amount > 0 ? "in" : "out",
       provider: "bank",

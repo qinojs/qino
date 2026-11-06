@@ -26,9 +26,8 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     const set = node.app.settings[$item].sub(["identity"]);
     for (const [path, value] of Object.entries(vars.save as Record<string, unknown>)) {
       if (!FIELDS.has(path)) continue;
-      const normalized = path === "organization.address.addressCountry"
-        ? String(value ?? "").trim().toUpperCase()
-        : String(value ?? "").trim();
+      const text = String(value ?? "").trim();
+      const normalized = path === "organization.address.addressCountry" ? text.toUpperCase() : text;
       const item = set.sub(path.split("."));
       const maxLength = Number(item.schema?.maxLength ?? Infinity);
       if (normalized.length > maxLength) throw new Error(`${path} must not exceed ${maxLength} characters`);

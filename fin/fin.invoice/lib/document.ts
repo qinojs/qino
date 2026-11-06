@@ -22,7 +22,7 @@ export async function document(
   if (invoice.type === "credit_note") {
     lines = lines.map((l) => ({ ...l, quantity: -Number(l.quantity), amount: -Number(l.amount) }));
   }
-  return await inLang(app, lang, async () => {
+  return inLang(app, lang, async () => {
     const t = app.t;
     const sender = await organization(app);
     const party = JSON.parse(String(invoice.party ?? "{}")) ?? {};
@@ -219,7 +219,7 @@ function titleOf(app: App, invoice: Row, listed: Row[]) {
 /** The mail a document goes out with, in its language: subject, a few lines (asking for `owed`), the PDF. */
 export async function mail(app: App, invoice: Row, pdf: DbFile, listed: Row[] = []) {
   const lang = languageOf(app, invoice);
-  return await inLang(app, lang, async () => {
+  return inLang(app, lang, async () => {
     const t = app.t;
     const sender = await organization(app);
     const locale = localeOf(lang, sender);
@@ -269,5 +269,5 @@ export async function inLang<T>(app: App, lang: string, fn: () => Promise<T>) {
   const ctx = await Ctx.create(app, new Request(url), { appUrl: url.pathname, url });
   ctx.lang = ctx.langUsr = lang;
   ctx.langNs = "fin"; // the texts recipients read come with the module fin (locale/)
-  return await requestStorage.run(ctx, fn).finally(() => ctx.req.cleanup());
+  return requestStorage.run(ctx, fn).finally(() => ctx.req.cleanup());
 }

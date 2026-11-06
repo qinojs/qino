@@ -17,11 +17,11 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   }
   if (verb === "create") {
     await requireStepUp(getCtx());
-    return await call(socket, "create", { domain, template }, 10 * 60_000);
+    return call(socket, "create", { domain, template }, 10 * 60_000);
   }
   if (verb === "delete") {
     await requireStepUp(getCtx());
-    return await call(socket, "delete", { name });
+    return call(socket, "delete", { name });
   }
   return false;
 }

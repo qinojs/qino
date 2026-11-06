@@ -31,7 +31,7 @@ export const inputAmount = (minor: unknown, currency: unknown): string =>
 /** A file as the fin pages send it (see `files` in pub/panel.js), stored as dbFile. */
 export async function fileOf(app: App, sent: { name: string; type: string; data: string }): Promise<DbFile> {
   const bytes = Uint8Array.fromBase64(String(sent.data));
-  return await app.dbFiles.add(new File([bytes], String(sent.name || "file"), { type: String(sent.type || "") }));
+  return app.dbFiles.add(new File([bytes], String(sent.name || "file"), { type: String(sent.type || "") }));
 }
 
 /** Amounts per currency: `CHF 120.00 · EUR 30.00`, or a dash for none. */

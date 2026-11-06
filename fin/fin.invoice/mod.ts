@@ -70,7 +70,7 @@ export async function create(
   },
 ): Promise<number> {
   const time = unixTime();
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     const id = Number(await app.db.table("invoice").insert({
       direction: values.direction ?? "out",
       type: values.type ?? "invoice",
@@ -117,7 +117,7 @@ async function formatOf(app: App, type: Type) {
  * the date plus the term — the invoice's own, else `fin.invoice.term`.
  */
 export async function issue(app: App, id: number): Promise<Row | undefined> {
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     const invoice = await get(app, id);
     if (invoice?.status !== "draft") throw new Error("fin.invoice: only drafts can be issued");
     const credit = invoice.type === "credit_note";
@@ -193,7 +193,7 @@ export async function revise(app: App, id: number): Promise<number> {
     throw new Error("fin.invoice: only open invoices nothing was paid on can be revised");
   }
   // one transaction: the draft, its copy of the original and the cancel, or nothing
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     const draft = await create(app, {
       ...copyOf(invoice, (await lines(app, id)).map(lineOf)),
       direction: invoice.direction === "in" ? "in" : "out",
@@ -337,7 +337,7 @@ export async function creditNote(app: App, id: number): Promise<number> {
   }
   // what it gives back: the lines negative, to be cut down
   const given = (await lines(app, id)).map((row) => ({ ...lineOf(row), quantity: -Number(row.quantity) }));
-  return await create(app, { ...copyOf(invoice, given), type: "credit_note", preceding: id });
+  return create(app, { ...copyOf(invoice, given), type: "credit_note", preceding: id });
 }
 
 /** What a draft made from an invoice takes over — currency, party, user, ref, language — with `lines`. */
@@ -361,7 +361,7 @@ export async function mail(app: App, id: number) {
     throw new Error("fin.invoice: only issued invoices are sent");
   }
   const pdf = invoice.file_id ? await app.dbFiles.file(Number(invoice.file_id)) : await print(app, id);
-  return await mailOf(app, { ...invoice, owed: await owed(app, invoice) }, pdf, await listedOf(app, id));
+  return mailOf(app, { ...invoice, owed: await owed(app, invoice) }, pdf, await listedOf(app, id));
 }
 
 /**

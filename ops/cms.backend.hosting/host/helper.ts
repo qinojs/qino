@@ -301,7 +301,6 @@ const verbs: Record<string, (host: Host, args: Args) => Promise<unknown>> = {
   list, log, start: unit("start"), stop: unit("stop"), restart: unit("restart"), create, delete: remove,
 };
 /** Verbs that change something run one after the other: two creates must not pick the same port. */
-const READ = new Set(["list", "log"]);
 let queue: Promise<unknown> = Promise.resolve();
 
 async function answer(line: string, host: Host) {
@@ -309,7 +308,9 @@ async function answer(line: string, host: Host) {
     const { verb, ...args } = JSON.parse(line);
     if (!Object.hasOwn(verbs, verb)) throw new Error(`unknown verb "${verb}"`);
     console.log(verb, args.name ?? args.domain ?? "");
-    const job = READ.has(verb) ? verbs[verb](host, args) : (queue = queue.catch(() => {}).then(() => verbs[verb](host, args)));
+    const job = (verb === "list" || verb === "log")
+      ? verbs[verb](host, args)
+      : (queue = queue.catch(() => {}).then(() => verbs[verb](host, args)));
     return { ok: true, data: await job };
   } catch (e) {
     const err = e as { message?: string; stderr?: string };

@@ -53,7 +53,7 @@ export async function book(app: App, entry: {
     .map((row) => [String(row.number), Number(row.id)]));
   const missing = numbers.filter((n) => !ids.has(n));
   if (missing.length) fail(`no account ${missing.join(", ")}`);
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     const id = Number(await app.db.table("accounting_entry").insert({
       date: entry.date,
       text: entry.text.slice(0, 191),
@@ -90,7 +90,7 @@ export async function reverse(
     SELECT a.number, l.amount, l.tax_code FROM accounting_entry_line l
     JOIN accounting_account a ON a.id = l.account_id WHERE l.entry_id = ${id}`;
   // one transaction: an entry that takes another back is always marked so
-  return await app.db.transaction(async () => {
+  return app.db.transaction(async () => {
     const back = await book(app, {
       date: date ?? today(),
       text: text ?? `Reversal: ${entry.text}`,
@@ -123,7 +123,7 @@ export async function balances(
   // without the closing entries, a closed year still shows its result
   const open = closings ? sql`` : sql`AND (e.ref IS NULL OR e.ref NOT LIKE ${`${CLOSING}%`})`;
   const since = from ? sql`AND (a.type IN ('asset', 'liability', 'equity') OR e.date >= ${from})` : sql``;
-  return await app.db.query`
+  return app.db.query`
     SELECT a.id, a.number, a.name, a.type,
       COALESCE(SUM(CASE WHEN e.id IS NULL THEN 0 ELSE l.amount END), 0) AS balance
     FROM accounting_account a

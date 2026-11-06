@@ -11,7 +11,7 @@ import type { Node } from "@qino/qino/cms";
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
   const t = app.t;
-  if (vars.supplier) return await supplier(node, Number(vars.supplier));
+  if (vars.supplier) return supplier(node, Number(vars.supplier));
   if (!vars.read) return null;
   const done: number[] = [];
   const failed: string[] = [];

@@ -93,7 +93,7 @@ export const iotProvider: Adapter = {
   },
   async actions(app, id) {
     const rows = (await virtuals(app, id)).filter((row) => row.command);
-    return await Promise.all(rows.map(async (row): Promise<Action> => {
+    return Promise.all(rows.map(async (row): Promise<Action> => {
       const { parameter } = await command(app, row.command).catch(() => ({ parameter: "" }));
       return {
         id: `set.${row.id}`, name: row.name, targets: [String(row.id)],
