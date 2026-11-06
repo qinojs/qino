@@ -370,7 +370,7 @@
           },
           "namespace": {
             "type": "string",
-            "maxLength": 16,
+            "maxLength": 64,
             "x-index": "primary"
           },
           "original": {

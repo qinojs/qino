@@ -108,8 +108,8 @@ async function pageTitle(page: Node, lang: string): Promise<string> {
 }
 
 type Args = { ctx: Ctx; vars?: Record<string, unknown> };
-const render = (node: Node, args: Args) => node.app.languages.with({ ns: name }, () => renderTree(node, args));
-const list = (node: Node, args: Args) => node.app.languages.with({ ns: name }, () => listRows(node, args));
+const render = (node: Node, args: Args) => node.app.languages.with({ ns: "cms.seo" }, () => renderTree(node, args));
+const list = (node: Node, args: Args) => node.app.languages.with({ ns: "cms.seo" }, () => listRows(node, args));
 
 export const cms = {
   node: {

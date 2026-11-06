@@ -60,9 +60,10 @@ export async function saveVirtual(app: App, input: Partial<Virtual>): Promise<nu
     throw new ApiError(400, "A source must be an entity of another provider");
   if (linked) await command(app, linked);
   const values = { provider: id, name, source_provider, source_entity, command: linked, value: JSON.stringify(value) };
+  const table = app.db.table("iot_virtual");
   const saved = previous
-    ? (await app.db.table("iot_virtual").update(previous.id, values), previous.id)
-    : Number(await app.db.table("iot_virtual").insert(values));
+    ? (await table.update(previous.id, values), previous.id)
+    : Number(await table.insert(values));
   forget(app);
   return saved;
 }

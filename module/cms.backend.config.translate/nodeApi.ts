@@ -17,7 +17,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
   if (await node.access() < 2) return false;
 
   const db = node.app.db;
-  const langs = node.app.languages.all;
+  const languages = node.app.languages, langs = languages.all;
 
   if ("count_clean" in vars) {
     await db.exec`UPDATE smalltext SET count = 0`;
@@ -27,7 +27,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
   if ("delete_not_used" in vars) {
     const cond = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " AND ");
     await db.exec`DELETE FROM smalltext WHERE count = 0 AND ${cond}`;
-    node.app.languages.clear();
+    languages.clear();
     return true;
   }
 
@@ -40,7 +40,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
     const { hash, ns, lang, value } = vars.save_lang;
     if (!langs.includes(String(lang))) return false;
     await db.table("smalltext").update({ hash: String(hash), namespace: String(ns) }, { [String(lang)]: String(value) });
-    node.app.languages.clear();
+    languages.clear();
     return true;
   }
 
@@ -50,7 +50,6 @@ export default async function api(node: Node, vars: any): Promise<any> {
     let count = 0;
     for (const row of rows) {
       const sourceLang = langs.find(l => row[l]) ?? 'en';
-      if (!sourceLang) continue;
       for (const targetLang of langs) {
         if (row[targetLang]?.trim()) continue;
         const source = row[sourceLang] || row.original;
@@ -60,14 +59,14 @@ export default async function api(node: Node, vars: any): Promise<any> {
         count++;
       }
     }
-    node.app.languages.clear();
+    languages.clear();
     return { translated: count };
   }
 
   if ("delete_entry" in vars) {
     const { hash, ns } = vars.delete_entry;
     await db.table("smalltext").delete({ hash: String(hash), namespace: String(ns) });
-    node.app.languages.clear();
+    languages.clear();
     return true;
   }
 
@@ -86,7 +85,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
       await db.table("smalltext").update({ hash: row.hash, namespace: row.namespace }, { [targetLang]: translated });
       count++;
     }
-    node.app.languages.clear();
+    languages.clear();
     return { translated: count };
   }
 

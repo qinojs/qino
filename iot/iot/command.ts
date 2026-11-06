@@ -57,8 +57,9 @@ export async function saveCommand(app: App, input: Partial<Command>): Promise<nu
   const values = {
     provider: id, name, action, targets: JSON.stringify(targets), data: JSON.stringify(data), parameter,
   };
-  if (previous) { await app.db.table("iot_command").update(previous.id, values); return previous.id; }
-  return Number(await app.db.table("iot_command").insert(values));
+  const table = app.db.table("iot_command");
+  if (previous) { await table.update(previous.id, values); return previous.id; }
+  return Number(await table.insert(values));
 }
 
 export async function removeCommand(app: App, id: number): Promise<void> {

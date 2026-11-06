@@ -21,7 +21,7 @@ const OUTPUTS = new Set(["text", "image", "audio", "speech", "transcription", "e
 const NOISE = new Set(["instruct", "chat", "latest", "preview"]);
 /** A model name reduced for comparison, so llama-3.3-70b, Llama-3-3-Instruct-70B and llama-3.3-70b:free match. */
 export const key = (name: string): string =>
-  String(name).toLowerCase().split("/").pop()!.split(":")[0].split(/[^a-z0-9]+/).filter((w) => w && !NOISE.has(w)).sort().join(" ");
+  unit(String(name)).split(/[^a-z0-9]+/).filter((w) => w && !NOISE.has(w)).sort().join(" ");
 
 /** The model a provider's id stands for: meta-llama/Llama-3.3-70B → llama-3.3-70b, so the same model
  *  at several providers is one; a variant (gpt-6-sol:batch, …:free) is another offer of it. */

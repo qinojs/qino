@@ -34,8 +34,9 @@ export async function declare(app: App): Promise<void> {
         const { meta, body } = parse(await fs.isFile(site, { ttl: 0 }) ? await fs.text(site) : await read(shipped));
         const vs = { name, system: body, tools: JSON.stringify(meta.tools ?? []), prefer: meta.prefer ? JSON.stringify(meta.prefer) : "" };
         const row = await app.db.row`SELECT id, system FROM ai_agent WHERE name = ${name}`;
-        const id = row ? Number(row.id) : Number(await app.db.table("ai_agent").insert({ ...vs, time: unixTime() }));
-        if (row) await app.db.table("ai_agent").update(id, vs);
+        const table = app.db.table("ai_agent");
+        const id = row ? Number(row.id) : Number(await table.insert({ ...vs, time: unixTime() }));
+        if (row) await table.update(id, vs);
         if (row?.system !== body) findable(app, "ai_agent", { agent_id: id }, body); // findable by its role, as it is now
       } catch (e) {
         console.error(`[ai.agent] ${name}:`, errMsg(e));

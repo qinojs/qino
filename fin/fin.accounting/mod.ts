@@ -18,11 +18,12 @@ function fail(message: string): never {
 /** Create or rename an account. Charts come from country modules or are kept by hand. */
 export async function account(app: App, number: string, values: { name: string; type: AccountType }): Promise<number> {
   const known = await app.db.one`SELECT id FROM accounting_account WHERE number = ${number}`;
+  const table = app.db.table("accounting_account");
   if (known != null) {
-    await app.db.table("accounting_account").update(Number(known), values);
+    await table.update(Number(known), values);
     return Number(known);
   }
-  return Number(await app.db.table("accounting_account").insert({ number, ...values }));
+  return Number(await table.insert({ number, ...values }));
 }
 
 /**

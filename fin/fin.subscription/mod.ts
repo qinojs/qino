@@ -32,11 +32,12 @@ export async function plan(app: App, values: {
     interval_unit: values.unit ?? "year",
     interval_count: values.count ?? 1,
   };
+  const table = app.db.table("subscription_plan");
   if (values.id) {
-    await app.db.table("subscription_plan").update(values.id, fields);
+    await table.update(values.id, fields);
     return values.id;
   }
-  return Number(await app.db.table("subscription_plan").insert({ ...fields, created: unixTime() }));
+  return Number(await table.insert({ ...fields, created: unixTime() }));
 }
 
 /** Take a plan from the catalog — only one no subscription is on. Resolves whether it went. */

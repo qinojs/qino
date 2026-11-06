@@ -147,10 +147,11 @@ async function attach(app: App, row: Row, post: Post) {
   const hash = await hashOf(String(row.provider), post);
   const known = await app.db.one`SELECT id FROM social_post WHERE hash = ${hash}`;
   const values = { ...valuesOf(post, hash), own: true, sent: unixTime(), due: null, error: null };
-  if (!known || Number(known) === Number(row.id)) return void await app.db.table("social_post").update(row.id, values);
+  const table = app.db.table("social_post");
+  if (!known || Number(known) === Number(row.id)) return void await table.update(row.id, values);
   await app.db.transaction(async () => {
-    await app.db.table("social_post").delete(known);
-    await app.db.table("social_post").update(row.id, values);
+    await table.delete(known);
+    await table.update(row.id, values);
   });
 }
 

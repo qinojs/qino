@@ -65,13 +65,13 @@ The link is valid for 24 hours. If you did not request this, ignore this email.`
 }
 
 async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
-  const t = node.app.t, edit = await node.edit();
+  const app = node.app, t = app.t, edit = await node.edit();
   const heading = edit || (await node.showTitle()).plain() ? node.cms.text(node, "title", { tag: "h2" }) : "";
   const box = (body: unknown) => html.async`<div class=u2-width>${heading}${body}</div>`;
   const handle = ctx.req.query[PARAM] ?? "";
 
   if (vars.confirm && handle && String(vars.confirm) === handle) {
-    const ok = await redeem(node.app, handle, PURPOSE)
+    const ok = await redeem(app, handle, PURPOSE)
       .then(() => true, (e) => e instanceof ApiError ? false : Promise.reject(e));
     return box(html.async`<p>${ok ? t`Your newsletter subscription is confirmed.` : t`This link is no longer valid.`}</p>`);
   }
@@ -80,7 +80,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
     <button name=confirm value="${handle}">${t`Confirm newsletter subscription`}</button>
   </form>`);
 
-  const grpId = await mailReady(node.app) ? await group(node) : undefined;
+  const grpId = await mailReady(app) ? await group(node) : undefined;
   if (!grpId) return box(html.async`<p>${edit
     ? t`Configure a newsletter group and email delivery.`
     : t`Newsletter signup is currently unavailable.`}</p>`);
@@ -92,9 +92,9 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
       address = contactKey("email", input);
       if (address.length > 254) address = "";
     } catch { /* use the same response for invalid addresses */ }
-    node.app.fire("suspicious", { ctx, weight: 1, reason: "newsletter signup requested" }).catch(() => {});
+    app.fire("suspicious", { ctx, weight: 1, reason: "newsletter signup requested" }).catch(() => {});
     if (address && !vars.your_name) {
-      node.app.languages.with({ ns: "cms.cont.newsletter", lang: ctx.lang }, () => request(node, address, grpId))
+      app.languages.with({ ns: "cms.cont.newsletter", lang: ctx.lang }, () => request(node, address, grpId))
         .catch((e) => console.error(`[newsletter ${node.id}]`, e));
     }
     return box(html.async`<p>${t`If this address can be subscribed, a confirmation link is on its way.`}</p>`);
