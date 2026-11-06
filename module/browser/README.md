@@ -26,8 +26,9 @@ try {
 ```
 
 - **Snapshot:** the page's accessibility tree as text, each element with a `ref` to act on.
-- **Guard:** a page only reaches public addresses, every request goes through `safeFetch`; no web
-  sockets, service workers or downloads. Pages of our own (`open(app, { guard: false })`) load directly.
+- **Guard:** a page only reaches public addresses: the browser goes through a local proxy that checks
+  each address and connects to the one checked (core `publicIps`), and WebRTC cannot go past it. No
+  downloads. Pages of our own (`open(app, { guard: false })`) load directly.
 - **One Chromium** per binary and runtime; each page has a context of its own (cookies, storage, cache).
   It starts with the first page and ends 30 s after the last.
 - **Pages from the api** belong to the user who opened them and close after 10 minutes unused.

@@ -74,5 +74,5 @@ export * as magick from "./lib/transform/magick.ts";
 
 // Server helpers used by modules
 export { ResHtml } from "./lib/ctx/ResHtml.ts";
-export { safeFetch } from "./lib/fileStream.ts";
+export { publicIps, safeFetch } from "./lib/fileStream.ts";
 export type { UploadedFile } from "./lib/fileStream.ts";

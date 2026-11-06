@@ -22,7 +22,10 @@ test("browser: an own page loads from our own network, a guarded one does not", 
     await own.close();
 
     const guarded = await open(app);
-    await assertRejects(() => guarded.goto(url), Error, "ERR_BLOCKED_BY_CLIENT");
+    assertEquals((await guarded.goto(url))?.status(), 403); // told by the proxy, not our server
+    assertEquals(await guarded.locator("h1").count(), 0);
+    await assertRejects(() => guarded.goto(`https://127.0.0.1:${port}/`), Error, "ERR_TUNNEL_CONNECTION_FAILED");
+    await assertRejects(() => guarded.goto(`http://localhost:${port}/`), Error);
     await guarded.close();
   } finally {
     stop.abort();

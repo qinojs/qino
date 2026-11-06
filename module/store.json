@@ -21,6 +21,7 @@
     "auth.otp": {},
     "auth.totp": {},
     "auth.webauthn": {},
+    "browser": {},
     "cms": {},
     "cms.accessRules": {},
     "cms.backend": {},

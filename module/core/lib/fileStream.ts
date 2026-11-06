@@ -121,8 +121,8 @@ export const isLocalHost = (host: string): boolean => {
   return /(^|\.)localhost$/.test(host) || (!!isIP(ip) && !isPublicIp(ip));
 };
 
-/** Resolves the URL once and returns only globally reachable addresses. */
-async function resolvePublicIps(url: URL) {
+/** Resolves the URL once and returns only globally reachable addresses; throws if any is not. */
+export async function publicIps(url: URL): Promise<string[]> {
   // URL parsing normalizes decimal/hex/octal IPv4 forms to dotted notation.
   const host = url.hostname.replace(/^\[|\]$/g, "");
   const ips = isIP(host) ? [host] : (await Promise.all([
@@ -166,14 +166,13 @@ function pinnedFetch(url: URL, ip: string, init: RequestInit) {
   });
 }
 
-/** `fetch` that only reaches public addresses; `redirect: "manual"` returns a redirect instead of following it. */
 export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 5): Promise<Response> {
   const target = new URL(url);
   if (target.protocol !== "http:" && target.protocol !== "https:") throw new Error(`Unsupported URL protocol: ${target.protocol}`);
-  const [ip] = await resolvePublicIps(target);
+  const [ip] = await publicIps(target);
   init = { ...init, signal: init?.signal ?? AbortSignal.timeout(15000) };
   const resp = await pinnedFetch(target, ip, init);
-  if ([301, 302, 303, 307, 308].includes(resp.status) && init.redirect !== "manual") {
+  if ([301, 302, 303, 307, 308].includes(resp.status)) {
     const location = resp.headers.get("location");
     resp.body?.cancel().catch(() => {}); // don't leak the redirect body
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");

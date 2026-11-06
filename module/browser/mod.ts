@@ -1,9 +1,9 @@
-import { Buffer } from "node:buffer";
+import { fs, sys } from "@qino/qino";
 
-import { fs, safeFetch, sys } from "@qino/qino";
+import { proxy } from "./lib/proxy.ts";
 
 import type { App } from "@qino/qino";
-import type { Browser, BrowserContext, Page, Route } from "playwright-core";
+import type { Browser, Page } from "playwright-core";
 
 /** Tried in this order when the setting names none. */
 const CANDIDATES = ["chromium", "chromium-browser", "google-chrome-stable", "google-chrome", "microsoft-edge"];
@@ -33,13 +33,21 @@ export async function executable(app: App): Promise<string | undefined> {
 
 // One process per binary, shared by the apps of this runtime like the binary itself: each page has a
 // context of its own (cookies, storage, cache), so they see nothing of each other.
-type Run = { browser: Promise<Browser>; pages: number; idle?: ReturnType<typeof setTimeout> };
+type Run = {
+  browser: Promise<Browser>;
+  proxy?: ReturnType<typeof proxy>;
+  pages: number;
+  idle?: ReturnType<typeof setTimeout>;
+};
 const running = new Map<string, Run>();
 
 function start(cmd: string) {
   const run: Run = { pages: 0, browser: launch(cmd) };
   running.set(cmd, run);
-  const gone = () => running.get(cmd) === run && running.delete(cmd);
+  const gone = () => {
+    if (running.get(cmd) === run) running.delete(cmd);
+    run.proxy?.then((p) => p.close()).catch(() => {});
+  };
   run.browser.then((b) => b.on("disconnected", gone), gone);
   return run;
 }
@@ -48,13 +56,14 @@ async function launch(cmd: string) {
   const { chromium } = await import("playwright-core").catch(() => {
     throw new Error("browser: playwright-core is not installed (npm install playwright-core)");
   });
-  return chromium.launch({ executablePath: cmd });
+  // WebRTC would talk UDP past the proxy
+  return chromium.launch({ executablePath: cmd, args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"] });
 }
 
 function release(cmd: string, run: Run) {
   if (--run.pages) return;
   run.idle = setTimeout(() => {
-    if (running.get(cmd) === run) running.delete(cmd);
+    if (running.get(cmd) === run) running.delete(cmd); // the next page starts a new one
     run.browser.then((b) => b.close()).catch(() => {});
   }, KEEP);
   sys.unrefTimer(run.idle);
@@ -62,7 +71,7 @@ function release(cmd: string, run: Run) {
 
 /**
  * A new page in a context of its own, closed with the page. `guard` (default): it only reaches
- * public addresses, every request goes through `safeFetch`; without, for pages of our own.
+ * public addresses, through a proxy that checks each; without, for pages of our own.
  */
 export async function open(app: App, { guard = true }: { guard?: boolean } = {}): Promise<Page> {
   const cmd = await executable(app);
@@ -70,36 +79,16 @@ export async function open(app: App, { guard = true }: { guard?: boolean } = {})
   const run = running.get(cmd) ?? start(cmd);
   clearTimeout(run.idle);
   run.pages++;
-  const context = await run.browser
-    .then((b) => b.newContext({ serviceWorkers: "block", acceptDownloads: false }))
-    .catch((e) => {
-      release(cmd, run);
-      throw e;
-    });
+  const context = await (async () => {
+    // <-loopback>: Chromium would go to localhost directly
+    const via = guard ? { proxy: { server: (await (run.proxy ??= proxy())).server, bypass: "<-loopback>" } } : {};
+    return (await run.browser).newContext({ acceptDownloads: false, ...via });
+  })().catch((e) => {
+    release(cmd, run);
+    throw e;
+  });
   context.on("close", () => release(cmd, run));
-  if (guard) await guarded(context);
   const page = await context.newPage();
   page.on("close", () => void context.close().catch(() => {}));
   return page;
-}
-
-/** Every request of the context through `safeFetch`; redirects go back to the browser, which asks again. */
-async function guarded(context: BrowserContext) {
-  await context.routeWebSocket(/.*/, (ws) => ws.close()); // not checked, so not opened
-  // blocked or failed: the browser sees a request it was not allowed (the page may be gone, too)
-  await context.route(/.*/, (route) => relay(route).catch(() => route.abort("blockedbyclient").catch(() => {})));
-}
-
-async function relay(route: Route) {
-  const req = route.request();
-  // the body comes back as served: no compression the browser would expect to undo
-  const headers = Object.fromEntries(
-    Object.entries(await req.allHeaders()).filter(([name]) => !/^(:|accept-encoding$)/.test(name)),
-  );
-  const data = req.postDataBuffer();
-  const res = await safeFetch(req.url(), { method: req.method(), headers, body: data && new Uint8Array(data), redirect: "manual" });
-  const out = Object.fromEntries([...res.headers].filter(([name]) => !/^(content-length|content-encoding)$/.test(name)));
-  const cookies = res.headers.getSetCookie();
-  if (cookies.length) out["set-cookie"] = cookies.join("\n");
-  await route.fulfill({ status: res.status, headers: out, body: Buffer.from(await res.arrayBuffer()) });
 }
