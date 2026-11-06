@@ -50,7 +50,7 @@ async function renderOverview(node: Node) {
     }
   }
 
-  const loginAsTh = await allowLoginAs(node, ctx) ? html.raw('<th width=20>') : "";
+  const loginAsTh = allowLoginAs(node, ctx) ? html.raw('<th width=20>') : "";
 
   const grpId = ctx.req.query.grp_id ? Number(ctx.req.query.grp_id) : 0;
   const grps = await db.query`SELECT id, name FROM grp ORDER BY name`;

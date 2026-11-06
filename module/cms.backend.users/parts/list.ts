@@ -5,7 +5,7 @@ import * as u2 from "@qino/qino/u2";
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {
+export function allowLoginAs(node: Node | null, ctx: Ctx): boolean {
   return !!ctx.user?.superuser || !!(node?.settings.allow_login_as());
 }
 
@@ -13,7 +13,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   const db = ctx.app.db;
 
   const isSuperuser = !!ctx.user?.superuser;
-  const canLoginAs = await allowLoginAs(node, ctx);
+  const canLoginAs = allowLoginAs(node, ctx);
 
   const search = String(vars?.search ?? "");
   const grpId = Number(vars?.grp_id ?? ctx.req.query.grp_id) || null;
