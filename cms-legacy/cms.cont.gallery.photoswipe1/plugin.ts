@@ -27,6 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const height = Number(node.settings.height()) || 200;
   const bigWidth = Number(node.settings.big_width()) || 3000;
   const bigHeight = Number(node.settings.big_height()) || 2500;
+  const text = node.settings.text();
   const figures: HtmlString[] = [];
   for (const file of (await node.files()).values()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
@@ -37,13 +38,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     const endHeight = Math.round(realHeight * scale);
     const imageUrl = await file.url({ h: bigHeight, w: bigWidth, max: true });
     const previewUrl = await file.url({ h: Math.round(height * 1.5), w: Math.round(width * 1.5) });
-    const caption = await node.showText("file_" + file.id);
     figures.push(html`<figure itemprop=associatedMedia itemscope itemtype="http://schema.org/ImageObject">
       <a style="background-image:url(${previewUrl});padding-bottom:${Math.ceil(height * 100 / width)}%" href="${imageUrl}"
         target=_blank itemprop=contentUrl data-width="${endWidth}" data-height="${endHeight}">
         <img src="${previewUrl}" itemprop=thumbnail alt="" hidden>
       </a>
-      ${node.settings.text() ? html`<figcaption class=-text itemprop="caption description">${caption.html()}</figcaption>` : ""}
+      ${text ? html`<figcaption class=-text itemprop="caption description">${(await node.showText("file_" + file.id)).html()}</figcaption>` : ""}
     </figure>`);
   }
 
