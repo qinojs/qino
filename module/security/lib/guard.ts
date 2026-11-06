@@ -5,7 +5,7 @@ import { ipKey } from "./ipKey.ts";
 
 import type { App, Ctx } from "@qino/qino";
 
-export const HALF_LIFE = 3600;  // a suspicion halves every hour
+export const HALF_LIFE = 7200;  // a suspicion halves every two hours
 export const BLOCK = 50;       // from this strength on, answers are refused; below, they wait strength² ms
 const STORE = 5;               // from this strength on, it is stored
 const MAX = 10000;             // at most this many tracked keys

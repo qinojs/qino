@@ -19,7 +19,7 @@ export const suspiciousPaths = (app: App, signal: AbortSignal): void => report(a
 export const foreignPaths = (app: App, signal: AbortSignal): void => report(app, signal, {
   weight: 5,
   reason: "foreign path",
-  starts: ["js/", "css/", "assets/", "cgi-bin/", "wp-admin/", "wp-content/", "wp-includes/", "phpmyadmin", "pma/", "adminer"],
+  starts: ["js/", "css/", "assets/", "admin/", "cgi-bin/", "wp-admin/", "wp-content/", "wp-includes/", "phpmyadmin", "pma/", "adminer"],
   segments: ["xmlrpc.php", "wp-login.php", "wlwmanifest.xml"],
   ends: [".php", ".asp", ".aspx", ".jsp", ".cgi"],
   enabled: async () => await app.settings.security.foreignPaths,

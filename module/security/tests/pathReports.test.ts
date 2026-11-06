@@ -19,8 +19,9 @@ test("security: suspicious paths stop early, report and eventually block the IP"
 test("security: 404s on foreign paths report lightly, unless security.foreignPaths is off", () => withApp(async (app) => {
   await get(app, "8.8.8.8", "kontakt.php");
   await get(app, "8.8.8.8", "css/style.css");
+  await get(app, "8.8.8.8", "admin/reports");
   await settle();
-  assertEquals(reports(app).map((r) => r.reason), ["foreign path: css/style.css", "foreign path: kontakt.php"]);
+  assertEquals(reports(app).map((r) => r.reason), ["foreign path: admin/reports", "foreign path: css/style.css", "foreign path: kontakt.php"]);
 
   await app.settings.security.foreignPaths(false);
   await get(app, "9.9.9.9", "wp-admin/");
