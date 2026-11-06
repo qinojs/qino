@@ -24,12 +24,12 @@ async function render(node: Node) {
   const items: HtmlString[] = [];
   const gap = () => html`<i${html.raw(space ? ` style="width:${space};height:${rowSpace}"` : "")}></i>`;
 
-  if (space && around) items.push(gap());
   for (let i = 0; i < cols; i++) {
     if (space && (around || i)) items.push(gap());
     const width = cssLength(await node.settings[`row_${i + 1}`]);
     items.push(await html.async`<div${html.raw(width ? ` style="width:${width}"` : "")}>${node.cont(String(i))}</div>`);
   }
+  if (space && around) items.push(gap());
 
   const responsive = minWidth
     ? html`<style>@media(max-width:${minWidth}px){[qcms-id="${node.id}"]{display:block;width:auto}[qcms-id="${node.id}"]>*{display:block;min-width:100%}}</style>`
