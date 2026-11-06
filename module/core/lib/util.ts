@@ -55,7 +55,7 @@ export function clientIp(request: Request, peerAddr: string, hops = 0): string {
 
 /** Is `host` in a list like "a.ch *.b.ch"? */
 export const hostAllowed = (list: string, host: string): boolean =>
-  list.split(/[\s,]+/).filter(Boolean).some((h) => h === host || (h.startsWith("*.") && host.endsWith(h.slice(1))));
+  list.split(/[\s,]+/).some((h) => h !== "" && (h === host || (h.startsWith("*.") && host.endsWith(h.slice(1)))));
 
 export const unixTime = (): number => Math.floor(Date.now() / 1000);
 

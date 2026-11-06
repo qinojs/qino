@@ -27,16 +27,16 @@ export async function healthChecks(app: App) {
     const ctx = requestStorage.getStore();
     return ctx ? urlOf(ctx) : "";
   };
-  const setTo = (url: string) => ({ [`set it to: ${url}`]: { solve: async () => { await app.settings.core.url(url); } } });
+  const setTo = (url: string) => ({ [`set it to: ${url}`]: { solve: async () => { await settings.core.url(url); } } });
 
   warning["public address is unknown"] = async () => {
-    if (await app.settings.core.url) return;
+    if (await settings.core.url) return;
     const url = here();
     return { info: "links sent from a job cannot be built without it", solutions: url ? setTo(url) : {} };
   };
 
   warning["public address does not answer"] = async () => {
-    const url = String(await app.settings.core.url ?? "");
+    const url = String(await settings.core.url ?? "");
     if (!url) return; // covered by the check above
     // any answer, even a redirect or 404, proves the app is reachable there
     const reason = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(5000) })

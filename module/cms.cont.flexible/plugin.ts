@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { Node } from "@qino/qino/cms";

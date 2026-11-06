@@ -1,7 +1,6 @@
 /* Panel widget: the form whose entries this block shows, and how. Choosing a form enters the block
    with it (`listing_nodes`), a settings write on the form: only who may edit the form gets it
    through — everyone else is told so. Opening the panel writes nothing. */
-import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 

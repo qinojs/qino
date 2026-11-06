@@ -129,7 +129,6 @@ class MysqlDriver extends DbDriver {
   protected override closeDriver() { return this.#pool.end(); }
 }
 
-// deno-lint-ignore no-explicit-any
 const { Bun, Deno, process } = globalThis as any;
 
 /** `node:sqlite`, in Bun `bun:sqlite` — both answer `exec`, `prepare().all/run`, `loadExtension`

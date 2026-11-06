@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { App, fs, runAs } from "@qino/qino";
-import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
+import { assert, assertStringIncludes } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
 import { cms } from "../plugin.ts";
