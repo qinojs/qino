@@ -27,7 +27,7 @@ export const paymentProvider: Provider = {
   },
 
   // nothing outside to ask: what the balance gave is paid
-  sync: () => Promise.resolve({}),
+  sync: async () => ({}),
 
   async refund(app, payment, amount) {
     await add(app, Number(payment.usr_id), {

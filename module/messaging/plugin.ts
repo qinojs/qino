@@ -32,9 +32,9 @@ export const templatePlaceholders: Record<string, Placeholder> = {
 
 /** A recipient column as placeholder (escaped in markup). Template name camelCase, column as is. */
 function columns(names: Record<string, string>): Record<string, Placeholder> {
-  return Object.fromEntries(Object.entries(names).map(([name, column]) => [name, (_app, to) => {
+  return Object.fromEntries(Object.entries(names).map(([name, column]) => [name, async (_app, to) => {
     const value = String(to[column] ?? "");
-    return Promise.resolve(value ? { text: value } : undefined);
+    return value ? { text: value } : undefined;
   }]));
 }
 

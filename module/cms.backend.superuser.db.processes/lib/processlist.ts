@@ -73,7 +73,7 @@ const postgres: Adapter = {
 };
 
 // SQLite is serverless — no connection list, nothing to kill.
-const sqlite: Adapter = { list: () => Promise.resolve([]), kill: () => Promise.resolve() };
+const sqlite: Adapter = { list: async () => [], kill: async () => {} };
 
 const adapters: Record<string, Adapter> = { mysql, postgres, sqlite };
 

@@ -16,7 +16,7 @@ const KIND: Record<string, Kind> = { c: "click", l: "load" };
 /** Prepared once per message, then applied per recipient: one pass over the text, at most two
  *  markers. */
 export function markers(app: App, links: Link[]): (deliveryId: number) => Promise<(text: string) => string> {
-  if (!links.length) return () => Promise.resolve((text: string) => text);
+  if (!links.length) return async () => (text: string) => text;
   const kinds = new Map(links.map(({ url, kind }) => [url, kind]));
   // longest first — a link may be the prefix of another
   const any = new RegExp([...kinds.keys()].sort((a, b) => b.length - a.length).map(RegExp.escape).join("|"), "g");

@@ -36,8 +36,8 @@ export abstract class DbDriver {
   /** The engine raises the counter itself when a higher explicit id is inserted. */
   insertSyncsAutoIncrement = true;
   /** Move the id counter past `value` (never down). Only for ids the engine did not see. */
-  syncAutoIncrement(_table: string, _field: string, _value: number): Promise<void> { return Promise.resolve(); }
-  ensureDatabase(): Promise<void> { return Promise.resolve(); }
+  async syncAutoIncrement(_table: string, _field: string, _value: number): Promise<void> {}
+  async ensureDatabase(): Promise<void> {}
   /** Load a native extension into the engine (e.g. sqlite-vec); only an embedded engine can. */
   loadExtension(_path: string): void { throw new Error(`${this.dialect}: extensions are installed on the database server`); }
 
