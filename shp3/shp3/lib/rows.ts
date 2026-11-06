@@ -102,7 +102,7 @@ export class OrderItem extends ShopRow {
   order(): Promise<Order | undefined> { return this.$table.db.table("shp3_order").get<Order>(this.order_id); }
   product(): Promise<Product | undefined> { return this.$table.db.table("shp3_product").get<Product>(this.product_id); }
 
-  configData(): unknown { return JSON.parse(this.config || "null"); }
+  configData(): unknown { return this.config ? JSON.parse(this.config) : null; }
 
   /** Frozen once the order is placed, live before that. */
   async calcVatRate(): Promise<number> {
@@ -217,7 +217,7 @@ export class Order extends ShopRow {
     return (this.ship_unlike_bill ? this.ship_country : this.bill_country) || this.ship_country || "";
   }
 
-  configData(): unknown { return JSON.parse(this.config || "null"); }
+  configData(): unknown { return this.config ? JSON.parse(this.config) : null; }
 
   async weight(): Promise<number> {
     let total = 0;
