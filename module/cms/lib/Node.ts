@@ -440,7 +440,7 @@ export class Node {
 
     async file(name: string): Promise<DbFile> {
         await this.files();
-        return this.#filesAll!.get(name) ?? await this.addFile(undefined, name);
+        return this.#filesAll!.get(name) ?? this.addFile(undefined, name);
     }
 
     async addFile(file?: DbFile | string, name?: string): Promise<DbFile> {

@@ -399,7 +399,7 @@ const PRICE_PHASES = ["initial", "additions", "discount", "final"] as const;
 /** Create the product row for a page with the product module on demand. */
 export async function ensureProduct(node: Node): Promise<Product | undefined> {
   const table = node.app.db.table("shp3_product");
-  return await table.get<Product>(node.id) ?? await table.add<Product>({ id: node.id });
+  return await table.get<Product>(node.id) ?? table.add<Product>({ id: node.id });
 }
 
 export function registerRows(db: Db): void {
