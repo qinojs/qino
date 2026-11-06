@@ -6,9 +6,11 @@ import { collections, create, drop } from "@qino/qino/ai.embed";
 
 import type { Adapter } from "@qino/qino/ai";
 
-// Texts that mention a greeting embed apart; queries too.
+// Texts that mention a greeting embed apart; queries too. One with "outage" fails, as a provider does.
 const fake: Adapter = {
-  embed: (_call, { texts }) => Promise.resolve(texts.map((t: string) => /greet/i.test(t) ? [1, 0] : [0, 1])),
+  embed: (_call, { texts }) => texts.some((t: string) => /outage/.test(t))
+    ? Promise.reject(new Error("No answer for 60s"))
+    : Promise.resolve(texts.map((t: string) => /greet/i.test(t) ? [1, 0] : [0, 1])),
 } as Adapter;
 
 /** A real app with ai.discover, user 7, superuser 8, and routes as tools: one for users, one for superusers. */
@@ -75,3 +77,8 @@ test("ai.discover: without an embedding collection, search by words", () => with
   const hits = (await as(7, () => api(app).tables.get(undefined, { search: "collection_id" }))).map((t: any) => t.name);
   assert(hits.includes("embedding_ai_discover") && !hits.includes("usr"));
 }, false));
+
+test("ai.discover: while embedding fails, search by words", () => withApp(async (app, as) => {
+  const hits = (await as(7, () => api(app).tables.get(undefined, { search: "outage collection_id" }))).map((t: any) => t.name);
+  assert(hits.includes("embedding_ai_discover") && !hits.includes("usr"));
+}));

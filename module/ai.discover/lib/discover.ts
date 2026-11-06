@@ -79,19 +79,24 @@ function indexAll(app: App, kind: Kind, every: Entry[]) {
   return done;
 }
 
+/** Of `among`, those that contain the most of the words of `query` (none for a vector). */
+function byWords(query: string | number[], among: Entry[], limit: number) {
+  if (typeof query !== "string") return [];
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return among.map((e) => ({ e, n: words.filter((w) => e.text.toLowerCase().includes(w)).length }))
+    .filter(({ n }) => n).sort((a, b) => b.n - a.n).slice(0, limit).map(({ e }) => e);
+}
+
 /** Of `among`, the entries nearest to `query` by meaning, with their `score` (1 the same); `query` may be
- *  a vector already (ai.embed). Without an embedding collection those that contain the most of its words. */
+ *  a vector already (ai.embed). Without an embedding collection, or while embedding fails, those that
+ *  contain the most of its words. */
 export async function find(app: App, kind: Kind, query: string | number[], among: Entry[], limit = LIMIT): Promise<(Entry & { score?: number })[]> {
-  if (!await collection(app)) {
-    if (typeof query !== "string") return [];
-    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    return among.map((e) => ({ e, n: words.filter((w) => e.text.toLowerCase().includes(w)).length }))
-      .filter(({ n }) => n).sort((a, b) => b.n - a.n).slice(0, limit).map(({ e }) => e);
-  }
+  if (!await collection(app)) return byWords(query, among, limit);
   const every = all(app, kind);
   await indexAll(app, kind, every).catch(log);
   // all of the kind by nearness: what is not among them is skipped, a further chunk of an entry too
-  const hits = await search(app, { ai_discover: sql`e.kind = ${kind}` }, query, { limit: every.length });
+  const hits = await search(app, { ai_discover: sql`e.kind = ${kind}` }, query, { limit: every.length }).catch(log);
+  if (!hits) return byWords(query, among, limit);
   const byName = new Map(among.map((e) => [e.name, e])), best = new Map<string, number>();
   for (const { key, score } of hits) if (!best.has(String(key.name))) best.set(String(key.name), score); // the nearest chunk
   return [...best].flatMap(([name, score]) => byName.has(name) ? [{ ...byName.get(name)!, score }] : []).slice(0, limit);

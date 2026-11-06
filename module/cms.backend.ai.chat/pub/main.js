@@ -1,4 +1,5 @@
 import { api } from "@qino/pub/api.js";
+import { images } from "@qino/m/cms.backend.ai/pub/images.js";
 import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
 
 const KEY = "ai.chat:session"; // the session to go on with after a reload
@@ -24,8 +25,13 @@ const time = (unix) => {
 };
 const textOf = (content) => typeof content === "string" ? content : (content ?? []).map((p) => p.text ?? `[${p.type}]`).join(" ");
 
-/** One message: an answer as markdown, what was said as text; nothing for what the user does not see. */
+/** One message: an answer as markdown, what was said as text, the images tools gave; nothing for what the
+ *  user does not see. */
 async function entry({ role, content, time: at }) {
+  if (role === "tool") {
+    const shown = images(content);
+    return shown.length ? h("div", { style: "align-self:flex-start; max-width:80%" }, ...shown) : "";
+  }
   const text = textOf(content);
   if (!text || role === "start" || role === "system" || role === "tool") return "";
   const bubble = role === "user" ? "background:color-mix(in oklch, var(--accent) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-left:1.5rem"

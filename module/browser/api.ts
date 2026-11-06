@@ -12,7 +12,7 @@ const WAIT = 10_000;
 const REF = s.string().describe("From the snapshot, e.g. e12");
 /** A screenshot for a model, a jpeg: what it pays is its size in pixels. The view and the whole page small,
  *  to see where things are; a zoom (an element, an area) as it is, in better quality. */
-const OVERVIEW = { maxSize: 768, quality: 70 }, ZOOM = { maxSize: 1568, quality: 90 };
+const OVERVIEW = { maxSize: 768, quality: 75 }, ZOOM = { maxSize: 1568, quality: 90 };
 
 type Session = { usrId: number; page: Page; idle?: ReturnType<typeof setTimeout> };
 const sessions = new WeakMap<App, Map<string, Session>>();
@@ -117,7 +117,9 @@ export const api: ApiTree = {
   },
   screenshot: {
     get: {
-      description: "How the page looks: the visible part or all of it, small; or a zoom on an element or an area",
+      description: `How the page looks. The visible part or all of it small (at most ${OVERVIEW.maxSize} px, jpeg ` +
+        `quality ${OVERVIEW.quality}): for the layout, not to judge sharpness, colors or small text. A zoom on an ` +
+        `element (ref) or an area as it is (jpeg quality ${ZOOM.quality}).`,
       query: s.object({
         id: s.string(),
         fullPage: s.optional(s.boolean()),

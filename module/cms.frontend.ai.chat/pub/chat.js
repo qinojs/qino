@@ -1,5 +1,6 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { images } from "@qino/m/cms.backend.ai/pub/images.js";
 import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
 import { onShortcut } from "@qino/m/cms.frontend/pub/js/shortcut.js";
 
@@ -87,10 +88,15 @@ document.body.append(mark);
 const chat = api[NAME], sessions = api["ai.agent"].sessions;
 let session, last = 0, sent, busy = false, poll, showing = Promise.resolve(), changes;
 
-/** One message: an answer as markdown, what was said as text, this chat's notes small; nothing else. */
+/** One message: an answer as markdown, what was said as text, this chat's notes small, the images tools
+ *  gave; nothing else. */
 async function entry({ role, content }) {
   const text = textOf(content);
-  if (!text || role === "tool") return "";
+  if (role === "tool") {
+    const shown = images(content);
+    return shown.length ? h("div", {}, ...shown) : "";
+  }
+  if (!text) return "";
   if (role === "system") { // this chat's notes, by their first line; notes waiting together come as one
     const line = text.split("\n").find((l) => l.startsWith(SHOWN) || l.startsWith(ON));
     return line ? h("div", { className: "-note", title: text }, line) : "";

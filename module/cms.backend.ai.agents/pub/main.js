@@ -1,5 +1,6 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { images } from "@qino/m/cms.backend.ai/pub/images.js";
 import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
 
 /** The answers in `box` as markdown. */
@@ -161,7 +162,8 @@ cms.initNode("backend.ai.agents", (el) => {
         button.setAttribute("aria-current", "true");
         button.firstChild.firstChild.style.display = "";
         button.scrollIntoView({ block: "nearest" });
-        const input = code(call.args), output = code(call.result ?? "", true);
+        const shown = images(call.result); // a screenshot as such, not as its data
+        const input = code(call.args), output = code(shown.length ? "" : call.result ?? "", true);
         const run = dom("button", { type: "button", textContent: label[3] });
         run.onclick = async () => {
           run.disabled = true;
@@ -169,7 +171,7 @@ cms.initNode("backend.ai.agents", (el) => {
           catch (err) { output.value = pretty({ error: err.message, ...err.data !== undefined && { data: err.data } }); }
           finally { run.disabled = false; }
         };
-        detail.replaceChildren(part(label[0], input, run), part(label[1], output));
+        detail.replaceChildren(part(label[0], input, run), part(label[1], ...shown, output));
       };
       items.set(call.id, button);
       row.append(button);
