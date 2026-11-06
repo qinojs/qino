@@ -160,7 +160,7 @@ export async function active(app: App, user: number): Promise<Account | undefine
   const value = await accounts(app, user);
   const account = value.accounts.find((a) => a.client_id === value.active);
   if (!account || account.expires_at > Date.now() + 60_000) return account;
-  const locks = refreshing.getOrInsertComputed(app, () => new Map());
+  const locks = refreshing.get(app) ?? refreshing.set(app, new Map()).get(app)!;
   const key = `${user}:${account.client_id}`;
   let task = locks.get(key);
   if (!task) {

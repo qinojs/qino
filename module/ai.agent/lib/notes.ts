@@ -10,7 +10,7 @@ import type { Message, Part } from "@qino/qino/ai";
 
 type Note = { content: string | Part[]; known?: string[] };
 const pending = new WeakMap<App, Map<number, Note[]>>();
-const waiting = (app: App) => pending.getOrInsertComputed(app, () => new Map());
+const waiting = (app: App) => pending.get(app) ?? pending.set(app, new Map()).get(app)!;
 
 /** One content of `notes`, in their order. */
 const joined = (notes: (string | Part[])[]): string | Part[] => notes.every((c) => typeof c === "string")
@@ -47,7 +47,7 @@ const told = new WeakMap<App, Map<number, number>>();
 
 /** The time as a note, once `CLOCK` passed since `session` was last told it. */
 function clock(app: App, session: number): string | undefined {
-  const last = told.getOrInsertComputed(app, () => new Map()), now = unixTime();
+  const last = told.get(app) ?? told.set(app, new Map()).get(app)!, now = unixTime();
   if (now - (last.get(session) ?? 0) < CLOCK) return;
   last.set(session, now);
   const at = Temporal.Instant.fromEpochMilliseconds(now * 1000).toZonedDateTimeISO(Temporal.Now.timeZoneId())

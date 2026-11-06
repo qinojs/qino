@@ -99,7 +99,7 @@ export async function failed(node: Node): Promise<HtmlString> {
     if (m.role !== "tool") {
       for (const call of m.toolCalls ?? []) {
         called.set(key(call.id), call.name);
-        const tool = tools.getOrInsertComputed(call.name, () => ({ calls: 0, failed: 0 }));
+        const tool = tools.get(call.name) ?? tools.set(call.name, { calls: 0, failed: 0 }).get(call.name)!;
         tool.calls++;
       }
       continue;

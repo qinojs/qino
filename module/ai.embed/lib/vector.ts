@@ -42,7 +42,7 @@ export async function fit(db: Db, table: string, c: Collection): Promise<void> {
   if (db.dialect === "mysql" && await width(db, table) < c.dimensions) {
     await db.exec`ALTER TABLE ${sql.id(table)} MODIFY embedding VECTOR(${sql.raw(String(c.dimensions))}) NOT NULL`;
   }
-  const name = `${table}_collection_${c.id}`, known = indexed.getOrInsertComputed(db, () => new Set());
+  const name = `${table}_collection_${c.id}`, known = indexed.get(db) ?? indexed.set(db, new Set()).get(db)!;
   if (db.dialect !== "postgres" || c.dimensions > 2000 || known.has(name)) return; // hnsw indexes up to 2000
   await db.exec`CREATE INDEX IF NOT EXISTS ${sql.id(name)} ON ${sql.id(table)}
     USING hnsw ((embedding::vector(${sql.raw(String(c.dimensions))})) vector_l2_ops) WHERE collection_id = ${sql.raw(String(c.id))}`;

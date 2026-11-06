@@ -116,7 +116,7 @@ const queries = new WeakMap<App, Map<string, number[]>>();
  *  is not embedded again. Not the stored ones of equal text: a model embeds a query apart from what it
  *  finds (`purpose`). */
 async function queryVector(app: App, c: Collection, text: string) {
-  const cache = queries.getOrInsertComputed(app, () => new Map()), key = `${c.id} ${await sha256hex(text)}`;
+  const cache = queries.get(app) ?? queries.set(app, new Map()).get(app)!, key = `${c.id} ${await sha256hex(text)}`;
   const kept = cache.get(key);
   if (kept) return cache.delete(key), cache.set(key, kept), kept; // the latest used last
   const [values] = await vectors(app, c, { texts: [text], purpose: "query" });

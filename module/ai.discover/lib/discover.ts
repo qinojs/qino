@@ -65,7 +65,7 @@ const indexed = new WeakMap<App, Map<Kind, { text: string; done: Promise<void> }
 /** Embed every entry of a kind, unless it is as last time: modules linked later change it. Unchanged
  *  entries are not embedded again (ai.embed); those gone are removed. */
 function indexAll(app: App, kind: Kind, every: Entry[]) {
-  const kinds = indexed.getOrInsertComputed(app, () => new Map());
+  const kinds = indexed.get(app) ?? indexed.set(app, new Map()).get(app)!;
   const now = every.map((e) => e.text).join("\n\n");
   if (kinds.get(kind)?.text === now) return kinds.get(kind)!.done;
   const done = (async () => {

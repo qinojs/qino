@@ -76,7 +76,7 @@ export async function request(app: App, capability: string, input: unknown, opts
   const types = adapters(app);
   chain = [...chain, capability];
   const via = definitions(app, capability).flatMap((def) => Object.entries(def.via ?? {})).filter(([c]) => !chain.includes(c));
-  const cooling = cooldowns.getOrInsertComputed(app, () => new Map());
+  const cooling = cooldowns.get(app) ?? cooldowns.set(app, new Map()).get(app)!;
   const errors: string[] = [];
   const stop = (e: unknown) => (e instanceof AiError && e.final) || opts.signal?.aborted;
 
