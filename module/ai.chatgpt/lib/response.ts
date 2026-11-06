@@ -28,7 +28,11 @@ export function input(messages: Message[], tools: TextInput["tools"]): { input: 
     if (message.role === "system" && !started) { leading.push(typeof message.content === "string" ? message.content :
       message.content.filter((p) => p.type === "text").map((p) => p.text).join("\n")); continue; }
     started = true;
-    if (message.role === "tool") { items.push({ type: "function_call_output", call_id: message.id, output: message.content }); continue; }
+    if (message.role === "tool") {
+      const output = typeof message.content === "string" ? message.content : content(message.content); // it takes images
+      items.push({ type: "function_call_output", call_id: message.id, output });
+      continue;
+    }
     if (message.role === "assistant") {
       if (message.content) items.push({ role: "assistant", content: content(message.content, true) });
       for (const tool of message.toolCalls ?? []) items.push({ type: "function_call", call_id: tool.id,

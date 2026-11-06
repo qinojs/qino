@@ -47,12 +47,27 @@ const note = (content: string | Part[]): Message => ({
   content: typeof content === "string" ? `<system-reminder>\n${content}\n</system-reminder>` : [{ type: "text", text: "<system-reminder>" }, ...content, { type: "text", text: "</system-reminder>" }],
 });
 
+/** A chat completion takes no images in a tool's result: they follow the step's results, as the user's. */
+function shown(messages: Message[]): Message[] {
+  let images: Part[] = [];
+  return messages.flatMap((m, i) => {
+    if (m.role !== "tool" || typeof m.content === "string") return [m];
+    images.push(...m.content.filter((p) => p.type === "image"));
+    const said = m.content.flatMap((p) => p.type === "text" ? [p.text] : []).join("\n");
+    const result = { ...m, content: said || "An image, shown below." };
+    if (messages[i + 1]?.role === "tool" || !images.length) return [result];
+    const content = [{ type: "text" as const, text: "The images of the tool results above:" }, ...images];
+    images = [];
+    return [result, { role: "user", content }];
+  });
+}
+
 /** A chat completion's body; `more` goes in as it is: a response format, a cache mark. */
 export function chatBody(call: Call, { messages, tools, temperature, maxTokens, onText }: TextInput, more: Record<string, unknown> = {}) {
-  const start = messages.findIndex((m) => m.role !== "system");
+  const sent = shown(messages), start = sent.findIndex((m) => m.role !== "system");
   return {
     model: call.model,
-    messages: messages.map((m, i) => toOpenAi(m.role === "system" && i > start && start >= 0 ? note(m.content) : m)),
+    messages: sent.map((m, i) => toOpenAi(m.role === "system" && i > start && start >= 0 ? note(m.content) : m)),
     tools: tools?.length ? tools.map(({ name, description, parameters }) => ({ type: "function", function: { name, description, parameters } })) : undefined,
     temperature,
     max_tokens: maxTokens,

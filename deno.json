@@ -232,6 +232,7 @@
     "marked": "npm:marked@^18",
     "sanitize-html": "npm:sanitize-html@^2",
     "sqlite-vec": "npm:sqlite-vec@^0.1.9",
+    "playwright-core": "npm:playwright-core@^1",
     "puppeteer-core": "npm:puppeteer-core@^24",
     "@scure/bip32": "npm:@scure/bip32@^1",
     "@scure/btc-signer": "npm:@scure/btc-signer@^1",

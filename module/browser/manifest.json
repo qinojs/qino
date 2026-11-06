@@ -6,6 +6,9 @@
   ],
   "files": [
     "README.md",
+    "api.ts",
+    "lib/Page.ts",
+    "lib/playwright.ts",
     "lib/proxy.ts",
     "lib/puppeteer.ts",
     "manifest.json",

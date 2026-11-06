@@ -18,7 +18,8 @@ export async function proxy(): Promise<{ server: string; close: () => void }> {
       const end = head.indexOf("\r\n\r\n");
       if (end < 0) return void (head.length > 65_536 && client.destroy());
       client.off("data", read).pause(); // what follows waits for the pipe
-      connect(client, head, end).catch((e) => client.end(`HTTP/1.1 502 Bad Gateway\r\ncontent-type: text/plain\r\n\r\n${errMsg(e)}`));
+      connect(client, head, end)
+        .catch((e) => client.end(`HTTP/1.1 502 Bad Gateway\r\ncontent-type: text/plain\r\n\r\n${errMsg(e)}`));
     };
     client.on("data", read);
   });

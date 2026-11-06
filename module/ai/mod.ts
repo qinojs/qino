@@ -12,11 +12,12 @@ export type { BatchAnswer, BatchApi, BatchInput, BatchItem } from "./lib/batch.t
 /** Provider-neutral content. An image `url` may be a data URL. */
 export type Part = { type: "text"; text: string } | { type: "image"; url: string };
 type ToolCall = { id: string; name: string; args: unknown; extra_content?: Record<string, unknown> };
-/** A `system` message amid the history is context given later: sent as the user's, marked. */
+/** A `system` message amid the history is context given later: sent as the user's, marked. A tool's
+ *  result with images goes to the model with them, where it takes them there, else right after. */
 export type Message =
   | { role: "system" | "user"; content: string | Part[] }
   | { role: "assistant"; content: string; toolCalls?: ToolCall[] }
-  | { role: "tool"; id: string; content: string };
+  | { role: "tool"; id: string; content: string | Part[] };
 
 export type TextInput = {
   messages: Message[];
