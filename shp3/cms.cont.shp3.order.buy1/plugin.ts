@@ -21,7 +21,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const page = await node.page();
   // Where the customer lands afterwards, and where the way back leads — both default to the tree.
   const successId = Number(await node.settings.success_page());
-  const success = successId ? await node.cms.node(successId) : [...(await page.children()).values()][0];
+  const success = successId ? (await node.cms.node(successId)).exists() : (await page.children()).values().next().value;
   const backId = Number(await node.settings.back_page());
   const back = backId ? await node.cms.node(backId) : await page.parent();
 
