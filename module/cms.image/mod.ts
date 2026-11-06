@@ -13,7 +13,7 @@ export async function cms_image(dbFile: DbFile, options: Record<string, any>): P
   const ctx = getCtx();
   ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "cms.image/pub/cms-image.js");
   ctx.res.html.styles.add(ctx.req.moduleUrl + "cms.image/pub/cms-image.css");
-  if (options.if && !await dbFile.exists() && !options.editable) return html.raw("");
+  if (options.if && !options.editable && !await dbFile.exists()) return html.raw("");
   options.quality ||= "85";
   delete options.if;
   return html.raw(await imageHtml(dbFile, options, ctx.app.modules.get(name)!.cache));

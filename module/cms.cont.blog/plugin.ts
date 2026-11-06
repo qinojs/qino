@@ -21,14 +21,14 @@ async function posts(node: Node, publicOnly: boolean, { offset = 0, limit = LIMI
   const out = [];
   let skipped = 0;
   for (const child of children) {
-    if (publicOnly && (!await child.isPublic() || !await child.isOnline() || !child.vs.searchable)) continue;
+    if (publicOnly && (!child.vs.searchable || !await child.isPublic() || !await child.isOnline())) continue;
     if (!publicOnly && !await child.isReadable()) continue;
     const created = Number(child.vs.online_start) || 0;
     if (dated && !created) continue;
     const title = (await child.showTitle()).plain();
     if (!title) continue;
     if (skipped++ < offset) continue;
-    const draft = !publicOnly && !(await child.isPublic() && await child.isOnline() && child.vs.searchable);
+    const draft = !publicOnly && !(child.vs.searchable && await child.isPublic() && await child.isOnline());
     out.push({ node: child, title, created, draft });
     if (out.length >= limit) break;
   }

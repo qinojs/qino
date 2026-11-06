@@ -16,7 +16,7 @@ export async function render(app: App, html: string, { timeout = 30_000 } = {}):
     page.setDefaultTimeout(timeout);
     await page.setContent(html);
     await page.evaluate("document.fonts.ready");
-    return new Uint8Array(await page.pdf({ preferCSSPageSize: true, printBackground: true, margin: MARGIN }));
+    return await page.pdf({ preferCSSPageSize: true, printBackground: true, margin: MARGIN });
   } finally {
     await page.close();
   }

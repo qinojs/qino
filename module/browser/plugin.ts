@@ -1,9 +1,10 @@
 import { Access, ApiError, NotFoundError, s, sys, uid } from "@qino/qino";
 
+import { Chrome } from "./lib/puppeteer.ts";
 import { executable, open } from "./mod.ts";
 
 import type { ApiTree, App, Ctx } from "@qino/qino";
-import type { Page } from "playwright-core";
+import type { Page } from "./mod.ts";
 
 export const settingsSchema = {
   properties: {
@@ -15,7 +16,8 @@ export function healthChecks(app: App) {
   return { warning: {
     "no browser": async () => {
       if (!await executable(app)) return { info: "install Chromium (apt install chromium) or set browser.executable" };
-      if (!await import("playwright-core").catch(() => undefined)) return { info: "npm install playwright-core" };
+      const missing = await Chrome.missing();
+      if (missing) return { info: missing };
     },
   } };
 }
@@ -45,8 +47,10 @@ function session(ctx: Ctx, id: string) {
 }
 
 /** What a page shows: its accessibility tree, each element with a ref to act on. */
-const state = async (id: string, page: Page) =>
-  ({ id, url: page.url(), title: await page.title(), snapshot: await page.ariaSnapshot({ mode: "ai" }) });
+async function state(id: string, page: Page) {
+  const snapshot = await page.snapshot(); // first: it waits for what an action started
+  return { id, url: page.url(), title: await page.title(), snapshot };
+}
 
 // Pages from the api are guarded: users and agents reach only public addresses.
 export const api: ApiTree = {
@@ -56,12 +60,13 @@ export const api: ApiTree = {
       input: s.object({ url: s.optional(s.string()).describe("http or https") }),
       access: Access.USER,
       execute: async ({ url }: { url?: string }, ctx: Ctx) => {
+        if (url) web(url);
         const page = await open(ctx.app), id = uid();
         page.setDefaultTimeout(WAIT);
+        if (url) await page.goto(url).catch(async (e) => (await page.close(), Promise.reject(e))); // no id to close it by
         of(ctx.app).set(id, { usrId: ctx.userId, page });
         page.on("close", () => of(ctx.app).delete(id));
         session(ctx, id);
-        if (url) await page.goto(web(url));
         return state(id, page);
       },
     },
@@ -85,7 +90,7 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async ({ id, ref }: { id: string; ref: string }, ctx: Ctx) => {
         const page = session(ctx, id);
-        await page.locator(`aria-ref=${ref}`).click();
+        await page.click(ref);
         return state(id, page);
       },
     },
@@ -97,7 +102,7 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async ({ id, ref, text }: { id: string; ref: string; text: string }, ctx: Ctx) => {
         const page = session(ctx, id);
-        await page.locator(`aria-ref=${ref}`).fill(text);
+        await page.fill(ref, text);
         return state(id, page);
       },
     },

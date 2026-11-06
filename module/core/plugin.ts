@@ -208,7 +208,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
             }
         }
 
-        if (!await settings.url && ctx.user?.superuser) await settings.url(urlOf(ctx));
+        if (ctx.user?.superuser && !await settings.url) await settings.url(urlOf(ctx));
     }, { signal });
 
     // add the request's logId to every write — except the log tables

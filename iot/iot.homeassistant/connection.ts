@@ -260,7 +260,6 @@ export class Connection {
 // Selectors whose value is a plain string or number; anything else stays free-form JSON.
 const STRINGS = new Set(["text", "entity", "device", "area", "floor", "label", "state", "theme", "icon",
   "config_entry", "conversation_agent", "language", "template", "datetime", "date", "time", "statistic", "addon"]);
-const NUMBERS = new Set(["number", "color_temp"]);
 
 /** Home Assistant's field selectors as the JSON schema of an action's data. */
 function inputOf(fields: Record<string, Field>) {
@@ -271,7 +270,7 @@ function inputOf(fields: Record<string, Field>) {
     const [kind = "", options] = Object.entries(field.selector ?? {})[0] ?? [];
     const { min, max, step, multiple, options: values = [] } = (options ?? {}) as Record<string, unknown>;
     const one = kind === "boolean" ? { type: "boolean" }
-      : NUMBERS.has(kind) ? {
+      : kind === "number" || kind === "color_temp" ? {
         type: "number", minimum: min, maximum: max, multipleOf: typeof step === "number" ? step : undefined,
       }
       : kind === "select" ? {

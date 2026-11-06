@@ -5,10 +5,13 @@ import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import { executable, open } from "../mod.ts";
 
+import type { Page } from "../mod.ts";
+
 const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
 app.modules.add(new URL("../plugin.ts", import.meta.url));
 await app.init();
 const installed = await executable(app);
+const text = (page: Page, selector: string) => page.evaluate(`document.querySelector("${selector}").textContent`);
 const as = (usrId: number, fn: (browser: any) => Promise<any>): Promise<any> => runAs(app, usrId, "test", () => fn((app.api as any).browser));
 
 test("browser: an own page loads from our own network, a guarded one does not", { skip: !installed }, async () => {
@@ -18,14 +21,14 @@ test("browser: an own page loads from our own network, a guarded one does not", 
   try {
     const own = await open(app, { guard: false });
     await own.goto(url);
-    assertEquals(await own.locator("h1").textContent(), "Own");
+    assertEquals(await text(own, "h1"), "Own");
     await own.close();
 
     const guarded = await open(app);
-    assertEquals((await guarded.goto(url))?.status(), 403); // told by the proxy, not our server
-    assertEquals(await guarded.locator("h1").count(), 0);
+    assertEquals((await guarded.goto(url))?.status(), 502); // told by the proxy, not our server
+    assertEquals(await text(guarded, "body"), "SSRF blocked: 127.0.0.1");
     await assertRejects(() => guarded.goto(`https://127.0.0.1:${port}/`), Error, "ERR_TUNNEL_CONNECTION_FAILED");
-    await assertRejects(() => guarded.goto(`http://localhost:${port}/`), Error);
+    assertEquals((await guarded.goto(`http://localhost:${port}/`))?.status(), 502);
     await guarded.close();
   } finally {
     stop.abort();
@@ -34,10 +37,12 @@ test("browser: an own page loads from our own network, a guarded one does not", 
 
 test("browser: elements are found by the refs of the snapshot", { skip: !installed }, async () => {
   const page = await open(app, { guard: false });
-  await page.setContent(`<button onclick="this.textContent = 'Done'">Go</button>`);
-  const ref = (await page.ariaSnapshot({ mode: "ai" })).match(/button "Go" \[ref=(\w+)\]/)![1];
-  await page.locator(`aria-ref=${ref}`).click();
-  assertEquals(await page.locator("button").textContent(), "Done");
+  await page.setContent(`<h1>Hi</h1><button onclick="this.textContent = 'Done'">Go</button>`);
+  const tree = await page.snapshot();
+  assertEquals(tree, '- heading "Hi" [level=1] [ref=e1]\n- button "Go" [ref=e2]');
+  await page.click("e2");
+  assertEquals(await text(page, "button"), "Done");
+  await assertRejects(() => page.click("e99"), Error, "No element e99");
   await page.close();
 });
 

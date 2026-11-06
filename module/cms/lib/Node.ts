@@ -534,7 +534,7 @@ export class Node {
         const base = parentUrl === "" || parentUrl.endsWith("/") ? parentUrl : parentUrl + "/";
         let url = base + part;
         const exists = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url} AND NOT (page_id = ${this.id} AND lang = ${lang})`;
-        if (await fs.stat(this.app.dir + url) || exists) url += "-" + lang + this;
+        if (exists || await fs.stat(this.app.dir + url)) url += "-" + lang + this;
         return url;
     }
 

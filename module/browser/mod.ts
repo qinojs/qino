@@ -1,9 +1,12 @@
 import { fs, sys } from "@qino/qino";
 
 import { proxy } from "./lib/proxy.ts";
+import { Chrome } from "./lib/puppeteer.ts";
 
 import type { App } from "@qino/qino";
-import type { Browser, Page } from "playwright-core";
+import type { Page } from "./lib/puppeteer.ts";
+
+export type { Page };
 
 /** Tried in this order when the setting names none. */
 const CANDIDATES = ["chromium", "chromium-browser", "google-chrome-stable", "google-chrome", "microsoft-edge"];
@@ -32,9 +35,9 @@ export async function executable(app: App): Promise<string | undefined> {
 }
 
 // One process per binary, shared by the apps of this runtime like the binary itself: each page has a
-// context of its own (cookies, storage, cache), so they see nothing of each other.
+// context of its own, so they see nothing of each other.
 type Run = {
-  browser: Promise<Browser>;
+  chrome: Promise<Chrome>;
   proxy?: ReturnType<typeof proxy>;
   pages: number;
   idle?: ReturnType<typeof setTimeout>;
@@ -42,36 +45,28 @@ type Run = {
 const running = new Map<string, Run>();
 
 function start(cmd: string) {
-  const run: Run = { pages: 0, browser: launch(cmd) };
+  const run: Run = { pages: 0, chrome: Chrome.launch(cmd) };
   running.set(cmd, run);
   const gone = () => {
     if (running.get(cmd) === run) running.delete(cmd);
     run.proxy?.then((p) => p.close()).catch(() => {});
   };
-  run.browser.then((b) => b.on("disconnected", gone), gone);
+  run.chrome.then((chrome) => chrome.on("disconnected", gone), gone);
   return run;
-}
-
-async function launch(cmd: string) {
-  const { chromium } = await import("playwright-core").catch(() => {
-    throw new Error("browser: playwright-core is not installed (npm install playwright-core)");
-  });
-  // WebRTC would talk UDP past the proxy
-  return chromium.launch({ executablePath: cmd, args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"] });
 }
 
 function release(cmd: string, run: Run) {
   if (--run.pages) return;
   run.idle = setTimeout(() => {
     if (running.get(cmd) === run) running.delete(cmd); // the next page starts a new one
-    run.browser.then((b) => b.close()).catch(() => {});
+    run.chrome.then((chrome) => chrome.close()).catch(() => {});
   }, KEEP);
   sys.unrefTimer(run.idle);
 }
 
 /**
- * A new page in a context of its own, closed with the page. `guard` (default): it only reaches
- * public addresses, through a proxy that checks each; without, for pages of our own.
+ * A new page in a context of its own (cookies, storage, cache), closed with the page. `guard` (default):
+ * it only reaches public addresses, through a proxy that checks each; without, for pages of our own.
  */
 export async function open(app: App, { guard = true }: { guard?: boolean } = {}): Promise<Page> {
   const cmd = await executable(app);
@@ -79,16 +74,13 @@ export async function open(app: App, { guard = true }: { guard?: boolean } = {})
   const run = running.get(cmd) ?? start(cmd);
   clearTimeout(run.idle);
   run.pages++;
-  const context = await (async () => {
-    // <-loopback>: Chromium would go to localhost directly
-    const via = guard ? { proxy: { server: (await (run.proxy ??= proxy())).server, bypass: "<-loopback>" } } : {};
-    return (await run.browser).newContext({ acceptDownloads: false, ...via });
+  const page = await (async () => {
+    const via = guard ? (await (run.proxy ??= proxy())).server : undefined;
+    return (await run.chrome).page({ proxy: via });
   })().catch((e) => {
     release(cmd, run);
     throw e;
   });
-  context.on("close", () => release(cmd, run));
-  const page = await context.newPage();
-  page.on("close", () => void context.close().catch(() => {}));
+  page.on("close", () => release(cmd, run));
   return page;
 }

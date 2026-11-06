@@ -14,8 +14,6 @@ declare global {
   interface SVGElement {}
 }
 
-/** The currencies a QR bill knows. */
-const CURRENCIES = new Set(["CHF", "EUR"]);
 const LANGUAGES = new Set(["DE", "FR", "IT", "EN"]);
 
 const iban = async (app: App) => String(await app.settings["fin.payment.qrbill"].iban ?? "").replace(/\s+/g, "");
@@ -30,7 +28,8 @@ export const paymentProvider: Provider = {
   label: "QR-bill",
 
   async methods(app, { currency }) {
-    if (!CURRENCIES.has(currency) || !await iban(app)) return [];
+    // The currencies a QR bill knows.
+    if ((currency !== "CHF" && currency !== "EUR") || !await iban(app)) return [];
     return [{ name: "", label: "QR-bill" }];
   },
 

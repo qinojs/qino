@@ -29,7 +29,7 @@ async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: 
 
   if (!data) {
     let ow = 0, oh = 0;
-    if (await magick.available() && file.path) {
+    if (file.path && await magick.available()) {
       try {
         const dim = await magick.identify(file.path, "%wx%h");
         [ow, oh] = dim.split("x").map(Number);

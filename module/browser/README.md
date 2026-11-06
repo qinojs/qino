@@ -1,7 +1,7 @@
 # browser
 
-A real browser on the server: headless Chromium, driven by [Playwright](https://playwright.dev).
-For agents and users through the api, for modules through `open()` (e.g. [pdf](../pdf/)).
+A real browser on the server: headless Chromium. For agents and users through the api, for modules
+through `open()` (e.g. [pdf](../pdf/)).
 
 ```
 open      post { url? }            a page of your own: { id, url, title, snapshot }
@@ -16,16 +16,19 @@ close     post { id }
 ```ts
 import { open } from "@qino/qino/browser";
 
-const page = await open(app); // a Playwright Page
+const page = await open(app);
 try {
   await page.goto("https://example.com/");
-  console.log(await page.ariaSnapshot({ mode: "ai" }));
+  console.log(await page.snapshot());
 } finally {
   await page.close();
 }
 ```
 
-- **Snapshot:** the page's accessibility tree as text, each element with a `ref` to act on.
+- **Page:** a part of the Page of Playwright and Puppeteer, with the same names: `goto`, `setContent`,
+  `evaluate`, `title`, `url`, `pdf`, `screenshot`, `keyboard.press`, `setDefaultTimeout`, `on("close")`,
+  `close`. For agents also `snapshot()`, the accessibility tree as text with a `ref` for each element,
+  and `click(ref)`, `fill(ref, text)` by those refs.
 - **Guard:** a page only reaches public addresses: the browser goes through a local proxy that checks
   each address and connects to the one checked (core `publicIps`), and WebRTC cannot go past it. No
   downloads. Pages of our own (`open(app, { guard: false })`) load directly.
@@ -35,4 +38,5 @@ try {
   **Signed-in users** only.
 - **Needs** Chromium (`browser.executable`, else the first installed of `chromium`,
   `chromium-browser`, `google-chrome-stable`, `google-chrome`, `microsoft-edge`) and the npm package
-  `playwright-core` (optional, installed only where used). The health check says what is missing.
+  `puppeteer-core` (optional, installed only where used; in Deno with `--allow-env`). The health check
+  says what is missing.

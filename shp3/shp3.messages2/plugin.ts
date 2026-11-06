@@ -26,7 +26,7 @@ async function confirm(app: App, order: Order) {
   const settings = app.settings["shp3.messages2"].on_order;
   const to = String(await settings.receivers ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const client = String(order.$get("bill_email") ?? ""); // the address module owns that column
-  if (await settings.to_client !== false && client) to.push(client);
+  if (client && await settings.to_client !== false) to.push(client);
   if (!to.length) return;
 
   await send(app, { email: to }, {

@@ -144,12 +144,12 @@
     "temporal-polyfill": "^1",
     "web-push-neo": "0.1.2"
   },
-  "// peerDependencies": "optional: installed only where they are used — playwright-core by browser and pdf",
+  "// peerDependencies": "optional: installed only where they are used — puppeteer-core by browser and pdf",
   "peerDependencies": {
-    "playwright-core": "^1"
+    "puppeteer-core": "^24"
   },
   "peerDependenciesMeta": {
-    "playwright-core": { "optional": true }
+    "puppeteer-core": { "optional": true }
   },
   "devDependencies": {
     "@std/assert": "npm:@jsr/std__assert@^1",

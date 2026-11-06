@@ -232,7 +232,7 @@
     "marked": "npm:marked@^18",
     "sanitize-html": "npm:sanitize-html@^2",
     "sqlite-vec": "npm:sqlite-vec@^0.1.9",
-    "playwright-core": "npm:playwright-core@^1",
+    "puppeteer-core": "npm:puppeteer-core@^24",
     "@scure/bip32": "npm:@scure/bip32@^1",
     "@scure/btc-signer": "npm:@scure/btc-signer@^1",
     "fflate": "npm:fflate@^0.8",
@@ -248,6 +248,6 @@
     }
   },
   "tasks": {
-    "test": "deno test --allow-read --allow-write=/tmp --allow-net=127.0.0.1 --allow-ffi --allow-run=git,chromium,chromium-browser,google-chrome-stable,google-chrome,microsoft-edge --allow-env=CI,FORCE_COLOR,TERM,NO_COLOR,COLORTERM"
+    "test": "deno test --allow-read --allow-write=/tmp --allow-net=127.0.0.1 --allow-ffi --allow-run=git,chromium,chromium-browser,google-chrome-stable,google-chrome,microsoft-edge --allow-env"
   }
 }

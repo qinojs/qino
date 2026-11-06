@@ -39,7 +39,7 @@ async function group(node: Node, table: string, rows: Row[], same: string[], n: 
   return html.async`<table class=u2-table data-group=${n}>
     <thead><tr>
       <th>
-      ${rows.map((r, i) => html`<th><label><input type=radio name=keep-${n} value="${String(r[key])}"${i ? "" : " checked"}> keep #${String(r[key])}</label>`)}
+      ${rows.map((r, i) => html`<th><label><input type=radio name=keep-${n} value="${r[key]}"${i ? "" : " checked"}> keep #${r[key]}</label>`)}
     <tbody>
       ${columns.map((c) => html`<tr>
         <th${same.includes(c) ? html` style="font-weight:bold"` : ""}>${c}
@@ -49,11 +49,11 @@ async function group(node: Node, table: string, rows: Row[], same: string[], n: 
           return html`<td>${differs ? html`<mark>${show(r[c])}</mark>` : show(r[c])}`;
         })}`)}
       ${refs[0].map((ref, i) => html`<tr>
-        <th>→ ${ref.field.table}.${String(ref.field)}
+        <th>→ ${ref.field.table}.${ref.field.name}
         ${refs.map((rs) => html`<td>${rs[i].count}`)}`)}
       <tr>
         <th>
-        ${rows.map((r) => html`<td><button type=button data-merge="${String(r[key])}">merge into the kept one</button>`)}
+        ${rows.map((r) => html`<td><button type=button data-merge="${r[key]}">merge into the kept one</button>`)}
   </table>`;
 }
 
