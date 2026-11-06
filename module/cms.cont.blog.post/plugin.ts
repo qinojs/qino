@@ -4,6 +4,9 @@ import * as u2 from "@qino/qino/u2";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+// navigator.share where the browser has none (desktop Firefox): a dialog with the usual targets
+const SHARE_POLYFILL = "https://cdn.jsdelivr.net/gh/nuxodin/lazyfill@1.7.12/polyfills/navigator/share.min.js";
+
 async function init(node: Node) {
   if (node.settings.__inited() || !await node.edit()) return;
   node.settings.__inited(true);
@@ -38,6 +41,8 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
   u2.assets(ctx, ["attr/behavior/behavior.js"]);
+  ctx.res.html.legacyScripts.add(SHARE_POLYFILL);
+  ctx.res.csp["script-src"][SHARE_POLYFILL] = true;
 
   const children = await node.conts();
   const form = children.find((child) => child.vs.name === "comments");
@@ -49,7 +54,7 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
       ${published ? html`<time datetime="${new Date(published * 1000).toISOString()}">
         ${new Date(published * 1000).toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
       <button type=button u2-behavior=share data-url="${canonical}" data-title="${title}">
-        <span class=-text></span><span class=-success hidden> ✓</span></button>
+        ${node.app.t`Share`}</button>
     </header>
     ${node.cms.text(node, "main")}
     ${entries ? html.async`<section><h2>${node.app.t`Comments`}</h2>${entries.html()}</section>` : ""}
