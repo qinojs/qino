@@ -1,6 +1,6 @@
 {
   "name": "cms.cont.blog",
   "description": "Lists child pages as blog posts and offers Atom and RSS feeds.",
-  "dependencies": ["cms", "cms.seo"],
+  "dependencies": ["cms", "cms.image", "cms.seo"],
   "files": ["README.md", "locale/de.json", "manifest.json", "plugin.ts", "pub/main.css", "pub/module.svg"]
 }

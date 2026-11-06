@@ -36,7 +36,7 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
     assertStringIncludes(document, "Coffee &lt; tea");
     assert(!document.includes("<h1"), "no heading without the block's own title");
     assertStringIncludes(document, "A short &amp; useful post");
-    assertStringIncludes(document, `<img src="/dbFile/${picture.id}/`);
+    assertStringIncludes(document, `<cms-image`);
     assert(!document.includes("Private draft"));
     assert(!/<h2><a[^>]*>Scheduled draft<\/a>/.test(document));
     assertStringIncludes(document, "application/atom+xml");
