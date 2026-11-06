@@ -7,6 +7,7 @@ import { imageData } from "./imageData.ts";
 import type { HtmlString, DbFile } from "@qino/qino";
 
 const { name } = manifest;
+const SKIP = new Set(["quality", "alt", "width", "height", "css", "style", "if", "editable"]);
 
 export async function cms_image(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
@@ -36,7 +37,6 @@ async function imageHtml(dbFile: DbFile, options: Record<string, any>, cacheDir:
   let styleStr = Object.entries(styles).map(([k, v]) => `${k}:${v}`).join(";");
   if (options.style) styleStr += ";" + options.style;
 
-  const SKIP = new Set(["quality", "alt", "width", "height", "css", "style", "if", "editable"]);
   let attrStr = ` style="${hee(styleStr)}"`;
   if (options.editable) attrStr += ` dbfile-editable="${hee(options.editable)}"`;
   for (const [k, v] of Object.entries(options)) {

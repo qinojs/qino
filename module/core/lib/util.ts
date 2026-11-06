@@ -148,8 +148,8 @@ export function urlize(str: string): string {
  *  escaped); `exact` columns match the whole input (ids, emails). `order` ranks exact hits before
  *  prefix hits. Empty input gives neutral fragments. Qualified names ("m.subject") work. */
 export function sqlSearch(input: string, like: string[], opt: { exact?: string[] } = {}): { where: Sql; order: Sql } {
-  const trimmed = (input ?? "").trim();
-  const words = trimmed.toLowerCase().split(/\s+/).slice(0, 4).filter(Boolean);
+  const trimmed = (input ?? "").trim(), term = trimmed.toLowerCase();
+  const words = term.split(/\s+/).slice(0, 4).filter(Boolean);
   const exact = opt.exact ?? [];
   if (!words.length || !(like.length + exact.length)) return { where: sql`${true}`, order: sql.raw("(SELECT NULL)") }; // Postgres refuses a bare constant in ORDER BY
   const id = (name: string) => sql.join(name.split(".").map(sql.id), ".");
@@ -163,7 +163,7 @@ export function sqlSearch(input: string, like: string[], opt: { exact?: string[]
 
   const orders = [
     ...exact.map(f => sql`${id(f)} = ${trimmed} DESC`),
-    ...like.map(f => sql`${low(f)} = ${trimmed.toLowerCase()} DESC`),
+    ...like.map(f => sql`${low(f)} = ${term} DESC`),
     ...words.flatMap(w => like.map(f => sql`${low(f)} LIKE ${esc(w) + "%"} ESCAPE '!' DESC`)),
   ];
   return { where: sql`(${sql.join(ors, " OR ")})`, order: sql.join(orders) };

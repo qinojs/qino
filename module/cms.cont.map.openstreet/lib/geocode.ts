@@ -23,7 +23,7 @@ function serial<T>(fn: () => Promise<T>): Promise<T> {
     const wait = last + GAP - Date.now();
     if (wait > 0) await sleep(wait);
     last = Date.now();
-    return await fn();
+    return fn();
   });
   queue = run.then(() => {}, () => {});
   return run;

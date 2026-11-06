@@ -81,7 +81,7 @@ async function runQuery(app: App, text: string) {
     return await html.async`<u2-alert open variant=success class=-result>${res.affectedRows} ${app.t`rows affected`}${insert} · ${ms} ms</u2-alert>`;
   } catch (e) {
     const msg = errMsg(e);
-    return await html.async`<u2-alert open variant=danger class=-result>${msg}</u2-alert>`;
+    return html.async`<u2-alert open variant=danger class=-result>${msg}</u2-alert>`;
   }
 }
 
@@ -113,7 +113,7 @@ function cell(v: unknown): unknown {
 
 // Tables (without internal `_`-prefixed ones) with their fields — used by helper, autocomplete and AI.
 function buildSchema(app: App): Promise<Table[]> {
-  const tables = Object.values(app.db.tables ?? {})
+  const tables = Object.values(app.db.tables)
     .filter((t) => !t.name.startsWith("_"))
     .sort((a, b) => a.name.localeCompare(b.name));
   return Promise.all(tables.map(async (t) => {

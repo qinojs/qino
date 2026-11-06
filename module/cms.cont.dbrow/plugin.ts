@@ -27,13 +27,13 @@ async function row(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, u
     const label = edit ? `<span contenteditable cmstxt=${text.id}>${text.plain().trim() ? text : hee(f.name)}</span>` : hee(text.plain().trim() || f.name);
     body += `<tr><th>${label}<td>${await show(f, row[f.name], node.app, f.is("edit"))}`;
   }
-  return html.raw(`<table class=u2-table data-row="${hee(String(row.__id))}">${body}</table>`);
+  return html.raw(`<table class=u2-table data-row="${hee(row.__id)}">${body}</table>`);
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["class/table/table.css", "class/card/card.css"]);
   if (!await Query.of(node)) return html.async`<div class=u2-card><div>${node.app.t`Choose the table in the widget.`}</div></div>`;
-  return html.async`<div class=u2-card data-id="${String(ctx.req.query.id ?? "")}">
+  return html.async`<div class=u2-card data-id="${ctx.req.query.id}">
 	${node.cms.text(node, "title", { tag: "h2", class: "-head" })}
 	<div cms-part=row>${row(node, { ctx, vars: {} })}</div>
 </div>`;

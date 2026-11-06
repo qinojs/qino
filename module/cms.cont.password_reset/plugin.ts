@@ -25,7 +25,7 @@ export const tickets: Record<string, TicketKind> = {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
-  const handle = String(ctx.req.query[TICKET_PARAM] ?? "");
+  const handle = ctx.req.query[TICKET_PARAM] ?? "";
   if (handle) {
     // opening the link only looks — mail scanners must not spend the ticket
     const ticket = await check(node.app, handle, PURPOSE);

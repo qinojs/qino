@@ -29,7 +29,7 @@ const markdown = new Marked({ gfm: true, breaks: true });
 export async function shortenOwn(app: App, path: string): Promise<string | undefined> {
   const short = shortener(app);
   const root = await app.url().catch(() => "");
-  return short && root ? await short.shorten(app, root + path) : undefined;
+  return short && root ? short.shorten(app, root + path) : undefined;
 }
 
 /** The message with all URLs absolute and, if a shortener is linked, shortened. `links` are only

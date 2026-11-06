@@ -93,7 +93,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, 
   for (const row of await q.rows(node.db, { limit, offset: (page - 1) * limit })) {
     // the whole row leads to its detail page; the link in its last cell says so to screen readers
     const href = detailUrl ? withId(detailUrl, row.__id) : "";
-    body += `<tr data-row="${hee(String(row.__id))}"${href ? ` u2-href="${hee(href)}"` : ""}>`;
+    body += `<tr data-row="${hee(row.__id)}"${href ? ` u2-href="${hee(href)}"` : ""}>`;
     for (const f of fields) {
       const cell = await show(f, row[f.name], node.app, f.is("edit"));
       body += "<td>" + (f.str("link") ? `<a href="${hee(withId(await pageUrl(node, f.str("link")), row[f.name]))}">${cell}</a>` : cell);
@@ -142,7 +142,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     const name = hee(await label(node, f));
     filters += values
       ? `<label>${name} <select data-filter="${hee(f.name)}"><option value="">${hee(await t`all`)}${values.map((v) =>
-        `<option${String(v ?? "") === value ? " selected" : ""}>${hee(String(v ?? ""))}`).join("")}</select></label>`
+        `<option${String(v ?? "") === value ? " selected" : ""}>${hee(v)}`).join("")}</select></label>`
       : `<label>${name} <input type=${f.type === "date" ? "date" : "search"} data-filter="${hee(f.name)}" value="${hee(value)}"></label>`;
   }
   const search = q.shown("search").length
@@ -150,9 +150,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const exportUrl = ctx.req.url.toURL();
   exportUrl.search = "";
   exportUrl.searchParams.set("dbtable_export", String(node.id));
-  if (ctx.req.query.id) exportUrl.searchParams.set("id", String(ctx.req.query.id));
+  if (ctx.req.query.id) exportUrl.searchParams.set("id", ctx.req.query.id);
 
-  return html.async`<div class=u2-card data-id="${String(ctx.req.query.id ?? "")}">
+  return html.async`<div class=u2-card data-id="${ctx.req.query.id}">
 	${node.cms.text(node, "title", { tag: "h2", class: "-head" })}
 	<div class=-tools>
 		${search}
@@ -168,7 +168,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
  *  widget's questions need editing rights. */
 export async function api(node: Node, vars: Record<string, unknown>) {
   const app = node.app, db = node.db, ctx = getCtx();
-  if (["tables", "table", "columns", "add", "remove", "sql"].includes(String(vars.do))) return await widgetApi(node, vars);
+  if (["tables", "table", "columns", "add", "remove", "sql"].includes(String(vars.do))) return widgetApi(node, vars);
 
   const q = await Query.of(node, { id: vars.id });
   if (!q) return { error: "not configured" };

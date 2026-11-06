@@ -136,7 +136,7 @@ class CmsTextService {
   async transl(text: string, targetLang: string, sourceLang: string, format?: TranslateInput["format"]): Promise<string> {
     if (sourceLang && sourceLang === targetLang) return text; // nothing to translate
     if (!this.#app.modules.linked("ai")) throw new ApiError(501, "Translation needs the module ai");
-    return await translate(this.#app, { text, to: targetLang, from: sourceLang || undefined, format })
+    return translate(this.#app, { text, to: targetLang, from: sourceLang || undefined, format })
       .catch((e) => { throw e instanceof AiError ? new ApiError(e.status === 504 ? 504 : 502, e.message) : e; });
   }
 

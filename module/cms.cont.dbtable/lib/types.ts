@@ -21,7 +21,7 @@ const isInt = (f: Field) => ["int", "bigint"].includes(f.column.type);
 const empty = (f: Field, v: string) => v === "" && f.column.nullable ? null : v;
 
 const input = (f: Field, v: unknown, attrs = "") =>
-  `<input data-f="${hee(f.name)}"${attrs}${f.column.nullable ? "" : " required"} value="${hee(str(v))}">`;
+  `<input data-f="${hee(f.name)}"${attrs}${f.column.nullable ? "" : " required"} value="${hee(v)}">`;
 
 /** `value=Label` per line; a bare value is its own label. */
 export const choices = (f: Field): [string, string][] =>
@@ -33,7 +33,7 @@ export const choices = (f: Field): [string, string][] =>
 /** `2026-10-24 09:30:00` (or unix time in an integer column) as a Date. */
 const asDate = (f: Field, v: unknown) => isInt(f) ? new Date(Number(v) * 1000) : new Date(str(v).replace(" ", "T"));
 
-const text: Type = { read: (_f, v) => hee(str(v)), edit: (f, v) => input(f, v) };
+const text: Type = { read: (_f, v) => hee(v), edit: (f, v) => input(f, v) };
 
 const types: Record<string, Type> = {
   text,
@@ -42,14 +42,14 @@ const types: Record<string, Type> = {
       const cut = Number(f.str("cut")), t = str(v);
       return hee(cut && t.length > cut ? t.slice(0, cut).replace(/\s+\S*$/, "") + "…" : t);
     },
-    edit: (f, v) => `<textarea data-f="${hee(f.name)}">${hee(str(v))}</textarea>`,
+    edit: (f, v) => `<textarea data-f="${hee(f.name)}">${hee(v)}</textarea>`,
   },
   html: {
     read: (_f, v) => `<div class=-html>${str(v)}</div>`,
     edit: (f, v) => `<div class=-html data-f="${hee(f.name)}" contenteditable>${str(v)}</div>`,
   },
   number: {
-    read: (_f, v) => hee(str(v)),
+    read: (_f, v) => hee(v),
     edit: (f, v) => input(f, v, " type=number step=any"),
     toDb: empty,
   },
@@ -81,7 +81,7 @@ const types: Record<string, Type> = {
     toDb: (f, v) => !v ? (isInt(f) ? 0 : empty(f, "")) : isInt(f) ? Math.floor(Date.parse(v) / 1000) : v.replace("T", " "),
   },
   time: {
-    read: (_f, v) => hee(str(v)),
+    read: (_f, v) => hee(v),
     edit: (f, v) => input(f, v, " type=time"),
     toDb: empty,
   },
@@ -94,7 +94,7 @@ const types: Record<string, Type> = {
   reference: {
     async read(f, v, app) {
       const ref = await reference(f, app);
-      return hee(str(ref && v != null ? await app.db.one`SELECT ${ref.label} FROM ${sql.id(ref.table)} WHERE ${sql.id(ref.key)} = ${v}` ?? v : v));
+      return hee(ref && v != null ? await app.db.one`SELECT ${ref.label} FROM ${sql.id(ref.table)} WHERE ${sql.id(ref.key)} = ${v}` ?? v : v);
     },
     async edit(f, v, app) {
       const ref = await reference(f, app);
@@ -103,7 +103,7 @@ const types: Record<string, Type> = {
       const where = f.str("ref_where").trim() || "1=1";
       const rows = await app.db.query`SELECT ${sql.id(ref.key)} AS k, ${ref.label} AS name FROM ${sql.id(ref.table)} WHERE ${sql.raw(where)} ORDER BY name`;
       return `<select data-f="${hee(f.name)}"><option value="">${rows.map((r) =>
-        `<option value="${hee(str(r.k))}"${str(r.k) === str(v) ? " selected" : ""}>${hee(str(r.name))}`).join("")}</select>`;
+        `<option value="${hee(r.k)}"${str(r.k) === str(v) ? " selected" : ""}>${hee(r.name)}`).join("")}</select>`;
     },
     toDb: empty,
   },
@@ -117,7 +117,7 @@ const types: Record<string, Type> = {
       const [w, h] = size(f, 72, 48);
       const file = Number(v) ? await app.dbFiles.file(Number(v)) : undefined;
       const img = file && await file.exists() ? `<img src="${hee(await file.url({ w, h }))}" alt="" style="width:${w}px; height:${h}px; object-fit:contain">` : "";
-      return await fileButtons(f, !!img, app, img);
+      return fileButtons(f, !!img, app, img);
     },
   },
   file: {
@@ -127,7 +127,7 @@ const types: Record<string, Type> = {
     },
     async edit(f, v, app) {
       const link = await types.file.read(f, v, app);
-      return await fileButtons(f, !!link, app, link);
+      return fileButtons(f, !!link, app, link);
     },
   },
 };
@@ -155,11 +155,12 @@ const size = (f: Field, w: number, h: number) => {
 async function reference(f: Field, app: App) {
   const table = parentOf(app, f.table, f.column.name, await app.db.listTables());
   if (!table) return;
-  const cols = (await app.db.columns(table).catch(() => [])).map((c) => String(c.Field));
-  const key = String((await app.db.columns(table)).find((c) => c.Key === "PRI")?.Field ?? "id");
+  const columns = await app.db.columns(table);
+  const names = columns.map((c) => String(c.Field));
+  const key = String(columns.find((c) => c.Key === "PRI")?.Field ?? "id");
   const label = f.str("ref_label").trim();
-  const name = label ? (cols.includes(label) ? sql.id(label) : sql.raw(label))
-    : sql.id(cols.includes("title") ? "title" : cols.includes("name") ? "name" : key);
+  const name = label ? (names.includes(label) ? sql.id(label) : sql.raw(label))
+    : sql.id(names.includes("title") ? "title" : names.includes("name") ? "name" : key);
   return { table, key, label: name };
 }
 

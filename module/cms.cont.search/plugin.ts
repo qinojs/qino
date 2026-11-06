@@ -46,8 +46,8 @@ const terms = (search: string) => search.toLowerCase().split(/\s+/).filter(Boole
 function snippet(text: string, words: string[], parts = 7, before = 30, after = 10) {
   const plain = unhee(text.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim(); // \s takes the decoded &nbsp; too
   if (!words.length) return html`${plain.slice(0, before + after)}`;
-  const out = plain.split(new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i")).slice(0, parts).map((piece) =>
-    words.includes(piece.toLowerCase())
+  const out = plain.split(new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i")).slice(0, parts).map((piece, i) =>
+    i % 2
       ? html`<mark>${piece}</mark>`
       : html`${piece.length > before + after + 3 ? `${piece.slice(0, after)}… ${piece.slice(-before)}` : piece}`
   );
@@ -156,7 +156,7 @@ async function results(node: Node, ctx: Ctx, search: string, vars: Record<string
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = ctx.app.t;
-  const search = String(ctx.req.query[QUERY] ?? "").trim();
+  const search = (ctx.req.query[QUERY] ?? "").trim();
   u2.assets(ctx, ["attr/href/href.js"]);
 
   let form: Promise<HtmlString> | HtmlString | string = "";

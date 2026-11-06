@@ -95,7 +95,7 @@ export const sys = {
 
   /** Like `new Deno.Command(cmd, opt).output()`, but a missing binary rejects instead of throwing. */
   async command(cmd: string, opt: CommandOptions = {}): Promise<CommandOutput> {
-    if (Deno) return await new Deno.Command(cmd, opt).output();
+    if (Deno) return new Deno.Command(cmd, opt).output();
     return nodeCommand(cmd, opt);
   },
   /** Undefined if not set. Throws in Deno without `--allow-env`. */

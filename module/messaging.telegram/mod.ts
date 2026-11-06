@@ -82,7 +82,7 @@ async function sendMessage(app: App, params: Record<string, unknown>) {
     const wait = e instanceof BotError ? e.retryAfter : undefined;
     if (!wait || wait > 60) throw e;
     await new Promise((r) => setTimeout(r, wait * 1000));
-    return await post();
+    return post();
   }
 }
 

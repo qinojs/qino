@@ -7,7 +7,7 @@ import { WebAuthn } from "./webauthn.js";
 export async function prove(root) {
   root.innerHTML = `<button type=button>${await t`Use passkey`}</button><output></output>`;
   const button = root.querySelector("button");
-  return await new Promise((resolve) => {
+  return new Promise((resolve) => {
     button.addEventListener("click", async () => {
       button.disabled = true;
       try {

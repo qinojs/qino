@@ -250,8 +250,8 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   const since = new Date(Date.now() - RETIRED_DAYS * 86400_000).toISOString().slice(0, 10);
   const measured = new Set(data.filter((m) => String(m.release_date ?? "") >= since)
     .flatMap((m) => Object.entries(m.evaluations ?? {}).filter(([name, value]) => name.endsWith("_index") && typeof value === "number").map(([name]) => indexName(name))));
-  const retired = [...new Set(data.flatMap((m) => Object.keys(m.evaluations ?? {}).filter((name) => name.endsWith("_index")).map(indexName)))].filter((name) => !measured.has(name));
-  if (retired.length) await db.exec`DELETE FROM ai_model_score WHERE ${sql.in("metric", retired)}`;
+  const retired = new Set(data.flatMap((m) => Object.keys(m.evaluations ?? {}).filter((name) => name.endsWith("_index")).map(indexName)).filter((name) => !measured.has(name)));
+  if (retired.size) await db.exec`DELETE FROM ai_model_score WHERE ${sql.in("metric", retired)}`;
   const arenas = await Promise.all(Object.entries(ARENAS).map(async ([metric, path]) => {
     const list = await load(path).catch(() => []);
     // the arena's names without the setting in brackets, longest first: GPT Image 1 Mini before GPT Image 1
@@ -267,7 +267,7 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
     const levels = data.filter((x) => String(x.slug).startsWith(`${m.slug}-`)).map(get).filter((v): v is number => typeof v === "number" && !!v).sort((a, b) => a - b);
     return levels.length ? levels[Math.floor(levels.length / 2)] : undefined;
   };
-  const indexes = [...new Set(data.flatMap((m) => Object.keys(m.evaluations ?? {}).filter((name) => name.endsWith("_index"))))].filter((name) => !retired.includes(indexName(name)));
+  const indexes = [...new Set(data.flatMap((m) => Object.keys(m.evaluations ?? {}).filter((name) => name.endsWith("_index"))))].filter((name) => !retired.has(indexName(name)));
   const names = new Map<number, string[]>();
   for (const r of await db.query`SELECT m.id, m.name, mp.provider_model FROM ai_model m LEFT JOIN ai_model_provider mp ON mp.model_id = m.id`) {
     names.set(r.id, [...names.get(r.id) ?? [String(r.name)], ...r.provider_model ? [String(r.provider_model)] : []]);

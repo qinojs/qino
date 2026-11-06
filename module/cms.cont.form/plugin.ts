@@ -47,7 +47,7 @@ async function spam(node: Node, form: Form, ctx: Ctx) {
   );
   const title = (await node.showTitle()).plain(), page = (await (await node.page()).showTitle()).plain();
   const context = `the form${title ? ` "${title}"` : ""} on the page "${page}"`;
-  return await spamScore(node.app, labeled, { ctx, context });
+  return spamScore(node.app, labeled, { ctx, context });
 }
 
 /** Upper bounds for an entry, far above any real form: what else it sends, and its size. */
@@ -62,7 +62,7 @@ async function others(node: Node, form: Form) {
     if (values.length) form.values[name] = values.length > 1 ? values : values[0];
   }
   if (rest.length <= MAX_FIELDS && JSON.stringify(form.values).length <= MAX_CHARS) return "";
-  return await node.app.t`Your entry is too long.`;
+  return node.app.t`Your entry is too long.`;
 }
 
 /** Recipients: the form's list plus addresses from fields; if none, the site's own address. */

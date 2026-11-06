@@ -11,7 +11,7 @@ import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: any): Promise<any> {
   vars ??= {}; // a post without body
-  if ("status" in vars) return await status(node, vars.status === true ? 0 : Number(vars.status) || 0);
+  if ("status" in vars) return status(node, vars.status === true ? 0 : Number(vars.status) || 0);
   if (!("release" in vars)) return false;
   const app = node.app;
   const id = Number(vars.release);

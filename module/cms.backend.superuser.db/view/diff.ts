@@ -7,7 +7,7 @@ import type { HtmlString, Db, App } from "@qino/qino";
 export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
   const t = app.t;
   const mergedSchema = db.schema?.properties ?? {};
-  const tables = db.tables ?? {};
+  const tables = db.tables;
 
   // --- diff table vs schema ---
   type Row = { table: string; field?: string; status: "no-schema-table" | "field-missing-db" | "field-missing-schema" };

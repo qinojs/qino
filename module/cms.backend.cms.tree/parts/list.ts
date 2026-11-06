@@ -7,20 +7,17 @@ import type { Node } from "@qino/qino/cms";
 export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;
+  const openStr: string = admin.openPageNodes() ?? "";
+  const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
-    const openStr: string = admin.openPageNodes() ?? "";
-    const openSet = new Set(openStr.split(",").filter(Boolean));
-    if (vars.value == "1") openSet.add(p);
-    else openSet.delete(p);
-    admin.openPageNodes([...openSet].join(","));
+    if (vars.value == "1") openPageNodes.add(p);
+    else openPageNodes.delete(p);
+    admin.openPageNodes([...openPageNodes].join(","));
   }
 
   if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
-
-  const openStr: string = admin.openPageNodes() ?? "";
-  const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   const showContents = admin.showContents();
   const treeType = showContents ? "*" : "p";

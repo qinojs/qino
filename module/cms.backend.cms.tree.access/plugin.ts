@@ -73,20 +73,17 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
   const app = node.app;
   const db = app.db;
   const admin = ctx.settings.cms.admin;
+  const openStr: string = admin.openPageNodes() ?? "";
+  const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
-    const cur: string = admin.openPageNodes() ?? "";
-    const open = new Set(cur.split(",").filter(Boolean));
-    if (vars.value == "1") open.add(p);
-    else open.delete(p);
-    admin.openPageNodes([...open].join(","));
+    if (vars.value == "1") openPageNodes.add(p);
+    else openPageNodes.delete(p);
+    admin.openPageNodes([...openPageNodes].join(","));
   }
 
   if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
-
-  const openStr: string = admin.openPageNodes() ?? "";
-  const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   const treeType = admin.showContents() ? "*" : "p";
 

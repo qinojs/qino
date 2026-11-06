@@ -147,7 +147,7 @@ export const openai: Adapter = {
   structured: async (call, { schema, ...input }: StructuredInput<unknown>) => parseStructured((await text(call, input, format(schema))).text, schema),
   embed: async (call, input: EmbedInput) => {
     if (!input.texts) throw new AiError("This provider embeds text only");
-    return await vectors(call, { model: call.model, input: input.texts });
+    return vectors(call, { model: call.model, input: input.texts });
   },
   image: async (call, { prompt, size, n }: { prompt: string; size?: string; n?: number }) => urls(call, prompt, await post(call, "/images/generations", { model: call.model, prompt, size, n })),
   speak: async (call, { text, voice, format }: { text: string; voice?: string; format?: string }) => {

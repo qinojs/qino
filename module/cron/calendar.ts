@@ -58,10 +58,10 @@ function validateAt(id: string, job: Job) {
   if (at == null) return;
   if (typeof job.every === "number") throw new Error(`Cron job "${id}": at is only valid with calendar periods`);
   if (typeof at !== "object" || Array.isArray(at)) throw new Error(`Cron job "${id}": at must be an object`);
-  const allowed = job.every === "hour" ? new Set(["minute", "second"])
-    : job.every === "day" ? new Set(["hour", "minute", "second"])
-    : new Set(["weekday", "hour", "minute", "second"]);
-  for (const key of Object.keys(at)) if (!allowed.has(key)) throw new Error(`Cron job "${id}": at.${key} is not valid with every: "${job.every}"`);
+  const allowed = job.every === "hour" ? ["minute", "second"]
+    : job.every === "day" ? ["hour", "minute", "second"]
+    : ["weekday", "hour", "minute", "second"];
+  for (const key of Object.keys(at)) if (!allowed.includes(key)) throw new Error(`Cron job "${id}": at.${key} is not valid with every: "${job.every}"`);
   if (at.weekday != null && !WEEKDAYS.includes(at.weekday)) throw new Error(`Cron job "${id}": invalid weekday "${at.weekday}"`);
   for (const [name, value, max] of [["hour", at.hour, 23], ["minute", at.minute, 59], ["second", at.second, 59]] as const)
     if (value != null && (!Number.isInteger(value) || value < 0 || value > max)) throw new Error(`Cron job "${id}": at.${name} must be between 0 and ${max}`);

@@ -68,7 +68,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
   const t = node.app.t, edit = await node.edit();
   const heading = edit || (await node.showTitle()).plain() ? node.cms.text(node, "title", { tag: "h2" }) : "";
   const box = (body: unknown) => html.async`<div class=u2-width>${heading}${body}</div>`;
-  const handle = String(ctx.req.query[PARAM] ?? "");
+  const handle = ctx.req.query[PARAM] ?? "";
 
   if (vars.confirm && handle && String(vars.confirm) === handle) {
     const ok = await redeem(node.app, handle, PURPOSE)

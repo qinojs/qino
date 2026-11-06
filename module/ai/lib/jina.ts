@@ -8,7 +8,7 @@ export const jina: Adapter = {
   ...openai,
   embed: async (call, input: EmbedInput) => {
     if (!call.model.startsWith("jina-embeddings-v5-omni-")) return openai.embed(call, input);
-    return await vectors(call, {
+    return vectors(call, {
       model: call.model,
       task: input.purpose === "query" ? "retrieval.query" : "retrieval.passage",
       input: input.texts?.map((text) => ({ text })) ?? input.images!.map((image) => ({ image })),

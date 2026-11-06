@@ -37,7 +37,7 @@ export class DbTable {
   get children(): DbField[] {
     if (this.#children === null) {
       this.#children = [];
-      for (const table of Object.values(this.#db.tables ?? {})) {
+      for (const table of Object.values(this.#db.tables)) {
         for (const [name, schema] of Object.entries(table.schema.additionalProperties?.properties ?? {})) {
           if ((schema as any)["x-qg-parent"] !== String(this)) continue;
           const field = table.field(name);

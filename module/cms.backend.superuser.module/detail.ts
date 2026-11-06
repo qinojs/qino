@@ -1,24 +1,22 @@
 import { dirname, resolve as resolvePath, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { errMsg, fs, getCtx, html } from "@qino/qino";
+import { errMsg, fs, getCtx, html, VERBS } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
 import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+const SKIP = new Set(["cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
+
 // dir ends with a slash (like Module.dir)
 async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: string; rel: string }> {
-  const entries = [];
-  try {
-    for (const entry of await fs.list(dir)) {
-      entries.push({ filePath: dir + entry.name, name: entry.name, isDir: entry.isDirectory });
-    }
-  } catch { return; }
-  entries.sort((a, b) => a.filePath.localeCompare(b.filePath));
-  for (const e of entries) {
-    if (e.isDir) yield* walkDir(e.filePath + "/", base);
-    else yield { filePath: e.filePath, rel: e.filePath.slice(base.length) };
+  const entries = await fs.list(dir).catch(() => []);
+  entries.sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
+    const filePath = dir + entry.name;
+    if (entry.isDirectory) yield* walkDir(filePath + "/", base);
+    else yield { filePath, rel: filePath.slice(base.length) };
   }
 }
 
@@ -45,7 +43,7 @@ async function renderModule(node: Node, modName: string) {
   const error = ctx.state.moduleError as string | undefined;
 
   // Runtime-only enable/disable (not persisted — a restart re-links everything).
-  const canToggle = isSuperuser && (!linked || !undisablable(node).has(modName));
+  const canToggle = isSuperuser && (!linked || !undisablable(node, modName));
   const toggleBtn = canToggle
     ? await html.async`<button data-mod-toggle="${linked ? "disable" : "enable"}" data-mod="${modName}">${linked ? t`Disable` : t`Enable`}</button> <small>${t`runtime only — reset on restart`}</small>`
     : "";
@@ -54,7 +52,6 @@ async function renderModule(node: Node, modName: string) {
   const modPath = modDir ? fileURLToPath(modSource) : null;
 
   // --- Exports ---
-  const SKIP = new Set(["cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
   const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
   const knownKeys = [
     { key: "settingsSchema",    label: "settingsSchema" },
@@ -169,11 +166,10 @@ async function renderModule(node: Node, modName: string) {
 
 function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = "") {
   const result: Record<string, string[]> = {};
-  const verbs = ["get", "post", "put", "delete", "patch"];
   for (const [key, val] of Object.entries(tree ?? {})) {
     const path = prefix + "/" + key;
     const route = val && typeof val === "object" ? val as Record<string, unknown> : {};
-    const methods = verbs.filter(v => route[v]);
+    const methods = VERBS.filter(v => route[v]);
     if (methods.length) result[path] = methods.map(m => m.toUpperCase());
     Object.assign(result, flattenApiRoutes(route, path));
   }
@@ -181,9 +177,7 @@ function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = ""
 }
 
 // core must stay linked; the backend modules are protected by unlink()'s dependency check.
-const PROTECTED = new Set(["core"]);
-
-const undisablable = (node: Node) => new Set([...PROTECTED, node.vs.module]); // never unlink the module rendering this very page
+const undisablable = (node: Node, name: string) => name === "core" || name === node.vs.module; // never unlink the module rendering this very page
 
 // Enable/disable at runtime (link/unlink). Not persisted — a restart links all modules again.
 // Superuser only.
@@ -191,7 +185,7 @@ async function toggleModule(node: Node, vars: Record<string, unknown>) {
   const ctx = getCtx();
   if (!ctx.user?.superuser) return;
   try {
-    if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.modules.unlink(n); }
+    if (vars.disable) { const n = String(vars.disable); if (!undisablable(node, n)) node.app.modules.unlink(n); }
     else if (vars.enable) await node.app.modules.link(String(vars.enable));
   } catch (e) {
     ctx.state.moduleError = errMsg(e); // shown in the detail view

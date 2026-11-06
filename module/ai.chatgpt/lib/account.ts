@@ -178,7 +178,7 @@ export async function active(app: App, user: number): Promise<Account | undefine
     })().finally(() => locks.delete(key));
     locks.set(key, task);
   }
-  return await task;
+  return task;
 }
 
 export async function revoke(account: Account): Promise<void> {

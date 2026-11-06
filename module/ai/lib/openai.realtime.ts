@@ -40,7 +40,7 @@ export async function live(call: Call, input: LiveInput): Promise<LiveOutput> {
   async function handle(event: Record<string, any>) {
     if (event.type === "error") return console.error("[ai] live:", event.error?.message);
     if (event.type === "conversation.item.input_audio_transcription.completed") {
-      return await onMessage?.({ role: "user", content: String(event.transcript ?? "").trim() });
+      return onMessage?.({ role: "user", content: String(event.transcript ?? "").trim() });
     }
     if (event.type !== "response.done") return;
     const output: Record<string, any>[] = event.response?.output ?? [];
