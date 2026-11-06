@@ -1,0 +1,14 @@
+{
+  "name": "browser",
+  "description": "A real browser (headless Chromium) for the server, for agents and users: open, read, click, fill, print.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

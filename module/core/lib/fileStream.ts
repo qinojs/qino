@@ -166,13 +166,14 @@ function pinnedFetch(url: URL, ip: string, init: RequestInit) {
   });
 }
 
+/** `fetch` that only reaches public addresses; `redirect: "manual"` returns a redirect instead of following it. */
 export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 5): Promise<Response> {
   const target = new URL(url);
   if (target.protocol !== "http:" && target.protocol !== "https:") throw new Error(`Unsupported URL protocol: ${target.protocol}`);
   const [ip] = await resolvePublicIps(target);
   init = { ...init, signal: init?.signal ?? AbortSignal.timeout(15000) };
   const resp = await pinnedFetch(target, ip, init);
-  if ([301, 302, 303, 307, 308].includes(resp.status)) {
+  if ([301, 302, 303, 307, 308].includes(resp.status) && init.redirect !== "manual") {
     const location = resp.headers.get("location");
     resp.body?.cancel().catch(() => {}); // don't leak the redirect body
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");

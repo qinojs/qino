@@ -1,8 +1,9 @@
-import { errMsg, fs, sys } from "@qino/qino";
-
-import { browser } from "./lib/browser.ts";
+import { open } from "@qino/qino/browser";
 
 import type { App } from "@qino/qino";
+
+/** Chromium's own print defaults: margins where `@page` sets none, backgrounds printed. */
+const MARGIN = { top: "0.4in", right: "0.4in", bottom: "0.4in", left: "0.4in" };
 
 /**
  * HTML in, PDF out — printed by a headless Chromium, so what works in a page works here: CSS,
@@ -10,48 +11,13 @@ import type { App } from "@qino/qino";
  * `<base href>`.
  */
 export async function render(app: App, html: string, { timeout = 30_000 } = {}): Promise<Uint8Array<ArrayBuffer>> {
-  const cmd = await browser(app);
-  if (!cmd) throw new Error("pdf: no Chromium found — install one or set pdf.browser");
-  const tmp = app.modules.get("pdf")!.tmp;
-  await fs.mkdir(tmp);
-  const dir = await fs.tempDir({ dir: tmp });
+  const page = await open(app, { guard: false }); // our own html: may load from our own server
   try {
-    await fs.write(`${dir}/in.html`, html);
-    const limit = AbortSignal.timeout(timeout);
-    const { success, code, stderr } = await sys.command(cmd, {
-      args: [
-        "--headless",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-pdf-header-footer",
-        // its own profile: runs side by side, and the service user has no home
-        `--user-data-dir=${dir}/profile`,
-        `--print-to-pdf=${dir}/out.pdf`,
-        ...asRoot() ? ["--no-sandbox"] : [],
-        `file://${dir}/in.html`,
-      ],
-      stdout: "null",
-      stderr: "piped",
-      signal: limit,
-    }).catch((e) => {
-      throw new Error(`pdf: ${cmd} did not run — ${errMsg(e)}`);
-    });
-    const out = await fs.bytes(`${dir}/out.pdf`).catch(() => undefined);
-    if (!success || !out?.length) {
-      const why = limit.aborted ? `timed out after ${timeout / 1000}s` : `exit code ${code}`;
-      throw new Error(`pdf: ${cmd} failed, ${why} — ${new TextDecoder().decode(stderr).trim().slice(-1500)}`);
-    }
-    return out;
+    page.setDefaultTimeout(timeout);
+    await page.setContent(html);
+    await page.evaluate("document.fonts.ready");
+    return new Uint8Array(await page.pdf({ preferCSSPageSize: true, printBackground: true, margin: MARGIN }));
   } finally {
-    await fs.remove(dir, { recursive: true });
-  }
-}
-
-/** Chromium refuses its sandbox as root. Reading the uid needs `--allow-sys`; without it, assume not. */
-function asRoot() {
-  try {
-    return sys.uid() === 0;
-  } catch {
-    return false;
+    await page.close();
   }
 }

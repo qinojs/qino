@@ -31,6 +31,7 @@
     "./auth.oauth": "./module/auth.oauth/mod.ts",
     "./auth.otp": "./module/auth.otp/mod.ts",
     "./auth.totp": "./module/auth.totp/mod.ts",
+    "./browser": "./module/browser/mod.ts",
     "./cms": "./module/cms/mod.ts",
     "./cms.embed": "./module/cms.embed/mod.ts",
     "./cms.accessRules": "./module/cms.accessRules/mod.ts",
@@ -142,6 +143,13 @@
     "swissqrbill": "^4",
     "temporal-polyfill": "^1",
     "web-push-neo": "0.1.2"
+  },
+  "// peerDependencies": "optional: installed only where they are used — playwright-core by browser and pdf",
+  "peerDependencies": {
+    "playwright-core": "^1"
+  },
+  "peerDependenciesMeta": {
+    "playwright-core": { "optional": true }
   },
   "devDependencies": {
     "@std/assert": "npm:@jsr/std__assert@^1",

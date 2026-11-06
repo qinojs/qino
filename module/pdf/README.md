@@ -12,14 +12,13 @@ const bytes = await render(app, html`<!doctype html>
   <h1>Invoice 2026-1</h1>`.toString());
 ```
 
-The HTML is printed from a temporary file, so relative URLs have no base: use absolute ones, a
+The HTML is printed without an address, so relative URLs have no base: use absolute ones, a
 `<base href>`, or inline what is small (a data URL, an inline SVG).
 
 ## The browser
 
-`pdf.browser` names the binary; without it the first installed of `chromium`, `chromium-browser`,
-`google-chrome-stable`, `google-chrome` and `microsoft-edge` is used. Each print starts the browser
-with its own profile in the module's `tmp/` and removes it afterwards — prints run side by side,
-and a service user without a home works. A print takes a moment and around 100 MB while it runs.
+Printed by [browser](../browser/): a page of its own in the running Chromium, so prints run side by
+side and take some 30 ms. The HTML is ours, so the page may load from our own server (no guard).
+Without margins from `@page` it prints with Chromium's own (0.4 in), backgrounds included.
 
-Without a browser `render` throws, and the health check says so.
+Without a browser `render` throws, and browser's health check says so.

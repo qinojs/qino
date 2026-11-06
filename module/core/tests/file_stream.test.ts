@@ -126,13 +126,15 @@ test("fileStream: safeFetch pins public DNS and blocks non-public IPs", async ()
     assertEquals(pinned, ["93.184.216.34"]);
     await assertRejects(() => safeFetch("https://mixed.example/"), Error, "SSRF blocked: fe90::1");
     await assertRejects(() => safeFetch("https://redirect.example/"), Error, "SSRF blocked: 10.0.0.1");
+    const manual = await safeFetch("https://redirect.example/", { redirect: "manual" });
+    assertEquals([manual.status, manual.headers.get("location")], [302, "http://private.example/"]);
 
     for (const ip of ["0.0.0.1", "100.64.0.1", "192.0.2.1", "198.18.0.1", "224.0.0.1", "240.0.0.1"])
       await assertRejects(() => safeFetch(`http://${ip}/`), Error, "SSRF blocked");
     for (const ip of ["::1", "::ffff:7f00:1", "100::1", "2001:db8::1", "3fff::1", "fc00::1", "fe90::1", "ff00::1"])
       await assertRejects(() => safeFetch(`http://[${ip}]/`), Error, "SSRF blocked");
-    assertEquals(requested, 2);
-    assertEquals(pinned, ["93.184.216.34", "93.184.216.34"]);
+    assertEquals(requested, 3);
+    assertEquals(pinned, ["93.184.216.34", "93.184.216.34", "93.184.216.34"]);
   } finally {
     Object.assign(dns.promises, { resolve4, resolve6 });
     https.request = request;
