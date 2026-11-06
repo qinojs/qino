@@ -42,7 +42,7 @@ export async function exportBooks(app: App, { from, to }: { from: string; to: st
     if (!file || !await file.exists()) continue;
     const name = `receipts/${row.entry_id}-${safe(file.name || `file-${file.id}`)}`;
     files[name] = await fs.bytes(file.path);
-    receipts.set(Number(row.entry_id), [...receipts.get(Number(row.entry_id)) ?? [], name]);
+    receipts.getOrInsertComputed(Number(row.entry_id), () => []).push(name);
   }
   files["journal.csv"] = new TextEncoder().encode(csv([
     ["Date", "Entry", "Text", "Account", "Account name", "Debit", "Credit", "Tax code", "Currency", "Reference",

@@ -34,7 +34,7 @@ async function route(ctx: Ctx) {
 async function serve(ctx: Ctx, type: string, build: (ctx: Ctx, base: string) => Promise<string>) {
   const base = ctx.req.url.origin + ctx.req.appUrl;
   const key = base + ctx.req.appPath;
-  const cache = caches.get(ctx.app) ?? caches.set(ctx.app, new Map()).get(ctx.app)!;
+  const cache = caches.getOrInsertComputed(ctx.app, () => new Map());
   let hit = cache.get(key);
   if (!hit || Date.now() - hit.at > TTL * 1000) {
     hit = { at: Date.now(), body: build(ctx, base) };

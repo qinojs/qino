@@ -176,7 +176,7 @@ async function merge(app: App, sleep: number) {
   for (const { item, output } of await app.db.query`SELECT item, output FROM ai_agent_sleep_thought WHERE sleep_id = ${sleep} ORDER BY item`) {
     const value = JSON.parse(String(output)), session = String(item).split(":")[2];
     if (value.error) error = value.error;
-    else thoughts.set(session, [...thoughts.get(session) ?? [], value]);
+    else thoughts.getOrInsertComputed(session, () => []).push(value);
   }
   if (!thoughts.size) return void await app.db.table("ai_agent_sleep").update(sleep, { stage: "failed", error: `No thinker answered: ${error}` });
   const thinkers = Math.max(0, ...[...thoughts.values()].map((t) => t.length));

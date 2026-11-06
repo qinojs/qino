@@ -8,7 +8,7 @@ type Trace = { flow: string; end: string; calls: unknown[]; result?: unknown; st
 const listening = new WeakMap<App, Map<number, Flow>>(); // per app, like the history
 
 /** The flows of the table that listen now, by id. */
-export const listeners = (app: App): Map<number, Flow> => listening.get(app) ?? listening.set(app, new Map()).get(app)!;
+export const listeners = (app: App): Map<number, Flow> => listening.getOrInsertComputed(app, () => new Map());
 
 /** Keeps what a run of flow `id` of the table leaves: its trace in the history, a changed state in the
  *  listening flow and in the row. */
