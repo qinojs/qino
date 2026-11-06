@@ -54,7 +54,7 @@ export class Shp3 extends Emitter<Shp3Events> {
   /** The countries the shop delivers to — every one of them while it has marked none. */
   async countries(): Promise<string[]> {
     const enabled = await this.db.col<string>`SELECT id FROM country WHERE shp3_enabled = ${true} ORDER BY id`;
-    return enabled.length ? enabled : await this.db.col<string>`SELECT id FROM country ORDER BY id`;
+    return enabled.length ? enabled : this.db.col<string>`SELECT id FROM country ORDER BY id`;
   }
 
   /** Whether the shop delivers there — an address the customer typed has to pass this. */

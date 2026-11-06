@@ -200,7 +200,7 @@ export class Order extends ShopRow {
   async currencyRow(): Promise<Currency | undefined> {
     const db = this.$table.db;
     const own = this.currency ? await db.table("shp3_currency").get<Currency>(this.currency) : undefined;
-    return own?.active ? own : await this.$shop.mainCurrency();
+    return own?.active ? own : this.$shop.mainCurrency();
   }
 
   /** Switching currency re-prices every line — a stored price is in the order's currency. */
