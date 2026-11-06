@@ -8,14 +8,14 @@ import type { Node } from "@qino/qino/cms";
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // Tags for shared links. The page's own values win, then what a layout or module set, then the defaults.
   cms(app).on("page:render-after", async ({ ctx }) => {
-    const html = ctx.res.html, meta = html.meta;
-    const page = await cmsCtx(ctx).mainNode.page();
+    const html = ctx.res.html, meta = html.meta, c = cmsCtx(ctx);
+    const page = await c.mainNode.page();
     const file = await image(page);
     meta["og:title"] = await text(page, "_share_title") || meta["og:title"] || html.title;
     meta["og:description"] = await text(page, "_share_description") || meta["og:description"] || meta.description;
     if (file) meta["og:image"] = ctx.req.url.origin + await file.url();
     meta["twitter:card"] = meta["og:image"] ? "summary_large_image" : "summary";
-    if (cmsCtx(ctx).editmode && !ctx.req.query.cms_noFrontend)
+    if (c.editmode && !ctx.req.query.cms_noFrontend)
       html.scripts.add(ctx.req.moduleUrl + "cms.seo/pub/init.mjs");
   }, { signal });
 

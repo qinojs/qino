@@ -47,12 +47,11 @@ async function renderTree(node: Node, { ctx }: { ctx: Ctx }) {
 </div>`;
 }
 
-/** A page text, else its default. With a range, its length and "!" when outside what search
- *  engines show in full. */
-function field(t: App["t"], value: string, range?: [number, number]) {
-  const [min, max] = range ?? [];
-  return html.async`<td>${value}${range ? html.async` <small>(${t`${value.length} characters`}${
-    value.length >= min! && value.length <= max! ? "" : ", !"})</small>` : ""}`;
+/** A cell. With a range, the length and "!" when outside what search engines show in full. */
+function field(t: App["t"], value: string, min = 0, max = 0) {
+  const n = value.length;
+  return html.async`<td>${value}${max
+    ? html.async` <small>(${t`${n} characters`}${n < min || n > max ? ", !" : ""})</small>` : ""}`;
 }
 
 async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
@@ -66,12 +65,14 @@ async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<str
 
   const root = await node.cms.node(Number(admin.rootPageNode()) || 1);
   const rows: Promise<HtmlString>[] = [];
+  const t = node.app.t;
   await addChildren(root, 0);
   return html.async`${rows}`;
 
   async function addChildren(parent: Node, level: number) {
     for (const page of (await parent.children({ type: "p" })).values()) {
-      if (!await page.access(ctx.user)) continue;
+      const access = await page.access(ctx.user);
+      if (!access) continue;
       const hasChildren = (await page.children({ type: "p" })).size > 0;
       const isOpen = open.has(String(page.id));
       const toggle = hasChildren
@@ -80,20 +81,19 @@ async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<str
         : html`<span class=-toggle></span>`;
       const title = await pageTitle(page, ctx.lang);
       const file = await image(page);
-      const t = node.app.t;
       const seoTitle = await text(page, "_title") || title, descr = await text(page, "_description");
       // editable rows open the edit dialog on click
-      const edit = await page.access(ctx.user) >= 2
+      const edit = access >= 2
         ? html` data-pid="${page.id}" data-lang="${ctx.lang}" data-title="${title}"${
           (await page.files()).has("share") ? html.raw(" data-share") : ""}` : "";
       rows.push(html.async`<tr${edit}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${node.app.t`Set as start point`}" href="?rp=${page.id}">${page.id}</a>
+    <a title="${t`Set as start point`}" href="?rp=${page.id}">${page.id}</a>
   <td style="padding-left:${level * .9375}rem"><div style="display:flex; align-items:center">${toggle}
     <a href="${page.url()}">${title}</a>${page.vs.searchable ? "" : html.async`
-      <small>(${node.app.t`not searchable`})</small>`}</div>
-  ${field(t, seoTitle, [10, 55])}
-  ${field(t, descr, [60, 156])}
+      <small>(${t`not searchable`})</small>`}</div>
+  ${field(t, seoTitle, 10, 55)}
+  ${field(t, descr, 60, 156)}
   ${field(t, await text(page, "_share_title"))}
   ${field(t, await text(page, "_share_description"))}
   <td>${file ? html`<img src="${await file.url({ w: 120, h: 63, max: true })}" alt="">` : ""}`);

@@ -36,7 +36,9 @@ async function render(part, id) {
     inp.click();
   };
   const remove = part.querySelector('.-remove');
-  if (remove) remove.onclick = () => ref.file('share').delete().then(reload);
+  if (remove) remove.onclick = async () => {
+    if (await cms.dialogs.confirm(await t`Really delete this file?`)) ref.file('share').delete().then(reload);
+  };
 }
 
 customElements.whenDefined('qino-cms').then(() => {

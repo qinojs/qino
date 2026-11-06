@@ -1,5 +1,8 @@
 import { hee } from "../util.ts";
 
+// Open Graph keys are RDFa properties, the rest (twitter:* too) are plain names
+const PROPERTY = /^(og|article|book|profile|music|video|fb):/;
+
 export class ResHtml {
   lang = "en";
   class: Set<string> = new Set();
@@ -44,11 +47,8 @@ export class ResHtml {
     const hasScripts = this.scripts.size || this.legacyScripts.size || this.inlineScripts.size;
     let ret = '<meta charset=utf-8>\n';
 
-    // Open Graph keys are RDFa properties, the rest (twitter:* too) are plain names
-    for (const [key, value] of Object.entries(this.meta)) {
-      const attr = /^(og|article|book|profile|music|video|fb):/.test(key) ? "property" : "name";
-      if (value) ret += `<meta ${attr}="${hee(key)}" content="${hee(value)}">\n`;
-    }
+    for (const [key, value] of Object.entries(this.meta))
+      if (value) ret += `<meta ${PROPERTY.test(key) ? "property" : "name"}="${hee(key)}" content="${hee(value)}">\n`;
 
     ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 

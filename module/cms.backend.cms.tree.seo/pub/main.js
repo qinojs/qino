@@ -33,19 +33,16 @@ cms.initNode("backend.cms.tree.seo", (el) => {
     const { form, alert } = await import("@qino/u2/js/dialog/dialog.js");
     const removeLabel = "share" in row.dataset ? await t`Delete image` : "";
     const data = await form({
-      body: NAMES.map((name) => `<label style="display:block">${name.endsWith("description")
-        ? `<textarea name=${name} rows=3></textarea>` : `<input name=${name}>`}</label>`).join("")
-        + `<label style="display:block"><input type=file name=image accept="image/*"></label>`
-        + (removeLabel ? `<label><input type=checkbox name=remove></label>` : ""),
+      body: "<b></b><u2-fields></u2-fields>",
       init(dialog) {
-        NAMES.forEach((name, i) => {
-          const field = dialog.querySelector(`[name=${name}]`);
-          field.before(labels[i], " ");
-          field.value = value(name);
-          field.placeholder = placeholders[i];
-        });
-        dialog.querySelector("[name=image]").before(labels[4], " ");
-        dialog.querySelector("[name=remove]")?.after(" ", removeLabel);
+        dialog.style.width = "40rem";
+        dialog.querySelector("b").textContent = title;
+        const fields = dialog.querySelector("u2-fields");
+        const field = (tag, label, props) => fields.append(label, Object.assign(document.createElement(tag), props));
+        NAMES.forEach((name, i) => field(name.endsWith("description") ? "textarea" : "input", labels[i],
+          { name, value: value(name), placeholder: placeholders[i], rows: 3 }));
+        field("input", labels[4], { type: "file", name: "image", accept: "image/*" });
+        if (removeLabel) field("input", removeLabel, { type: "checkbox", name: "remove" });
       },
     });
     if (!data) return;
