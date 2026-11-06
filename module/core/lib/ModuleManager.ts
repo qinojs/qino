@@ -93,7 +93,7 @@ export class Module {
   get dir(): string | undefined { return this.#source.startsWith("file:") ? fileURLToPath(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
   /** Directory of the served files. A remote module serves the files mirrored on import, in a
    *  subfolder of its cache so they don't mix with its own cache files. */
-  get pubDir(): string { return this.dir ? this.dir + "pub" : this.cache + "remote/pub"; }
+  get pubDir(): string { return (this.dir ?? this.cache + "remote/") + "pub"; }
   /** The module's data files — backed up, never deleted. pub/ below it is served. */
   get data(): string { return `${this.#app.dir}data/${this.name}/`; }
   /** Derived files, rebuildable from data/ — may be deleted any time, no backup. */
