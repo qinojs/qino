@@ -82,7 +82,7 @@ function initLog(ctx: Ctx) {
   const dictId = async (name: string, field: string, value: string, rest?: Record<string, unknown>) => {
     const table = db.table(name);
     const row = await table.rowBy(field, value);
-    return row ? String(row) : await table.insert({ [field]: value, ...rest });
+    return row ? String(row) : table.insert({ [field]: value, ...rest });
   };
 
   const urlIdOf = (url: string) => dictId("log_url", "hash", url ? md5(url) : EMPTY_URL, { url });
