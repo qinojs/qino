@@ -299,11 +299,11 @@ export async function checkDomain(domain: string, opt: {
 
   // Doesn't need the nameserver addresses, so it runs in parallel.
   const httpTasks = Promise.all([
-    probe.certValid ? certInfo(domain, signal) : { days: null, issuer: "", names: "" },
+    probe.certValid ? certInfo(domain, signal) : Promise.resolve({ days: null, issuer: "", names: "" }),
     redirectsToHttps(domain, signal),
-    dns.aaaa.length ? ipv6Answers(domain, dns.aaaa[0], signal) : null,
+    dns.aaaa.length ? ipv6Answers(domain, dns.aaaa[0], signal) : Promise.resolve(null),
     wwwCounterpart(domain, signal),
-    probe.online ? missingPage(domain, signal) : null,
+    probe.online ? missingPage(domain, signal) : Promise.resolve(null),
   ]);
   const ns = await nsAgreement(root, dns.ns);
   signal?.throwIfAborted();
@@ -311,7 +311,7 @@ export async function checkDomain(domain: string, opt: {
   const [[cert, redirectHttps, ipv6, wwwOk, soft404], extras, registry, mailInfo] = await Promise.all([
     httpTasks,
     dnsExtras(domain, root, ns.ips, signal),
-    deep ? rdap.lookup(root, signal) : undefined,
+    deep ? rdap.lookup(root, signal) : Promise.resolve(undefined),
     mail.check(root, dns.mx, { servers: ns.ips, resolver: await resolverTask, deep, dkim: opt.dkim, reach: opt.reach, signal }),
   ]);
   signal?.throwIfAborted();

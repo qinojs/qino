@@ -149,11 +149,11 @@ export async function check(apex: string, mx: string[], opt: {
 
   const [txt, dmarcTxt] = await Promise.all([txtOf(apex), txtOf("_dmarc." + apex)]);
   const [zone, dane, mail] = await Promise.all([
-    servers.length ? resolve(servers, zoneQuestions, signal) : zoneQuestions.map(() => null),
+    servers.length ? resolve(servers, zoneQuestions, signal) : Promise.resolve(zoneQuestions.map(() => null)),
     // DANE lives next to the mail host, which is usually somebody else's zone — needs a resolver.
-    primary && resolver ? resolve(resolver, [{ name: `_25._tcp.${primary}`, type: "TLSA" }], signal) : [null],
+    primary && resolver ? resolve(resolver, [{ name: `_25._tcp.${primary}`, type: "TLSA" }], signal) : Promise.resolve([null]),
     // After two silent servers, assume port 25 is blocked here and skip the rest of the run.
-    primary && (opt.reach?.silent ?? 0) < 2 ? smtp(primary, signal) : { starttls: null, tlsValid: null, banner: "", silent: false },
+    primary && (opt.reach?.silent ?? 0) < 2 ? smtp(primary, signal) : Promise.resolve({ starttls: null, tlsValid: null, banner: "", silent: false }),
   ]);
   if (opt.reach && mail.silent) opt.reach.silent++;
 
