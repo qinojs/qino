@@ -244,7 +244,7 @@ class SqliteDriver extends DbDriver {
     return schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
   }
   override loadExtension(path: string) { this.#db.loadExtension(path); }
-  protected override closeDriver() { this.#db.close(); return Promise.resolve(); }
+  protected override async closeDriver() { this.#db.close(); }
 }
 
 /** Dates and times as the text Postgres sends, like the other backends: DATE, TIME, TIMESTAMP,
