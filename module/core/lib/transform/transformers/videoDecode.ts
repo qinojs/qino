@@ -23,10 +23,10 @@ export const videoDecode: TransformerDef = {
   name: 'video-decode',
   phase: 'decode',
   props: ['frame'],
-  handles: async (ctx) =>
-    await ffmpeg.available() &&
+  handles: (ctx) =>
     VIDEO_MIMES.has(ctx.mime) &&
-    (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.frame !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md' && ctx.options.fmt !== 'json') || ctx.options.q !== undefined),
+    (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.frame !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md' && ctx.options.fmt !== 'json') || ctx.options.q !== undefined) &&
+    ffmpeg.available(),
   transform: async (ctx) => {
     const frame = toFrameIndex(ctx.options.frame); // FFmpeg is 0-based
     const out = nodePath.join(ctx.tmpDir, 'video-frame.png');

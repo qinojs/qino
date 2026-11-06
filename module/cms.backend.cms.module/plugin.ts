@@ -59,8 +59,6 @@ async function renderOverview(node: Node) {
   const missing = new Map((await missingModules(app)).map((r) => [String(r.name), r]));
   const lMissing = await t`missing`;
 
-    console.log(getCtx().settings[name].filter.type());
-
   const selType = ctx.settings[name].filter.type() ?? "";
   const types = new Set<string>();
   const trs = [];

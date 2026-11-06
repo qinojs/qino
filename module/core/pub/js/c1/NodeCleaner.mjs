@@ -165,7 +165,6 @@ function removeUnusedElements(el) {
   if (el.tagName === 'TABLE') {
     const tr = el.firstElementChild.firstElementChild;
     if (tr.children.length === 1) {
-      console.log(el)
       for (const tbody of [...el.children]) {
         for (const tr of [...tbody.children]) {
           for (const td of [...tr.children]) replaceNode(td, document.createElement('div'));

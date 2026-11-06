@@ -55,8 +55,8 @@ const profileUrl = (did: string, post?: string) =>
 async function targets(app: App) {
   const settings = app.settings["social.bluesky"];
   if (!String(await settings.handle ?? "").trim() && !String(await settings.appPassword ?? "").trim()) return [];
-  const { user } = await session(app);
-  return [{ id: String(user.did), label: labelOf(user), url: profileUrl(String(user.did)) }];
+  const { user } = await session(app), id = String(user.did);
+  return [{ id, label: labelOf(user), url: profileUrl(id) }];
 }
 
 export const socialProvider: Provider = {
@@ -64,8 +64,8 @@ export const socialProvider: Provider = {
   targets,
   async publish(app, target, text, key) {
     if (!text) throw new Error("social.bluesky: text is empty");
-    const { base, user } = await session(app);
-    if (target !== String(user.did)) throw new Error(`social.bluesky: unknown target ${target}`);
+    const { base, user } = await session(app), did = String(user.did);
+    if (target !== did) throw new Error(`social.bluesky: unknown target ${target}`);
     const rkey = await tid(key);
     const createdAt = new Date().toISOString();
     const response = await call(base, "/xrpc/com.atproto.repo.putRecord", {
@@ -84,8 +84,8 @@ export const socialProvider: Provider = {
       id,
       text,
       own: true,
-      url: profileUrl(String(user.did), id),
-      authorId: String(user.did),
+      url: profileUrl(did, id),
+      authorId: did,
       authorName: labelOf(user),
       time: unixTime(),
     };

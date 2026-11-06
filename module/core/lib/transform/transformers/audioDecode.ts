@@ -20,10 +20,10 @@ export const audioDecode: TransformerDef = {
   name: 'audio-decode',
   phase: 'decode',
   props: [],
-  handles: async (ctx) =>
-    await ffmpeg.available() &&
+  handles: (ctx) =>
     AUDIO_MIMES.has(ctx.mime) &&
-    (ctx.options.w !== undefined || ctx.options.h !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md' && ctx.options.fmt !== 'json') || ctx.options.q !== undefined),
+    (ctx.options.w !== undefined || ctx.options.h !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md' && ctx.options.fmt !== 'json') || ctx.options.q !== undefined) &&
+    ffmpeg.available(),
   transform: async (ctx) => {
     const out = nodePath.join(ctx.tmpDir, 'audio-cover.png');
     await ffmpeg.coverArt(ctx.currentPath, out, ctx.signal);

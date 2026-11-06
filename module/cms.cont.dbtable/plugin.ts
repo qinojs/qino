@@ -68,7 +68,7 @@ const width = (v: string) => /^\d+(\.\d+)?$/.test(v.trim()) ? v.trim() + "px" : 
 const icon = (name: string, title: string) => `<u2-ico icon=${name} title="${hee(title)}">${hee(title)}</u2-ico>`;
 
 /** The query as the current user narrowed it. */
-const query = async (node: Node, ctx: Ctx, id?: unknown) => await Query.of(node, { user: await state(ctx, node), id: id ?? ctx.req.query.id });
+const query = async (node: Node, ctx: Ctx, id?: unknown) => Query.of(node, { user: await state(ctx, node), id: id ?? ctx.req.query.id });
 
 async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
   const q = await query(node, ctx, vars.id);

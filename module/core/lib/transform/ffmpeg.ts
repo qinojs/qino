@@ -36,11 +36,8 @@ export async function frame(
     stdout: 'piped',
     stderr: 'piped',
   }));
-  if (code !== 0) {
-    throw new Error(
-      `FFmpeg Error: ${new TextDecoder().decode(stderr).trim()}`,
-    );
-  }
+  if (code !== 0)
+    throw new Error(`FFmpeg Error: ${new TextDecoder().decode(stderr).trim()}`);
 }
 
 export async function audio(input: string, output: string, signal?: AbortSignal): Promise<void> {

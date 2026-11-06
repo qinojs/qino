@@ -8,6 +8,7 @@ import type { Provider } from "@qino/qino/social";
 
 // deno-lint-ignore no-explicit-any
 type Account = any;
+const ACCOUNT = "/api/v1/accounts/verify_credentials";
 
 async function config(app: App) {
   const settings = app.settings["social.mastodon"];
@@ -38,10 +39,6 @@ async function call(app: App, path: string, init: RequestInit = {}): Promise<any
   throw new ProviderError(`social.mastodon: ${message}`, retry);
 }
 
-async function account(app: App) {
-  return call(app, "/api/v1/accounts/verify_credentials");
-}
-
 const targetId = (account: Account) => String(account.uri ?? account.url ?? account.acct ?? account.id);
 
 /** The account belonging to the configured Mastodon user token. */
@@ -50,7 +47,7 @@ async function targets(app: App) {
   const url = String(await settings.url ?? "").trim();
   const token = String(await settings.accessToken ?? "").trim();
   if (!url && !token) return [];
-  const [cfg, user] = await Promise.all([config(app), account(app)]);
+  const [cfg, user] = await Promise.all([config(app), call(app, ACCOUNT)]);
   return [{
     id: targetId(user),
     label: String(user.display_name ?? user.acct ?? user.username ?? user.id),
@@ -63,7 +60,7 @@ export const socialProvider: Provider = {
   targets,
   async publish(app, target, text, key) {
     if (!text) throw new Error("social.mastodon: text is empty");
-    const user = await account(app);
+    const user = await call(app, ACCOUNT);
     if (target !== targetId(user)) throw new Error(`social.mastodon: unknown target ${target}`);
     const body = new URLSearchParams({ status: text, visibility: "public" });
     const status = await call(app, "/api/v1/statuses", {
@@ -75,7 +72,7 @@ export const socialProvider: Provider = {
     return postOf(target, status, String(user.id));
   },
   async sync(app, target) {
-    const user = await account(app);
+    const user = await call(app, ACCOUNT);
     if (target !== targetId(user)) throw new Error(`social.mastodon: unknown target ${target}`);
     const [own, notifications] = await Promise.all([
       call(app, `/api/v1/accounts/${encodeURIComponent(user.id)}/statuses?limit=40&exclude_reblogs=true`),

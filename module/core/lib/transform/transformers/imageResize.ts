@@ -12,12 +12,12 @@ export const imageResize: TransformerDef = {
   name: 'image-resize',
   phase: 'geometry',
   props: ['w', 'h', 'vpos', 'hpos', 'zoom', 'max'],
-  handles: async (ctx) =>
-    await magick.available() &&
+  handles: (ctx) =>
     ctx.mime.startsWith('image/') &&
     ctx.mime !== 'image/svg+xml' &&
     !ctx.meta.animated &&
-    (!!ctx.options.w || !!ctx.options.h),
+    (!!ctx.options.w || !!ctx.options.h) &&
+    magick.available(),
   transform: async (ctx) => {
     const targetW = Math.min(ctx.options.w ?? 0, 9000);
     const targetH = Math.min(ctx.options.h ?? 0, 9000);

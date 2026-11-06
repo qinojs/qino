@@ -5,6 +5,7 @@ import type { App } from "@qino/qino";
 import type { Provider } from "@qino/qino/social";
 
 const BASE = new URL("https://graph.threads.net/v1.0/");
+const ACCOUNT = "me?fields=id,username,name";
 
 // deno-lint-ignore no-explicit-any
 async function call(app: App, path: string, init: RequestInit = {}): Promise<any> {
@@ -23,14 +24,9 @@ async function call(app: App, path: string, init: RequestInit = {}): Promise<any
   throw new Error(`social.threads: ${message}`);
 }
 
-// deno-lint-ignore no-explicit-any
-async function account(app: App): Promise<any> {
-  return call(app, "me?fields=id,username,name");
-}
-
 async function targets(app: App) {
   if (!String(await app.settings["social.threads"].accessToken ?? "").trim()) return [];
-  const user = await account(app);
+  const user = await call(app, ACCOUNT);
   const username = String(user.username ?? "");
   return [{
     id: String(user.id),
@@ -44,7 +40,7 @@ export const socialProvider: Provider = {
   targets,
   async publish(app, target, text) {
     if (!text) throw new Error("social.threads: text is empty");
-    const user = await account(app);
+    const user = await call(app, ACCOUNT);
     if (target !== String(user.id)) throw new Error(`social.threads: unknown target ${target}`);
     const body = new URLSearchParams({ media_type: "TEXT", text, auto_publish_text: "true" });
     const post = await call(app, `${encodeURIComponent(target)}/threads`, {

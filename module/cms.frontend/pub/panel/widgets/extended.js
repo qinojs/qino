@@ -14,6 +14,7 @@ export const css = `
 
 export default async function (widget, { node, superuser, signal }) {
   const ref = api.cms.node(node.id);
+  const id = String(node.id);
   const [vs, settings, models] = await Promise.all([
     ref.get({}, { signal }),
     ref.settings.get({}, { signal }),
@@ -28,7 +29,7 @@ export default async function (widget, { node, superuser, signal }) {
     <label><input class=-visible type=checkbox ${vs.visible ? 'checked' : ''}> ${t`Visible in navigation`}</label>
     <label><input class=-searchable type=checkbox ${vs.searchable ? 'checked' : ''}> ${t`Searchable`}</label>
     ${superuser
-      ? html.async`<label><input class=-model type=checkbox ${modelIds.includes(String(node.id)) ? 'checked' : ''}> ${t`Show as template under "Modules"`}</label>`
+      ? html.async`<label><input class=-model type=checkbox ${modelIds.includes(id) ? 'checked' : ''}> ${t`Show as template under "Modules"`}</label>`
       : ''}
     <table><tbody style="vertical-align:middle">
       <tr>
@@ -60,11 +61,11 @@ export default async function (widget, { node, superuser, signal }) {
   // event, so use focusout — only on real changes, else the siblings get reordered.
   widget.on('focusout', '.-basis', (inp) => {
     if (!inp.value || inp.value === String(vs.basis)) return;
-    api.cms.node(inp.value)['insert-before'].put({ id: String(node.id) }).then(() => widget.reload());
+    api.cms.node(inp.value)['insert-before'].put({ id }).then(() => widget.reload());
   });
   widget.on('change', '.-model', (inp) => {
-    const next = modelIds.filter((id) => id !== String(node.id));
-    if (inp.checked) next.push(String(node.id));
+    const next = modelIds.filter((value) => value !== id);
+    if (inp.checked) next.push(id);
     api.core.settings(MODELS).put({ value: next.join(',') }).then(() => widget.reload());
   });
 }
