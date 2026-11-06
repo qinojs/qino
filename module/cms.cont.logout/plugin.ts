@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -11,20 +11,11 @@ const settingsSchema = {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (!ctx.user && !await node.edit()) return html.raw("");
-  const app = node.app;
-  const cms = node.cms;
-  const settings = node.settings;
-  const csrfToken = ctx.csrfToken;
-  // Logout form
-  const logoutRedirectId = Number(settings.logout_redirect());
-  let action: HtmlString | string = "";
-  if (logoutRedirectId) {
-    const page = await cms.node(logoutRedirectId);
-    if (page.exists()) action = html` action="${await page.url()}"`;
-  }
-  return html.async`<form method=post${action}>
-  <input type=hidden name=csrfToken value="${csrfToken}">
-  <button name=core_logout>${app.t`Log out`}</button>
+  const redirectId = Number(node.settings.logout_redirect());
+  const page = redirectId ? (await node.cms.node(redirectId)).exists() : undefined;
+  return html.async`<form method=post${page ? html` action="${await page.url()}"` : ""}>
+  <input type=hidden name=csrfToken value="${ctx.csrfToken}">
+  <button name=core_logout>${node.app.t`Log out`}</button>
 </form>`;
 }
 
