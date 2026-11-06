@@ -43,4 +43,4 @@ deletes a row and gets the proof.
 
 ## Possible extensions
 
-- **Warn when few codes are left.** The count exists; nothing uses it yet.
+- **Warn when few codes are left.** [cms.cont.my.backup_codes](../cms.cont.my.backup_codes/) shows the count; nothing warns yet.
