@@ -58,6 +58,7 @@ export const paymentProvider: Provider = {
   },
 
   async start(app, payment, urls) {
+    const id = String(payment.id);
     const session = await call(app, "checkout/sessions", {
       mode: "payment",
       line_items: [{
@@ -65,12 +66,12 @@ export const paymentProvider: Provider = {
         price_data: {
           currency: String(payment.currency).toLowerCase(),
           unit_amount: Number(payment.amount),
-          product_data: { name: String(payment.description || payment.ref || `Payment ${payment.id}`) },
+          product_data: { name: String(payment.description || payment.ref || `Payment ${id}`) },
         },
       }],
-      client_reference_id: String(payment.id),
-      metadata: { payment: String(payment.id) },
-      payment_intent_data: { metadata: { payment: String(payment.id) } },
+      client_reference_id: id,
+      metadata: { payment: id },
+      payment_intent_data: { metadata: { payment: id } },
       success_url: urls.back,
       cancel_url: urls.back,
     });
@@ -105,7 +106,7 @@ export const paymentProvider: Provider = {
     const body = await ctx.req.raw.text().catch(() => "");
     if (!webhookSecret || !body) return [];
     // `t=…,v1=…,v1=…`: while a secret is rolled, one v1 per secret — any of them will do
-    const parts = String(ctx.req.header("stripe-signature") ?? "").split(",").map((part) => part.split("="));
+    const parts = (ctx.req.header("stripe-signature") ?? "").split(",").map((part) => part.split("="));
     const t = parts.find(([key]) => key === "t")?.[1];
     const expected = createHmac("sha256", webhookSecret).update(`${t}.${body}`).digest("hex");
     if (!parts.some(([key, value]) => key === "v1" && safeEqual(value, expected))) return [];

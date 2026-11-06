@@ -144,7 +144,7 @@ function routeHtml(r: Route, idx: number, toolJson: string) {
 function render() {
   const ctx = getCtx();
   u2.elements(ctx, "code"); // the json views highlight with a library of their own
-  const appUrl = ctx.req.appUrl ?? "/";
+  const appUrl = ctx.req.appUrl;
 
   const apiTree = ctx.app.apiTree;
   const routes = [...walk(apiTree, ctx)];

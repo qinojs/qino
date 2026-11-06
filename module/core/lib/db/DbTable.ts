@@ -164,10 +164,10 @@ export class DbTable {
     const auto = this.autoIncrement;
     const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));
     if (!res.affectedRows) return;
-    if (auto && !this.#db.insertSyncsAutoIncrement && String(auto) in values) await this.#db.syncAutoIncrement(String(this), String(auto), Number(values[String(auto)]));
+    if (auto && !this.#db.insertSyncsAutoIncrement && auto.name in values) await this.#db.syncAutoIncrement(String(this), auto.name, Number(values[auto.name]));
     // A given key is kept: on a composite key the driver would report the rowid, not the written id.
-    if (auto && !(String(auto) in values)) values[String(auto)] = res.insertId;
-    else if (res.insertId && this.primary && !(String(this.primary) in values)) values[String(this.primary)] = res.insertId;
+    if (auto && !(auto.name in values)) values[auto.name] = res.insertId;
+    else if (res.insertId && this.primary && !(this.primary.name in values)) values[this.primary.name] = res.insertId;
     const id = this.entryId(values);
     await this.#db.fire("table:insert-after", { table: this, id, data: values });
     return id;
@@ -217,7 +217,7 @@ export class DbTable {
     const row = await this.selectByID(id);
     if (!row) return;
     const newRow = { ...row, ...override };
-    if (this.autoIncrement && !(String(this.autoIncrement) in override)) delete newRow[String(this.autoIncrement)];
+    if (this.autoIncrement && !(this.autoIncrement.name in override)) delete newRow[this.autoIncrement.name];
     const newId = await this.insert(newRow); // insert fills generated ids into newRow
     if (newId === undefined) return;
 
@@ -225,8 +225,8 @@ export class DbTable {
       if (field.onParentCopy !== "cascade") continue;
       const pField = field.parentField();
       if (!pField) continue;
-      const childRows = await this.#db.query`SELECT * FROM ${sql.id(field.table)} WHERE ${sql.id(field)} = ${row[String(pField)]}`;
-      for (const childRow of childRows) await field.table.copy(childRow, { [String(field)]: newRow[String(pField)] }, visiting);
+      const childRows = await this.#db.query`SELECT * FROM ${sql.id(field.table)} WHERE ${sql.id(field)} = ${row[pField.name]}`;
+      for (const childRow of childRows) await field.table.copy(childRow, { [field.name]: newRow[pField.name] }, visiting);
     }
     return newId;
   }
@@ -252,13 +252,13 @@ export class DbTable {
     for (const field of cascades) {
       const pField = field.parentField();
       if (!pField || !row) continue;
-      const childRows = await this.#db.query`SELECT * FROM ${sql.id(field.table)} WHERE ${sql.id(field)} = ${row[String(pField)]}`;
+      const childRows = await this.#db.query`SELECT * FROM ${sql.id(field.table)} WHERE ${sql.id(field)} = ${row[pField.name]}`;
       for (const childRow of childRows) await field.table.delete(childRow);
     }
     for (const field of setnulls) {
       const pField = field.parentField();
       if (!pField || !row) continue;
-      await this.#db.exec`UPDATE ${sql.id(field.table)} SET ${sql.id(field)} = ${null} WHERE ${sql.id(field)} = ${row[String(pField)]}`;
+      await this.#db.exec`UPDATE ${sql.id(field.table)} SET ${sql.id(field)} = ${null} WHERE ${sql.id(field)} = ${row[pField.name]}`;
     }
     return true;
   }

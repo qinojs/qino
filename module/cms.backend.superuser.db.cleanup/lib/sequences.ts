@@ -18,13 +18,13 @@ export async function sequenceIssue(db: Db, tableName: string) {
       SELECT s.last_value
       FROM pg_sequences s
       WHERE s.schemaname = current_schema()
-        AND format('%I.%I', s.schemaname, s.sequencename) = pg_get_serial_sequence(${tableName}, ${String(field)})`;
+        AND format('%I.%I', s.schemaname, s.sequencename) = pg_get_serial_sequence(${tableName}, ${field.name})`;
     current = value != null ? Number(value) : null;
   } else {
     const value = await db.one`SELECT seq FROM sqlite_sequence WHERE name = ${tableName}`.catch(() => null);
     current = value != null ? Number(value) : null;
   }
-  return current != null && current < max ? { field: String(field), current, max } : null;
+  return current != null && current < max ? { field: field.name, current, max } : null;
 }
 
 /** Move a verified auto-id sequence to the table's current maximum id. */

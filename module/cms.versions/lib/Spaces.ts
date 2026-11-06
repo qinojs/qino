@@ -80,9 +80,9 @@ export function initSpaces(app: App, signal: AbortSignal) {
     const auto = e.table.autoIncrement;
     if (!auto) return;
     const ids = e.table.entryIdValues(e.id) || {};
-    const value = Number(ids[String(auto)]);
+    const value = Number(ids[auto.name]);
     if (!value) return;
-    await ctx.app.db.syncAutoIncrement(originalTable, String(auto), value);
+    await ctx.app.db.syncAutoIncrement(originalTable, auto.name, value);
   }, { signal });
 }
 

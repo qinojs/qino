@@ -93,7 +93,7 @@ function initLog(ctx: Ctx) {
     try {
       const url = redactQuery(ctx.req.url.href);
       const referer = redactQuery(ctx.req.header("referer") ?? "");
-      const ip = ctx.req.clientIp ?? "";
+      const ip = ctx.req.clientIp;
       const ua = ctx.req.header("user-agent") ?? "";
 
       const urlId = urlIdOf(url);

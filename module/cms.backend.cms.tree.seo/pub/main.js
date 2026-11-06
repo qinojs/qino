@@ -27,7 +27,7 @@ cms.initNode("backend.cms.tree.seo", (el) => {
     const { pid, lang, title } = row.dataset;
     const ref = api.cms.node(pid);
     const texts = await ref.texts.get({ values: true, lang, names: NAMES.join(",") }); // creates missing ones
-    const value = (name) => unhee(texts[name]?.value ?? "");
+    const value = (name) => unhee(texts[name]?.value);
     const labels = [...el.querySelectorAll(".cmsBeTree thead th")].slice(2).map((th) => th.textContent.trim());
     const placeholders = [title, "", value("_title") || title, value("_description")];
     const { form, alert } = await import("@qino/u2/js/dialog/dialog.js");
