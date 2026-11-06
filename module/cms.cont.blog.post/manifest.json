@@ -1,6 +1,6 @@
 {
   "name": "cms.cont.blog.post",
-  "description": "Blog article with canonical and social metadata and optional moderated comments.",
-  "dependencies": ["cms", "cms.cont.form", "cms.cont.form.entries", "cms.cont.form.fields"],
+  "description": "Blog article with canonical link, share button and optional moderated comments.",
+  "dependencies": ["cms", "cms.cont.form", "cms.cont.form.entries", "cms.cont.form.fields", "u2"],
   "files": ["locale/de.json", "manifest.json", "plugin.ts", "pub/main.css", "pub/module.svg"]
 }

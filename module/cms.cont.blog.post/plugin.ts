@@ -1,4 +1,5 @@
 import { hee, html } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -36,12 +37,20 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
+  u2.assets(ctx, ["attr/behavior/behavior.js"]);
 
   const children = await node.conts();
   const form = children.find((child) => child.vs.name === "comments");
   const entries = children.find((child) => child.vs.name === "entries");
   return html.async`<article class=u2-width>
-    <header>${await node.edit() || (await node.showTitle()).plain() ? node.cms.text(node, "title", { tag: "h1" }) : html`<h1>${title}</h1>`}${published ? html`<time datetime="${new Date(published * 1000).toISOString()}">${new Date(published * 1000).toLocaleDateString(ctx.lang || undefined)}</time>` : ""}</header>
+    <header>
+      ${await node.edit() || (await node.showTitle()).plain()
+        ? node.cms.text(node, "title", { tag: "h1" }) : html`<h1>${title}</h1>`}
+      ${published ? html`<time datetime="${new Date(published * 1000).toISOString()}">
+        ${new Date(published * 1000).toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
+      <button type=button u2-behavior=share data-url="${canonical}" data-title="${title}">
+        <span class=-text></span><span class=-success hidden> ✓</span></button>
+    </header>
     ${node.cms.text(node, "main")}
     ${entries ? html.async`<section><h2>${node.app.t`Comments`}</h2>${entries.html()}</section>` : ""}
     ${form ? html.async`<section><h2>${node.app.t`Leave a comment`}</h2>${form.html()}</section>` : ""}

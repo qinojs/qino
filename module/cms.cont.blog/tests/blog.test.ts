@@ -21,6 +21,8 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
     await live.title("de", "Kaffee < Tee");
     await live.text("_description", "en", "A short & useful post");
     await live.text("_description", "de", "Ein kurzer & nützlicher Beitrag");
+    const picture = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "coffee.png", { type: "image/png" }));
+    await live.addFile(picture, "share");
     const brief = await page.createChild({ access: 1, searchable: true, online_start: 1726473600 });
     await brief.title("en", "Without an excerpt");
     const hidden = await page.createChild({ access: 0, searchable: true, online_start: 1726646400 });
@@ -34,6 +36,7 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
     assertStringIncludes(document, "Coffee &lt; tea");
     assert(!document.includes("<h1"), "no heading without the block's own title");
     assertStringIncludes(document, "A short &amp; useful post");
+    assertStringIncludes(document, `<img src="/dbFile/${picture.id}/`);
     assert(!document.includes("Private draft"));
     assert(!/<h2><a[^>]*>Scheduled draft<\/a>/.test(document));
     assertStringIncludes(document, "application/atom+xml");

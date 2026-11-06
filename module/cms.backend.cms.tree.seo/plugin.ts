@@ -96,7 +96,7 @@ async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<str
   ${field(t, descr, 60, 156)}
   ${field(t, await text(page, "_share_title"))}
   ${field(t, await text(page, "_share_description"))}
-  <td>${file ? html`<img src="${await file.url({ w: 120, h: 63, max: true })}" alt="">` : ""}`);
+  <td>${file ? html`<img src="${await file.url({ w: 240, h: 126, max: true })}" alt="">` : ""}`);
       if (isOpen) await addChildren(page, level + 1);
     }
   }

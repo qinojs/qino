@@ -21,6 +21,7 @@ test("blog post creates a moderated comment form only for an editor", async () =
     assertStringIncludes(initial, '<link rel="canonical" href="https://qino.test/en/first-post">');
     assertEquals((await post.conts()).length, 0);
     assertStringIncludes(initial, "<h1>First post</h1>", "the page's title until the block has its own");
+    assertStringIncludes(initial, 'u2-behavior=share data-url="https://qino.test/en/first-post" data-title="First post"');
 
     const out = await runAs(app, admin, "test", async () => {
       cmsCtx(getCtx()).editmode = 1;
