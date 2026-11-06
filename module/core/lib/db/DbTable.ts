@@ -30,7 +30,7 @@ export class DbTable {
   get db(): Db { return this.#db; }
   get fields(): Map<string, DbField> | null { return this.#fields; }
   get autoIncrement(): DbField | undefined { return this.#autoIncrement; }
-  get schema(): Record<string, any> { return this.#db.schema?.properties?.[String(this)] ?? {}; }
+  get schema(): Record<string, any> { return this.#db.schema?.properties?.[this.#name] ?? {}; }
   get primaries(): DbField[] { return this.#primaries; }
   get primary(): DbField | undefined { return this.#primaries[0]; }
   get name(): string { return this.#name; }
@@ -39,7 +39,7 @@ export class DbTable {
       this.#children = [];
       for (const table of Object.values(this.#db.tables)) {
         for (const [name, schema] of Object.entries(table.schema.additionalProperties?.properties ?? {})) {
-          if ((schema as any)["x-qg-parent"] !== String(this)) continue;
+          if ((schema as any)["x-qg-parent"] !== this.#name) continue;
           const field = table.field(name);
           if (field) this.#children.push(field);
         }
@@ -164,7 +164,7 @@ export class DbTable {
     const auto = this.autoIncrement;
     const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));
     if (!res.affectedRows) return;
-    if (auto && !this.#db.insertSyncsAutoIncrement && auto.name in values) await this.#db.syncAutoIncrement(String(this), auto.name, Number(values[auto.name]));
+    if (auto && !this.#db.insertSyncsAutoIncrement && auto.name in values) await this.#db.syncAutoIncrement(this.#name, auto.name, Number(values[auto.name]));
     // A given key is kept: on a composite key the driver would report the rowid, not the written id.
     if (auto && !(auto.name in values)) values[auto.name] = res.insertId;
     else if (res.insertId && this.primary && !(this.primary.name in values)) values[this.primary.name] = res.insertId;

@@ -17,7 +17,7 @@ const cost = (value: unknown) => value == null ? "–" : Number(value).toLocaleS
 const colored = (value: unknown) => html`<span style="color:${uniqueColor(value)}">${value}</span>`;
 const success = (row: Record<string, unknown>) => {
   const calls = Number(row.calls), done = calls - Number(row.errors);
-  return html`<progress value="${done}" max="${Math.max(1, calls)}"></progress> ${number(done)} / ${number(row.calls)}`;
+  return html`<progress value="${done}" max="${Math.max(1, calls)}"></progress> ${number(done)} / ${number(calls)}`;
 };
 
 export async function install({ app }: { app: App }): Promise<void> {

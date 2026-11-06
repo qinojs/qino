@@ -49,9 +49,9 @@ export async function references(db: Db, table: string, id: unknown): Promise<{ 
 /** The unique keys of a table that contain `column`, as lists of columns. */
 function uniqueKeys(field: DbField): string[][] {
   const keys = [];
-  if (field.key === "UNI") keys.push([String(field)]);
+  if (field.key === "UNI") keys.push([field.name]);
   const primaries = field.table.primaries.map(String);
-  if (primaries.includes(String(field))) keys.push(primaries);
+  if (primaries.includes(field.name)) keys.push(primaries);
   return keys;
 }
 
@@ -81,7 +81,7 @@ export function merge(db: Db, table: string, into: unknown, from: unknown): Prom
         for (const row of await db.query`SELECT * FROM ${child} WHERE ${ref} = ${from}`) {
           let taken = false;
           for (const unique of keys) {
-            const match = unique.map((c) => is(c, c === String(field) ? into : row[c]));
+            const match = unique.map((c) => is(c, c === field.name ? into : row[c]));
             if (await db.one`SELECT 1 FROM ${child} WHERE ${sql.join(match, " AND ")}`) taken = true;
           }
           if (taken) {
@@ -89,8 +89,8 @@ export function merge(db: Db, table: string, into: unknown, from: unknown): Prom
             result.dropped++;
             continue;
           }
-          const at = field.table.primaries.map((c) => is(String(c), row[String(c)]));
-          await db.exec`UPDATE ${child} SET ${ref} = ${into} WHERE ${sql.join(at.length ? at : [is(String(field), from)], " AND ")}`;
+          const at = field.table.primaries.map((c) => is(c.name, row[c.name]));
+          await db.exec`UPDATE ${child} SET ${ref} = ${into} WHERE ${sql.join(at.length ? at : [is(field.name, from)], " AND ")}`;
           moved++;
         }
       }
