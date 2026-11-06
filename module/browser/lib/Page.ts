@@ -1,8 +1,14 @@
 /** How many console messages and requests a page keeps, the latest. */
 const KEEP = 500;
 
+/** What the page shows, in CSS pixels of the document; with `full` all of it. */
+const AREA = (full: boolean) => full
+  ? "({ x: 0, y: 0, width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight })"
+  : "({ x: scrollX, y: scrollY, width: innerWidth, height: innerHeight })";
+
 type Message = { type: string; text: string };
 type Request = { method: string; url: string; type: string; status?: number; error?: string };
+type Area = { x: number; y: number; width: number; height: number };
 
 /**
  * A page as Playwright has it — the same names, a part of them — the same with every driver. For agents
@@ -37,10 +43,6 @@ export abstract class Page {
     scale?: number;
     pageRanges?: string;
   }): Promise<Uint8Array<ArrayBuffer>>;
-  /** Of the page, or with `ref` of one element. */
-  abstract screenshot(
-    options?: { fullPage?: boolean; ref?: string; type?: "png" | "jpeg"; quality?: number },
-  ): Promise<Uint8Array<ArrayBuffer>>;
 
   /** The accessibility tree as text, an element a line with a ref to act by: `- button "Go" [ref=e3]`. */
   abstract snapshot(): Promise<string>;
@@ -54,6 +56,34 @@ export abstract class Page {
   abstract tab(index: number): Promise<void>;
   protected abstract press(key: string): Promise<void>;
   protected abstract end(): Promise<void>;
+  /** Where the element of a ref is, in CSS pixels of the document. */
+  protected abstract box(ref: string): Promise<Area>;
+  /** A call of the DevTools protocol, in the tab it acts in. */
+  // deno-lint-ignore no-explicit-any
+  protected abstract cdp(method: string, params: object): Promise<any>;
+
+  /**
+   * What the page shows, all of it (`fullPage`), an area (`clip`, CSS pixels of the page) or an element
+   * (`ref`). With `maxSize` at most so many pixels on its longer side: rendered smaller, not scaled after.
+   */
+  async screenshot({ fullPage = false, clip, ref, type = "png", quality, maxSize }: {
+    fullPage?: boolean;
+    clip?: Area;
+    ref?: string;
+    type?: "png" | "jpeg";
+    quality?: number;
+    maxSize?: number;
+  } = {}): Promise<Uint8Array<ArrayBuffer>> {
+    const area = ref ? await this.box(ref) : clip ?? await this.evaluate<Area>(AREA(fullPage));
+    const scale = maxSize ? Math.min(1, maxSize / Math.max(area.width, area.height)) : 1;
+    const { data } = await this.cdp("Page.captureScreenshot", {
+      format: type,
+      ...type === "jpeg" && { quality },
+      clip: { ...area, scale },
+      captureBeyondViewport: true,
+    });
+    return Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+  }
 
   /** Console messages and errors, the latest `KEEP`. */
   consoleMessages(): Message[] {

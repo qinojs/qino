@@ -34,6 +34,20 @@ test("ChatGPT Responses history keeps function calls and tool results", () => {
   assertEquals(value.input[3], { type: "function_call_output", call_id: "call-1", output: "3" });
 });
 
+test("ChatGPT Responses take the images of a tool's result in it", () => {
+  const url = "data:image/jpeg;base64,AAAA";
+  const { input: items } = input([
+    { role: "user", content: "Look" },
+    { role: "assistant", content: "", toolCalls: [{ id: "call-1", name: "shot", args: {} }] },
+    { role: "tool", id: "call-1", content: [{ type: "text", text: "Here" }, { type: "image", url }] },
+  ], undefined);
+  assertEquals(items.at(-1), {
+    type: "function_call_output",
+    call_id: "call-1",
+    output: [{ type: "input_text", text: "Here" }, { type: "input_image", image_url: url }],
+  });
+});
+
 test("ChatGPT stream failure reports the provider's code and message", async () => {
   const body = `data: ${JSON.stringify({ type: "response.failed", response: {
     error: { code: "subscription_sharing_usage_limit_exceeded", message: "Usage limit reached" },

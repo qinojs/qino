@@ -74,7 +74,10 @@ for (const Driver of [Playwright, Puppeteer]) {
       assertEquals(page.url(), `${base}/`);
 
       assertEquals(page.requests().some((r) => r.url === `${base}/b` && r.status === 200), true);
-      assertEquals([...(await page.screenshot()).slice(0, 4)], [0x89, 0x50, 0x4e, 0x47]); // png
+      const width = (png: Uint8Array) => new DataView(png.buffer).getUint32(16); // of a png
+      assertEquals(width(await page.screenshot()), 1280);
+      assertEquals(width(await page.screenshot({ maxSize: 640 })), 640); // rendered smaller
+      assertEquals(width(await page.screenshot({ clip: { x: 0, y: 0, width: 300, height: 100 }, maxSize: 1000 })), 300);
       await assertRejects(() => page.tab(5), Error, "No tab 5");
     } finally {
       await page.close();

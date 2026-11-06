@@ -16,7 +16,7 @@ const log = (e: unknown) => console.error("[ai.agent] embedding:", errMsg(e));
 /** Make `text` findable (where there is an embedding collection). Resolves to the vectors it
  *  embedded; never rejects. */
 export async function findable(app: App, name: string, key: Record<string, number>, text: string): Promise<number[][]> {
-  return text ? await index(app, name, key, text).catch((e) => (log(e), [])) : [];
+  return text ? index(app, name, key, text).catch((e) => (log(e), [])) : [];
 }
 
 /** The agent's memories and the messages of all its sessions, with anyone, nearest to `query`. A

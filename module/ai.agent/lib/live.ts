@@ -43,7 +43,10 @@ export async function live(app: App, session: number, sdp: string): Promise<stri
   const all = [...tools, delegate];
   const call = await connect(app, {
     sdp, instructions, tools: all,
-    onToolCall: (toolCall) => runAs(app, usrId, "ai", () => execute(all, toolCall, getCtx())),
+    onToolCall: (toolCall) => runAs(app, usrId, "ai", async () => {
+      const result = await execute(all, toolCall, getCtx());
+      return typeof result === "string" ? result : textOf(result) || "An image: a live talk cannot show it";
+    }),
     onMessage: (message) => save(app, session, agent, message).catch((e) => console.error("[ai.agent] live:", errMsg(e))),
   }, { prefer });
   const timer = setTimeout(() => call.close().catch(() => {}), LIVE_MS);

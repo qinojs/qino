@@ -99,9 +99,6 @@ class PlaywrightPage extends Page {
   pdf(options?: object): Promise<Uint8Array<ArrayBuffer>> {
     return this.#tab.pdf(options);
   }
-  screenshot({ ref, ...options }: { fullPage?: boolean; ref?: string } = {}): Promise<Uint8Array<ArrayBuffer>> {
-    return (ref ? this.#at(ref) : this.#tab).screenshot(options);
-  }
   snapshot(): Promise<string> {
     return this.#tab.ariaSnapshot({ mode: "ai" });
   }
@@ -132,5 +129,19 @@ class PlaywrightPage extends Page {
   }
   protected end(): Promise<void> {
     return this.#context.close();
+  }
+  protected box(ref: string): Promise<{ x: number; y: number; width: number; height: number }> {
+    return this.#at(ref).evaluate((el: any) => {
+      const r = el.getBoundingClientRect(), view = el.ownerDocument.defaultView;
+      return { x: r.x + view.scrollX, y: r.y + view.scrollY, width: r.width, height: r.height };
+    });
+  }
+  protected async cdp(method: string, params: object): Promise<any> {
+    const session = await this.#context.newCDPSession(this.#tab);
+    try {
+      return await session.send(method, params);
+    } finally {
+      session.detach().catch(() => {});
+    }
   }
 }

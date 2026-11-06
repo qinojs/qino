@@ -117,6 +117,14 @@ test("ai.tools: a result too long is told, not given", () => withApp(async (test
   assertEquals((await run(testApp, ask("huge"))).text, '{"error":"Too long: 200002 characters, at most 100000. Ask for less."}');
 }));
 
+test("ai.tools: a result with images goes as it is, for a model that sees", () => withApp(async (testApp) => {
+  const image = { type: "image" as const, url: "data:image/jpeg;base64,AAAA" };
+  const shot = { ...ask("shot"), tools: [...tools, tool("shot", () => image)] };
+  await assertRejects(() => run(testApp, shot)); // m does not see
+  await testApp.db.table("ai_model_capability").insert({ model_id: 1, capability: "vision" });
+  assertEquals((await run(testApp, shot)).messages[1], { role: "tool", id: "1.0", content: [image] });
+}));
+
 test("ai.tools: the steps are bounded", () => withApp(async (testApp) => {
   order.length = 0;
   await assertRejects(() => run(testApp, { ...ask("loop"), maxSteps: 3 }), Error, "after 3 steps");

@@ -103,7 +103,7 @@ export async function describeChange(dataStr: unknown, t: TFn): Promise<string> 
             return (d.name ? `${await t`Text`} "${hee(d.name)}"` : await t`Text`) + lang + " " + await t`changed`;
         case "page_file":
         case "file":
-            return d.op === "delete" ? await t`File deleted` : await t`File added`;
+            return d.op === "delete" ? t`File deleted` : t`File added`;
         case "page_url":
             return t`URL changed`;
         case "page_access_grp":

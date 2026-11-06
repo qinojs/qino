@@ -81,7 +81,7 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
 const nameOf = (row: Row) => [row.given_name, row.family_name].filter(Boolean).join(" ") || undefined;
 
 async function attachmentsOf(files?: Attachment[]) {
-  return files?.length ? await Promise.all(files.map(attachmentFile)) : undefined;
+  return files?.length ? Promise.all(files.map(attachmentFile)) : undefined;
 }
 
 /** Send one mail; resolves with the message id, or the error (not thrown) for the journal.

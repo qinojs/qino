@@ -15,7 +15,9 @@ press       post { id, key }                 press a key: Enter, Tab, PageDown, 
 tab         post { id, index }               act in another tab
 dialog      post { id, accept, text? }       answer an alert, confirm or prompt
 snapshot    get  { id }                      what the page shows now
-screenshot  get  { id, fullPage?, ref? }     how it looks: { type: "image", url } (a data url, as ai's Part)
+screenshot  get  { id, fullPage?, ref?,      how it looks, as ai's image Part: { type: "image", url } (jpeg);
+                   x?, y?, width?, height? }   the view or the whole page small, a zoom on an element or an
+                                               area (pixels of the page) as it is, in better quality
 console     get  { id }                      its console since it opened
 network     get  { id, failed? }             its requests: method, url, type, status or error
 close       post { id }
@@ -39,7 +41,7 @@ try {
 ```
 
 - **Page:** a part of Playwright's Page, with its names: `goto`, `goBack`, `setContent`, `evaluate`,
-  `title`, `url`, `pdf`, `screenshot`, `keyboard.press`, `setDefaultTimeout`, `waitForLoadState`,
+  `title`, `url`, `pdf`, `screenshot` (also by `ref`, and `maxSize`: rendered smaller), `keyboard.press`, `setDefaultTimeout`, `waitForLoadState`,
   `consoleMessages`, `requests`, `on("close")`, `close`. For agents also `snapshot()`, the
   accessibility tree as text with a `ref` for each element; `click`, `fill`, `selectOption`, `hover`
   by those refs; `tabs`/`tab`, `handleDialog`, and `news()`, what an action answers with.

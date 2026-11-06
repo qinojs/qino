@@ -10,14 +10,17 @@ type ToolCall = TextOutput["toolCalls"][number];
 const MAX_RESULT = 100_000;
 
 // deno-lint-ignore no-explicit-any
-const isPart = (v: any): v is Part => v?.type === "image" ? typeof v.url === "string" : v?.type === "text" && typeof v.text === "string";
+const isPart = (v: any): v is Part =>
+  v?.type === "image" ? typeof v.url === "string" : v?.type === "text" && typeof v.text === "string";
 
 /** A tool's result for the model, as JSON; one with images (a `Part`, or `Part`s) as they are, so the
  *  model sees them. A failure is told to it, so it can go on, as is a result too long, so it asks for less. */
 export async function execute(tools: Tool[], call: ToolCall, ctx: Ctx): Promise<string | Part[]> {
   const tool = tools.find((t) => t.name === call.name);
   const value = await (tool ? tool.execute(call.args, ctx) : Promise.reject(new ApiError(404, `Unknown tool: ${call.name}`)))
-    .catch((e) => e instanceof ApiError ? { error: e.message, code: e.code, data: e.data } : (console.error("[ai.tools]", call.name, e), { error: "Tool failed" }));
+    .catch((e) => e instanceof ApiError
+      ? { error: e.message, code: e.code, data: e.data }
+      : (console.error("[ai.tools]", call.name, e), { error: "Tool failed" }));
   const parts = isPart(value) ? [value] : Array.isArray(value) && value.length && value.every(isPart) ? value : [];
   if (parts.some((p) => p.type === "image")) return parts;
   const result = JSON.stringify(value ?? null);

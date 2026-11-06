@@ -26,6 +26,8 @@ export class Puppeteer {
     return new Puppeteer(await puppeteer.launch({
       executablePath: cmd,
       args: ["--force-webrtc-ip-handling-policy=disable_non_proxied_udp"], // WebRTC would talk UDP past the proxy
+      defaultViewport: { width: 1280, height: 720 }, // as Playwright's
+      pipe: true, // as Playwright: the browser ends with the process, however it ends
       // the app's signals stay the app's: puppeteer would exit the process
       handleSIGINT: false,
       handleSIGTERM: false,
@@ -117,9 +119,6 @@ class PuppeteerPage extends Page {
   pdf(options?: object): Promise<Uint8Array<ArrayBuffer>> {
     return this.#tab.pdf(options);
   }
-  async screenshot({ ref, ...options }: { fullPage?: boolean; ref?: string } = {}): Promise<Uint8Array<ArrayBuffer>> {
-    return (ref ? await this.#element(ref) : this.#tab).screenshot(options);
-  }
 
   async snapshot(): Promise<string> {
     const refs = this.#refs = new Map(), lines: string[] = [];
@@ -168,5 +167,19 @@ class PuppeteerPage extends Page {
   }
   protected end(): Promise<void> {
     return this.#context.close();
+  }
+  protected async box(ref: string): Promise<{ x: number; y: number; width: number; height: number }> {
+    return (await this.#element(ref)).evaluate((el: any) => {
+      const r = el.getBoundingClientRect(), view = el.ownerDocument.defaultView;
+      return { x: r.x + view.scrollX, y: r.y + view.scrollY, width: r.width, height: r.height };
+    });
+  }
+  protected async cdp(method: string, params: object): Promise<any> {
+    const session = await this.#tab.createCDPSession();
+    try {
+      return await session.send(method, params);
+    } finally {
+      session.detach().catch(() => {});
+    }
   }
 }

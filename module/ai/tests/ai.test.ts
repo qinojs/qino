@@ -5,6 +5,7 @@ import { assertEquals, assertRejects } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { AiError, candidates, decide, embed, image, live, music, ocr, speak, structured, text, transcribe, translate } from "../mod.ts";
+import { chatBody } from "../lib/openai.ts";
 import { aiAdapters, aiCapabilities } from "../plugin.ts";
 
 import type { App } from "@qino/qino";
@@ -644,4 +645,20 @@ test("ai: openai talks live: the offer with the session goes to OpenAI, what is 
       await call.done;
     });
   } finally { globalThis.WebSocket = WebSocketOrg; }
+});
+
+test("ai: a chat completion gets the images of tool results after the step's results, as the user's", () => {
+  const image = { type: "image" as const, url: "data:image/jpeg;base64,AAAA" };
+  const { messages } = chatBody({ model: "m" } as Parameters<typeof chatBody>[0], { messages: [
+    { role: "user", content: "Look" },
+    { role: "assistant", content: "", toolCalls: [{ id: "a", name: "shot", args: {} }, { id: "b", name: "shot", args: {} }] },
+    { role: "tool", id: "a", content: [image] },
+    { role: "tool", id: "b", content: [{ type: "text", text: "Second" }, image] },
+  ] });
+  const shown = { type: "image_url", image_url: { url: image.url } };
+  assertEquals(messages.slice(2), [
+    { role: "tool", tool_call_id: "a", content: "An image, shown below." },
+    { role: "tool", tool_call_id: "b", content: "Second" },
+    { role: "user", content: [{ type: "text", text: "The images of the tool results above:" }, shown, shown] },
+  ]);
 });

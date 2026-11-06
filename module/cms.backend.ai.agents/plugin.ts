@@ -477,7 +477,7 @@ async function calls(db: Db, id: number, call: string) {
     if (m.role === "user") requests.push([]);
     else if (m.role === "tool") {
       const call = byId.get(m.id);
-      if (call) call.result = JSON.parse(m.content), call.failed = !!call.result?.error;
+      if (call) call.result = typeof m.content === "string" ? JSON.parse(m.content) : m.content, call.failed = !!call.result?.error;
     } else for (const c of m.toolCalls.map(called)) {
       const call = { id: c.id, step: row.id, time: row.time, name: c.name, color: uniqueColor(c.name), args: c.args };
       byId.set(c.id, call);

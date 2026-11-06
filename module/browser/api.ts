@@ -10,6 +10,9 @@ const IDLE = 10 * 60_000;
 /** How long an action waits for its element. */
 const WAIT = 10_000;
 const REF = s.string().describe("From the snapshot, e.g. e12");
+/** A screenshot for a model, a jpeg: what it pays is its size in pixels. The view and the whole page small,
+ *  to see where things are; a zoom (an element, an area) as it is, in better quality. */
+const OVERVIEW = { maxSize: 768, quality: 70 }, ZOOM = { maxSize: 1568, quality: 90 };
 
 type Session = { usrId: number; page: Page; idle?: ReturnType<typeof setTimeout> };
 const sessions = new WeakMap<App, Map<string, Session>>();
@@ -114,12 +117,23 @@ export const api: ApiTree = {
   },
   screenshot: {
     get: {
-      description: "How the page looks: the visible part, all of it, or one element",
-      query: s.object({ id: s.string(), fullPage: s.optional(s.boolean()), ref: s.optional(REF) }),
+      description: "How the page looks: the visible part or all of it, small; or a zoom on an element or an area",
+      query: s.object({
+        id: s.string(),
+        fullPage: s.optional(s.boolean()),
+        ref: s.optional(REF),
+        x: s.optional(s.number()).describe("An area, in pixels of the page: with y, width and height"),
+        y: s.optional(s.number()),
+        width: s.optional(s.number()),
+        height: s.optional(s.number()),
+      }),
       access: Access.USER,
-      execute: async ({ id, fullPage, ref }: { id: string; fullPage?: boolean; ref?: string }, ctx: Ctx) => {
-        const png = await session(ctx, id).screenshot({ fullPage, ref });
-        return { type: "image", url: `data:image/png;base64,${png.toBase64()}` }; // as ai's Part
+      execute: async ({ id, fullPage, ref, x, y, width, height }: { id: string; fullPage?: boolean; ref?: string } &
+        Partial<Record<"x" | "y" | "width" | "height", number>>, ctx: Ctx) => {
+        const clip = width && height ? { x: x ?? 0, y: y ?? 0, width, height } : undefined;
+        const how = ref || clip ? ZOOM : OVERVIEW;
+        const jpeg = await session(ctx, id).screenshot({ fullPage, ref, clip, type: "jpeg", ...how });
+        return { type: "image", url: `data:image/jpeg;base64,${jpeg.toBase64()}` }; // ai's Part: the model sees it
       },
     },
   },
