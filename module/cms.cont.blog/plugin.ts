@@ -1,7 +1,7 @@
 import { hee, html, Output } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 import { cms_image } from "@qino/qino/cms.image";
-import { image } from "@qino/qino/cms.seo";
+import { fit, image } from "@qino/qino/cms.seo";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -88,7 +88,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
     const url = await post.node.url();
     const file = await image(post.node);
     items.push(html.async`<article>
-      ${file ? await cms_image(file, { alt: post.title }) : ""}
+      ${file ? await cms_image(file, { alt: post.title, fit: fit(file) }) : ""}
       <h2><a href="${url}">${post.title}</a>${post.draft ? html.async` <small>${t`Draft`}</small>` : ""}</h2>
       ${post.created ? html`<time datetime="${new Date(post.created * 1000).toISOString()}">${new Date(post.created * 1000).toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
       ${excerpt ? html`<p>${excerpt}</p>` : edit ? html.async`<p><small>${t`No description`}</small></p>` : ""}

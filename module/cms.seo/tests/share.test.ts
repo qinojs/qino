@@ -27,6 +27,13 @@ test("cms.seo sets the tags for shared links from the page's values", async () =
     const shared = await get();
     assertStringIncludes(shared, '<meta property="og:title" content="Meet the team">');
     assertStringIncludes(shared, `<meta property="og:image" content="https://qino.test/dbFile/${file.id}/`);
+    assertStringIncludes(shared, "/w-1200/h-630/hpos-50/vpos-50/team.png");
+
+    // SVGs (logos) are fitted and rasterized: the platforms reject SVG
+    const logo = await app.dbFiles.add(new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], "logo.svg", { type: "image/svg+xml" }));
+    await page.addFile(logo, "share");
+    assertStringIncludes(await get(), `/dbFile/${logo.id}/`);
+    assertStringIncludes(await get(), "/w-1200/h-630/max/fmt-png/logo.svg");
     assertStringIncludes(shared, '<meta name="twitter:card" content="summary_large_image">');
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));

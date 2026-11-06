@@ -1,6 +1,6 @@
 import { cms, cmsCtx } from "@qino/qino/cms";
 
-import { image, text } from "./mod.ts";
+import { image, imageUrl, text } from "./mod.ts";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -13,7 +13,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const file = await image(page);
     meta["og:title"] = await text(page, "_share_title") || meta["og:title"] || html.title;
     meta["og:description"] = await text(page, "_share_description") || meta["og:description"] || meta.description;
-    if (file) meta["og:image"] = ctx.req.url.origin + await file.url();
+    // the size the platforms show (1.91:1)
+    if (file) meta["og:image"] = ctx.req.url.origin + await imageUrl(file, 1200, 630);
     meta["twitter:card"] = meta["og:image"] ? "summary_large_image" : "summary";
     if (c.editmode && !ctx.req.query.cms_noFrontend)
       html.scripts.add(ctx.req.moduleUrl + "cms.seo/pub/init.mjs");

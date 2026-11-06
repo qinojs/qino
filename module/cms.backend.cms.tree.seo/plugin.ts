@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { image, text } from "@qino/qino/cms.seo";
+import { image, imageUrl, text } from "@qino/qino/cms.seo";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -96,7 +96,7 @@ async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<str
   ${field(t, descr, 60, 156)}
   ${field(t, await text(page, "_share_title"))}
   ${field(t, await text(page, "_share_description"))}
-  <td>${file ? html`<img src="${await file.url({ w: 240, h: 126, max: true })}" alt="">` : ""}`);
+  <td>${file ? html`<img src="${await imageUrl(file, 240, 126)}" alt="">` : ""}`);
       if (isOpen) await addChildren(page, level + 1);
     }
   }
