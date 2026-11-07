@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.config.locale.geoip",
+  "description": "Which source tells the country of an IP address, and when it was fetched.",
+  "dependencies": [
+    "cms.backend.config.locale",
+    "locale.geoip"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

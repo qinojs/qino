@@ -248,6 +248,7 @@ test("modules only consume public APIs of other modules", async () => {
 const OPTIONAL = new Set([
   "cms.backend.iot/nodeApi.ts -> iot.record", // manual measurements, guarded by modules.linked("iot.record")
   "cms.backend.superuser.requests/mod.ts -> security", // suspicion badge, guarded by modules.linked("security")
+  "cms.backend.superuser.requests/mod.ts -> locale.geoip", // country badge, guarded by modules.linked("locale.geoip")
   "cms.backend.superuser.db.query/lib/ai.ts -> ai.tools", // "explain this query" is a bonus, not the console
   "cms.text/api.ts -> ai", // translation, guarded by modules.linked("ai")
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"

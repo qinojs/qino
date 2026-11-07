@@ -1,0 +1,17 @@
+{
+  "name": "locale.geoip",
+  "description": "The country of an IP address, from a table held in memory.",
+  "dependencies": [
+    "core",
+    "cron"
+  ],
+  "files": [
+    "README.md",
+    "lib/sources.ts",
+    "lib/table.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -82,6 +82,7 @@
     "./identity": "./module/identity/mod.ts",
     "./locale.country": "./module/locale.country/mod.ts",
     "./locale.currency": "./module/locale.currency/mod.ts",
+    "./locale.geoip": "./module/locale.geoip/mod.ts",
     "./mcp": "./module/mcp/mod.ts",
     "./messaging": "./module/messaging/mod.ts",
     "./messaging.email": "./module/messaging.email/mod.ts",
