@@ -157,6 +157,8 @@
   "devDependencies": {
     "@std/assert": "npm:@jsr/std__assert@^1",
     "@types/mime-types": "^3",
-    "@types/sanitize-html": "^2"
+    "@types/sanitize-html": "^2",
+    "playwright-core": "^1",
+    "puppeteer-core": "^24"
   }
 }
