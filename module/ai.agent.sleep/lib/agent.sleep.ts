@@ -18,7 +18,7 @@ const SCORE = "ai_agent_memory_use";
 const PREFER = { quality: 3, cost: 1 };
 
 const THINK = (role: string, memories: string) => `\
-You are the sleeping mind of an AI agent, going over a conversation it had while nobody talks with it.
+You review a conversation of an AI agent to keep its memories right.
 Its role, the goal everything is measured by:
 <role>
 ${role || "(none given)"}
@@ -26,17 +26,17 @@ ${role || "(none given)"}
 Its memories now, by id:
 ${memories || "(none)"}
 
-Think the conversation through thoroughly and from several sides, then list:
+List:
 - missed: lasting knowledge in it that the memories lack and that serves the role: rules and preferences the
   user gave (casual ones too), corrections, what was verified to work, dead ends. One short fact each.
 - confirmed: memories the conversation used or proved right.
 - outdated: memories it contradicted or made obsolete.
-Each entry names the messages it rests on (their #ids). No guesses, nothing temporary, nothing its tools can look
-up again unless it is central, nothing that would change the role or its goal. Few and sure beats many.`;
+Each entry names the messages it rests on (their #ids). Nothing temporary, nothing its tools can look up
+again unless central, nothing that would change the role. Few and sure beats many.`;
 
 const MERGE = (role: string, memories: string, thinkers: number) => `\
-You are the sleeping mind of an AI agent. ${thinkers > 1 ? `${thinkers} thinkers` : "A thinker"} went over the conversations it
-had since it last slept; their thoughts follow, per session. Its role, the goal everything is measured by:
+You keep the memories of an AI agent. ${thinkers > 1 ? `${thinkers} thinkers` : "A thinker"} went over the conversations it
+had since it last slept; their thoughts follow, per session. Its role:
 <role>
 ${role || "(none given)"}
 </role>
@@ -44,8 +44,8 @@ Its memories now: id, strength (how often and how recently used, decaying), cont
 ${memories || "(none)"}
 
 Decide what becomes of its memory:
-- add: what was missed and matters for the role, with the session it comes from. What more thinkers found is
-  surer; what one alone found needs good evidence.
+- add: what was missed and matters for the role, with the session it comes from.${thinkers > 1 ? `
+  What more thinkers found is surer; what one alone found needs good evidence.` : ""}
 - merge: memories that say the same or overlap: their ids and the one content they become.
 - strengthen: memories the conversations confirmed.
 - weaken: memories of little use for the role.
