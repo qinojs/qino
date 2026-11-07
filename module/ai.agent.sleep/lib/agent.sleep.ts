@@ -28,11 +28,11 @@ ${memories || "(none)"}
 
 Think the conversation through thoroughly and from several sides, then list:
 - missed: lasting knowledge in it that the memories lack and that serves the role: rules and preferences the
-  user gave (casual ones too), corrections, solutions worth reusing. One short fact each.
+  user gave (casual ones too), corrections, what was verified to work, dead ends. One short fact each.
 - confirmed: memories the conversation used or proved right.
 - outdated: memories it contradicted or made obsolete.
-Each entry names the messages it rests on (their #ids). Nothing temporary, nothing that would change the role
-or its goal. Few and sure beats many.`;
+Each entry names the messages it rests on (their #ids). No guesses, nothing temporary, nothing its tools can look
+up again unless it is central, nothing that would change the role or its goal. Few and sure beats many.`;
 
 const MERGE = (role: string, memories: string, thinkers: number) => `\
 You are the sleeping mind of an AI agent. ${thinkers > 1 ? `${thinkers} thinkers` : "A thinker"} went over the conversations it

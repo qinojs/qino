@@ -85,7 +85,7 @@ export const list = (app: App, agent: number, chars?: number): Promise<{ id: num
 export const associate = (app: App, agent: number, vector: number[]): Promise<unknown> => of(app, agent).associate(vector);
 
 /** Told to the agent above its memories. */
-export const HINT = "Save durable knowledge with memories_post: rules, preferences, workflows, corrections, solutions worth reusing. Before each final answer, check: learned something lasting? Then save first. Update instead of duplicating; skip temporary details.";
+export const HINT = "Save durable knowledge with memories_post: rules, preferences, workflows, corrections, what you verified works, dead ends. Before each final answer, check: learned something lasting? Then save first. Update instead of duplicating; skip guesses, temporary details and what your tools can look up again, unless it is central.";
 
 /** The strongest memories for the context, under the hint on how to keep them. */
 export async function index(app: App, agent: number): Promise<string> {
