@@ -32,3 +32,11 @@ Only range starts are kept, one country byte each: ~360k IPv4 ranges as `Uint32A
 Country level is right for ~98 % of addresses; VPNs, relays and company proxies are not where
 their users are. Good for preselecting a language, currency or country, not for decisions that
 must hold.
+
+## Ideas
+
+- **Visitor's country**: profile, else IP, else a default setting — preselects country (and its
+  currency) in forms, e.g. shp3 addresses. The PHP original had it as `locations1::country()`.
+- **Login from a new country**: notify the user or fire `suspicious`.
+- **Visitors by country**: a widget in the requests backend, counted while rendering.
+- **Country restrictions**: e.g. backend login only from CH — a coarse filter, VPNs pass.

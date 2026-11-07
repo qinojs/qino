@@ -46,36 +46,38 @@ async function render(node: Node) {
       ${t`Source`}
       <select class=-source>${options}</select>
     </label>
-    <table class=u2-table>
-      <thead>
-        <tr>
-          <th>
-          <th> DB-IP Lite
-          <th> ${t`Registries`}
-      <tbody>
-        <tr>
-          <th> ${t`Accuracy`}
-          <td> ${t`where addresses are used`}
-          <td> ${t`where blocks were handed out; less exact for blocks used in several countries`}
-        <tr>
-          <th> ${t`Memory`}
-          <td> ~6 MB
-          <td> ~3 MB
-        <tr>
-          <th> ${t`Download`}
-          <td> ~5 MB, ${t`published monthly`}
-          <td> ~45 MB, ${t`published daily`}
-        <tr>
-          <th> ${t`Licence`}
-          <td> CC BY 4.0: ${t`pages using the result should credit`} <a href="https://db-ip.com" target=_blank>db-ip.com</a>
-          <td> ${t`public, no credit needed`}
-    </table>
+  </div>
+  <table class=u2-table>
+    <thead>
+      <tr>
+        <th>
+        <th> DB-IP Lite
+        <th> ${t`Registries`}
+    <tbody>
+      <tr>
+        <th> ${t`Accuracy`}
+        <td> ${t`where addresses are used`}
+        <td> ${t`where blocks were handed out; less exact for blocks used in several countries`}
+      <tr>
+        <th> ${t`Memory`}
+        <td> ~6 MB
+        <td> ~3 MB
+      <tr>
+        <th> ${t`Download`}
+        <td> ~5 MB, ${t`published monthly`}
+        <td> ~45 MB, ${t`published daily`}
+      <tr>
+        <th> ${t`Licence`}
+        <td> CC BY 4.0: ${t`pages using the result should credit`} <a href="https://db-ip.com" target=_blank>db-ip.com</a>
+        <td> ${t`public, no credit needed`}
+  </table>
+  <div>
     <p>
       <small>${t`Held in memory, so a lookup takes microseconds and never touches the disk. Building the table (at start and after an update) takes up to ~80 MB more for about half a minute.`}</small>
     </p>
     <p>
       <button class=-now>${t`Update now`}</button>
-      <small>${fetched ? html.async`${t`last`} ${showTime(fetched)}` : t`never fetched`}</small>
+      <small>${fetched ? html.async`${t`last`} ${showTime(fetched)}` : t`never fetched`} · ${t`fetched anew automatically every four weeks`}</small>
     </p>
     <p>
       ${size ? html.async`${t`Loaded`}: ${count(size.v4)} IPv4, ${count(size.v6)} IPv6 ${t`ranges`}` : t`Loading…`}
