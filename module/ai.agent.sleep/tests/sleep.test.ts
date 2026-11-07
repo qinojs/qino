@@ -4,7 +4,7 @@ import { App, fs, requestStorage, runAs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
-import { apply, sleep } from "../lib/agent.sleep.ts";
+import { apply, sleep } from "../lib/sleep.ts";
 
 import type { Adapter } from "@qino/qino/ai";
 
@@ -55,7 +55,7 @@ async function withApp(fn: (app: App) => Promise<void>) {
   }
 }
 
-/** The night's stage, once the background is done. */
+/** The sleep's stage, once the background is done. */
 async function stage(app: App, wanted: string) {
   for (let i = 0; i < 100; i++) {
     const now = await app.db.one`SELECT stage FROM ai_agent_sleep ORDER BY id DESC LIMIT 1`;
@@ -65,16 +65,23 @@ async function stage(app: App, wanted: string) {
   return await app.db.one`SELECT stage FROM ai_agent_sleep ORDER BY id DESC LIMIT 1`;
 }
 
+/** Sleep once all have rested: the messages an hour older. */
+async function rested(app: App) {
+  await app.db.query`UPDATE ai_session_message SET time = time - 3600`;
+  return sleep(app);
+}
+
 const contents = (app: App) => app.db.col`SELECT content FROM ai_agent_memory ORDER BY id`;
 
-test("ai.agent.sleep: at night what was said is gone over; the plan waits to be applied", () => withApp(async (app) => {
+test("ai.agent.sleep: once it rested what was said is gone over; with apply off the plan waits", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "brand designer" });
   for (const content of ["the logo is blue", "logo: blue", "the sky is green"]) await runAs(app, 7, "test", () => agent.remember(content));
   const session = await agent.start(7);
   await session.ask("please always answer in German");
   await new Promise((r) => setTimeout(r, 60));
 
-  await sleep(app);
+  await app.settings["ai.agent.sleep"].apply(false);
+  await rested(app);
   assertEquals(await stage(app, "planned"), "planned");
   const thought = JSON.parse(String(await app.db.one`SELECT output FROM ai_agent_sleep_thought`));
   assertEquals(thought.missed.map((t: any) => t.content), ["always answer in German"]); // what has no evidence is dropped
@@ -86,8 +93,8 @@ test("ai.agent.sleep: at night what was said is gone over; the plan waits to be 
   assertEquals(Number(await app.db.one`SELECT score FROM score_ai_agent_memory_use WHERE memory_id = ${first}`) > 0, true);
   assertEquals(await stage(app, "applied"), "applied");
 
-  // the next night starts after what was gone over: nothing new, no night
-  await sleep(app);
+  // the next sleep starts after what was gone over: nothing new, no sleep
+  await rested(app);
   assertEquals(await app.db.one`SELECT COUNT(*) FROM ai_agent_sleep`, 1);
 }));
 
@@ -96,8 +103,8 @@ test("ai.agent.sleep: the role is the yardstick of thinker and merger", () => wi
   await (await agent.start(7)).ask("please always answer in German");
   await new Promise((r) => setTimeout(r, 60));
   prompts.length = 0;
-  await sleep(app);
-  await stage(app, "planned");
+  await rested(app);
+  await stage(app, "applied");
   assertEquals(prompts.length, 2); // one thinker, one merger
   for (const prompt of prompts) assertEquals(prompt.includes("<role>\nbrand designer\n</role>"), true);
 }));
@@ -109,47 +116,64 @@ test("ai.agent.sleep: one agent can be sent to sleep alone; without new messages
   assertEquals(await sleep(app, silent.id), 0);
   assertEquals(await sleep(app, talked.id), 1);
   assertEquals(await app.db.col`SELECT agent_id FROM ai_agent_sleep`, [talked.id]);
-  await stage(app, "planned");
+  await stage(app, "applied");
 }));
 
-test("ai.agent.sleep: at night an agent sleeps only once enough was said", () => withApp(async (app) => {
+test("ai.agent.sleep: an agent sleeps only once enough was said", () => withApp(async (app) => {
   await app.settings["ai.agent.sleep"].minChars(2000);
   const agent = await Agent.create(app, { system: "a" });
   const session = await agent.start(7);
   await session.ask("hello");
   await new Promise((r) => setTimeout(r, 60));
-  assertEquals(await sleep(app), 0); // too little: it waits for more
+  assertEquals(await rested(app), 0); // too little: it waits for more
   await session.ask("x".repeat(2000));
   await new Promise((r) => setTimeout(r, 60));
-  assertEquals(await sleep(app), 1); // the earlier "hello" counts too
+  assertEquals(await rested(app), 1); // the earlier "hello" counts too
+  await stage(app, "applied");
+}));
+
+test("ai.agent.sleep: an agent sleeps only once it rested, and not while still asleep", () => withApp(async (app) => {
+  await app.settings["ai.agent.sleep"].apply(false);
+  const agent = await Agent.create(app, { system: "a" });
+  const session = await agent.start(7);
+  await session.ask("hello");
+  await new Promise((r) => setTimeout(r, 60));
+  assertEquals(await sleep(app), 0); // still talking
+  assertEquals(await rested(app), 1);
+  await stage(app, "planned");
+  await session.ask("more");
+  await new Promise((r) => setTimeout(r, 60));
+  assertEquals(await rested(app), 0); // its plan not applied yet: the next would rest on outdated memories
+  await apply(app, Number(await app.db.one`SELECT id FROM ai_agent_sleep`));
+  assertEquals(await rested(app), 1);
   await stage(app, "planned");
 }));
 
-test("ai.agent.sleep: a night no thinker answered failed, and the next goes over the same", () => withApp(async (app) => {
+test("ai.agent.sleep: a sleep no thinker answered failed, and the next goes over the same", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "a" });
   await (await agent.start(7)).ask("please always answer in German");
   await new Promise((r) => setTimeout(r, 60));
   const structured = fake.structured;
   fake.structured = () => Promise.reject(new Error("down"));
   try {
-    await sleep(app);
+    await rested(app);
     assertEquals(await stage(app, "failed"), "failed");
   } finally {
     fake.structured = structured;
   }
-  assertEquals(await sleep(app), 1); // the same sessions again
-  assertEquals(await stage(app, "planned"), "planned");
+  assertEquals(await rested(app), 1); // the same sessions again
+  assertEquals(await stage(app, "applied"), "applied");
 }));
 
-test("ai.agent.sleep: the models run as who started the night, as a ChatGPT plan needs", () => withApp(async (app) => {
+test("ai.agent.sleep: the models run as who started the sleep, as a ChatGPT plan needs", () => withApp(async (app) => {
   const agent = await Agent.create(app, { system: "a" });
   await (await agent.start(7)).ask("please always answer in German");
   await new Promise((r) => setTimeout(r, 60));
   const structured = fake.structured, users: unknown[] = [];
   fake.structured = (call, input) => (users.push(requestStorage.getStore()?.userId), structured(call, input));
   try {
-    await runAs(app, 7, "test", () => sleep(app));
-    await stage(app, "planned");
+    await runAs(app, 7, "test", () => rested(app));
+    await stage(app, "applied");
   } finally {
     fake.structured = structured;
   }

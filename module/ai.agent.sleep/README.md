@@ -3,10 +3,10 @@
 What an [agent](../ai.agent/) does while nobody talks with it, as a person sleeps. Hooked into
 ai.agent, so it can be left out or replaced for experiments.
 
-## Sleep (`lib/agent.sleep.ts`)
+## Sleep (`lib/sleep.ts`)
 
-At night (cron, 2 am) every agent with new messages since it last slept goes over them, as a person
-sleeps: what was said is processed, what went under found, what matters firmed up, the rest let go.
+Once nobody talked with it for an hour (cron, hourly), every agent with new messages since it last slept
+goes over them, as a person sleeps: what was said is processed, what went under found, what matters firmed up, the rest let go.
 Its role is the yardstick: nothing it keeps may drift from its goal or change it.
 
 - **Thinkers** read each session (`thinkers`: models, comma-separated; empty: one as ai chooses) and
@@ -15,18 +15,21 @@ Its role is the yardstick: nothing it keeps may drift from its goal or change it
 - **The merger** weighs all thoughts against the memories and their strength: add (from which
   session), merge, strengthen, weaken, forget (only the wrong or replaced; fading does the rest).
 - **Batches** (ai `batch`): slow, about half the price; nobody waits.
-- **Review first:** the plan is kept in `ai_agent_sleep` and applied by `sleeps/:sleep/apply`, or at
-  once with `apply`. A new memory is kept as its session's user, so a personal one becomes theirs
+- **Applied at once** (`apply`); off, the plan waits in `ai_agent_sleep` for `sleeps/:sleep/apply`, and
+  the agent sleeps again only after: a plan resting on outdated memories would undo the last. The same
+  while it is still asleep. A new memory is kept as its session's user, so a personal one becomes theirs
   ([ai.user_memory](../ai.user_memory/)); merged ones keep the first id and the others' strength.
 - **Only with enough to go over:** an agent sleeps once `minChars` (2000) characters were said since it
   last slept; asked to (`{ agent }`), on whatever is new.
-- **Budget:** at most `sessions` sessions a night, of each the latest `chars` characters.
-- **As whom:** the models run as the user who started the night ("Sleep now"), at night as nobody; a ChatGPT
+- **Why after an hour:** then ai.agent renews a session's start anyway (the prompt cache is lost), so
+  the next session starts with what was learned, not only the next morning.
+- **Budget:** at most `sessions` sessions per sleep, of each the latest `chars` characters.
+- **As whom:** the models run as the user who started the sleep ("Sleep now"), else as nobody; a ChatGPT
   plan then answers through the user set in [`ai.chatgpt`](../ai.chatgpt/)'s `usr`.
 
-`sleeps` `get` lists the latest nights, `post` starts one now, for all agents or `{ agent }` (superuser); the agents' backend has it as "Sleep now".
+`sleeps` `get` lists the latest sleeps, `post` starts one now, for all agents or `{ agent }` (superuser); the agents' backend has it as "Sleep now".
 
-## Compaction (`lib/session.compaction.ts`)
+## Compaction (`lib/compaction.ts`)
 
 A session grown past 80 % of its model's context (`ai_model.context_length`) is compacted after an
 answer, in the background (`ai.agent:answered`):

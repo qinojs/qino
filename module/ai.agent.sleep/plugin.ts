@@ -1,5 +1,5 @@
-import { answered, sleep } from "./lib/agent.sleep.ts";
-import { compact, compacted } from "./lib/session.compaction.ts";
+import { answered, sleep } from "./lib/sleep.ts";
+import { compact, compacted } from "./lib/compaction.ts";
 
 import type { App } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
@@ -7,23 +7,23 @@ import type { Jobs } from "@qino/qino/cron";
 export { api } from "./api.ts";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-// What an agent does while nobody talks with it: compacting long sessions, and sleeping at night.
+// What an agent does while nobody talks with it: compacting long sessions, and sleeping once it rests.
 // Hooked into ai.agent, so it can be left out or replaced for experiments.
 
 export const settingsSchema = {
   properties: {
     thinkers: { type: "string", default: "", description: "Models that think the conversations over, comma-separated; empty: one, as ai chooses." },
     merger: { type: "string", default: "", description: "The model that weighs the thoughts; empty: as ai chooses." },
-    apply: { type: "boolean", default: false, description: "Carry out a night's plan at once; off, it waits to be reviewed and applied." },
+    apply: { type: "boolean", default: true, description: "Carry out a sleep's plan at once; off, it waits to be reviewed and applied, and the agent sleeps again only after." },
     minChars: { type: "integer", minimum: 0, default: 2000, description: "An agent sleeps once this many characters were said since it last slept; \"Sleep now\" on whatever is new." },
-    sessions: { type: "integer", minimum: 0, default: 200, description: "At most this many sessions a night, all agents together." },
+    sessions: { type: "integer", minimum: 0, default: 200, description: "At most this many sessions per sleep, all agents together." },
     chars: { type: "integer", minimum: 1000, default: 200000, description: "Of a session, at most this many characters, the latest." },
   },
 };
 
 export const cron = {
   sleep: {
-    every: "day", at: { hour: 2 }, jitter: 60 * 60,
+    every: "hour",
     run: (app: App) => sleep(app),
   },
 } satisfies Jobs;

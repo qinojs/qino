@@ -6,16 +6,19 @@ import { forget as weaken, hit, strength } from "@qino/qino/score";
 import type { App } from "@qino/qino";
 import type { Message } from "@qino/qino/ai";
 
-// While nobody talks with it, an agent sleeps (nightly): it goes over what was said since it last
+// While nobody talks with it, an agent sleeps (once it rested `REST`): it goes over what was said since it last
 // slept, finds what went under, firms up what matters and lets go of the rest, measured against its
 // role, which nothing it keeps may change. Thinkers (one or more models) each read every session and
 // propose, with the messages as evidence; a merger weighs it all against the memories. Both run as
-// batches (ai): slow, about half the price. The plan is kept, and applied only with `apply`.
+// batches (ai): slow, about half the price. The plan is kept, and applied at once with `apply`.
 
 const OWNER = "ai.agent.sleep";
 const SCORE = "ai_agent_memory_use";
 /** The thinkers' and the merger's choice of model: thorough over cheap, as nobody waits. */
 const PREFER = { quality: 3, cost: 1 };
+/** Seconds without a message until an agent sleeps: then ai.agent renews a session's start anyway
+ *  (its prompt cache is lost), so the next one starts with what was learned. */
+const REST = 60 * 60;
 
 const THINK = (role: string, memories: string) => `\
 You review a conversation of an AI agent to keep its memories right.
@@ -105,58 +108,62 @@ async function transcript(app: App, session: number, since: number, chars: numbe
   return text;
 }
 
-/** Start the night: every agent with at least `minChars` said since it last slept thinks it over, at most
- *  `sessions` sessions in all; only `agent`, it sleeps on whatever is new. Resolves to how many fell asleep. */
+/** Every agent that rested `REST` with at least `minChars` said since it last slept thinks it over, at most
+ *  `sessions` sessions in all; only `agent`, it sleeps on whatever is new at once. An agent still asleep
+ *  (or its plan unreviewed) is left: its next plan would rest on outdated memories. Resolves to how many fell asleep. */
 export async function sleep(app: App, agent?: number): Promise<number> {
   const thinkers = String(await settings(app).thinkers).split(",").map((m) => m.trim()).filter(Boolean);
   const models = thinkers.length ? thinkers : [undefined];
   const chars = Number(await settings(app).chars), enough = agent ? 1 : Number(await settings(app).minChars);
-  let budget = Number(await settings(app).sessions), nights = 0;
+  let budget = Number(await settings(app).sessions), asleep = 0;
   for (const { id, system } of await app.db.query`SELECT id, system FROM ai_agent ${agent ? sql`WHERE id = ${agent}` : sql``} ORDER BY id`) {
     if (budget <= 0) break;
-    // a failed night goes over the same again
+    if (await app.db.one`SELECT 1 FROM ai_agent_sleep WHERE agent_id = ${id} AND stage IN (${"think"}, ${"merge"}, ${"planned"})`) continue;
+    // a failed sleep goes over the same again
     const since = Number(await app.db.one`SELECT MAX(until) FROM ai_agent_sleep WHERE agent_id = ${id} AND stage <> ${"failed"}`) || 0;
-    const sessions = (await app.db.query`SELECT s.id, MAX(m.id) AS last FROM ai_session s JOIN ai_session_message m ON m.session_id = s.id
+    const sessions = (await app.db.query`SELECT s.id, MAX(m.id) AS last, MAX(m.time) AS at FROM ai_session s JOIN ai_session_message m ON m.session_id = s.id
       WHERE s.agent_id = ${id} AND m.id > ${since} GROUP BY s.id ORDER BY s.id`).slice(0, budget);
+    // still talking: it sleeps once it rested
+    if (!agent && sessions.some((s) => Number(s.at) > unixTime() - REST)) continue;
     const inputs = await Promise.all(sessions.map(async (s) => ({ session: Number(s.id), text: await transcript(app, Number(s.id), since, chars) })));
-    // too little said: it sleeps another night, with more
+    // too little said: it sleeps later, with more
     if (!sessions.length || inputs.reduce((sum, { text }) => sum + text.length, 0) < enough) continue;
     budget -= sessions.length;
-    nights++;
+    asleep++;
     const until = Math.max(...sessions.map((s) => Number(s.last)));
-    const night = Number(await app.db.table("ai_agent_sleep").insert({ agent_id: id, time: unixTime(), until, stage: "think", expected: sessions.length * models.length }));
+    const sleepId = Number(await app.db.table("ai_agent_sleep").insert({ agent_id: id, time: unixTime(), until, stage: "think", expected: sessions.length * models.length }));
     const prompt = THINK(String(system ?? ""), await memories(app, id));
     try {
       for (const [n, model] of models.entries()) {
         const items = inputs.map(({ session, text }) => ({
-          id: `think:${night}:${session}:${n}`,
+          id: `think:${sleepId}:${session}:${n}`,
           input: { messages: [{ role: "system", content: prompt }, { role: "user", content: text || "(nothing said)" }], schema: THOUGHTS },
         }));
         await batch(app, "structured", { owner: OWNER, items }, { model, prefer: PREFER });
       }
-    } catch (e) { // not submitted: the next night goes over the same
-      await app.db.table("ai_agent_sleep").update(night, { stage: "failed", error: errMsg(e) });
+    } catch (e) { // not submitted: the next sleep goes over the same
+      await app.db.table("ai_agent_sleep").update(sleepId, { stage: "failed", error: errMsg(e) });
       throw e;
     }
   }
-  return nights;
+  return asleep;
 }
 
 /** An answer of a batch: a thinker's thoughts, or the merger's plan. */
 export async function answered(app: App, { id, output, error }: { id: string; output?: unknown; error?: string }): Promise<void> {
-  const [stage, sleepId] = id.split(":"), sleep = Number(sleepId);
+  const [stage, sleepId, session] = id.split(":"), sleep = Number(sleepId);
   if (stage === "merge") {
     await app.db.table("ai_agent_sleep").update(sleep, error ? { stage: "failed", error } : { stage: "planned", plan: JSON.stringify(output) });
     if (!error && await settings(app).apply) await apply(app, sleep);
     return;
   }
   // a thought delivered twice (after a crash) counts once
-  const thoughts = error ? { error } : await evidenced(app, Number(id.split(":")[2]), output as Thoughts);
+  const thoughts = error ? { error } : await evidenced(app, Number(session), output as Thoughts);
   const kept = await app.db.table("ai_agent_sleep_thought").insert({ sleep_id: sleep, item: id, output: JSON.stringify(thoughts) })
     .then(() => true, () => false);
-  const row = await app.db.row`SELECT expected, stage FROM ai_agent_sleep WHERE id = ${sleep}`;
-  const got = Number(await app.db.one`SELECT COUNT(*) FROM ai_agent_sleep_thought WHERE sleep_id = ${sleep}`);
-  if (kept && row?.stage === "think" && got >= Number(row.expected)) await merge(app, sleep);
+  const row = await app.db.row`SELECT expected, stage, (SELECT COUNT(*) FROM ai_agent_sleep_thought WHERE sleep_id = ${sleep}) AS got
+    FROM ai_agent_sleep WHERE id = ${sleep}`;
+  if (kept && row?.stage === "think" && Number(row.got) >= Number(row.expected)) await merge(app, sleep);
 }
 
 /** Only what rests on messages of its session: a thinker may invent, the merger would believe it. */
@@ -167,7 +174,7 @@ async function evidenced(app: App, session: number, { missed = [], confirmed = [
   return { missed: ok(missed), confirmed: ok(confirmed), outdated: ok(outdated) };
 }
 
-/** All thoughts in: the merger weighs them against the memories. Without a single one the night failed. */
+/** All thoughts in: the merger weighs them against the memories. Without a single one the sleep failed. */
 async function merge(app: App, sleep: number) {
   const { agent_id: agent } = (await app.db.row`SELECT agent_id FROM ai_agent_sleep WHERE id = ${sleep}`)!;
   const system = String(await app.db.one`SELECT system FROM ai_agent WHERE id = ${agent}` ?? "");

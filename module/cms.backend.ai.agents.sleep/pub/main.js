@@ -1,13 +1,13 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 
-// Let an agent sleep now, carry out a night's plan; the tables follow along every few seconds.
+// Let an agent sleep now, carry out a sleep's plan; the tables follow along every few seconds.
 cms.initNode("backend.ai.agents.sleep", (el) => {
   const nid = Number(cms.el.nid(el));
   const post = (data) => api.cms.node(nid).api.post(data).catch((err) => ({ message: err.message }));
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
-  const night = new URL(location.href).searchParams.get("night");
-  const vars = night ? { night } : {};
+  const sleep = new URL(location.href).searchParams.get("sleep");
+  const vars = sleep ? { sleep } : {};
   const refresh = () => Promise.all([...el.querySelectorAll("[cms-part]")].map((part) => cms.reloadPart(nid, part.getAttribute("cms-part"), vars)));
 
   el.addEventListener("click", async (e) => {

@@ -1,1 +1,1 @@
-export { apply, sleep } from "./lib/agent.sleep.ts";
+export { apply, sleep } from "./lib/sleep.ts";
