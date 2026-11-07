@@ -123,13 +123,17 @@ What the agent grows into, modelled on how a person thinks and remembers.
 | Semantic memory | knowledge, facts | memories: short facts, the strongest in context, up to 8000 characters | built |
 | Attention | only what matters comes to mind | association strengthens the memories close to what is said; what is close and not in the context comes as a note ([ai.agent.recall](../ai.agent.recall/)) | built |
 | Knowing people | what the other one is like | memories about the user (preferences, language) | with memories |
-| Sleep | consolidate, clean up, replay | long sessions compacted, what lasts kept first ([ai.agent.sleep](../ai.agent.sleep/)); memories merged, skills derived | compaction built |
-| Procedural memory | skills, routines, habits | skills: instructions it writes itself | later |
-| Emotion | what matters sticks | surprises, failures, the user's corrections and praise hit harder (`hit(…, 5)`) | later |
+| Sleep | consolidate, clean up, replay | long sessions compacted, what lasts kept first; once it rested, its sessions gone over, memories added, merged, forgotten ([ai.agent.sleep](../ai.agent.sleep/)); later pages derived | built |
+| Procedural and topic knowledge | skills; what one knows about a subject | pages it writes itself (how something is done, what something is): only an index in context, a page read when needed; a memory grown long becomes a page | later |
+| Chunking | what is done often becomes one act | a sequence of tool calls that keeps repeating becomes a flow tool | idea |
+| Emotion, surprise | what matters sticks; one learns from what came unexpected | surprises, failures, the user's corrections and praise hit harder (`hit(…, 5)`); sleep looks for them first: a tool failed, the user corrected, a try repeated | later |
 | Forgetting | the unimportant fades, a feature | memories never used lose weight (`score`) | built |
 | Intuition ("system 1") | fast, cheap, mostly right | a quick `decide()` before the big model: new session? which memories? | later |
 | Self-awareness | knowing what one knows, and how surely | checking after a task whether it worked, asking when unsure | later |
-| Intentions | remembering to do something later | a message to itself by cron | with a cron tool set |
+| Senses | reacting to what happens, not only to being spoken to | events of the app (an order, a form, an error) start a turn; a message to itself by cron is one of them (intentions) | idea |
+| Imagination | trying in one's head before doing | working in a draft (draftmode), looking at it, publishing only then | idea |
 | Goals, drive | what one wants to reach | its own list of open tasks | later |
+| Curiosity | noticing what is unclear, asking later | sleep keeps open questions; the next session gets them as a note | idea |
+| Knowing who knows | one needn't know all, only whom to ask | asking the agent whose role fits (`agents get { search }`) | idea |
 | Tiredness | energy is limited | cost as a budget; a full context is a reason to sleep | later |
 | Working in steps | a big job in parts, each one done | a page in several tool calls (frame, sections, script): a cancel loses one part, not all | idea |
