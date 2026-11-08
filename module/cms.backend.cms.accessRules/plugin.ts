@@ -88,7 +88,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     total++;
     const std = row.cms_access == null ? "" : String(row.cms_access);
     const cells = groupRows.map((g) => {
-      const raw = overrides.has(`${module}:${g.id}`) ? String(overrides.get(`${module}:${g.id}`)) : "";
+      const raw = String(overrides.get(`${module}:${g.id}`) ?? "");
       // show the effective value — an override above the group's CAP is clamped by it
       const v = raw === "" ? "" : String(Math.min(Number(raw), Number(g.cms_access) || 3));
       return html`<td class=-cell data-kind=override data-module="${module}" data-grp="${g.id}" data-raw="${raw}" v="${v}">${word[v]}`;
