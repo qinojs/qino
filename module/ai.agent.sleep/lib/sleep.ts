@@ -112,11 +112,11 @@ async function transcript(app: App, session: number, since: number, chars: numbe
  *  `sessions` sessions in all; only `agent`, it sleeps on whatever is new at once. An agent still asleep
  *  (or its plan unreviewed) is left: its next plan would rest on outdated memories. Resolves to how many fell asleep. */
 export async function sleep(app: App, agent?: number): Promise<number> {
-  const db = app.db;
-  const thinkers = String(await settings(app).thinkers).split(",").map((m) => m.trim()).filter(Boolean);
+  const db = app.db, set = settings(app);
+  const thinkers = String(await set.thinkers).split(",").map((m) => m.trim()).filter(Boolean);
   const models = thinkers.length ? thinkers : [undefined];
-  const chars = Number(await settings(app).chars), enough = agent ? 1 : Number(await settings(app).minChars);
-  let budget = Number(await settings(app).sessions), asleep = 0;
+  const chars = Number(await set.chars), enough = agent ? 1 : Number(await set.minChars);
+  let budget = Number(await set.sessions), asleep = 0;
   for (const { id, system } of await db.query`SELECT id, system FROM ai_agent ${agent ? sql`WHERE id = ${agent}` : sql``} ORDER BY id`) {
     if (budget <= 0) break;
     if (await db.one`SELECT 1 FROM ai_agent_sleep WHERE agent_id = ${id} AND stage IN (${"think"}, ${"merge"}, ${"planned"})`) continue;
