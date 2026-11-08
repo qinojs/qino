@@ -167,13 +167,15 @@ export async function renderRow(
 }
 
 async function tableRows(node: Node) {
-  const orphans = await findOrphans(node.app.db);
-  const extras = schemaExtras(node.app.db);
-  return html.join(await Promise.all(Object.keys(node.app.db.tables).sort().map((table) => renderRow(node, table, orphans, extras))));
+  const db = node.app.db;
+  const orphans = await findOrphans(db);
+  const extras = schemaExtras(db);
+  return html.join(await Promise.all(Object.keys(db.tables).sort().map((table) => renderRow(node, table, orphans, extras))));
 }
 
 export async function render(node: Node): Promise<HtmlString> {
-  const freeBytes = await sqliteFreeBytes(node.app.db);
+  const db = node.app.db;
+  const freeBytes = await sqliteFreeBytes(db);
   return html`<div class=u2-card style="flex-grow:0">
     <div class=-head>Database cleanup</div>
     <div>
@@ -182,8 +184,8 @@ export async function render(node: Node): Promise<HtmlString> {
         <input type=search data-table-search placeholder="Search tables…">
         <button data-action=clean-orphans-all u2-confirm="Apply every declared cascade/set-null rule to one batch of orphan references?">Clean orphans</button>
         <button data-action=validate-all u2-confirm="Validate all tables not marked as large? This may take a while.">Validate all</button>
-        ${node.app.db.dialect !== "sqlite" ? html`<button data-action=optimize-all u2-confirm="Optimize all supported tables that are not marked as large? This may lock tables.">Optimize all</button>` : ""}
-        ${node.app.db.dialect === "sqlite" ? html`<button data-action=vacuum u2-confirm="Vacuum the complete SQLite database? This can take a long time, needs free disk space and blocks the database.">Vacuum database</button>` : ""}
+        ${db.dialect !== "sqlite" ? html`<button data-action=optimize-all u2-confirm="Optimize all supported tables that are not marked as large? This may lock tables.">Optimize all</button>` : ""}
+        ${db.dialect === "sqlite" ? html`<button data-action=vacuum u2-confirm="Vacuum the complete SQLite database? This can take a long time, needs free disk space and blocks the database.">Vacuum database</button>` : ""}
       </div>
     </div>
     <u2-table style="padding:0;max-height:80vh;overflow:auto">
