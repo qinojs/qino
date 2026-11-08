@@ -1,5 +1,4 @@
-import { fileURLToPath } from "node:url";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { errMsg, fs, html, isModuleName } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
