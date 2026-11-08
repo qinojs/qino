@@ -18,12 +18,13 @@ export const fingerprint = (e: Record<string, unknown>): Promise<string> =>
 /** Takes a report of the `reporting` module. An unknown id registers with its key, if `open`; a known one
  *  must bring the same key. Returns an error message, or undefined when stored. */
 export async function intake(app: App, auth: string, body: unknown, ip: string, open: boolean): Promise<string | undefined> {
+  const db = app.db;
   const [id = "", key = ""] = auth.replace(/^Bearer\s+/i, "").split(".");
   if (!ID.test(id) || key.length < 32) return "invalid credentials";
   if (typeof body !== "object" || !body || Array.isArray(body)) return "invalid report";
   const report = body as Record<string, unknown>;
 
-  const known = await app.db.row`SELECT key_hash FROM reporting_instance WHERE id = ${id}`;
+  const known = await db.row`SELECT key_hash FROM reporting_instance WHERE id = ${id}`;
   const hash = await sha256hex(key);
   if (known ? !safeEqual(hash, String(known.key_hash)) : !open) return "unknown instance";
 
@@ -37,11 +38,11 @@ export async function intake(app: App, auth: string, body: unknown, ip: string, 
     ip: str(ip, 39),
     last_seen: now(),
   };
-  if (known) await app.db.table("reporting_instance").update(meta);
-  else await app.db.table("reporting_instance").insert({ ...meta, key_hash: hash, first_seen: meta.last_seen });
+  if (known) await db.table("reporting_instance").update(meta);
+  else await db.table("reporting_instance").insert({ ...meta, key_hash: hash, first_seen: meta.last_seen });
 
   const errors = Array.isArray(report.errors) ? report.errors.slice(0, MAX) : [];
-  await app.db.transaction(async () => {
+  await db.transaction(async () => {
     for (const e of errors as Record<string, unknown>[]) {
       if (typeof e !== "object" || !e) continue;
       const row = {
@@ -54,9 +55,9 @@ export async function intake(app: App, auth: string, body: unknown, ip: string, 
         last_seen: time(e.last_seen),
       };
       const fp = await fingerprint(row), hits = Math.max(1, int(e.hits) ?? 1);
-      const done = await app.db.exec`UPDATE reporting_error SET hits = hits + ${hits}, last_seen = ${row.last_seen},
+      const done = await db.exec`UPDATE reporting_error SET hits = hits + ${hits}, last_seen = ${row.last_seen},
         message = ${row.message}, prio = ${row.prio} WHERE instance = ${id} AND fp = ${fp}`;
-      if (!done.affectedRows) await app.db.table("reporting_error").insert({ ...row, instance: id, fp, hits, first_seen: time(e.first_seen) });
+      if (!done.affectedRows) await db.table("reporting_error").insert({ ...row, instance: id, fp, hits, first_seen: time(e.first_seen) });
     }
   });
 }
