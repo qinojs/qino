@@ -83,7 +83,10 @@ function indexAll(app: App, kind: Kind, every: Entry[]) {
 function byWords(query: string | number[], among: Entry[], limit: number) {
   if (typeof query !== "string") return [];
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  return among.map((e) => ({ e, n: words.filter((w) => e.text.toLowerCase().includes(w)).length }))
+  return among.map((e) => {
+    const text = e.text.toLowerCase();
+    return { e, n: words.filter((w) => text.includes(w)).length };
+  })
     .filter(({ n }) => n).sort((a, b) => b.n - a.n).slice(0, limit).map(({ e }) => e);
 }
 
