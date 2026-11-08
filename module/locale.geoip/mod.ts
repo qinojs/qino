@@ -101,6 +101,6 @@ export const geoip = {
   /** When the cached files were fetched (ms), undefined if not yet. */
   async fetched(app: App): Promise<number | undefined> {
     const name = await sourceOf(app);
-    return await fs.mtime(dirOf(app, name) + Object.keys(SOURCES[name].files)[0]);
+    return fs.mtime(dirOf(app, name) + Object.keys(SOURCES[name].files)[0]);
   },
 };

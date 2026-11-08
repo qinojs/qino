@@ -37,7 +37,7 @@ async function get(url: string) {
 async function dbip() {
   const month = (back: number) => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - back)).toISOString().slice(0, 7);
   const url = (back: number) => `https://download.db-ip.com/free/dbip-country-lite-${month(back)}.csv.gz`;
-  return await get(url(0)).catch(() => get(url(1)));
+  return get(url(0)).catch(() => get(url(1)));
 }
 
 const RIRS = {
