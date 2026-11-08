@@ -200,21 +200,21 @@ function trackedStat(count: unknown, first: unknown) {
 
 /** One message with its payload and the result per recipient. */
 async function renderMessage(node: Node, id: number, url: URL) {
-  const app = node.app;
+  const app = node.app, db = app.db;
   const t = app.t;
   const [row, deliveries, files, links, view] = await Promise.all([
-    app.db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
-    app.db.query`
+    db.row`SELECT m.*, g.name AS grp_name FROM message m LEFT JOIN grp g ON g.id = m.grp_id WHERE m.id = ${id}`,
+    db.query`
       SELECT d.usr_id, d.address, d.external_id, d.sent, d.due, d.attempts, d.error, u.username,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
       WHERE d.message_id = ${id} ORDER BY d.id`,
-    app.db.query`
+    db.query`
       SELECT a.file_id, a.sort, f.name, f.mime, f.size
       FROM message_attachment a JOIN file f ON f.id = a.file_id
       WHERE a.message_id = ${id} ORDER BY a.sort, a.file_id`,
-    app.db.query`
+    db.query`
       SELECT t.code,
         SUM(CASE WHEN t.kind = ${"load"} THEN 1 ELSE 0 END) AS loads,
         SUM(CASE WHEN t.kind = ${"click"} THEN 1 ELSE 0 END) AS clicks
@@ -229,7 +229,7 @@ async function renderMessage(node: Node, id: number, url: URL) {
   const attachmentList = await attachments(app, files);
   // shorturl knows what a code stands for; without that module the code stands for itself
   const targets = links.length
-    ? await app.db.query`SELECT code, url FROM shorturl WHERE ${sql.in("code", links.map((link) => link.code))}`.catch(() => [])
+    ? await db.query`SELECT code, url FROM shorturl WHERE ${sql.in("code", links.map((link) => link.code))}`.catch(() => [])
     : [];
   const urls = new Map(targets.map((target) => [target.code, target.url]));
 
