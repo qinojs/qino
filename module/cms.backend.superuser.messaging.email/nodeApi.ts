@@ -11,7 +11,7 @@ const CONTACT = "email";
 
 /** Node access is the permission — whoever may read this backend node may manage mail. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
-  const app = node.app;
+  const app = node.app, db = app.db;
   const t = app.t;
   try {
     if (vars.settings) {
@@ -28,27 +28,27 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     if (vars.contactAdd) {
       const { usr, address } = vars.contactAdd as { usr: string; address: string };
-      await addContact(app.db, Number(usr), CONTACT, String(address));
+      await addContact(db, Number(usr), CONTACT, String(address));
       return { ok: true, message: await t`Address added.` };
     }
     if (vars.approve) {
       const { usr, address } = vars.approve as { usr: string; address: string };
       const claimed = await dropClaim(app, CONTACT, Number(usr), String(address));
       if (!claimed) return { ok: false, message: await t`Nothing to verify.` };
-      await addContact(app.db, Number(claimed.usr_id), CONTACT, String(claimed.address));
+      await addContact(db, Number(claimed.usr_id), CONTACT, String(claimed.address));
       return { ok: true, message: await t`Address approved.` };
     }
     if (vars.main) {
       const address = String(vars.main);
-      const usrId = await contactOwner(app.db, CONTACT, address);
+      const usrId = await contactOwner(db, CONTACT, address);
       if (!usrId) return { ok: false, message: await t`Address not found.` };
-      await setMainContact(app.db, usrId, CONTACT, address);
+      await setMainContact(db, usrId, CONTACT, address);
       return { ok: true, message: await t`Main address changed.` };
     }
     if (vars.delete) {
       const address = String(vars.delete);
-      const usrId = await contactOwner(app.db, CONTACT, address);
-      if (usrId) await removeContact(app.db, usrId, CONTACT, address);
+      const usrId = await contactOwner(db, CONTACT, address);
+      if (usrId) await removeContact(db, usrId, CONTACT, address);
       return { ok: true, message: await t`Address deleted.` };
     }
     if (vars.test != null) {
