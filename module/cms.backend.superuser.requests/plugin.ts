@@ -46,7 +46,12 @@ async function recent(app: App) {
      ORDER BY id DESC LIMIT ${WINDOW}`.catch(() => []);
   const top = (col: string, n: number) => {
     const m = new Map<number, number>();
-    for (const row of rows) if (row[col] != null) m.set(Number(row[col]), (m.get(Number(row[col])) ?? 0) + 1);
+    for (const row of rows) {
+      const value = row[col];
+      if (value == null) continue;
+      const id = Number(value);
+      m.set(id, (m.get(id) ?? 0) + 1);
+    }
     return [...m].sort((a, b) => b[1] - a[1]).slice(0, n);
   };
   const urls = top("url_id", TOP);
