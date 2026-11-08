@@ -16,7 +16,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const order = await cart(ctx, false);
   const methods = order ? await order.payments() : [];
   if (!order || !methods.length) return html`<form></form>`;
-  const [active, currency] = await Promise.all([order.activePayment(), order.currencyRow()]);
+  const active = await order.activePayment();
   const edit = await node.settings.editable() !== false;
   const heading = String(await node.settings.heading() ?? "2");
   const items = [];
