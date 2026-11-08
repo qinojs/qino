@@ -70,3 +70,15 @@ test("what every price asks is cached until its table changes; a cart forgets pe
     }, ctx);
   });
 });
+
+test("an open cart keeps pricing as it was opened, with or without tax", async () => {
+  await withShop([], async (app) => {
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      await app.settings["cms.shop"].taxIncluded(false); // the shop switches, the cart stays gross
+      const product = (await app.db.table("shop_product").get<Product>(10))!;
+      assertEquals((await product.prices({ order })).gross, 2450);
+      assertEquals((await product.prices()).gross, 2450 * 1.081); // no order: the shop's say
+    });
+  });
+});

@@ -286,9 +286,15 @@ export async function install({ app }: { app: App }): Promise<void> {
       if (kept) report.push(`${kept} product addresses kept as redirects`);
     }
 
-    // pages: the shop's own modules under their new names, their settings under the new keys
+    // pages: the shop's own modules under their new names, their settings under the new keys —
+    // where the app has the new module; the others wait (the shop's backend pages for products …)
+    const waiting: string[] = [], moves = Object.entries(MODULES).filter(([, to]) => app.modules.get(to));
     for (const [from, to] of Object.entries(MODULES)) {
       const pages = await db.query`SELECT id, settings FROM page WHERE module = ${from}`;
+      if (pages.length && !app.modules.get(to)) {
+        waiting.push(`${pages.length} × ${from}`);
+        continue;
+      }
       for (const page of pages) {
         const s = json(page.settings) ?? {};
         const out: Record<string, unknown> = {};
@@ -310,11 +316,12 @@ export async function install({ app }: { app: App }): Promise<void> {
       }
       if (pages.length) report.push(`${pages.length} × ${from} → ${to}`);
     }
+    if (waiting.length) report.push(`left without a qino module: ${waiting.join(", ")}`);
     // the site's own files of these modules (data/<module>/: css, images) under the new name, and
     // its css addressing the new name — qino loads data/<module>/pub/main.css by itself
     const data = app.dir + "data/";
     let moved = 0;
-    for (const [from, to] of Object.entries(MODULES)) {
+    for (const [from, to] of moves) {
       if (!await fs.stat(data + from) || await fs.stat(data + to)) continue;
       await fs.rename(data + from, data + to);
       moved++;
@@ -323,7 +330,7 @@ export async function install({ app }: { app: App }): Promise<void> {
     for await (const path of cssFiles(data)) {
       const before = await fs.text(path);
       let after = before;
-      for (const [from, to] of Object.entries(MODULES)) {
+      for (const [from, to] of moves) {
         const name = to.replace(/^cms\./, "");
         after = after.replaceAll(`[qcms-mod="${from.replace(/^cms\./, "")}"]`, `[qcms-mod="${name}"]`)
           .replace(new RegExp(RegExp.escape(".-m-" + from.replaceAll(".", "-")) + "(?![\\w-])", "g"), `[qcms-mod="${name}"]`);

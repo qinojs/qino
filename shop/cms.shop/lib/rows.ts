@@ -101,7 +101,7 @@ export class Product extends ShopRow {
   }
 
   /** The unit price in four passes — base, surcharges, discounts, rounding. `price` is what a line
-   *  stores: gross if prices include tax, else net. */
+   *  stores: gross if prices include tax (the order's say, made when it was opened), else net. */
   async prices(q: PriceQuery = {}): Promise<{ price: number; net: number; gross: number }> {
     const app = this.$app;
     const currency = q.currency ?? await q.order?.currencyRow() ?? await mainCurrency(app);
@@ -121,7 +121,7 @@ export class Product extends ShopRow {
     };
     for (const phase of PHASES) await app.fire(`shop:price-${phase}`, e);
     const factor = (await this.taxRate(where)) / 100 + 1;
-    return await taxIncluded(app)
+    return (q.order ? !!q.order.tax_included : await taxIncluded(app))
       ? { price: e.price, net: e.price / factor, gross: e.price }
       : { price: e.price, net: e.price, gross: e.price * factor };
   }
