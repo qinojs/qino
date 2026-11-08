@@ -21,22 +21,22 @@ function save(node: Node, vars: Record<string, unknown>) {
   return node.app.db.transaction(() => saveTx(node, vars));
 }
 async function saveTx(node: Node, vars: Record<string, unknown>) {
-  const app = node.app;
+  const app = node.app, db = app.db;
   const modules = () => String(vars.modules ?? "").split(",").filter(Boolean);
   const setOverride = async (module: string, grpId: number, access: string) => {
-    const table = app.db.table("cms_module_access_grp"), id = { module, grp_id: grpId };
+    const table = db.table("cms_module_access_grp"), id = { module, grp_id: grpId };
     if (access === "") await table.delete(id);
     else await table.ensure({ ...id, access: Number(access) });
   };
   const setStandard = (module: string, access: string) =>
-    app.db.table("module").update(module, { cms_access: access === "" ? null : Number(access) });
+    db.table("module").update(module, { cms_access: access === "" ? null : Number(access) });
 
   if (vars.set_override !== undefined) { // single override cell
     const module = String(vars.module ?? ""), grpId = Number(vars.grp) || 0;
     if (module && grpId) await setOverride(module, grpId, level(vars.access));
   } else if (vars.set_cap !== undefined) { // grp.cms_access
     const grpId = Number(vars.grp) || 0;
-    if (grpId) await app.db.table("grp").update(grpId, { cms_access: clamp(vars.access, 1) });
+    if (grpId) await db.table("grp").update(grpId, { cms_access: clamp(vars.access, 1) });
   } else if (vars.set_standard !== undefined) { // module.cms_access
     const module = String(vars.module ?? "");
     if (module) await setStandard(module, level(vars.access));
@@ -50,21 +50,21 @@ async function saveTx(node: Node, vars: Record<string, unknown>) {
   } else if (vars.add_group !== undefined) { // promote/create a group into the matrix
     let grpId = Number(vars.grp) || 0;
     if (!grpId && vars.new_group && (node.settings.canCreateGroups() ?? true)) {
-      grpId = Number(await app.db.table("grp").insert({ name: String(vars.new_group).trim() }));
+      grpId = Number(await db.table("grp").insert({ name: String(vars.new_group).trim() }));
     }
-    if (grpId) await app.db.table("grp").update(grpId, { cms_access: clamp(vars.cap, 1) });
+    if (grpId) await db.table("grp").update(grpId, { cms_access: clamp(vars.cap, 1) });
   }
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }) {
-  const app = node.app, t = app.t;
+  const app = node.app, t = app.t, db = app.db;
   await save(node, vars);
 
   const [groupRows, overrideRows, moduleRows, other] = await Promise.all([
-    app.db.query`SELECT id, name, cms_access FROM grp WHERE cms_access > 0 ORDER BY name`,
-    app.db.query`SELECT module, grp_id, access FROM cms_module_access_grp`,
-    app.db.query`SELECT m.name, m.cms_access, (SELECT COUNT(*) FROM page WHERE module = m.name) AS used FROM module m`,
-    app.db.query`SELECT id, name FROM grp WHERE cms_access IS NULL OR cms_access = 0 ORDER BY name`,
+    db.query`SELECT id, name, cms_access FROM grp WHERE cms_access > 0 ORDER BY name`,
+    db.query`SELECT module, grp_id, access FROM cms_module_access_grp`,
+    db.query`SELECT m.name, m.cms_access, (SELECT COUNT(*) FROM page WHERE module = m.name) AS used FROM module m`,
+    db.query`SELECT id, name FROM grp WHERE cms_access IS NULL OR cms_access = 0 ORDER BY name`,
   ]);
   const overrides = new Map(overrideRows.map((r) => [`${r.module}:${r.grp_id}`, Number(r.access) || 0]));
   const modRows = new Map(moduleRows.map((r) => [String(r.name), r]));
