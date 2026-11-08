@@ -1,0 +1,23 @@
+{
+  "properties": {
+    "shop_shipping_rate": {
+      "additionalProperties": {
+        "properties": {
+          "country": { "type": "string", "maxLength": 2, "x-index": "primary" },
+          "method": { "type": "string", "maxLength": 32, "x-index": "primary", "description": "A tariff (priority, economy …); one method per tariff" },
+          "weight": { "type": "number", "x-index": "primary", "description": "Up to this many grams" },
+          "price": { "type": "integer", "description": "Minor units of the main currency, with tax as the shop's prices are" }
+        }
+      }
+    },
+    "shop_shipping_free": {
+      "additionalProperties": {
+        "properties": {
+          "country": { "type": "string", "maxLength": 2, "x-index": "primary" },
+          "method": { "type": "string", "maxLength": 32, "x-index": "primary" },
+          "amount": { "type": "integer", "description": "Goods (with tax) worth this much, in minor units of the order's currency, ship for free" }
+        }
+      }
+    }
+  }
+}

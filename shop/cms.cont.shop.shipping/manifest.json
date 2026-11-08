@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.shop.shipping",
+  "description": "Checkout step: choose the delivery method.",
+  "dependencies": [
+    "cms",
+    "cms.shop"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

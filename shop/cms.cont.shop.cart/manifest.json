@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.shop.cart",
+  "description": "The visitor's cart: lines, amounts, what the shop adds, tax and total.",
+  "dependencies": [
+    "cms",
+    "cms.shop"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

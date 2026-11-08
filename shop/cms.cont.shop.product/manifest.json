@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.shop.product",
+  "description": "A product: its page is the product. Price, variants, add to cart.",
+  "dependencies": [
+    "cms",
+    "cms.shop"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

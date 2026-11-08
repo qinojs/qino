@@ -102,6 +102,8 @@
     "./social.telegram": "./module/social.telegram/mod.ts",
     "./social.threads": "./module/social.threads/mod.ts",
     "./shp3": "./shp3/shp3/mod.ts",
+    "./cms.shop": "./shop/cms.shop/mod.ts",
+    "./cms.shop.countries": "./shop/cms.shop.countries/mod.ts",
     "./starter.cms": "./module/starter.cms/mod.ts",
     "./ticket": "./module/ticket/mod.ts",
     "./u2": "./module/u2/mod.ts",

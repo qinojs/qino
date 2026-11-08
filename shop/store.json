@@ -1,0 +1,25 @@
+{
+  "modules": {
+    "cms.backend.shop": {},
+    "cms.backend.shop.orders": {},
+    "cms.cont.shop.address": {},
+    "cms.cont.shop.buy": {},
+    "cms.cont.shop.cart": {},
+    "cms.cont.shop.category": {},
+    "cms.cont.shop.next": {},
+    "cms.cont.shop.payment": {},
+    "cms.cont.shop.product": {},
+    "cms.cont.shop.shipping": {},
+    "cms.shop": {},
+    "cms.shop.countries": {},
+    "cms.shop.geoip": {},
+    "cms.shop.invoice": {},
+    "cms.shop.mail": {},
+    "cms.shop.minimum": {},
+    "cms.shop.price.currency": {},
+    "cms.shop.price.discount": {},
+    "cms.shop.shipping.pickup": {},
+    "cms.shop.shipping.weight": {},
+    "cms.shop.stock": {}
+  }
+}

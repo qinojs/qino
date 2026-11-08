@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.shop.buy",
+  "description": "Checkout step: place the order and go to the payment.",
+  "dependencies": [
+    "cms",
+    "cms.shop"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

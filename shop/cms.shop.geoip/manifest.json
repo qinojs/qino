@@ -1,0 +1,6 @@
+{
+  "name": "cms.shop.geoip",
+  "description": "A new cart starts in the visitor's country, by IP address.",
+  "dependencies": ["cms.shop", "locale.geoip"],
+  "files": ["manifest.json", "plugin.ts"]
+}

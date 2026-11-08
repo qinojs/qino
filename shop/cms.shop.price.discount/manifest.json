@@ -1,0 +1,6 @@
+{
+  "name": "cms.shop.price.discount",
+  "description": "Discounts: by amount, for a group, for a while, on a product or a whole category. The best one wins.",
+  "dependencies": ["cms.shop"],
+  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts"]
+}

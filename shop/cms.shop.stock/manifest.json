@@ -1,0 +1,6 @@
+{
+  "name": "cms.shop.stock",
+  "description": "Stock per product or variant: what is not there cannot be ordered, what is ordered is taken off.",
+  "dependencies": ["cms.shop"],
+  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts"]
+}

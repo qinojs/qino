@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.shop.address",
+  "description": "Checkout step: billing and delivery address.",
+  "dependencies": [
+    "cms",
+    "cms.shop"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

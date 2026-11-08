@@ -1,0 +1,14 @@
+{
+  "properties": {
+    "shop_price": {
+      "additionalProperties": {
+        "properties": {
+          "product_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "shop_product", "x-qg-on-parent-delete": "cascade" },
+          "variant_id": { "type": "integer", "x-index": "primary", "default": 0, "description": "0: the product itself" },
+          "currency": { "type": "string", "maxLength": 3, "x-index": "primary" },
+          "price": { "type": "number", "description": "Per unit, in minor units of that currency" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "cms.shop",
+  "description": "Shop: products are pages, cart, orders, a price in four passes. Money is fin's business.",
+  "dependencies": [
+    "core",
+    "cms",
+    "fin",
+    "fin.payment",
+    "fin.invoice",
+    "locale.country",
+    "locale.currency"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "lib/cart.ts",
+    "lib/rows.ts",
+    "lib/shop.ts",
+    "lib/steps.ts",
+    "locale/de.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/shop.js"
+  ]
+}

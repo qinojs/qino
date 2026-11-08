@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "shop_product_country": {
+      "additionalProperties": {
+        "properties": {
+          "product_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "shop_product", "x-qg-on-parent-delete": "cascade" },
+          "country": { "type": "string", "maxLength": 2, "x-index": "primary" }
+        }
+      }
+    }
+  }
+}

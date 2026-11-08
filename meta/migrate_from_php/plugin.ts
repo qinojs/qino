@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { $item, fs, sql } from "@qino/qino";
 
+import { coerceSettings } from "./coerceSettings.ts";
 import { migrateContacts } from "./migrateContacts.ts";
 import { migrateL1 } from "./migrateL1.ts";
 import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
@@ -33,6 +34,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await migrateTable1(app); // still the legacy module name, so before the rename
   await migrateL1(app);
   await migrateRenamedModules(app);
+  const coerced = await coerceSettings(app); // after the renames: the schema of the module that reads them
 
   const langsId = await settingId(app, ["core", "langs"]);
   const langsRaw = String(langsId ? await app.db.one`SELECT value FROM qg_setting WHERE id = ${langsId}` ?? "" : "");
@@ -40,6 +42,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   app.languages.setLangs(langsRaw.split(","));
 
   if (moved || json) console.log(`[migrate_from_php] migrated ${moved} app settings, ${json} json settings`);
+  if (coerced) console.log(`[migrate_from_php] ${coerced} page settings in their schema's types`);
 }
 
 /** Remove settings whose legacy value-plus-children shape has no qino equivalent. */

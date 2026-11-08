@@ -1,5 +1,6 @@
 {
   "modules": {
-    "migrate_from_php": {}
+    "migrate_from_php": {},
+    "migrate_shp3": {}
   }
 }

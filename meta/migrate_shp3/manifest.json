@@ -1,0 +1,9 @@
+{
+  "name": "migrate_shp3",
+  "description": "Once: the shop of the PHP CMS (shp3) into cms.shop — products, variants, prices, discounts, shipping, orders, settings, pages.",
+  "dependencies": [
+    "core",
+    "cms",
+    "cms.shop"
+  ]
+}

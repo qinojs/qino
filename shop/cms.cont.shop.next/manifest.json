@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.shop.next",
+  "description": "Back and next between checkout steps, next once the checks pass.",
+  "dependencies": [
+    "cms",
+    "cms.shop"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js"
+  ]
+}

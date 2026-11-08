@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "shop_currency": {
+      "additionalProperties": {
+        "properties": {
+          "minimum": { "type": "integer", "description": "Goods (with tax) below this amount, in minor units, cost the surcharge" },
+          "minimum_surcharge": { "type": "integer", "description": "Minor units, with tax" }
+        }
+      }
+    }
+  }
+}

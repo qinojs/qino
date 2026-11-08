@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "shop_product": {
+      "additionalProperties": {
+        "properties": {
+          "stock": { "type": "number", "default": 0, "description": "Units in stock; a product with variants keeps it per variant" }
+        }
+      }
+    },
+    "shop_variant": {
+      "additionalProperties": {
+        "properties": {
+          "stock": { "type": "number", "default": 0, "description": "Units in stock" }
+        }
+      }
+    }
+  }
+}

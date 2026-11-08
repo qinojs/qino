@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.shop.orders",
+  "description": "The shop's orders: search, look at one, mark it paid or cancel it.",
+  "dependencies": ["cms.backend.shop"],
+  "files": ["manifest.json", "plugin.ts", "pub/main.js"]
+}

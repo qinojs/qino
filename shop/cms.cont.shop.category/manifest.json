@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.shop.category",
+  "description": "A category: the products below it, each with its add-to-cart form.",
+  "dependencies": ["cms", "cms.shop"],
+  "files": ["manifest.json", "plugin.ts"]
+}

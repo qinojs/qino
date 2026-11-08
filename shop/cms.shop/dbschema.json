@@ -1,0 +1,346 @@
+{
+  "properties": {
+    "shop_product": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-copy": "cascade",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "The page that is the product"
+          },
+          "price": {
+            "type": "number",
+            "default": 0,
+            "x-index": true,
+            "description": "Per unit, in minor units of the main currency; with tax if cms.shop.taxIncluded"
+          },
+          "weight": {
+            "type": "number",
+            "description": "Grams",
+            "default": 0
+          },
+          "length": {
+            "type": "number",
+            "description": "Millimetres",
+            "default": 0
+          },
+          "width": {
+            "type": "number",
+            "description": "Millimetres",
+            "default": 0
+          },
+          "height": {
+            "type": "number",
+            "description": "Millimetres",
+            "default": 0
+          },
+          "sku": {
+            "type": "string",
+            "maxLength": 70,
+            "x-index": true,
+            "description": "Article number (MPN)"
+          },
+          "gtin": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "Global Trade Item Number"
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 70
+          }
+        }
+      }
+    },
+    "shop_variant": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "product_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "shop_product",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "sort": {
+            "type": "integer",
+            "default": 0
+          },
+          "price": {
+            "type": "number",
+            "description": "Per unit; none: the product's"
+          },
+          "weight": {
+            "type": "number",
+            "description": "Grams; none: the product's"
+          },
+          "length": {
+            "type": "number",
+            "description": "Millimetres; none: the product's"
+          },
+          "width": {
+            "type": "number",
+            "description": "Millimetres; none: the product's"
+          },
+          "height": {
+            "type": "number",
+            "description": "Millimetres; none: the product's"
+          },
+          "sku": {
+            "type": "string",
+            "maxLength": 70,
+            "x-index": true
+          },
+          "gtin": {
+            "type": "string",
+            "maxLength": 50
+          }
+        }
+      }
+    },
+    "shop_currency": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 3,
+            "x-index": "primary",
+            "description": "ISO 4217 code"
+          },
+          "factor": {
+            "type": "number",
+            "default": 1,
+            "description": "Relative to the main currency"
+          },
+          "rounding": {
+            "type": "integer",
+            "default": 1,
+            "description": "Step a reduced price is rounded to, in minor units (5: 0.05 CHF)"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "main": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    "shop_product_tax": {
+      "additionalProperties": {
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "shop_product",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "x-index": "primary"
+          },
+          "rate": {
+            "type": "number",
+            "description": "Percent; wins over the country's"
+          }
+        }
+      }
+    },
+    "shop_order": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "cart",
+              "ordered",
+              "paid",
+              "canceled"
+            ],
+            "default": "cart",
+            "maxLength": 16,
+            "x-index": true
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 5
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "description": "Where it goes: tax and what may be sold follow from it"
+          },
+          "tax_included": {
+            "type": "boolean",
+            "default": true,
+            "description": "Line prices include tax"
+          },
+          "shipping": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Chosen delivery method"
+          },
+          "payment": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Chosen payment method, as fin.payment names it (saferpay.twint)"
+          },
+          "bill": {
+            "type": "string",
+            "description": "Billing party, JSON: name, honorificPrefix, givenName, familyName, organization, email, telephone, address (schema.org)"
+          },
+          "ship": {
+            "type": "string",
+            "description": "Delivery party, same shape; none: the billing party"
+          },
+          "net": {
+            "type": "integer",
+            "default": 0
+          },
+          "tax": {
+            "type": "integer",
+            "default": 0
+          },
+          "total": {
+            "type": "integer",
+            "default": 0,
+            "description": "Minor units, what the customer pays"
+          },
+          "data": {
+            "type": "string",
+            "description": "JSON, what a checkout step adds (comment, terms accepted …)"
+          },
+          "created": {
+            "type": "integer",
+            "default": 0
+          },
+          "changed": {
+            "type": "integer",
+            "default": 0,
+            "x-index": true
+          },
+          "ordered": {
+            "type": "integer",
+            "default": 0,
+            "x-index": true
+          }
+        }
+      }
+    },
+    "shop_order_line": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "order_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "shop_order",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "sort": {
+            "type": "integer",
+            "default": 0
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 32,
+            "default": "",
+            "description": "Empty for a product; the name of a line the shop adds itself (shipping, minimum …)"
+          },
+          "product_id": {
+            "type": "integer",
+            "x-index": true
+          },
+          "variant_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "default": 1
+          },
+          "price": {
+            "type": "number",
+            "default": 0,
+            "description": "Per unit, in minor units of the order's currency, finer if need be; with tax if the order's tax_included"
+          },
+          "tax_rate": {
+            "type": "number",
+            "default": 0,
+            "description": "Percent"
+          },
+          "tax_category": {
+            "type": "string",
+            "maxLength": 2,
+            "default": "S",
+            "description": "EN 16931 (UNCL 5305), as fin.invoice"
+          },
+          "amount": {
+            "type": "integer",
+            "default": 0,
+            "description": "quantity × price, rounded, in minor units"
+          },
+          "data": {
+            "type": "string",
+            "description": "JSON, what a module stores with the line"
+          }
+        }
+      }
+    },
+    "country": {
+      "additionalProperties": {
+        "properties": {
+          "shop_enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "The shop delivers there"
+          },
+          "shop_tax_rate": {
+            "type": "number",
+            "description": "VAT rate in percent"
+          },
+          "shop_currency": {
+            "type": "string",
+            "maxLength": 3,
+            "description": "The shop currency this country pays in; none: its own if the shop has it, else the main one"
+          }
+        }
+      }
+    }
+  }
+}
