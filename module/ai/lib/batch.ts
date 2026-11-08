@@ -41,7 +41,12 @@ const size = (item: BatchItem) => JSON.stringify(item).length;
 function* chunks(items: BatchItem[]) {
   for (let at = 0; at < items.length;) {
     let end = at, bytes = 0;
-    while (end < items.length && end - at < LIMIT.items && (end === at || bytes + size(items[end]) <= LIMIT.bytes)) bytes += size(items[end++]);
+    while (end < items.length && end - at < LIMIT.items) {
+      const n = size(items[end]);
+      if (end > at && bytes + n > LIMIT.bytes) break;
+      bytes += n;
+      end++;
+    }
     yield items.slice(at, end);
     at = end;
   }
