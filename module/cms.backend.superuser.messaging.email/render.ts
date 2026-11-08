@@ -324,7 +324,7 @@ export async function journal(node: Node): Promise<HtmlString> {
         : html`<u2-ico inline icon=move_to_inbox>←</u2-ico>`}
       <td>${m.title ? html`<b>${m.title}</b> ` : ""}${cut(textOf({ text: String(m.text ?? ""), format: m.format || undefined }))}
       <td>${Number(m.attachments) || 0}
-      <td>${m.recipient ?? ""}${Number(m.recipients) > 1 ? html` <small>+${Number(m.recipients) - 1}</small>` : ""}
+      <td>${m.recipient}${Number(m.recipients) > 1 ? html` <small>+${Number(m.recipients) - 1}</small>` : ""}
       <td>${Number(m.errors) ? html`<span class=u2-badge>${m.errors}</span>` : ""}`)
     : html`<tr><td colspan=7>${nothing}`;
 
