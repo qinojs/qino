@@ -49,7 +49,8 @@ async function snippet(node: Node, ctx: Ctx, query: string) {
   for (const row of rows) {
     const plain = unhee(String(row.text ?? "").replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
     if (!plain) continue;
-    const matches = words.filter((word) => plain.toLowerCase().includes(word)).length;
+    const lower = plain.toLowerCase();
+    const matches = words.filter((word) => lower.includes(word)).length;
     if (matches > score) { text = plain; score = matches; }
   }
   const match = text.search(new RegExp(words.map(RegExp.escape).join("|"), "i"));
