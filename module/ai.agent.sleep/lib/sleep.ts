@@ -112,16 +112,17 @@ async function transcript(app: App, session: number, since: number, chars: numbe
  *  `sessions` sessions in all; only `agent`, it sleeps on whatever is new at once. An agent still asleep
  *  (or its plan unreviewed) is left: its next plan would rest on outdated memories. Resolves to how many fell asleep. */
 export async function sleep(app: App, agent?: number): Promise<number> {
+  const db = app.db;
   const thinkers = String(await settings(app).thinkers).split(",").map((m) => m.trim()).filter(Boolean);
   const models = thinkers.length ? thinkers : [undefined];
   const chars = Number(await settings(app).chars), enough = agent ? 1 : Number(await settings(app).minChars);
   let budget = Number(await settings(app).sessions), asleep = 0;
-  for (const { id, system } of await app.db.query`SELECT id, system FROM ai_agent ${agent ? sql`WHERE id = ${agent}` : sql``} ORDER BY id`) {
+  for (const { id, system } of await db.query`SELECT id, system FROM ai_agent ${agent ? sql`WHERE id = ${agent}` : sql``} ORDER BY id`) {
     if (budget <= 0) break;
-    if (await app.db.one`SELECT 1 FROM ai_agent_sleep WHERE agent_id = ${id} AND stage IN (${"think"}, ${"merge"}, ${"planned"})`) continue;
+    if (await db.one`SELECT 1 FROM ai_agent_sleep WHERE agent_id = ${id} AND stage IN (${"think"}, ${"merge"}, ${"planned"})`) continue;
     // a failed sleep goes over the same again
-    const since = Number(await app.db.one`SELECT MAX(until) FROM ai_agent_sleep WHERE agent_id = ${id} AND stage <> ${"failed"}`) || 0;
-    const sessions = (await app.db.query`SELECT s.id, MAX(m.id) AS last, MAX(m.time) AS at FROM ai_session s JOIN ai_session_message m ON m.session_id = s.id
+    const since = Number(await db.one`SELECT MAX(until) FROM ai_agent_sleep WHERE agent_id = ${id} AND stage <> ${"failed"}`) || 0;
+    const sessions = (await db.query`SELECT s.id, MAX(m.id) AS last, MAX(m.time) AS at FROM ai_session s JOIN ai_session_message m ON m.session_id = s.id
       WHERE s.agent_id = ${id} AND m.id > ${since} GROUP BY s.id ORDER BY s.id`).slice(0, budget);
     // still talking: it sleeps once it rested
     if (!agent && sessions.some((s) => Number(s.at) > unixTime() - REST)) continue;
@@ -131,7 +132,7 @@ export async function sleep(app: App, agent?: number): Promise<number> {
     budget -= sessions.length;
     asleep++;
     const until = Math.max(...sessions.map((s) => Number(s.last)));
-    const sleepId = Number(await app.db.table("ai_agent_sleep").insert({ agent_id: id, time: unixTime(), until, stage: "think", expected: sessions.length * models.length }));
+    const sleepId = Number(await db.table("ai_agent_sleep").insert({ agent_id: id, time: unixTime(), until, stage: "think", expected: sessions.length * models.length }));
     const prompt = THINK(String(system ?? ""), await memories(app, id));
     try {
       for (const [n, model] of models.entries()) {
@@ -142,7 +143,7 @@ export async function sleep(app: App, agent?: number): Promise<number> {
         await batch(app, "structured", { owner: OWNER, items }, { model, prefer: PREFER });
       }
     } catch (e) { // not submitted: the next sleep goes over the same
-      await app.db.table("ai_agent_sleep").update(sleepId, { stage: "failed", error: errMsg(e) });
+      await db.table("ai_agent_sleep").update(sleepId, { stage: "failed", error: errMsg(e) });
       throw e;
     }
   }
