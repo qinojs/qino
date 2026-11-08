@@ -129,7 +129,7 @@ export async function plan(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
       <div class=-head>${t`Thoughts`}</div>
       ${thoughts.length ? thoughts.map((r) => {
         const [, , session, thinker] = String(r.item).split(":"), o = json(r.output);
-        const cited = (list: any[] = []) => list.map((c: any) => html`<li>${c.content ?? html`<code>${c.id}</code> ${known.get(Number(c.id)) ?? ""}`} <small>#${(c.evidence ?? []).join(", #")}</small>`);
+        const cited = (list: any[] = []) => list.map((c: any) => html`<li>${c.content ?? html`<code>${c.id}</code> ${known.get(Number(c.id))}`} <small>#${(c.evidence ?? []).join(", #")}</small>`);
         return html.async`<details>
           <summary>${t`Session`} ${session} · ${t`thinker`} ${Number(thinker) + 1} ${o.error ? html`<span style="color:var(--red)">${o.error}</span>` : html`<small>${o.missed?.length ?? 0} / ${o.confirmed?.length ?? 0} / ${o.outdated?.length ?? 0}</small>`}</summary>
           ${o.error ? "" : html.async`${list(t`Missed`, cited(o.missed))}${list(t`Confirmed`, cited(o.confirmed))}${list(t`Outdated`, cited(o.outdated))}`}
