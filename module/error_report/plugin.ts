@@ -3,7 +3,7 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
-import { clientIp, fs, Output, requestStorage, unixTime } from "@qino/qino";
+import { clientIp, fs, Output, requestStorage, uaInfo, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
@@ -129,6 +129,7 @@ async function addReport(app: App, vs: Report) {
     row.ip = ctx.req.clientIp;
     row.log_id = await ctx.logId;
   }
+  if ("browser" in row) row.bot = uaInfo(String(row.browser ?? "")).bot; // only where a request stands behind it
   // the column always holds a JSON array — a report from the browser may send anything at all
   row.backtrace = JSON.stringify(Array.isArray(row.backtrace) ? row.backtrace : []);
   await app.db.table("m_error_report").insert(row).catch(() => {});
