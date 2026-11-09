@@ -33,7 +33,7 @@ export async function renderDashboard(node: Node): Promise<HtmlString> {
 async function card(page: Node, body: unknown, title?: unknown): Promise<HtmlString> {
   const url = await page.url();
   const head = title ?? await (await page.title()).string();
-  return html`<div class=u2-card><a class=-head href="${url}">${head}</a>${html.raw(String(body))}</div>`;
+  return html`<div class=u2-card><a class=-head href="${url}">${head}</a>${html.raw(body)}</div>`;
 }
 
 /**

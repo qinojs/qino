@@ -8,11 +8,8 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 /** The discounts of an app, read once and again after a change — every price asks. */
 const cached = new WeakMap<App, Promise<Row[]>>();
-const discounts = (app: App): Promise<Row[]> => {
-  let rows = cached.get(app);
-  if (!rows) cached.set(app, rows = app.db.query`SELECT * FROM shop_discount ORDER BY factor`);
-  return rows;
-};
+const discounts = (app: App): Promise<Row[]> =>
+  cached.getOrInsertComputed(app, () => app.db.query`SELECT * FROM shop_discount ORDER BY factor`);
 
 /** Whether a product lies below a node (0: everywhere). */
 const below = async (app: App, productId: unknown, nodeId: number) =>

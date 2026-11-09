@@ -208,10 +208,8 @@ async function templateValues(named: Set<string>, node: Node) {
  *  across apps). A reparsed file is a new tree. */
 const namesOf = new WeakMap<TNode[], Set<string>>();
 function templateNames(nodes: TNode[]) {
-  let names = namesOf.get(nodes);
   // joined, not spread: a big template has more text nodes than a call takes arguments
-  if (!names) namesOf.set(nodes, names = placeholderNames(templateTexts(nodes).join("\n")));
-  return names;
+  return namesOf.getOrInsertComputed(nodes, () => placeholderNames(templateTexts(nodes).join("\n")));
 }
 
 const templateTexts = (nodes: TNode[]): string[] =>

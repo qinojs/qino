@@ -53,7 +53,7 @@ function shown(messages: Message[]): Message[] {
   return messages.flatMap((m, i) => {
     if (m.role !== "tool" || typeof m.content === "string") return [m];
     images.push(...m.content.filter((p) => p.type === "image"));
-    const said = m.content.flatMap((p) => p.type === "text" ? [p.text] : []).join("\n");
+    const said = m.content.filter(p => p.type === "text").map(p => p.text).join("\n");
     const result = { ...m, content: said || "An image, shown below." };
     if (messages[i + 1]?.role === "tool" || !images.length) return [result];
     const content = [{ type: "text" as const, text: "The images of the tool results above:" }, ...images];

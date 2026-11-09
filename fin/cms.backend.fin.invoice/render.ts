@@ -103,7 +103,7 @@ async function list(node: Node, url: URL) {
     q("status") ? sql`status = ${q("status")}` : null,
     q("type") ? sql`type = ${q("type")}` : null,
     q("overdue") ? sql`status = 'open' AND type IN ('invoice', 'reminder') AND due < ${today()}` : null,
-  ].flatMap((term) => term ?? []);
+  ].filter(term => term != null);
   const page = Math.max(0, Number(q("page")) || 0);
   const [rows, total] = await Promise.all([
     app.db.query`SELECT * FROM invoice WHERE ${sql.join(where, " AND ")}

@@ -102,18 +102,14 @@ const LIMIT = 500;
 const results = new WeakMap<Policy, Map<string, string>>();
 
 function cached(use: Policy) {
-  let seen = results.get(use);
-  if (!seen) results.set(use, seen = new Map());
-  return seen;
+  return results.getOrInsertComputed(use, () => new Map());
 }
 
 // Converted once per policy, not per text.
 const translated = new WeakMap<Policy, sanitize.IOptions>();
 
 function options(use: Policy) {
-  let ready = translated.get(use);
-  if (!ready) translated.set(use, ready = build(use));
-  return ready;
+  return translated.getOrInsertComputed(use, () => build(use));
 }
 
 /** The policy for sanitize-html. It has schemes per element, not per attribute, so they are merged. */

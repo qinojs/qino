@@ -78,7 +78,7 @@ export const socialProvider: Provider = {
       call(app, `/api/v1/accounts/${encodeURIComponent(user.id)}/statuses?limit=40&exclude_reblogs=true`),
       call(app, "/api/v1/notifications?types%5B%5D=mention&limit=40"),
     ]);
-    const mentioned = notifications.flatMap((notification: { status?: unknown }) => notification.status ? [notification.status] : []);
+    const mentioned = notifications.map((notification: { status?: unknown }) => notification.status).filter(Boolean);
     return [...own, ...mentioned].map((status) => postOf(target, status, String(user.id)));
   },
 };

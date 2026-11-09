@@ -72,7 +72,7 @@ export async function index(app: App, name: string, key: Key, input: Input, opti
   const hashes = text || !input.hash ? await Promise.all(contents.map(sha256hex)) : [input.hash];
   const where = sql`${match(keys, key)} AND collection_id = ${c.id}`;
   const old = new Map((await db.query`SELECT chunk, hash FROM ${t} WHERE ${where}`).map((row) => [Number(row.chunk), row.hash]));
-  const changed = contents.flatMap((_, i) => old.get(i) === hashes[i] ? [] : [i]);
+  const changed = contents.map((_, i) => i).filter(i => old.get(i) !== hashes[i]);
   if (!changed.length && old.size <= contents.length) return [];
   await fit(db, table, c);
   const known = new Map<string, unknown>((await db.query`SELECT hash, ${stored(db)} AS embedding FROM ${t} e
@@ -116,7 +116,7 @@ const queries = new WeakMap<App, Map<string, number[]>>();
  *  is not embedded again. Not the stored ones of equal text: a model embeds a query apart from what it
  *  finds (`purpose`). */
 async function queryVector(app: App, c: Collection, text: string) {
-  const cache = queries.get(app) ?? queries.set(app, new Map()).get(app)!, key = `${c.id} ${await sha256hex(text)}`;
+  const cache = queries.getOrInsertComputed(app, () => new Map()), key = `${c.id} ${await sha256hex(text)}`;
   const kept = cache.get(key);
   if (kept) return cache.delete(key), cache.set(key, kept), kept; // the latest used last
   const [values] = await vectors(app, c, { texts: [text], purpose: "query" });

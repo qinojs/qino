@@ -40,7 +40,7 @@ async function recipients(
       JOIN webpush_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})` : null,
     clients.length ? sql.in("s.client_id", clients) : null,
     subs.length ? sql.in("s.id", subs) : null,
-  ].flatMap((term) => term ?? []);
+  ].filter(term => term != null);
   if (!who.length) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
   const rows = await app.db.query`SELECT s.usr_id, s.endpoint_hash FROM webpush_subscription s
     WHERE (${sql.join(who, " OR ")}) ${notClient(to.notClient)}`;

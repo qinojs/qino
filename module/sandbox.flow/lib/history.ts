@@ -9,8 +9,8 @@ const kept = new WeakMap<App, Map<number, Kept>>(); // per app: runs live in mem
 /** Keep a run of flow `id`: the latest KEEP, newest first. One that ended without a tool call, a result
  *  or a changed state (the event was not for it) is only counted, else a busy event would push the others out. */
 export function record(app: App, id: number, trace: Trace): void {
-  const flows = kept.get(app) ?? kept.set(app, new Map()).get(app)!;
-  const flow = flows.get(id) ?? flows.set(id, { runs: [], filtered: 0 }).get(id)!;
+  const flows = kept.getOrInsertComputed(app, () => new Map());
+  const flow = flows.getOrInsertComputed(id, () => ({ runs: [], filtered: 0 }));
   if (trace.end === "done" && !trace.calls.length && !trace.result && !trace.state) return void flow.filtered++;
   flow.runs.unshift({ ...trace, time: new Date() });
   flow.runs.length = Math.min(flow.runs.length, KEEP);

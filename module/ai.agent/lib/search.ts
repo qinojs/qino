@@ -9,7 +9,7 @@ import type { Part } from "@qino/qino/ai";
 
 /** The text of a message's content, without images. */
 export const textOf = (content: string | Part[]): string =>
-  typeof content === "string" ? content : content.flatMap((p) => p.type === "text" ? [p.text] : []).join("\n");
+  typeof content === "string" ? content : content.filter(p => p.type === "text").map(p => p.text).join("\n");
 
 const log = (e: unknown) => console.error("[ai.agent] embedding:", errMsg(e));
 

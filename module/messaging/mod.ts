@@ -77,7 +77,7 @@ export const selectors = (to: To, usr: string): Sql[] => [
   to.grp != null ? sql`${sql.raw(usr)} IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})` : null,
   to.usr != null ? sql.in(usr, [to.usr].flat()) : null,
   to.all ? sql`${true}` : null,
-].flatMap((term) => term ?? []);
+].filter(term => term != null);
 
 /** One resolved destination. An undeliverable address carries the reason instead. */
 export type Recipient = Row & { address: string; usrId?: number; addressError?: string };

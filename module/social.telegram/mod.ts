@@ -10,7 +10,7 @@ async function configured(app: App) {
   const ids = [...new Set(source.split(/[\s,]+/).filter(Boolean))];
   return (await Promise.all(ids.map((id) => target(app, id).catch((e) => {
     console.warn(`social.telegram: target ${id} failed —`, errMsg(e));
-  })))).flatMap((target) => target ? [target] : []);
+  })))).filter(target => target !== undefined);
 }
 
 async function target(app: App, id: string) {

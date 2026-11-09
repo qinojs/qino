@@ -27,8 +27,7 @@ function boundAbove(cls: typeof DbRow, name: string) {
 
 /** Columns as accessors on the class, per column, so reloadFields() can add new ones. */
 function bindColumns(cls: typeof DbRow, fields: Map<string, unknown>) {
-  let done = boundNames.get(cls);
-  if (!done) boundNames.set(cls, done = new Set());
+  const done = boundNames.getOrInsertComputed(cls, () => new Set());
   if (done.size === fields.size) return;
   for (const name of fields.keys()) {
     if (done.has(name)) continue;

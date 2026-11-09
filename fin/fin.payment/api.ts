@@ -30,7 +30,7 @@ export const api: ApiTree = {
           usr === undefined ? null : sql`usr_id = ${usr}`,
           status ? sql`status = ${status}` : null,
           ref ? sql`ref = ${ref}` : null,
-        ].flatMap((term) => term ?? []);
+        ].filter(term => term != null);
         const rows = await ctx.app.db.query`SELECT * FROM payment
           WHERE ${where.length ? sql.join(where, " AND ") : sql`${true}`}
           ORDER BY id DESC LIMIT 100 OFFSET ${Number(offset ?? 0)}`;

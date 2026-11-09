@@ -224,7 +224,7 @@ async function journal(node: Node, url: URL, from: string, to: string) {
     sql`e.date >= ${from} AND e.date <= ${to}`,
     q("account") ? sql`EXISTS (SELECT 1 FROM accounting_entry_line x JOIN accounting_account y ON y.id = x.account_id
       WHERE x.entry_id = e.id AND y.number = ${q("account")})` : null,
-  ].flatMap((term) => term ?? []);
+  ].filter(term => term != null);
   const page = Math.max(0, Number(q("page")) || 0);
   const [shown, count] = await Promise.all([
     app.db.query`SELECT e.* FROM accounting_entry e WHERE ${sql.join(where, " AND ")}

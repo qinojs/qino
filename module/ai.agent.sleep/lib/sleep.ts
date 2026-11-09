@@ -88,7 +88,7 @@ async function memories(app: App, agent: number, withStrength = false) {
 }
 
 const textOf = (content: Message["content"]) =>
-  typeof content === "string" ? content : content.flatMap((p) => p.type === "text" ? [p.text] : []).join("\n");
+  typeof content === "string" ? content : content.filter(p => p.type === "text").map(p => p.text).join("\n");
 
 /** What was said in `session` after message `since`, as lines `[#id role] text`, the latest within
  *  `chars`; tool results left out, calls named. */

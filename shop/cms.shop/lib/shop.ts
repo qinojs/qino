@@ -27,11 +27,8 @@ export const taxIncluded = async (app: App): Promise<boolean> => await settingsO
 /** What every price asks, read once per app and again once its table changed (`forget`). */
 const caches = new WeakMap<App, Map<string, Promise<unknown>>>();
 function cached<T>(app: App, table: string, load: () => Promise<T>): Promise<T> {
-  let tables = caches.get(app);
-  if (!tables) caches.set(app, tables = new Map());
-  let value = tables.get(table) as Promise<T> | undefined;
-  if (!value) tables.set(table, value = load());
-  return value;
+  const tables = caches.getOrInsertComputed(app, () => new Map());
+  return tables.getOrInsertComputed(table, load) as Promise<T>;
 }
 /** The tables behind the caches; a write to one of them (through its table) drops its cache. */
 export const CACHED = ["country", "shop_currency", "shop_product_tax"];

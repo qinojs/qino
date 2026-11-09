@@ -34,7 +34,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
   const app = node.app, t = shopT(app);
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const search = sqlSearch(q("search"), ["bill", "ship"], { exact: ["id"] });
-  const where = [sql`status <> ${"cart"}`, search.where, q("status") ? sql`status = ${q("status")}` : null].flatMap((w) => w ?? []);
+  const where = [sql`status <> ${"cart"}`, search.where, q("status") ? sql`status = ${q("status")}` : null].filter(w => w != null);
   const page = Math.max(0, Number(q("page")) || 0);
   const orders = await app.db.table("shop_order").all<Order>`WHERE ${sql.join(where, " AND ")} ORDER BY id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
   const more = orders.length > PER_PAGE, names = await labels(app);

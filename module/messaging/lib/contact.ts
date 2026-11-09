@@ -25,7 +25,7 @@ export async function contactRecipients(
     ? sql.in("c.address", valid.map(({ address }) => address))
     : null;
   const found = new Map(direct.map((recipient) => [recipient.address, recipient]));
-  const terms = [preferred, literal].flatMap((v) => v ?? []);
+  const terms = [preferred, literal].filter(v => v != null);
   const rows = terms.length
     ? await app.db.query`SELECT c.* FROM usr_contact c WHERE c.type = ${type} AND (${sql.join(terms, " OR ")})`
     : [];

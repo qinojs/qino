@@ -75,7 +75,7 @@ export const api: ApiTree = {
           status ? sql`status = ${status}` : null,
           type ? sql`type = ${type}` : null,
           direction ? sql`direction = ${direction}` : null,
-        ].flatMap((term) => term ?? []);
+        ].filter(term => term != null);
         const rows = await ctx.app.db.query`SELECT * FROM invoice
           WHERE ${where.length ? sql.join(where, " AND ") : sql`${true}`}
           ORDER BY id DESC LIMIT 100 OFFSET ${Number(offset ?? 0)}`;

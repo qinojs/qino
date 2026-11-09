@@ -20,8 +20,8 @@ const CACHE_TTL = 60 * 60;
 const queues = new WeakMap<App, Map<number, Promise<unknown>>>();
 const aborts = new WeakMap<App, Map<number, AbortController>>();
 function inTurn<T>(app: App, session: number, fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
-  const queue = queues.get(app) ?? queues.set(app, new Map()).get(app)!;
-  const now = aborts.get(app) ?? aborts.set(app, new Map()).get(app)!;
+  const queue = queues.getOrInsertComputed(app, () => new Map());
+  const now = aborts.getOrInsertComputed(app, () => new Map());
   const start = () => {
     const abort = new AbortController();
     const timer = setTimeout(() => abort.abort(new Error(`Cancelled after ${TURN_MS / 60_000} minutes`)), TURN_MS);

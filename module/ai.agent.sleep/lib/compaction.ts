@@ -42,7 +42,7 @@ const scheduled = new WeakMap<App, Set<number>>();
 
 /** Compacts `session` after its current or next answer, however long it is. */
 export function schedule(app: App, session: number): void {
-  (scheduled.get(app) ?? scheduled.set(app, new Set()).get(app)!).add(session);
+  scheduled.getOrInsertComputed(app, () => new Set()).add(session);
 }
 
 /** What is sent of `history`: the latest summary, then what was said from its `from` on. A
@@ -60,7 +60,7 @@ const from = (history: Row[], summary = history.findLast((row) => row.message.su
 export async function compact(app: App, { session, usrId, messages, tools, model, modelProvider, prefer }: {
   session: number; usrId: number; messages: Message[]; tools: Tool[]; model: string; modelProvider: number; prefer?: Record<string, number>;
 }): Promise<void> {
-  const sessions = running.get(app) ?? running.set(app, new Map()).get(app)!;
+  const sessions = running.getOrInsertComputed(app, () => new Map());
   if (sessions.has(session)) return;
   const wanted = scheduled.get(app)?.delete(session);
   const job = (async () => {

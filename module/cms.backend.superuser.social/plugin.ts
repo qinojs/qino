@@ -26,7 +26,7 @@ async function act(app: App, vars: Record<string, unknown> | undefined, availabl
     if (!selected.length) return await app.t`Select at least one target.`;
     const rows = await publish(app, selected, text);
     const sent = rows.filter((row) => row.sent != null).length;
-    const errors = rows.flatMap((row) => row.error ? [String(row.error)] : []);
+    const errors = rows.filter(row => row.error).map(row => String(row.error));
     return [await app.t`Published to ${sent} of ${rows.length} targets.`, ...errors].join(" ");
   } catch (e) {
     return errMsg(e);

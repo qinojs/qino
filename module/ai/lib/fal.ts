@@ -20,7 +20,7 @@ const FIELDS: Record<string, { name: string; scale?: number }[]> = {
 const schemas = new WeakMap<object, Map<string, Promise<any>>>();
 
 function schema(call: Call): Promise<{ properties?: Record<string, any>; required?: string[] }> {
-  const cache = schemas.get(call.app) ?? schemas.set(call.app, new Map()).get(call.app)!;
+  const cache = schemas.getOrInsertComputed(call.app, () => new Map());
   return cache.getOrInsertComputed(call.model, () =>
     fetch(`${MODELS}?endpoint_id=${encodeURIComponent(call.model)}&expand=openapi-3.0`, { signal: AbortSignal.timeout(30_000) }).then(async (res) => {
       const api = (await res.json()).models?.[0]?.openapi;

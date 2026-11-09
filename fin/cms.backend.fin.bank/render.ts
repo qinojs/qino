@@ -74,7 +74,7 @@ async function lines(node: Node, url: URL) {
     sh.where,
     q("account") ? sql`account_id = ${Number(q("account"))}` : null,
     q("state") === "open" ? sql`payment_id IS NULL` : q("state") === "assigned" ? sql`payment_id IS NOT NULL` : null,
-  ].flatMap((term) => term ?? []);
+  ].filter(term => term != null);
   const page = Math.max(0, Number(q("page")) || 0);
   const [rows, total] = await Promise.all([
     app.db.query`SELECT * FROM bank_tx WHERE ${sql.join(where, " AND ")}

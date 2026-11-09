@@ -77,7 +77,7 @@ async function list(node: Node, url: URL) {
     q("direction") ? sql`direction = ${q("direction")}` : null,
     q("status") ? sql`status = ${q("status")}` : null,
     q("provider") ? sql`provider = ${q("provider")}` : null,
-  ].flatMap((term) => term ?? []);
+  ].filter(term => term != null);
   const page = Math.max(0, Number(q("page")) || 0);
   const [rows, total] = await Promise.all([
     app.db.query`SELECT * FROM payment WHERE ${sql.join(where, " AND ")}

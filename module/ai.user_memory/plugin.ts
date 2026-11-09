@@ -64,7 +64,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     const session = new Session(app, id), known = await session.known(), lines = new Map<string, string>();
     for (const { key, content } of close) {
       const id = `u${key.memory_id}`; // the nearest chunk of each
-      if (!known.has(id) && !lines.has(id)) lines.set(id, `[${id}] ${content}`);
+      if (!known.has(id)) lines.getOrInsertComputed(id, () => `[${id}] ${content}`);
     }
     const near = [...lines].slice(0, 3);
     if (near.length) await session.note(`## Possibly relevant memories about the user\n${near.map(([, line]) => line).join("\n")}`, { known: near.map(([id]) => id) });

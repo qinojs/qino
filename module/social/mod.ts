@@ -114,7 +114,7 @@ export function posts(app: App, filter: { provider?: string; target?: string; se
     filter.target ? sql`target = ${filter.target}` : null,
     filter.sent == null ? null : filter.sent ? sql`sent IS NOT NULL` : sql`sent IS NULL`,
     sql`external_id IS NOT NULL`,
-  ].flatMap((term) => term ?? []);
+  ].filter(term => term != null);
   return app.db.query`SELECT * FROM social_post WHERE ${sql.join(where, " AND ")} ORDER BY time DESC LIMIT ${filter.limit ?? 100}`;
 }
 
