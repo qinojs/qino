@@ -23,7 +23,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const back = await stepUrl(node, await node.settings.back(), "back");
   // main: what has to be agreed to before ordering (terms, privacy) — required fields hold the order back;
   // what else blocks it is said on the click (PHP: buy1)
-  return html.async`<form data-success="${done}">
+  return html.async`<form data-success="${done}" data-payment-failed="${t`Your order has been received, but the payment could not be started. Try again?`}">
   ${node.cont("main")}
   ${back ? html.async`<a href="${back}"><button type=button class=-back>${node.cms.text(node, "back", { tag: "span", initial: { de: "Zurück", en: "Back" } })}</button></a>` : ""}
   <button class="-buy ${errors.length ? "-disabled" : ""}">${node.cms.text(node, "next", { tag: "span", initial: { de: "Bestellen", en: "Order" } })}</button>

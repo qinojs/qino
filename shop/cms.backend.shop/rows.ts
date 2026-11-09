@@ -31,6 +31,8 @@ export type Rows = {
   order?: string[];
   /** Rows are changed, not added or removed. */
   fixed?: boolean;
+  /** One row: label beside value, however many columns it has. */
+  single?: boolean;
   /** Sent along with every change, for the page to find this table again. */
   vars?: Record<string, unknown>;
 };
@@ -80,9 +82,20 @@ export async function renderRows(node: Node, spec: Rows): Promise<HtmlString> {
   const rows = await node.app.db.query`SELECT * FROM ${sql.id(table)} ${whereOf(node, spec)} ${order}`;
   const cell = (c: Column, row: Row, key: Set<string>) =>
     c.show ? c.show(row) : key.has(c.name!) ? shown(c, row) : input(c, row);
-  return html.async`<div class=u2-card data-rows="${spec.table}" data-vars="${JSON.stringify(spec.vars ?? {})}">
-  <div class=-head>${spec.title}</div>
+  const head = html.async`<div class=-head>${spec.title}</div>`;
+  const vars = JSON.stringify(spec.vars ?? {});
+  if (spec.single) {
+    const row = rows[0], key = new Set(Object.keys(row ? table.entryIdValues(row) ?? {} : {}));
+    return html.async`<div class=u2-card data-rows="${spec.table}" data-vars="${vars}">
+  ${head}
   <table class=u2-table>
+    <tbody ${row ? html`data-id="${table.entryId(row)}"` : ""}>${row ? columns.map((c) => html`<tr><th>${c.label}<td>${cell(c, row, key)}`) : ""}
+  </table>
+</div>`;
+  }
+  return html.async`<div class=u2-card data-rows="${spec.table}" data-vars="${vars}">
+  ${head}
+  <div style="overflow:auto; padding:0"><table class=u2-table>
     <thead><tr>
       ${columns.map((c) => html`<th>${c.label}`)}
       ${spec.fixed ? "" : html`<th>`}
@@ -95,7 +108,7 @@ export async function renderRows(node: Node, spec: Rows): Promise<HtmlString> {
     ${spec.fixed ? "" : html.async`<tfoot><tr class=-add>
       ${columns.map((c) => html`<td>${c.show ? "" : input(c)}`)}
       <td><button type=button class=-create>${t`Add`}</button>`}
-  </table>
+  </table></div>
 </div>`;
 }
 
@@ -121,6 +134,7 @@ export async function saveRows(node: Node, specs: Rows[], vars: Record<string, u
     if (Object.keys(values).length) await table.update(String(vars.id), values);
     return { ok: true };
   }
-  await table.ensure({ ...values, ...spec.where });
+  // what was left empty takes the column's default
+  await table.ensure({ ...Object.fromEntries(Object.entries(values).filter(([, v]) => v != null)), ...spec.where });
   return { ok: true };
 }

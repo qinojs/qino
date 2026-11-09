@@ -17,7 +17,7 @@ const reload = (el) => {
 };
 
 document.addEventListener("change", (e) => {
-  const row = e.target.closest?.("[data-rows] tr[data-id]");
+  const row = e.target.closest?.("[data-rows] [data-id]");
   if (row) send(row, { id: row.dataset.id, values: values(row) });
 });
 document.addEventListener("click", async (e) => {

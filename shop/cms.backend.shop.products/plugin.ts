@@ -20,7 +20,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-/** The titles' search: products are pages, their names are texts of the page. */
+/** Products are pages, their names are the pages' titles — not every other text on them. */
 const titled = (tokens: string) => sqlSearch(tokens, ["tl.text"]).where;
 
 async function list(node: Node, url: URL): Promise<HtmlString> {
@@ -29,7 +29,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
   const main = await mainCurrency(app), page = Math.max(0, Number(q("page")) || 0);
   const search = sqlSearch(q("search"), ["sku", "gtin", "brand"], { exact: ["id"] });
   const title = titled(q("search"));
-  const where = q("search") ? sql`WHERE ${search.where} OR id IN (SELECT pt.page_id FROM page_text pt JOIN text_lang tl ON tl.text_id = pt.text_id WHERE ${title})` : sql``;
+  const where = q("search") ? sql`WHERE ${search.where} OR id IN (SELECT p.id FROM page p JOIN text_lang tl ON tl.text_id = p.title_id WHERE ${title})` : sql``;
   const rows = await app.db.table("shop_product").all<Product>`${where} ORDER BY id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
   const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname, { search: q("search"), ...params });
   return html.async`<div class=u2-card>
@@ -76,11 +76,11 @@ async function tables(app: App, id: number): Promise<Rows[]> {
     ...stock,
   ];
   const specs: Rows[] = [{
-    table: "shop_product", title: t`Product`, where: { id }, fixed: true, vars,
+    table: "shop_product", title: t`Product`, where: { id }, fixed: true, single: true, vars,
     columns: [{ name: "price", label: t`Price`, type: "money", currency: inMain }, ...measures(), { name: "brand", label: t`Brand` }, ...marks],
   }, {
     table: "shop_variant", title: t`Variants`, where: { product_id: id }, order: ["sort", "id"], vars,
-    columns: [{ name: "sort", label: t`Order`, type: "number" }, { name: "price", label: t`Price`, type: "money", currency: inMain }, ...measures()],
+    columns: [{ name: "sort", label: t`Position`, type: "number" }, { name: "price", label: t`Price`, type: "money", currency: inMain }, ...measures()],
   }, {
     table: "shop_product_tax", title: t`VAT of its own`, where: { product_id: id }, order: ["country"], vars,
     columns: [{ name: "country", label: t`Country` }, { name: "rate", label: t`VAT %`, type: "number" }],
@@ -99,12 +99,12 @@ async function tables(app: App, id: number): Promise<Rows[]> {
   if (has("cms.shop.options")) {
     specs.push({
       table: "shop_option", title: t`Options`, where: { product_id: id }, order: ["sort", "name"], vars,
-      columns: [{ name: "name", label: t`Name` }, { name: "sort", label: t`Order`, type: "number" }],
+      columns: [{ name: "name", label: t`Name` }, { name: "sort", label: t`Position`, type: "number" }],
     }, {
       table: "shop_option_value", title: t`Option values`, where: { product_id: id }, order: ["name", "sort"], vars,
       columns: [
         { name: "name", label: t`Option` }, { name: "value", label: t`Value` }, { name: "price", label: t`Price`, type: "money", currency: inMain },
-        { name: "per_line", label: t`Per line`, type: "checkbox" }, { name: "sort", label: t`Order`, type: "number" },
+        { name: "per_line", label: t`Per line`, type: "checkbox" }, { name: "sort", label: t`Position`, type: "number" },
       ],
     });
   }

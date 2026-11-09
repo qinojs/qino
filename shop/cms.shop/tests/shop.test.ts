@@ -1,7 +1,9 @@
 import { test } from "node:test";
+import { invoke } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 import { asVisitor, withShop } from "../../tests/app.ts";
+import { api } from "../api.ts";
 import { cart } from "../mod.ts";
 
 import type { Product } from "../mod.ts";
@@ -79,6 +81,29 @@ test("an open cart keeps pricing as it was opened, with or without tax", async (
       const product = (await app.db.table("shop_product").get<Product>(10))!;
       assertEquals((await product.prices({ order })).gross, 2450);
       assertEquals((await product.prices()).gross, 2450 * 1.081); // no order: the shop's say
+    });
+  });
+});
+
+test("a payment that does not start leaves the order standing, and only its owner can try again", async () => {
+  await withShop([], async (app) => {
+    const product = (await app.db.table("shop_product").get<Product>(10))!;
+    app.on("shop:payments", (e: { methods: unknown[] }) => { e.methods = [{ name: "x", label: "X" }]; });
+    let tried = 0;
+    app.on("shop:pay", () => { tried++; throw new Error("provider down"); });
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      await order.add(product);
+      await order.setParty("bill", { name: "Anna", address: { addressCountry: "CH" } });
+      const placed = await invoke(api, "POST", "/cart/order", { return: "/done" }) as Record<string, unknown>;
+      assertEquals([placed.ok, placed.paymentFailed, order.status], [true, true, "ordered"]);
+      assertEquals((await invoke(api, "POST", `/order/${order.$id}/pay`, { return: "/done" }) as Record<string, unknown>).paymentFailed, true);
+      assertEquals(tried, 2);
+    });
+    const id = String(await app.db.one`SELECT id FROM shop_order WHERE status = 'ordered'`);
+    await asVisitor(app, async () => { // a stranger, with a session of its own
+      assertEquals(await invoke(api, "POST", `/order/${id}/pay`, { return: "/done" }), { error: "not your order" });
+      assertEquals(tried, 2);
     });
   });
 });

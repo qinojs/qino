@@ -62,6 +62,25 @@ async function own(id: string) {
   return order?.status === "cart" ? [order, await order.line(id)] as const : [undefined, undefined] as const;
 }
 
+/** Start the payment. The order stands either way: if the provider fails, the customer is told and
+ *  can try again — an error here must not look as if nothing had been ordered. */
+async function startPayment(order: Order, back: string): Promise<{ redirect: string; paymentFailed?: boolean }> {
+  try {
+    return await order.pay({ return: back });
+  } catch (e) {
+    console.error(`cms.shop: payment of order ${order.$id} did not start`, e);
+    return { redirect: "", paymentFailed: true };
+  }
+}
+
+/** An order waiting for payment that belongs to this visitor: their user's, or placed in this session. */
+async function placedOrder(id: string): Promise<Order | undefined> {
+  const ctx = getCtx(), order = await ctx.app.db.table("shop_order").get<Order>(id);
+  if (order?.status !== "ordered") return;
+  const mine = ctx.userId && String(order.usr_id) === String(ctx.userId);
+  return mine || String(ctx.sess.data["cms.shop"].placed() ?? "") === order.$id ? order : undefined;
+}
+
 async function choose(what: "shipping" | "payment", value: string) {
   const order = await open();
   const methods = what === "shipping" ? await order.shippings() : await order.payments();
@@ -206,9 +225,27 @@ export const api: ApiTree = {
           const order = await cart(getCtx(), false);
           if (order?.status !== "cart") return { ok: false, errors: { "has lines": "" }, redirect: "" };
           const placed = await order.place();
-          if (!placed.ok || placed.redirect || !order.total || !order.payment) return { ...placed, order: order.$id };
-          const { redirect } = await order.pay({ return: back });
-          return { ...placed, redirect, order: order.$id };
+          if (!placed.ok) return { ...placed, order: order.$id };
+          getCtx().sess.data["cms.shop"].placed(order.$id); // a guest may still pay for it, see order/:id/pay
+          if (placed.redirect || !order.total || !order.payment) return { ...placed, order: order.$id };
+          return { ...placed, ...await startPayment(order, back), order: order.$id };
+        },
+      },
+    },
+  },
+
+  order: {
+    ":id": {
+      pay: {
+        post: {
+          description: "Start the payment of a placed order again; only one's own",
+          access: Access.PUBLIC,
+          input: s.object({ return: s.string() }),
+          execute: async ({ id, return: back }: { id: string; return: string }) => {
+            const order = await placedOrder(id);
+            if (!order) return { error: "not your order" };
+            return startPayment(order, back);
+          },
         },
       },
     },

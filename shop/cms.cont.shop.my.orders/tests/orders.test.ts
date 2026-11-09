@@ -13,13 +13,15 @@ const at = (app: Parameters<typeof asVisitor>[0], url: string) => Ctx.create(app
 
 test("a customer sees their own orders only; a new cart starts from their address", async () => {
   await withShop(["cms.cont.shop.my.orders"], async (app) => {
-    const usr = Number(await app.db.table("usr").insert({ email: "anna@example.test", firstname: "Anna", lastname: "Muster", street_address: "Weg 1", postal_code: "9000", address_locality: "St. Gallen", address_country: "CH" }));
-    const other = Number(await app.db.table("usr").insert({ email: "ben@example.test" }));
+    const usr = Number(await app.db.table("usr").insert({ given_name: "Anna", family_name: "Muster", street_address: "Weg 1", postal_code: "9000", address_locality: "St. Gallen", address_country: "CH" }));
+    const other = Number(await app.db.table("usr").insert({ given_name: "Ben" }));
+    await app.db.table("usr_contact").insert({ usr_id: usr, type: "email", address: "anna@example.test", main: true });
     const product = (await app.db.table("shop_product").get<Product>(10))!;
     await asVisitor(app, async (ctx) => {
       await ctx.authenticate(usr, "test");
       const order = (await cart(ctx))!;
-      assertEquals(order.party("bill")?.address?.streetAddress, "Weg 1");
+      const bill = order.party("bill");
+      assertEquals([bill?.address?.streetAddress, bill?.name, bill?.email], ["Weg 1", "Anna Muster", "anna@example.test"]);
       await order.add(product);
       assertEquals((await order.place()).ok, true);
       const node = await cmsOf(app).node(10);

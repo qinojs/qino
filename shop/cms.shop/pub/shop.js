@@ -37,6 +37,9 @@ export const reload = (el) => {
 /** Place the order; the answer may send the payer to the payment. */
 export const order = (back = location.href) => shop.cart.order.post({ return: back });
 
+/** Start the payment of a placed order again. */
+export const pay = (id, back = location.href) => shop.order(id).pay.post({ return: back });
+
 /** Fields of a form as data: `options[Box]` is `{ options: { Box } }`. */
 const dataOf = (form) => {
   const data = {};

@@ -34,6 +34,19 @@ test("a table of rows: added, changed by its other columns only, removed, none b
   });
 });
 
+test("what is left empty when adding takes the column's default; one row reads label beside value", async () => {
+  await withShop(["cms.shop.price.discount"], async (app) => {
+    await asVisitor(app, async () => {
+      const node = await cms(app).node(10);
+      const spec: Rows = { table: "shop_discount", title: "", columns: [{ name: "title", label: "T" }, { name: "factor", label: "F", type: "number" }] };
+      await saveRows(node, [spec], { table: spec.table, values: { title: "x", factor: "" } });
+      assertEquals(Number(await app.db.one`SELECT factor FROM shop_discount`), 1);
+      const single = String(await renderRows(node, { ...spec, single: true, fixed: true }));
+      assert(single.includes("<tbody data-id=") && single.includes("<th>T"));
+    });
+  });
+});
+
 test("a fixed table neither grows nor shrinks; a date holds through its last day", async () => {
   await withShop(["cms.shop.price.discount"], async (app) => {
     await asVisitor(app, async () => {

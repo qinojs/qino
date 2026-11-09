@@ -60,7 +60,8 @@ async function detail(node: Node, ctx: Ctx, order: Order, url: URL): Promise<Htm
       <tr><th colspan=3>${t`Total`} ${order.currency}<td>${money(Number(order.total))}
   </table>
   <p>${t`Delivery`}: ${order.label(order.shipping)}<br>${t`Payment`}: ${order.label(order.payment)}</p>
+  ${order.status === "ordered" && order.payment && Number(order.total) ? html.async`<button class=-pay data-order="${order.$id}">${t`Pay now`}</button>` : ""}
 </div>`;
 }
 
-export const cms = { node: { render } };
+export const cms = { node: { render, js: ["../cms.shop/pub/shop.js", "pub/main.js"] } };

@@ -12,10 +12,11 @@ async function billFromUser(app: App, order: Order, usrId: number): Promise<void
   const u = await app.db.row`SELECT * FROM usr WHERE id = ${usrId}`;
   if (!u?.street_address) return;
   const str = (v: unknown) => String(v ?? "") || undefined;
-  const organization = str(u.organization), givenName = str(u.firstname), familyName = str(u.lastname);
+  const organization = str(u.organization), givenName = str(u.given_name), familyName = str(u.family_name);
+  const email = await app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${usrId} AND type = ${"email"} ORDER BY main DESC, created LIMIT 1`;
   await order.setParty("bill", {
     name: organization || [givenName, familyName].filter(Boolean).join(" ") || undefined,
-    givenName, familyName, organization, email: str(u.email),
+    givenName, familyName, organization, email: str(email),
     address: { streetAddress: String(u.street_address), postalCode: String(u.postal_code ?? ""), addressLocality: String(u.address_locality ?? ""), addressCountry: String(u.address_country ?? "") },
   });
 }

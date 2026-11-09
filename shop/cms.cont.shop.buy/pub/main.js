@@ -1,6 +1,6 @@
 // Delegated on document: frontend layouts have no cms.mjs. As buy1: the form is checked (terms),
 // then the order tried; what blocks it comes as a message.
-import { order, reload } from "../../cms.shop/pub/shop.js";
+import { order, pay, reload } from "../../cms.shop/pub/shop.js";
 
 const root = "[qcms-mod='cont.shop.buy']";
 
@@ -18,7 +18,10 @@ document.addEventListener("submit", async (e) => {
   const res = await order(done);
   const errors = Object.values(res.errors ?? {}).filter(Boolean);
   if (errors.length) alert("Es sind Fehler aufgetreten: \n\n" + errors.join("\n"));
-  if (res.redirect) location.href = res.redirect;
+  // the order stands, only the payment did not start: ask, then try again, else on to the end
+  let started = res;
+  while (started.paymentFailed && confirm(form.dataset.paymentFailed)) started = await pay(res.order, done);
+  if (started.redirect) location.href = started.redirect;
   else if (res.ok) location.href = done;
   else reload(form);
 });
