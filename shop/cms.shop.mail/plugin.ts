@@ -25,7 +25,7 @@ const party = (p?: Party) => p ? [p.name, p.address?.streetAddress, [p.address?.
 /** The order as mail html — inline, mail clients know no stylesheets. */
 async function body(app: App, order: Order): Promise<string> {
   const t = shopT(app), currency = await order.currencyRow();
-  const money = (v: number) => hee(currency?.show(v) ?? String(v));
+  const money = (v: number) => hee(currency?.show(v) ?? v);
   const rows = [];
   for (const l of await order.lines()) {
     rows.push(`<tr><td>${Number(l.quantity)}<td>${hee(l.name)}${l.description ? `<br><small>${hee(l.description).replaceAll("\n", "<br>")}</small>` : ""}<td align=right>${money(l.total())}`);

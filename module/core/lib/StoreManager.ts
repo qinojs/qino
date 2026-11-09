@@ -103,7 +103,7 @@ export class StoreManager {
     const stores = this.all();
     const lists = await Promise.all(stores.map((store) => store.names().catch(() => []))); // in parallel
     const found = new Map<string, Store>();
-    for (const [i, names] of lists.entries()) for (const name of names) if (!found.has(name)) found.set(name, stores[i]);
+    for (const [i, names] of lists.entries()) for (const name of names) found.getOrInsert(name, stores[i]);
     return found;
   }
 

@@ -64,7 +64,8 @@ async function nodes(ctx: Ctx, query: string) {
   const meta = sqlSearch(query, ["p.module", "p.name"]);
   const text = sqlSearch(query, ["p.module", "p.name", "t.text"]);
   const url = sqlSearch(query, ["p.module", "p.name", "u.url"]);
-  const exactTitle = sql`EXISTS (SELECT 1 FROM text_lang t WHERE t.text_id = p.title_id AND t.lang = ${ctx.lang} AND LOWER(t.text) = ${query.toLowerCase()})`;
+  const lower = query.toLowerCase();
+  const exactTitle = sql`EXISTS (SELECT 1 FROM text_lang t WHERE t.text_id = p.title_id AND t.lang = ${ctx.lang} AND LOWER(t.text) = ${lower})`;
   const titleMatch = sql`EXISTS (SELECT 1 FROM text_lang t WHERE t.text_id = p.title_id AND t.lang = ${ctx.lang} AND ${text.where})`;
   const id = idOf(query);
   const rows = await ctx.app.db.query`
@@ -73,7 +74,7 @@ async function nodes(ctx: Ctx, query: string) {
       OR EXISTS (SELECT 1 FROM page_text pt JOIN text_lang t ON t.text_id = pt.text_id
         WHERE pt.page_id = p.id AND t.lang = ${ctx.lang} AND ${text.where})
       OR EXISTS (SELECT 1 FROM page_url u WHERE u.page_id = p.id AND u.lang = ${ctx.lang} AND ${url.where})
-    ORDER BY p.id = ${id} DESC, ${exactTitle} DESC, LOWER(p.module) = ${query.toLowerCase()} DESC,
+    ORDER BY p.id = ${id} DESC, ${exactTitle} DESC, LOWER(p.module) = ${lower} DESC,
       ${titleMatch} DESC, COALESCE(${meta.where}, ${false}) DESC, p.id LIMIT ${CANDIDATES}`;
   const pages: { id: number; title: string; info: string; url: string; snippet: string; breadcrumb: Awaited<ReturnType<typeof breadcrumb>> }[] = [], contents: typeof pages = [];
   for (const row of rows) {

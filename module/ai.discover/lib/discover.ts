@@ -101,6 +101,6 @@ export async function find(app: App, kind: Kind, query: string | number[], among
   const hits = await search(app, { ai_discover: sql`e.kind = ${kind}` }, query, { limit: every.length }).catch(log);
   if (!hits) return byWords(query, among, limit);
   const byName = new Map(among.map((e) => [e.name, e])), best = new Map<string, number>();
-  for (const { key, score } of hits) if (!best.has(String(key.name))) best.set(String(key.name), score); // the nearest chunk
+  for (const { key, score } of hits) best.getOrInsert(String(key.name), score); // the nearest chunk
   return [...best].flatMap(([name, score]) => byName.has(name) ? [{ ...byName.get(name)!, score }] : []).slice(0, limit);
 }

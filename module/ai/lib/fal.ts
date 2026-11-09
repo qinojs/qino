@@ -21,16 +21,14 @@ const schemas = new WeakMap<object, Map<string, Promise<any>>>();
 
 function schema(call: Call): Promise<{ properties?: Record<string, any>; required?: string[] }> {
   const cache = schemas.get(call.app) ?? schemas.set(call.app, new Map()).get(call.app)!;
-  if (!cache.has(call.model)) {
-    cache.set(call.model, fetch(`${MODELS}?endpoint_id=${encodeURIComponent(call.model)}&expand=openapi-3.0`, { signal: AbortSignal.timeout(30_000) }).then(async (res) => {
+  return cache.getOrInsertComputed(call.model, () =>
+    fetch(`${MODELS}?endpoint_id=${encodeURIComponent(call.model)}&expand=openapi-3.0`, { signal: AbortSignal.timeout(30_000) }).then(async (res) => {
       const api = (await res.json()).models?.[0]?.openapi;
       const post = Object.values(api?.paths ?? {}).map((p: any) => p.post).find((p: any) => p?.requestBody);
       const ref = post?.requestBody.content["application/json"].schema.$ref;
       if (!ref) throw new AiError(`fal: no input schema for "${call.model}"`, 502);
       return api.components.schemas[ref.split("/").pop()];
     }).catch((e) => (cache.delete(call.model), Promise.reject(e))));
-  }
-  return cache.get(call.model)!;
 }
 
 /** ai's input in the model's fields; a required field left empty fails before anything is paid. */

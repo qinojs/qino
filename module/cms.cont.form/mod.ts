@@ -79,7 +79,7 @@ export async function fields(form: Node, rows: { data: Record<string, unknown> }
     }
   };
   await walk(form);
-  for (const row of rows) for (const name of Object.keys(row.data)) if (!out.has(name)) out.set(name, name);
+  for (const row of rows) for (const name of Object.keys(row.data)) out.getOrInsert(name, name);
   return out;
 }
 

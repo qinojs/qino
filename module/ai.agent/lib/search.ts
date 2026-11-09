@@ -56,7 +56,7 @@ export async function agents(app: App, query?: string, limit = 10): Promise<{ id
   }
   const best = new Map<number, number>();
   for (const { key, score } of await search(app, "ai_agent", query, { limit: limit * 3 })) {
-    if (!best.has(Number(key.agent_id))) best.set(Number(key.agent_id), score); // its nearest chunk
+    best.getOrInsert(Number(key.agent_id), score); // its nearest chunk
   }
   const ids = [...best.keys()].slice(0, limit);
   const roles = new Map((await db.query`SELECT id, system FROM ai_agent WHERE ${sql.in("id", ids)}`).map((a) => [Number(a.id), first(a.system)]));
