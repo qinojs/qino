@@ -61,3 +61,14 @@ test("a fixed table neither grows nor shrinks; a date holds through its last day
     });
   });
 });
+
+test("a table of very many rows stops, and says how many there are", async () => {
+  await withShop(["cms.shop.price.discount"], async (app) => {
+    await asVisitor(app, async () => {
+      for (let i = 0; i < 501; i++) await app.db.table("shop_discount").insert({ node_id: i + 1000, factor: 0.9 });
+      const out = String(await renderRows(await cms(app).node(10), { table: "shop_discount", title: "", fixed: true, columns: [{ name: "factor", label: "F", type: "number" }] }));
+      assert(out.includes("500 / 501"));
+      assertEquals(out.match(/<tr data-id=/g)?.length, 500);
+    });
+  });
+});

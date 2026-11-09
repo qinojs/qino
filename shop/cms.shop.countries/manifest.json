@@ -2,5 +2,5 @@
   "name": "cms.shop.countries",
   "description": "A product only goes to the countries listed for it.",
   "dependencies": ["cms.shop"],
-  "files": ["README.md", "dbschema.json", "manifest.json", "mod.ts", "plugin.ts"]
+  "files": ["README.md", "dbschema.json", "manifest.json", "mod.ts", "plugin.ts", "pub/module.svg"]
 }

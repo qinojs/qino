@@ -2,22 +2,21 @@ import { unixTime } from "@qino/qino";
 
 import { country, currencyFor, taxIncluded } from "./shop.ts";
 
-import type { App, Ctx } from "@qino/qino";
+import type { App, Ctx, Usr } from "@qino/qino";
 import type { Order } from "./rows.ts";
 
 /** A customer's cart starts from the address they keep (user.profile). Stored, so it also counts
  *  when the form is passed without a change. */
 async function billFromUser(app: App, order: Order, usrId: number): Promise<void> {
   if (order.bill) return;
-  const u = await app.db.row`SELECT * FROM usr WHERE id = ${usrId}`;
-  if (!u?.street_address) return;
+  const usr = await app.db.table("usr").get<Usr>(usrId), at = (column: string) => String(usr?.$get(column) ?? "");
+  if (!usr || !at("street_address")) return; // user.profile's columns
   const str = (v: unknown) => String(v ?? "") || undefined;
-  const organization = str(u.organization), givenName = str(u.given_name), familyName = str(u.family_name);
-  const email = await app.db.one`SELECT address FROM usr_contact WHERE usr_id = ${usrId} AND type = ${"email"} ORDER BY main DESC, created LIMIT 1`;
+  const organization = str(usr.organization), givenName = str(usr.given_name), familyName = str(usr.family_name);
   await order.setParty("bill", {
     name: organization || [givenName, familyName].filter(Boolean).join(" ") || undefined,
-    givenName, familyName, organization, email: str(email),
-    address: { streetAddress: String(u.street_address), postalCode: String(u.postal_code ?? ""), addressLocality: String(u.address_locality ?? ""), addressCountry: String(u.address_country ?? "") },
+    givenName, familyName, organization, email: await usr.contact("email"),
+    address: { streetAddress: at("street_address"), postalCode: at("postal_code"), addressLocality: at("address_locality"), addressCountry: at("address_country") },
   });
 }
 

@@ -1,6 +1,7 @@
 import { cms } from "@qino/qino/cms";
-import { shopT } from "@qino/qino/cms.shop";
+import { grpsOf, listen, shopT } from "@qino/qino/cms.shop";
 
+import type { Node } from "@qino/qino/cms";
 import type { App, Row } from "@qino/qino";
 import type { Line, Order, Product } from "@qino/qino/cms.shop";
 
@@ -16,7 +17,7 @@ const below = async (app: App, productId: unknown, nodeId: number) =>
   !nodeId || await (await cms(app).node(Number(productId))).in(nodeId);
 
 /** The best discount for a product at that moment: the lowest factor wins, discounts never add up.
- *  The amount is counted over all lines of the order below the discount's node. */
+ *  The amount is counted over all lines of the order below the discount's node, unless it is per line. */
 export async function best(app: App, { product, quantity, order, usrId, time }: {
   product: Product;
   quantity: number;
@@ -24,15 +25,18 @@ export async function best(app: App, { product, quantity, order, usrId, time }: 
   usrId?: number | null;
   time: number;
 }): Promise<Row | undefined> {
-  const grps = order ? await order.grps() : usrId ? (await app.db.col<number>`SELECT grp_id FROM usr_grp WHERE usr_id = ${usrId}`).map(Number) : [];
+  const grps = order ? await order.grps() : await grpsOf(app, usrId);
   const lines = order ? await order.lines() : [];
+  // what lies above the product, once: a shop may have tens of thousands of discounts
+  const path = new Set<number>();
+  for (let n: Node | undefined = await cms(app).node(Number(product.$id)); n; n = await n.parent()) path.add(n.id);
   for (const d of await discounts(app)) { // lowest factor first
     const node = Number(d.node_id);
+    if (node && !path.has(node)) continue;
     if (Number(d.grp_id) && !grps.includes(Number(d.grp_id))) continue;
     if ((Number(d.start) && time < Number(d.start)) || (Number(d.end) && time > Number(d.end))) continue;
-    if (!await below(app, product.$id, node)) continue;
     let amount = quantity;
-    if (Number(d.min_quantity) > 0 && lines.length) {
+    if (Number(d.min_quantity) > 0 && lines.length && !Number(d.per_line)) {
       amount = 0;
       for (const line of lines) if (await below(app, line.product_id, node)) amount += Number(line.quantity);
     }
@@ -42,8 +46,7 @@ export async function best(app: App, { product, quantity, order, usrId, time }: 
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const t = shopT(app);
-  // deno-lint-ignore no-explicit-any -- payloads are declared by cms.shop
-  const on = (event: string, fn: (e: any) => unknown) => app.on(event, fn as never, { signal });
+  const on = listen(app, signal);
   for (const event of ["table:insert-after", "table:update-after", "table:delete-after"] as const) {
     app.db.on(event, ({ table }) => { if (table.name === "shop_discount") cached.delete(app); }, { signal });
   }

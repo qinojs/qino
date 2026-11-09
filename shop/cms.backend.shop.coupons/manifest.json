@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.shop.coupons",
+  "description": "The shop's coupons.",
+  "dependencies": [
+    "cms.backend.shop",
+    "cms.shop.coupon"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

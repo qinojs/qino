@@ -1,7 +1,7 @@
 // shp3 → cms.shop, once: the legacy tables of the PHP shop into the shop's
 // own. The legacy tables stay as they are; nothing here runs again after the install.
 import { $item, fs, sql } from "@qino/qino";
-import { cms } from "@qino/qino/cms";
+import { cms, hasOwnUrl } from "@qino/qino/cms";
 import { toMinor } from "@qino/qino/fin";
 import { totals } from "@qino/qino/fin.invoice";
 
@@ -9,6 +9,7 @@ import type { App, Db, Row } from "@qino/qino";
 
 /** Old page modules → new ones. The site's own (category.cd …) stay for the site to port. */
 const MODULES: Record<string, string> = {
+  "cms.cont.shp3.category1": "cms.cont.shop.category", // before the products: it gives them their addresses
   "cms.cont.shp3.product.default": "cms.cont.shop.product",
   "cms.cont.shp3.order.cart1": "cms.cont.shop.cart",
   "cms.cont.shp3.order.cart3": "cms.cont.shop.cart",
@@ -17,22 +18,30 @@ const MODULES: Record<string, string> = {
   "cms.cont.shp3.order.shipping": "cms.cont.shop.shipping",
   "cms.cont.shp3.order.payment": "cms.cont.shop.payment",
   "cms.cont.shp3.order.buy1": "cms.cont.shop.buy",
+  "cms.cont.shp3.order.buy": "cms.cont.shop.buy",
+  "cms.cont.shp3.order.buy.accept_agb1": "cms.cont.shop.accept",
   "cms.cont.shp3.order.nextButton": "cms.cont.shop.next",
   "cms.cont.shp3.currency_chooser": "cms.cont.shop.currency",
   "cms.cont.shp3.my.orders1": "cms.cont.shop.my.orders",
   "cms.cont.shp3.my.addresses2": "cms.cont.my.address",
   "cms.backend.shp3": "cms.backend.shop",
   "cms.backend.shp3.orders1": "cms.backend.shop.orders",
+  "cms.backend.shp3.orders": "cms.backend.shop.orders",
   "cms.backend.shp3.products": "cms.backend.shop.products",
   "cms.backend.shp3.settings": "cms.backend.shop.settings",
   "cms.backend.shp3.campaign1": "cms.backend.shop.discounts",
   "cms.backend.shp3.discount1": "cms.backend.shop.discounts",
   "cms.backend.shp3.shipping_by_weight_and_country": "cms.backend.shop.shipping",
+  "cms.backend.shp3.coupon1": "cms.backend.shop.coupons",
+  "cms.cont.shp3.coupon1": "cms.cont.shop.coupon",
+  "cms.cont.shp3.my.orders": "cms.cont.shop.my.orders",
+  "cms.cont.shp3.my.addresses1": "cms.cont.my.address",
+  "cms.cont.shp3.order.addresses1": "cms.cont.shop.address",
   "cms.backend.shp3.props": "cms.backend.shop.products", // marks are columns of the product page now
 };
 
 /** Old keys of lines the shop added itself → the ones the modules use now. */
-const EXTRAS: Record<string, string> = { minimum_order_amount: "minimum" };
+const EXTRAS: Record<string, string> = { minimum_order_amount: "minimum", coupon1: "coupon" };
 
 /** Old order checks → the keys cms.shop uses. */
 const CHECKS: Record<string, string> = { "has items": "has lines", "item errors": "line errors", "address": "has address" };
@@ -50,7 +59,6 @@ export const method = (name: string): string => {
 const columnsOf = async (db: Db, table: string) => new Set((await db.columns(table).catch(() => [])).map((c) => String(c.Field)));
 /** Unix time from what a legacy column holds: a number, its string, or a datetime ("0000-…": none). */
 const time = (v: unknown) => /^\d+$/.test(String(v ?? "")) ? Number(v) : Math.floor(Date.parse(String(v ?? "").replace(" ", "T")) / 1000) || 0;
-const listOf = async (value: unknown) => String(await value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 const num = (v: unknown) => v == null || v === "" ? null : Number(v);
 const json = (v: unknown) => { try { return JSON.parse(String(v || "null")); } catch { return null; } };
 
@@ -99,17 +107,20 @@ export async function install({ app }: { app: App }): Promise<void> {
   await db.transaction(async () => {
     const report: string[] = [];
     const vat = await setting(db, ["shp3", "vat", "included"]) ?? await setting(db, ["shp3", "vat", "mode"]);
-    const included = !vat || vat.value === "1" || vat.value === "included";
+    // a generated tax line means the prices were net, whatever the settings of an older site say
+    const taxLines = (await columnsOf(db, "shp3_order_item_generated")).size ? await db.one`SELECT 1 FROM shp3_order_item_generated WHERE name LIKE ${"mwst%"} LIMIT 1` : null;
+    const included = taxLines == null && (!vat || vat.value === "1" || vat.value === "included");
     const main = String(await db.one`SELECT id FROM shp3_currency WHERE main = ${true} LIMIT 1` ?? "CHF");
     const minor = (v: unknown, currency = main) => v == null || v === "" ? null : toMinor(Number(v), currency);
     // prices keep their decimals: a net price of 22.6641 CHF is 2266.41 minor units
     const fine = (v: unknown, currency = main) => v == null || v === "" ? null : Math.round(Number(v) * 10 ** 6) / 10 ** 6 * (toMinor(1, currency));
 
-    // currencies: rounding is the old price step (smallest); the step for totals had no use
+    // currencies: rounding is the old price step (smallest), closing the one for the total
     for (const c of await db.query`SELECT * FROM shp3_currency`) {
       await db.table("shop_currency").ensure({
         id: c.id, factor: Number(c.factor), active: !!Number(c.active), main: !!Number(c.main),
-        rounding: Math.max(1, Math.round(toMinor(Number(c.smallest || 0.01), String(c.id)))),
+        rounding: Number(c.smallest || 0.01) * toMinor(1, String(c.id)) || 1,
+        closing: Math.max(1, Math.round(toMinor(Number(c.smallest_closing || 0.01), String(c.id)))),
       });
     }
     const currencyCols = await columnsOf(db, "currency");
@@ -139,6 +150,7 @@ export async function install({ app }: { app: App }): Promise<void> {
       await db.table("shop_product").insert({
         id: p.id, price: fine(p.price) ?? 0, ...values, weight: values.weight ?? 0, length: values.length ?? 0, width: values.width ?? 0, height: values.height ?? 0,
         ...Object.fromEntries(marks.map((c) => [c, !!Number(p[c])])),
+        ...(shopCols.has("rent_interval") && Number(p.rent_able) ? { rent_interval: p.rent_interval } : {}),
       });
     }
     report.push(`${products.length} products`);
@@ -153,8 +165,10 @@ export async function install({ app }: { app: App }): Promise<void> {
       }
       report.push(`${variants.length} variants`);
     }
-    if ((await columnsOf(db, "shp3_product_mwst")).size) {
-      await db.exec`INSERT INTO shop_product_tax (product_id, country, rate) SELECT product_id, country, rate FROM shp3_product_mwst`;
+    const taxCols = await columnsOf(db, "shp3_product_mwst");
+    if (taxCols.size) {
+      const rate = sql.id(taxCols.has("rate") ? "rate" : "mwst"); // the name of older sites
+      await db.exec`INSERT INTO shop_product_tax (product_id, country, rate) SELECT product_id, country, ${rate} FROM shp3_product_mwst`;
     }
 
     // what other modules keep, where they are installed
@@ -173,7 +187,7 @@ export async function install({ app }: { app: App }): Promise<void> {
         for (const d of await db.query`SELECT * FROM shp3_discount1`) await discounts.insert({ node_id: d.cont_id, min_quantity: d.min_quantity, factor: Number(d.multiplier) });
       }
       if (await has("shp3_product_discount")) {
-        for (const d of await db.query`SELECT * FROM shp3_product_discount`) await discounts.insert({ node_id: d.product_id, grp_id: Number(d.grp_id ?? 0), min_quantity: d.min_quantity, factor: Number(d.multiplier) });
+        for (const d of await db.query`SELECT * FROM shp3_product_discount`) await discounts.insert({ node_id: d.product_id, grp_id: Number(d.grp_id ?? 0), min_quantity: d.min_quantity, per_line: true, factor: Number(d.multiplier) });
       }
       if (await has("shp3_campaign1")) {
         // an action held through its last day
@@ -181,6 +195,12 @@ export async function install({ app }: { app: App }): Promise<void> {
           await discounts.insert({ node_id: c.page_id, factor: Number(c.value), title: c.title, start: time(c.start), end: c.end ? time(c.end) + 86400 : 0 });
         }
       }
+    }
+    if (await has("shop_rental") && await has("shp3_product_rented")) {
+      for (const r of await db.query`SELECT * FROM shp3_product_rent_prices`) await db.table("shop_rent_price").insert({ product_id: r.product_id, selector: r.selector, multiplier: num(r.multiplier) });
+      const rented = await db.query`SELECT * FROM shp3_product_rented`;
+      for (const r of rented) await db.table("shop_rental").insert({ product_id: r.product_id, line_id: r.order_item_id, usr_id: Number(r.usr_id) || null, name: r.name, begins: time(r.begin), ends: time(r.end) });
+      report.push(`${rented.length} rentals`);
     }
     if (await has("shop_option") && await has("shp3_product_opt")) {
       await db.exec`INSERT INTO shop_option (product_id, name, sort) SELECT product_id, opt, sort FROM shp3_product_opt`;
@@ -193,6 +213,19 @@ export async function install({ app }: { app: App }): Promise<void> {
     if (usrCols.has("bill_street") && usrCols.has("street_address")) {
       await db.exec`UPDATE usr SET street_address = bill_street, postal_code = bill_zip, address_locality = bill_city, address_country = bill_country
         WHERE (street_address IS NULL OR street_address = '') AND bill_street <> ''`;
+    }
+    // an offer on the product is a discount with its days
+    if (await has("shop_discount") && productCols.has("price_special_offer")) {
+      for (const p of products) {
+        if (Number(p.price_special_offer) > 0 && Number(p.price_special_offer) < Number(p.price)) { // 0: none
+          await db.table("shop_discount").insert({ node_id: p.id, factor: Number(p.price_special_offer) / Number(p.price), start: time(p.price_special_offer_start), end: time(p.price_special_offer_end) });
+        }
+      }
+    }
+    if (await has("shop_coupon") && await has("shp3_coupon1")) {
+      for (const c of await db.query`SELECT * FROM shp3_coupon1`) {
+        await db.table("shop_coupon").insert({ code: c.code, title: c.title, type: c.type, value: Number(c.value), node_id: Number(c.page_id) || 0, constant: !!Number(c.constant), once: !!Number(c.once), start: time(c.start), end: time(c.end) });
+      }
     }
     if (await has("shop_shipping_rate") && await has("shp3_shipping_by_weight_and_country")) {
       for (const r of await db.query`SELECT * FROM shp3_shipping_by_weight_and_country`) {
@@ -258,7 +291,7 @@ export async function install({ app }: { app: App }): Promise<void> {
         await target.password(value("json_api_password"));
         await target.terminalId(value("terminal_id"));
         await target.customerId(/^API_(\d+)_/.exec(value("json_api_username"))?.[1] ?? "");
-        const offered = (await listOf(await shop.payments())).filter((m) => m.startsWith("saferpay.")).map((m) => m.slice(9).toUpperCase());
+        const offered = String(await shop.payments() ?? "").split(",").map((m) => m.trim()).filter((m) => m.startsWith("saferpay.")).map((m) => m.slice(9).toUpperCase());
         await target.methods(offered.join(", "));
       }
     }
@@ -273,14 +306,22 @@ export async function install({ app }: { app: App }): Promise<void> {
       : new Set<number>();
     const orders = (await db.query`SELECT * FROM shp3_order ORDER BY id`).filter((o) => time(o.time_ordered) > 0);
     const lines = db.table("shop_order_line");
+    const orderCols = await columnsOf(db, "shop_order");
     const generated: Row[] = []; // after all kept ids are in: theirs are drawn anew
+    const closings = new Map((await db.query`SELECT id, smallest_closing FROM shp3_currency`).map((c) => [String(c.id), c.smallest_closing]));
     let mismatch = 0;
     for (const o of orders) {
       const currency = String(o.currency || main);
       // paying by invoice was booked on the invoice, not on the order
       const paid = time(o.time_paid) > 0 || Number(o.paid) >= Number(o.cost) || paidInvoices.has(Number(o.invoice_id));
-      const ship = Number(o.ship_unlike_bill) ? party(o, "ship") : null;
+      // older sites asked for the delivery first: then the address that is always there is ship_*
+      const shipFirst = !String(o.bill_street ?? "").trim() && String(o.ship_street ?? "").trim();
+      const bill = party(o, shipFirst ? "ship" : "bill");
+      const ship = !shipFirst && (Number(o.ship_unlike_bill) || Number(o.bill_unlike_ship)) ? party(o, "ship") : null;
       const items = await db.query`SELECT * FROM shp3_order_item WHERE order_id = ${o.id} ORDER BY id`;
+      // older sites had no rate on the lines: the tax was a generated line of its own, "mwst 8.1"
+      const added = await db.query`SELECT * FROM shp3_order_item_generated WHERE order_id = ${o.id} ORDER BY sort`;
+      const taxLine = /^mwst\s*([\d.]+)$/i, oldRate = Number(taxLine.exec(String(added.find((g) => taxLine.test(String(g.name)))?.name ?? ""))?.[1] ?? 0);
       // stored net, with fractions of a cent where prices included tax: gross again, as it was charged
       const price = (net: unknown, rate: number) => fine(Number(net ?? 0) * (included ? 1 + rate / 100 : 1), currency) ?? 0;
       const sums: { name: string; quantity: number; price: number; taxRate: number }[] = [];
@@ -289,11 +330,15 @@ export async function install({ app }: { app: App }): Promise<void> {
         const config = json(i.config) ?? {};
         const variant = config.shp3_variant ? Number(config.shp3_variant) : null;
         delete config.shp3_variant;
+        if (config.shp3_rent) { // the times, as cms.shop.rent keeps them: numbers
+          config.rent = (config.shp3_rent as { begin: unknown; end: unknown }[]).map((r) => ({ begin: Number(r.begin), end: Number(r.end) }));
+          delete config.shp3_rent;
+        }
         if (config.shp3_opt) { // what was picked is the line's options now
           config.options = config.shp3_opt;
           delete config.shp3_opt;
         }
-        const rate = Number(i.vat_rate ?? 0), unit = price(i.price, rate), amount = Math.round(unit * Number(i.quantity));
+        const rate = Number(i.vat_rate ?? oldRate), unit = price(i.price, rate), amount = Math.round(unit * Number(i.quantity));
         sums.push({ name: "", quantity: Number(i.quantity), price: unit, taxRate: rate });
         await lines.insert({
           id: i.id, order_id: o.id, sort: ++sort, key: "", product_id: i.product_id, variant_id: variant, name: i.title,
@@ -301,44 +346,28 @@ export async function install({ app }: { app: App }): Promise<void> {
           amount, data: Object.keys(config).length ? JSON.stringify(config) : null,
         });
       }
-      for (const g of await db.query`SELECT * FROM shp3_order_item_generated WHERE order_id = ${o.id} ORDER BY sort`) {
-        const rate = Number(g.vat_rate ?? 0), unit = price(g.price, rate);
+      for (const g of added) {
+        if (taxLine.test(String(g.name))) continue;
+        const rate = Number(g.vat_rate ?? oldRate), unit = price(g.price, rate);
         sums.push({ name: "", quantity: 1, price: unit, taxRate: rate });
         generated.push({ order_id: o.id, sort: ++sort, key: EXTRAS[g.name] ?? g.name, name: g.title, quantity: 1, price: unit, tax_rate: rate, amount: Math.round(unit) });
       }
       const { net, tax, total: computed } = totals(sums, included);
       const total = minor(o.cost, currency) ?? 0;
-      if (Math.abs(computed - total) > 1) mismatch++;
+      const closing = Math.max(1, Math.round(toMinor(Number(closings.get(currency) ?? 0.01), currency)));
+      if (Math.abs(computed - total) > Math.max(1, closing / 2)) mismatch++;
       const invoice = Number(o.invoice_id) || undefined;
       await db.table("shop_order").insert({
         id: o.id, usr_id: Number(o.usr_id) || null, status: paid ? "paid" : "ordered", currency, lang: o.lang || null,
         country: o.ship_country || o.bill_country || null, tax_included: included, shipping: method(String(o.shipping ?? "")),
-        payment: method(String(o.payment ?? "")), bill: JSON.stringify(party(o, "bill")), ship: ship ? JSON.stringify(ship) : null,
+        payment: method(String(o.payment ?? "")), bill: JSON.stringify(bill), email: String(bill.email ?? ""), ship: ship ? JSON.stringify(ship) : null,
+        ...(orderCols.has("coupon") && o.coupon1_code ? { coupon: o.coupon1_code } : {}),
         net, tax, total, data: invoice ? JSON.stringify({ accounting1: invoice }) : null,
         created: time(o.time_created), changed: time(o.time_ordered), ordered: time(o.time_ordered),
       });
     }
     for (const line of generated) await lines.insert(line);
     report.push(`${orders.length} orders${mismatch ? ` (${mismatch} charged differently than their lines add up — the charged total is kept)` : ""}`);
-
-    // the products' addresses of PHP (realurl): where the page is asked for the product alone
-    if (await has("realurl")) {
-      let kept = 0;
-      for (const r of await db.query`SELECT url, params FROM realurl`) {
-        const params = json(r.params) ?? {};
-        const id = Number(params.shp3_product);
-        if (!id || !params.changeLanguage) continue;
-        const node = await cms(app).node(id);
-        if (!node.exists()) continue;
-        // no request during the install, so no node.url(): the page's address as PHP left it
-        const url = await db.one`SELECT url FROM page_url WHERE page_id = ${(await node.page()).id} AND lang = ${String(params.changeLanguage)}`;
-        if (url == null) continue;
-        const target = `/${url}?shop_product=${id}`;
-        await db.table("page_redirect").ensure({ request: String(r.url), redirect: target });
-        kept++;
-      }
-      if (kept) report.push(`${kept} product addresses kept as redirects`);
-    }
 
     // pages: the shop's own modules under their new names, their settings under the new keys —
     // where the app has the new module; the others wait (the shop's backend pages for products …)
@@ -377,12 +406,30 @@ export async function install({ app }: { app: App }): Promise<void> {
         // through the node, it may be loaded already; its settings item is built on load, so set it too
         const node = await cms(app).node(Number(page.id));
         await node.set({ module: to });
+        await node.urlsGen(); // what lists it may give it an address now
         await node.settings[$item].set(keep);
       }
       if (pages.length) report.push(`${pages.length} × ${from} → ${to}`);
     }
     if (replaced.length) report.push(`old backend pages replaced: ${replaced.join(", ")}`);
     if (waiting.length) report.push(`left without a qino module: ${waiting.join(", ")}`);
+
+    // the products' addresses of PHP (realurl): where they are now
+    if (await has("realurl")) {
+      let kept = 0;
+      for (const r of await db.query`SELECT url, params FROM realurl`) {
+        const params = json(r.params) ?? {};
+        const id = Number(params.shp3_product);
+        if (!id || !params.changeLanguage) continue;
+        const node = await cms(app).node(id);
+        if (!node.exists()) continue;
+        // no request during the install, so no node.url(): its own address, else its page's
+        const target = `/${await (await hasOwnUrl(node) ? node : await node.page()).urlSeo(String(params.changeLanguage))}`;
+        await db.table("page_redirect").ensure({ request: String(r.url), redirect: target });
+        kept++;
+      }
+      if (kept) report.push(`${kept} product addresses kept as redirects`);
+    }
     // the site's own files of these modules (data/<module>/: css, images) under the new name, and
     // its css addressing the new name — qino loads data/<module>/pub/main.css by itself
     const data = app.dir + "data/";

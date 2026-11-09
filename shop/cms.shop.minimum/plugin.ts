@@ -1,4 +1,4 @@
-import { shopT, taxRate } from "@qino/qino/cms.shop";
+import { listen, shopT, taxRate } from "@qino/qino/cms.shop";
 
 import type { App } from "@qino/qino";
 import type { Extra, Order } from "@qino/qino/cms.shop";
@@ -13,8 +13,9 @@ export const settingsSchema = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const t = shopT(app);
+  const on = listen(app, signal);
   // Goods below the minimum of the order's currency cost a surcharge, a line of its own.
-  app.on("shop:extras", (async ({ order, extras }: { order: Order; extras: Extra[] }) => {
+  on("shop:extras", async ({ order, extras }: { order: Order; extras: Extra[] }) => {
     const currency = await order.currencyRow();
     const minimum = Number(currency?.$get("minimum") ?? 0), surcharge = Number(currency?.$get("minimum_surcharge") ?? 0);
     if (!minimum || !surcharge) return;
@@ -28,5 +29,5 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!goods || goods >= minimum) return;
     const price = order.tax_included ? surcharge : surcharge / ((await taxRate(app, order.country)) / 100 + 1);
     extras.push({ key: "minimum", name: await t`Small quantity surcharge`, price, taxRate: await taxRate(app, order.country), sort: 1 });
-  }) as never, { signal });
+  });
 }

@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.shop.coupon",
+  "description": "Where a customer enters a coupon code.",
+  "dependencies": [
+    "cms",
+    "cms.shop.coupon"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

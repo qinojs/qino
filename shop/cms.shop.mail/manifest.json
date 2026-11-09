@@ -2,5 +2,5 @@
   "name": "cms.shop.mail",
   "description": "Order confirmation to the customer, a copy to the shop.",
   "dependencies": ["cms.shop", "messaging.email"],
-  "files": ["README.md", "manifest.json", "plugin.ts"]
+  "files": ["README.md", "manifest.json", "plugin.ts", "pub/module.svg"]
 }

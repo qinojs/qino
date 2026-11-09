@@ -120,11 +120,7 @@ export async function copyNode(
         cms(ctx.app).clearCache();
         setVers(ctx, [toSpace, 0]);
         const page = await cms(ctx.app).node(pid);
-        for (const l of ctx.app.languages.all) {
-            const genUrl = await page.urlSeoGenerated(l);
-            const curUrl = await page.urlSeo(l);
-            if (genUrl !== curUrl) await page.urlSeoGen(l);
-        }
+        await page.urlsGen();
     } finally {
         setVers(ctx, oldVers);
         // The copy bypassed the managers — clear all caches

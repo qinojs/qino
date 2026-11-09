@@ -1,5 +1,6 @@
 import { cms } from "./CMS.ts";
 import { cmsCtx } from "./CmsContext.ts";
+import { hasOwnUrl } from "./urls.ts";
 
 import type { Ctx } from "@qino/qino";
 
@@ -46,10 +47,15 @@ export async function render(ctx: Ctx): Promise<void> {
       await cm.nodeByPath(["system", "no-access"]) ?? await cm.node(0);
   }
 
+  // a content with an address of its own: its page renders around it, and it speaks for the page
+  const requested = cmsCtx(ctx).mainNode;
+  const own = await hasOwnUrl(requested);
+  if (own) cmsCtx(ctx).mainNode = await requested.page();
   const mainNode = cmsCtx(ctx).mainNode;
   const pageObj = await mainNode.page();
-  const plain = async (name: string) => (await pageObj.showText(name)).plain();
-  ctx.res.html.title = await plain("_title") || (await pageObj.showTitle()).plain();
+  const speaker = own ? requested : pageObj;
+  const plain = async (name: string) => (await speaker.showText(name)).plain();
+  ctx.res.html.title = await plain("_title") || (await speaker.showTitle()).plain();
   ctx.res.html.meta.description = await plain("_description");
 
   if (!pageObj.vs.searchable) ctx.res.html.meta.robots = "noindex, nofollow";
@@ -57,7 +63,7 @@ export async function render(ctx: Ctx): Promise<void> {
   // hreflang alternates: only meaningful with more than one language, and only for indexable pages
   const langs = app.languages.all;
   if (langs.length > 1 && pageObj.vs.searchable)
-    for (const l of langs) ctx.res.html.link[ctx.req.url.origin + await mainNode.url(l)] = { rel: "alternate", hreflang: l };
+    for (const l of langs) ctx.res.html.link[ctx.req.url.origin + await speaker.url(l)] = { rel: "alternate", hreflang: l };
 
   const content = await mainNode.html();
   ctx.res.html.content += content;

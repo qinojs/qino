@@ -1,6 +1,7 @@
-import { $item, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, urlize, unixTime, fs, sql, tableRef, DbFile, isEmptyObject, unhee } from "@qino/qino";
+import { $item, bildJsonItem, enableItemSchemaDefaults, hee, html, getCtx, unixTime, fs, sql, tableRef, DbFile, isEmptyObject, unhee } from "@qino/qino";
 
 import { cmsCtx } from "./CmsContext.ts";
+import { generate, hasOwnUrl } from "./urls.ts";
 import { resolveText } from "./resolveText.ts";
 import { policyOf, sanitizeHtml } from "./sanitize.ts";
 import { parseXml } from "./parseXml.ts";
@@ -198,7 +199,8 @@ export class Node {
             if (!(await this.isOnline())) attr += " qcms-offline";
         }
         if (this.vs.type === "c" && this.vs.visible) {
-            attr += ` id="${hee((await this.urlSeo(ctx.lang)).slice(1))}"`;
+            const url = await this.urlSeo(ctx.lang);
+            attr += ` id="${hee(url.startsWith("#") ? url.slice(1) : "cmspid" + this)}"`;
         }
         if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
         const rendered = str.replace(/^<([^\s>]+)(\s?)/, `<$1${attr}$2`);
@@ -405,7 +407,7 @@ export class Node {
         if (value === undefined) return textLang.get();
         if (await textLang.get() === value) return;
         await textLang.set(value);
-        await this.urlsSeoGen();
+        await this.urlsGen();
         return textLang;
     }
 
@@ -494,7 +496,7 @@ export class Node {
     urls(): Promise<Map<string, Record<string, string>>> {
         return this.#urls ??= (async () => {
             const urls = new Map<string, Record<string, string>>();
-            for (const row of await this.db.query`SELECT lang, url, target FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id}`) urls.set(row.lang, row);
+            for (const row of await this.db.query`SELECT lang, url, target, custom FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id}`) urls.set(row.lang, row);
             return urls;
         })();
     }
@@ -502,64 +504,40 @@ export class Node {
     async url(lang?: string): Promise<string> {
         const ctx = getCtx();
         lang ??= ctx.lang;
-        const hash = this.vs.type === "c" ? await this.urlSeo(lang) : "";
-        if (await this.edit()) return ctx.req.appUrl + "?cmspid=" + await this.page() + "&lang=" + lang + hash;
-        return ctx.req.appUrl + (await (await this.page()).urlSeo(lang)) + hash;
+        const address = await this.urlSeo(lang);
+        const anchor = address.startsWith("#") ? address : "";
+        const target = anchor ? await this.page() : this;
+        const path = anchor ? await target.urlSeo(lang) : address;
+        if (!path || await this.edit()) return ctx.req.appUrl + "?cmspid=" + target + "&lang=" + lang + anchor;
+        return ctx.req.appUrl + path + anchor;
     }
 
+    /** The stored address, or the anchor a content is by default; empty if it has none yet. */
     async urlSeo(lang: string): Promise<string> {
-        const urls = await this.urls();
-        let url = urls.get(lang);
-        if (!url) urls.set(lang, url = { url: await this.#urlSeoOwn(lang), target: "" });
-        return url.url;
+        return (await this.urls()).get(lang)?.url || (this.vs.type === "c" && !await hasOwnUrl(this) ? "#cmspid" + this : "");
     }
 
+    /** Store what page_url says about this node; no address at all makes a content an anchor again. */
     async urlSet(lang: string, data: Record<string, any>): Promise<void> {
-        data = { page_id: this.id, lang, ...data };
-        const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
-        // Skip unchanged urls: regeneration walks the subtree × all languages and would otherwise
-        // write identical urls and create false "URL changed" history entries.
-        if (row && Object.keys(data).every((k) => row[k] === data[k])) return;
-        await this.db.table("page_url")[row ? "update" : "insert"](data);
+        const row: Record<string, any> | undefined = (await this.urls()).get(lang);
+        if ("url" in data && !data.url) {
+            if (row) await this.db.table("page_url").deleteWhere({ page_id: this.id, lang });
+        } else {
+            // Skip unchanged urls: regeneration walks the subtree × all languages and would otherwise
+            // write identical urls and create false "URL changed" history entries.
+            if (row && Object.keys(data).every((k) => row[k] === data[k])) return;
+            await this.db.table("page_url")[row ? "update" : "insert"]({ page_id: this.id, lang, ...data });
+        }
         this.#clearUrlCache();
     }
 
-    async urlSeoGenerated(lang: string): Promise<string> {
-        if (this.vs.type === "c") return "#cmspid" + this;
-        const parent = await this.parent();
-        const parentUrl = !parent || String(parent) === "1" ? lang : await parent.urlSeo(lang);
-        const titleT = await this.title();
-        const titleStr = titleT ? await titleT.orFallback(lang).then((t: any) => t.get()) ?? "" : "";
-        const part = urlize(titleStr);
-        const base = parentUrl === "" || parentUrl.endsWith("/") ? parentUrl : parentUrl + "/";
-        let url = base + part;
-        const exists = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url} AND NOT (page_id = ${this.id} AND lang = ${lang})`;
-        if (exists || await fs.stat(this.app.dir + url)) url += "-" + lang + this;
-        return url;
-    }
-
-    /** Generate + persist this node's own SEO url. No subtree walk, so it's safe to call from a read. */
-    #urlSeoOwn(lang: string): Promise<string> {
+    /** Make the addresses of this node and below anew, after a change of title or place. A set one stays. */
+    urlsGen(lang?: string): Promise<void> {
         return this.db.transaction(async () => {
-            const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
-            const url = row?.custom ? row.url : await this.urlSeoGenerated(lang);
-            await this.urlSet(lang, { url });
-            return url;
-        });
-    }
-
-    /** Regenerate this node's url and the whole subtree (after move/rename). */
-    urlSeoGen(lang: string): Promise<string> {
-        return this.db.transaction(async () => {
-            const url = await this.#urlSeoOwn(lang);
-            for (const child of (await this.children({ type: "*" })).values()) await child.urlSeoGen(lang);
-            return url;
-        });
-    }
-
-    urlsSeoGen(): Promise<void> {
-        return this.db.transaction(async () => {
-            for (const l of this.cms.app.languages.all) await this.urlSeoGen(l);
+            for (const l of lang ? [lang] : this.cms.app.languages.all) {
+                if (!(await this.urls()).get(l)?.custom) await this.urlSet(l, { url: await generate(this, l) });
+                for (const child of (await this.children({ type: "*" })).values()) await child.urlsGen(l);
+            }
         });
     }
 
@@ -597,6 +575,7 @@ export class Node {
             await page.fromXml(String(this.settings.childXML() ?? ""))
                 .catch(e => console.warn(`childXML of node ${this.id} could not be applied:`, e));
         }
+        await page.urlsGen();
 
         // Re-sort children so the new child gets a proper sort position
         this.#clearTreeCache();
@@ -632,7 +611,11 @@ export class Node {
     }
 
     copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
-        return this.db.transaction(() => this.#copy(deep, ifFn));
+        return this.db.transaction(async () => {
+            const copy = await this.#copy(deep, ifFn);
+            await copy?.urlsGen();
+            return copy;
+        });
     }
     async #copy(deep: boolean, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void) {
         if (await ifFn?.(this) === false) return;
@@ -716,7 +699,7 @@ export class Node {
 
         if (oldParent) oldParent.#clearTreeCache();
 
-        await page.urlsSeoGen();
+        await page.urlsGen();
         return true;
     }
 

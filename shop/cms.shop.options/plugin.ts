@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { shopT } from "@qino/qino/cms.shop";
+import { listen, shopT } from "@qino/qino/cms.shop";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Currency, Line, Product } from "@qino/qino/cms.shop";
@@ -21,8 +21,7 @@ async function surcharge(app: App, product: unknown, data: unknown, perLine: boo
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const t = shopT(app);
-  // deno-lint-ignore no-explicit-any -- payloads are declared by cms.shop
-  const on = (event: string, fn: (e: any) => unknown) => app.on(event, fn as never, { signal });
+  const on = listen(app, signal);
   const inCurrency = (amount: number, currency?: Currency) => currency ? currency.change(amount) : amount;
 
   // per unit before the discount, so it counts in; per line after it

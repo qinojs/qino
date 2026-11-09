@@ -1,0 +1,13 @@
+{
+  "properties": {
+    "shop_shipping_product": {
+      "additionalProperties": {
+        "properties": {
+          "product_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "shop_product", "x-qg-on-parent-delete": "cascade" },
+          "min_quantity": { "type": "integer", "x-index": "primary", "default": 1, "description": "From this many units on a line" },
+          "price": { "type": "integer", "description": "Minor units of the main currency, with tax as the shop's prices are" }
+        }
+      }
+    }
+  }
+}

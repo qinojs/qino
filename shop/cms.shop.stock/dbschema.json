@@ -3,14 +3,14 @@
     "shop_product": {
       "additionalProperties": {
         "properties": {
-          "stock": { "type": "number", "default": 0, "description": "Units in stock; a product with variants keeps it per variant" }
+          "stock": { "type": "number", "description": "Units in stock; none: not kept, always there (a service, a rental). A product with variants keeps it per variant" }
         }
       }
     },
     "shop_variant": {
       "additionalProperties": {
         "properties": {
-          "stock": { "type": "number", "default": 0, "description": "Units in stock" }
+          "stock": { "type": "number", "description": "Units in stock; none: not kept" }
         }
       }
     }

@@ -85,6 +85,38 @@ test("an open cart keeps pricing as it was opened, with or without tax", async (
   });
 });
 
+test("a price knows the line it is for: the first one of a product at half", async () => {
+  await withShop([], async (app) => {
+    const variant = await app.db.table("shop_variant").insert({ product_id: 10 });
+    // deno-lint-ignore no-explicit-any -- payloads are declared by cms.shop
+    app.on("shop:price-discount" as never, (async (e: any) => {
+      if (e.line && (await e.order.lines())[0] === e.line) e.price /= 2;
+    }) as never);
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      const product = (await app.db.table("shop_product").get<Product>(10))!;
+      await order.add(product);
+      await order.add(product, { variant: await product.variant(variant) });
+      assertEquals((await order.lines()).map((l) => l.price), [1225, 2450]);
+      await order.setParty("bill", { name: "Anna", email: "Anna@Example.test" });
+      assertEquals(order.email, "anna@example.test", "the billing email, to find the orders by");
+    });
+  });
+});
+
+test("the total to pay lands on the currency's step, the difference a line of its own", async () => {
+  await withShop([], async (app) => {
+    await app.db.table("shop_currency").update("CHF", { closing: 5 });
+    await app.db.table("shop_product").update(10, { price: 1003 });
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      await order.add((await app.db.table("shop_product").get<Product>(10))!);
+      assertEquals((await order.totals()).total, 1005);
+      assertEquals((await order.extras()).map((x) => [x.key, x.price, x.taxRate]), [["rounding", 2, 0]]);
+    });
+  });
+});
+
 test("a payment that does not start leaves the order standing, and only its owner can try again", async () => {
   await withShop([], async (app) => {
     const product = (await app.db.table("shop_product").get<Product>(10))!;

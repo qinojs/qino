@@ -1,0 +1,16 @@
+{
+  "name": "cms.shop.rent",
+  "description": "Renting by the hour or the day: prices by time rules, what is taken, no double booking.",
+  "dependencies": [
+    "cms.shop"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/selector.js"
+  ]
+}

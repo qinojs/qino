@@ -1,5 +1,5 @@
-import { create, issue, refOf as invoiceRef } from "@qino/qino/fin.invoice";
-import { idOf, refOf } from "@qino/qino/cms.shop";
+import { cancel, create, issue, refOf as invoiceRef } from "@qino/qino/fin.invoice";
+import { idOf, listen, refOf } from "@qino/qino/cms.shop";
 
 import type { App, Row } from "@qino/qino";
 import type { Order } from "@qino/qino/cms.shop";
@@ -11,8 +11,7 @@ const invoiceOf = async (app: App, order: Order): Promise<number | undefined> =>
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  // deno-lint-ignore no-explicit-any -- payloads are declared by cms.shop and fin.invoice
-  const on = (event: string, fn: (e: any) => unknown) => app.on(event, fn as never, { signal });
+  const on = listen(app, signal);
 
   // Every placed order is invoiced: its lines one to one, issued at once.
   on("shop:ordered", async ({ order }: { order: Order }) => {
@@ -32,6 +31,12 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       ref: refOf(Number(order.$id)),
     });
     await issue(app, id);
+  });
+
+  // A canceled order cancels its invoice: one that went out by a credit note (fin's rule).
+  on("shop:status", async ({ order }: { order: Order }) => {
+    const id = order.status === "canceled" ? await invoiceOf(app, order) : undefined;
+    if (id) await cancel(app, id);
   });
 
   // Paying an order pays its invoice.

@@ -6,5 +6,5 @@ and `end` (0: open). Quantity discount, dealer level and action are the same mec
 
 **The best discount wins, discounts never add up.** A dealer on 30 % does not get the action's
 20 % on top. The amount is counted over all lines of the cart below the discount's node: three
-colours of one range make the quantity together. A reduced price lands on the currency's
+colours of one range make the quantity together; with `per_line`, each line counts on its own. A reduced price lands on the currency's
 `rounding` step.

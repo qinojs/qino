@@ -16,6 +16,9 @@ Register it after `migrate_from_php` and after the shop modules whose data it ca
 | `shp3_product.prop_*` | `shop_product.prop_*`, the columns the site's own module declares |
 | `shp3.payment.saferpay/production`, accounting1's `(QR-)IBAN` | `fin.payment.saferpay` (never `live`), `fin.payment.qrbill.iban` |
 | `accounting1_invoice.paid_time` | an order paid by invoice counts as `paid` |
+| `shp3_product.rent_interval`, `shp3_product_rented`, `shp3_product_rent_prices`, `config.shp3_rent` | `cms.shop.rent`: `shop_product.rent_interval`, `shop_rental`, `shop_rent_price`, line `data.rent` |
+| `shp3_coupon1`, `shp3_order.coupon1_code` | `shop_coupon`, `shop_order.coupon` |
+| `shp3_product.price_special_offer*` | a row in `shop_discount` with its days |
 | `usr.bill_*` | `usr.street_address …` of user.profile, where it says nothing yet |
 | `shp3_shipping_by_weight_and_country` + `free_from` | `shop_shipping_rate`, `shop_shipping_free` |
 | `currency.shp3_minimum_order_amount(_surcharge)` | `shop_currency.minimum(_surcharge)` |

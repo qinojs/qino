@@ -45,3 +45,18 @@ test("discounts never add up — the best one wins, a group's only for its membe
     assertEquals((await red.prices({ quantity: 2 })).price, 2330); // 2327.5 on the 0.05 step
   });
 });
+
+test("a quantity discount per line counts each line on its own", async () => {
+  await withShop(["cms.shop.price.discount"], async (app) => {
+    await app.db.table("shop_discount").insert({ node_id: 10, min_quantity: 200, factor: 0.5, per_line: true });
+    const product = (await app.db.table("shop_product").get<Product>(10))!;
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      const one = await order.add(product, { quantity: 100, data: { file: "a" } });
+      await order.add(product, { quantity: 100, data: { file: "b" } });
+      assertEquals(Number(one.price), 2450, "100 and 100 are not 200 here");
+      await one.setQuantity(200);
+      assertEquals(Number(one.price), 1225);
+    });
+  });
+});

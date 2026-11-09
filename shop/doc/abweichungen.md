@@ -1,11 +1,11 @@
 # Abweichungen qino ↔ PHP-Shop
 
 Was der migrierte Shop anders macht als der PHP-Shop, und wo ich es anders lösen würde. Stand
-09.11.2026. Grundlage: die Testmigrationen von Lascaux und Elixan, je in ihrem Projekt
+09.11.2026. Grundlage: die Testmigrationen von Lascaux, Elixan, Hundehalle und drucken.ch, je in ihrem Projekt. Das sind nur Tests, um verschiedene Fälle abzudecken; die eigentliche Migration kommt später
 (`projects/<site>/doc/qino-test.md`). Die Punkte stammen von Lascaux, wo nichts anderes steht.
 
 **Abgleich der Preise** (`meta/migrate_shp3/tools/verify.ts`): Die letzten 60 Bestellungen je Site
-wurden als Warenkorb nachgebaut. Alle Stückpreise (Lascaux 300, Elixan 227, mit Optionen),
+wurden als Warenkorb nachgebaut. Alle Stückpreise (Lascaux 300, Elixan 227 mit Optionen; Hundehalle siehe unten),
 Kleinmengenzuschläge und Versandkosten stimmen mit dem überein, was PHP verrechnet hat.
 
 **Abgleich des Aussehens**: Shop-Seiten nebeneinander mit lascaux.ch fotografiert:
@@ -44,10 +44,9 @@ schreiben.
 
 ## Adressen der Produkte
 
-9. **Ein Produkt hat keine eigene Adresse mehr.** PHP hatte `/lascaux-artist/114-i1` (realurl).
-    qino zeigt das Produkt auf seiner Kategorie mit `?shop_product=978`. Die 1230 alten Adressen
-    leiten mit 301 dorthin weiter (`migrate_shp3`). Für Suchmaschinen ist das schlechter. Eigene
-    Adressen für Inhalte bräuchten Unterstützung im cms-Kern, siehe `fehlend-in-qino.md` (2).
+9. **Ein Produkt hat eine neue eigene Adresse.** PHP hatte `/lascaux-artist/114-i1` (realurl), qino
+    bildet sie aus Seite und Titel: `/de/shop/farblinien/lascaux-artist/114`. Die 1230 alten Adressen
+    leiten mit 301 dorthin weiter (`migrate_shp3`). Siehe `fehlend-in-qino.md` (2).
 
 ## Daten
 
@@ -116,6 +115,27 @@ schreiben.
     angemeldeten Kunden beginnt damit. Die Lieferadresse des Kunden (`usr.ship_*`) ist nicht übernommen.
 33. **Aussehen:** Produkt, Kategorie, Kasse nebeneinander mit elixan.ch verglichen. Fast gleich; die
     Kategorie-Spalten sind etwas schmaler, das Akkordeon „Wichtige Hinweise“ hat keinen Pfeil.
+
+## Hundehalle (Vermietung)
+
+34. **Vermietung ist das Modul `cms.shop.rent`**, mit Kapazität (`rent_capacity`: wie viele gleichzeitig) und dem allgemeinen Buchungsbaustein `cms.cont.shop.rent`. Der Raumkalender und das Eigene der Site (Servicegebühr, Rabatt auf Semester/Jahr, Wochenend-Preis) bleiben im Projekt. Die Stundenpreise nach Zeitregeln stimmen mit PHP überein; eine Stornierung gibt die Zeiten frei.
+35. **PHP las Listen in Zeitregeln nicht:** `weekday(saturday, sunday)` traf nie, ein Fehler in `explode(',', …, 1)`. qino liest die Liste richtig, die Sperre „Wochenende ab 20 Uhr“ wirkt jetzt.
+36. **Rundung des Totals:** PHP rundete den Betrag still auf 5 Rappen (`smallest_closing`). qino zeigt die Differenz als eigene Zeile ohne MWST, so stimmen Rechnung und Zahlung überein. Betrifft auch Elixan und Lascaux.
+37. **Reservation im Warenkorb (`cd_rent_lock`)** ist nicht portiert: PHP hielt eine Stunde kurz frei. Doppelt gebucht werden kann trotzdem nicht, `place()` prüft erneut.
+38. **Alte Summen:** Bei 466 von 6295 Bestellungen ergibt sich die verrechnete Summe nicht aus den Zeilen: Rabatte ohne MWST und Rundungen von wenigen Rappen. Gespeichert bleibt der verrechnete Betrag.
+39. **Wochenend-Preis:** Nur die erste Stunde eines Wochenendtags im Warenkorb (die Preis-Events tragen `line`), und es zählen nur Ansprüche aus Bestellungen vor dem gefragten Zeitpunkt (`time`). So stimmt auch das Nachrechnen: 104/104.
+
+## drucken.ch (ältere shp3-Version)
+
+40. **Mengenrabatte zählen verschieden:** `shp3_product_discount` zählte je Zeile, `shp3_discount1` über alle Zeilen. `shop_discount.per_line` bildet beides ab.
+41. **MWST als eigene Zeile:** Die alte Version führte sie als generierte Zeile `mwst 8.1`, Preise netto. Die Migration setzt den Satz auf die Zeilen und `taxIncluded` aus.
+42. **Gutscheine sind `cms.shop.coupon`.** „Einmal pro Kunde“ prüft den Benutzer und die E-Mail der Bestellung (`shop_order.email`). Mindestwarenwert und Einlösen per Link gibt es noch nicht.
+43. **Aktionspreis am Produkt** wird eine Zeile in `shop_discount`; `0` hiess „keines“.
+43a. **Versand je Produkt und Auflage** (`shp3_product_discount.cd_shipping_price`) ist `cms.shop.shipping.product`; das Projektmodul `cd` übernimmt die Stufen und benennt die Versandart `custom_shipping` in `product` um. Alle 60 nachgerechneten Versandkosten stimmen.
+44. **Druckdateien:** `file` und `fileName` bleiben in den Daten der Zeile. Ein Upload im Bestellablauf fehlt im Shop.
+45. **Datatrans** hat in `fin` keinen Anbieter, die alten Methodennamen bleiben stehen. Für neue Zahlungen fehlt er.
+46. **Grosse Tabellen:** Die Backend-Tabellen zeigen höchstens 500 Zeilen, die Rabatte eines Produkts stehen auf seiner Seite. Blättern und Suchen in der Rabatt-Liste fehlen noch.
+47. **Nicht portiert:** Layout und Seitenmodule; bei diesem Test zählen Daten und Regeln, die Seiten sind nicht geprüft.
 
 ## Im Test bewusst weggelassen
 

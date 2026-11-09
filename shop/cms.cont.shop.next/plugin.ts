@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { cart, shopT, stepUrl } from "@qino/qino/cms.shop";
+import { cart, listOf, shopT, stepUrl } from "@qino/qino/cms.shop";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -17,7 +17,7 @@ const settingsSchema = {
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = shopT(node.app), settings = node.settings;
   const order = await cart(ctx, false);
-  const checks = String(await settings.check() ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const checks = await listOf(settings.check());
   const all = order ? await order.errors() : { "has lines": await t`Your shopping cart is empty` };
   const errors = checks.map((c) => all[c]).filter(Boolean);
   const [back, next] = await Promise.all([stepUrl(node, await settings.back(), "back"), stepUrl(node, await settings.next(), "next")]);

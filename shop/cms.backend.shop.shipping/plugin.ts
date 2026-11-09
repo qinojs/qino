@@ -1,12 +1,10 @@
-import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { renderRows, saveRows } from "@qino/qino/cms.backend.shop";
+import { rowsPage } from "@qino/qino/cms.backend.shop";
 import { currencyFor, mainCurrency, shopT } from "@qino/qino/cms.shop";
 
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
 import type { Rows } from "@qino/qino/cms.backend.shop";
 
 const { name } = manifest;
@@ -46,9 +44,4 @@ async function tables(app: App): Promise<Rows[]> {
   }];
 }
 
-async function render(node: Node) {
-  return html.async`<div class=u2-flex>${(await tables(node.app)).map((spec) => renderRows(node, spec))}</div>`;
-}
-const api = async (node: Node, vars: Record<string, unknown>) => saveRows(node, await tables(node.app), vars);
-
-export const cms = { node: { render, api, js: ["../cms.backend.shop/pub/rows.js"] } };
+export const cms = { node: rowsPage(tables) };

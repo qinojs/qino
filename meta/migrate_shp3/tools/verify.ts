@@ -24,7 +24,8 @@ async function run() {
 
   for (const old of orders) {
     const cart = (await db.table("shop_order").add<Order>({
-      status: "cart", country: old.country, currency: old.currency, usr_id: old.usr_id, tax_included: true, lang: old.lang,
+      status: "cart", country: old.country, currency: old.currency, usr_id: old.usr_id, tax_included: old.tax_included, lang: old.lang,
+      ...(old.$get("coupon") ? { coupon: old.$get("coupon") } : {}),
     }))!;
     for (const line of await old.lines()) {
       const product = await db.table("shop_product").get<Product>(line.product_id);
@@ -33,7 +34,7 @@ async function run() {
     // the price at the time of the order: an action of back then counts
     for (const line of await cart.lines()) {
       const product = (await line.product())!;
-      line.price = (await product.prices({ variant: await line.variant(), quantity: line.quantity, order: cart, data: line.dataOf(), time: old.ordered })).price;
+      line.price = (await product.prices({ line, order: cart, time: old.ordered })).price;
     }
     const before = await old.lines();
     for (const line of await cart.lines()) {

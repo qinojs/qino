@@ -2,5 +2,5 @@
   "name": "cms.backend.shop.shipping",
   "description": "Delivery by weight: rates per country and tariff, and from which amount it is free.",
   "dependencies": ["cms.backend.shop", "cms.shop.shipping.weight"],
-  "files": ["manifest.json", "plugin.ts"]
+  "files": ["manifest.json", "plugin.ts", "pub/module.svg"]
 }

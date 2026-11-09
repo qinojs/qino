@@ -7,7 +7,7 @@ import { totals } from "@qino/qino/fin.invoice";
 import { create as createPayment, methods as finMethods } from "@qino/qino/fin.payment";
 import { currency as iso } from "@qino/qino/locale.currency";
 
-import { appOf, country, currency, currencyFor, listOf, mainCurrency, pick, productTaxRate, settingsOf, shopT, taxIncluded, taxRate } from "./shop.ts";
+import { appOf, country, currency, currencyFor, grpsOf, listOf, mainCurrency, pick, productTaxRate, settingsOf, shopT, taxIncluded, taxRate } from "./shop.ts";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -32,6 +32,8 @@ export type Extra = { key: string; name: string; price: number; taxRate: number;
 export type Status = "cart" | "ordered" | "paid" | "canceled";
 /** What a price depends on. Without an order: the shop's own country and main currency. */
 export type PriceQuery = {
+  /** The cart line priced; its variant, amount and data unless given. */
+  line?: Line;
   variant?: Variant;
   quantity?: number;
   order?: Order;
@@ -55,6 +57,7 @@ export class Currency extends ShopRow {
   declare id: string;
   declare factor: number;
   declare rounding: number;
+  declare closing: number;
   declare active: boolean;
   declare main: boolean;
 
@@ -108,17 +111,19 @@ export class Product extends ShopRow {
     const app = this.$app;
     const currency = q.currency ?? await q.order?.currencyRow() ?? await mainCurrency(app);
     const where = q.country ?? q.order?.country ?? await country(app);
-    const base = q.variant?.price ?? this.price;
+    const { line } = q, variant = q.variant ?? await line?.variant();
+    const base = variant?.price ?? this.price;
     const e = {
       product: this,
-      variant: q.variant,
+      line,
+      variant,
       price: currency ? currency.change(Number(base)) : Number(base),
-      quantity: q.quantity ?? 1,
+      quantity: q.quantity ?? line?.quantity ?? 1,
       order: q.order,
       currency,
       country: where,
       usrId: q.usrId ?? q.order?.usr_id,
-      data: q.data,
+      data: q.data ?? line?.dataOf(),
       time: q.time ?? unixTime(),
     };
     for (const phase of PHASES) await app.fire(`shop:price-${phase}`, e);
@@ -271,6 +276,7 @@ export class Order extends ShopRow {
   declare shipping: string;
   declare payment: string;
   declare bill: string;
+  declare email: string;
   declare ship: string;
   declare net: number;
   declare tax: number;
@@ -319,7 +325,15 @@ export class Order extends ShopRow {
     const e = { order: this, extras: [] as Extra[] };
     await this.$app.fire("shop:extras", e);
     const byKey = new Map(e.extras.map((x) => [x.key, x]));
-    return this.#extras = [...byKey.values()].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+    const extras = [...byKey.values()].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+    // the total to pay lands on the currency's step (0.05 CHF); what that changes is shown, without tax
+    const closing = Number((await this.currencyRow())?.closing) || 1;
+    if (closing > 1) {
+      const { total } = totals([...await this.#lineSums(), ...extras.map((x) => ({ name: x.name, price: x.price, taxRate: x.taxRate }))], !!this.tax_included);
+      const off = Math.round(total / closing) * closing - total;
+      if (off) extras.push({ key: "rounding", name: await shopT(this.$app)`Rounding`, price: off, taxRate: 0, sort: 99 });
+    }
+    return this.#extras = extras;
   }
 
   dataOf(): Record<string, unknown> { return json(this.data) ?? {}; }
@@ -332,6 +346,7 @@ export class Order extends ShopRow {
   /** Store a party; where it goes decides the country. `null` makes the delivery party the billing party. */
   async setParty(kind: "bill" | "ship", party: Party | null): Promise<this> {
     this[kind] = party ? JSON.stringify(party) : "";
+    if (kind === "bill") this.email = party?.email?.toLowerCase() ?? "";
     this.#derived(); // methods may depend on the address
     const country = this.party("ship")?.address?.addressCountry;
     if (country && country !== this.country) await this.setCountry(country);
@@ -368,7 +383,7 @@ export class Order extends ShopRow {
     for (const line of await this.lines()) {
       const product = await line.product();
       if (!product) continue;
-      line.price = (await product.prices({ variant: await line.variant(), quantity: line.quantity, order: this, data: line.dataOf() })).price;
+      line.price = (await product.prices({ line, order: this })).price;
     }
     this.#derived();
     return this;
@@ -407,15 +422,17 @@ export class Order extends ShopRow {
   }
 
   /** The user's groups — prices and methods may depend on them. */
-  grps(): Promise<number[]> {
-    if (!this.usr_id) return Promise.resolve([]);
-    return this.#grps ??= this.$table.db.col<number>`SELECT grp_id FROM usr_grp WHERE usr_id = ${this.usr_id}`.then((ids) => ids.map(Number));
+  grps(): Promise<number[]> { return this.#grps ??= grpsOf(this.$app, this.usr_id); }
+
+  async #lineSums(): Promise<{ name: string; quantity?: number; price: number; taxRate: number }[]> {
+    const lines = [];
+    for (const line of await this.lines()) lines.push({ name: line.name, quantity: Number(line.quantity), price: Number(line.price), taxRate: await line.taxRate() });
+    return lines;
   }
 
   /** Net, tax and total as fin computes them — tax rounded once per rate. */
   async totals(): Promise<{ net: number; tax: number; total: number; rates: { rate: number; net: number; tax: number }[] }> {
-    const lines = [];
-    for (const line of await this.lines()) lines.push({ name: line.name, quantity: Number(line.quantity), price: Number(line.price), taxRate: await line.taxRate() });
+    const lines = await this.#lineSums();
     for (const extra of await this.extras()) lines.push({ name: extra.name, price: extra.price, taxRate: extra.taxRate });
     const { net, tax, total, rates } = totals(lines, !!this.tax_included);
     return { net, tax, total, rates };

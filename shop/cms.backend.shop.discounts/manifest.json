@@ -2,5 +2,5 @@
   "name": "cms.backend.shop.discounts",
   "description": "The shop's discounts: quantity, dealer level and action are rows of one table.",
   "dependencies": ["cms.backend.shop", "cms.shop.price.discount"],
-  "files": ["manifest.json", "plugin.ts"]
+  "files": ["manifest.json", "plugin.ts", "pub/module.svg"]
 }

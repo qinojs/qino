@@ -15,7 +15,7 @@ test("starter.shop: every module it brings is in a store", async () => {
 test("starter.shop: a shop with products, cart and checkout, in the navigation before contact", async () => {
   const dir = await fs.tempDir() + "/";
   const app = new App({ dir, db: `sqlite:${dir}site.sqlite` });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cms.seo");
   app.stores.add(import.meta.resolve("../../../fin/store.json"));
   app.stores.add(import.meta.resolve("../../store.json")).add("starter.shop");
   await app.init();
@@ -30,6 +30,17 @@ test("starter.shop: a shop with products, cart and checkout, in the navigation b
     assertEquals(shop.body.match(/shop-add/g)?.length, 3, "three products to put in the cart");
     assert(shop.body.includes("CHF 29.00"));
     assertEquals((await get("/en/cart")).status, 200);
+    const one = await get("/en/shop/sample-product-1");
+    assertEquals(one.status, 200);
+    assertEquals(one.body.match(/shop-add/g)?.length, 1, "at its own address, the product alone");
+    assert((await get("/sitemap.xml")).body.includes("/en/shop/sample-product-1"), "in the sitemap");
+    const anchor = [...(await cm.nodesByModule("cms.cont.shop.cart")).values()][0];
+    assertEquals((await anchor.urlSeo("en"))[0], "#", "what is not listed by a category stays an anchor");
+    const category = [...(await cm.nodesByModule("cms.cont.shop.category")).values()][0];
+    await (await category.page()).title("en", "Store");
+    assertEquals((await get("/en/store/sample-product-1")).status, 200, "the address follows its page");
+    assertEquals((await get("/en/shop/sample-product-1")).status, 404);
+    await (await category.page()).title("en", "Shop");
     const checkout = await get("/en/cart/checkout");
     assert(checkout.body.includes("Checkout"));
 

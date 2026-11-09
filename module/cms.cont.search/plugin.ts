@@ -1,4 +1,5 @@
 import { html, sql, sqlSearch, unhee } from "@qino/qino";
+import { hasOwnUrl } from "@qino/qino/cms";
 import * as u2 from "@qino/qino/u2";
 
 import { record } from "./record.ts";
@@ -92,6 +93,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
     const page = await hit.page();
     if (!page.vs.searchable || !await hit.isReadable()) return;
     if (start && !await hit.in(start)) return;
+    for (let n: Node | undefined = hit; n?.vs.type === "c"; n = await n.parent()) if (await hasOwnUrl(n)) return n;
     return bySection ? section(hit) : page;
   }));
 

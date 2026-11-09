@@ -2,5 +2,5 @@
   "name": "cms.shop.minimum",
   "description": "A surcharge for orders below a minimum, per currency.",
   "dependencies": ["cms.shop"],
-  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts"]
+  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts", "pub/module.svg"]
 }

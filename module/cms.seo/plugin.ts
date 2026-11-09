@@ -1,4 +1,4 @@
-import { cms, cmsCtx } from "@qino/qino/cms";
+import { cms, cmsCtx, hasOwnUrl } from "@qino/qino/cms";
 
 import { image, imageUrl, text } from "./mod.ts";
 
@@ -31,10 +31,16 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       for (const page of (await node.children({ type: "p" })).values()) {
         if (!await page.isPublic() || !await page.isOnline()) continue;
         if (page.vs.searchable) {
-          const url: Record<string, string> = {};
-          for (const lang of app.languages.all) url[lang] = base + await page.urlSeo(lang);
+          const addresses = async (n: Node) => {
+            const url: Record<string, string> = {};
+            for (const lang of app.languages.all) url[lang] = base + await n.urlSeo(lang);
+            return url;
+          };
           const file = await image(page);
-          urls.push({ url, lastmod: changed.get(page.id), image: file && ctx.req.url.origin + await file.url() });
+          urls.push({ url: await addresses(page), lastmod: changed.get(page.id), image: file && ctx.req.url.origin + await file.url() });
+          for (const cont of (await page.bough({ type: "c" })).values()) {
+            if (await hasOwnUrl(cont) && await cont.isPublic() && await cont.isOnline()) urls.push({ url: await addresses(cont), lastmod: changed.get(page.id) });
+          }
         }
         await walk(page);
       }

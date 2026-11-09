@@ -1,6 +1,6 @@
 // Shop-wide lookups: countries, tax, currencies. Free functions on the app — rows reach their app
 // through the binding below.
-import type { App, Db, ItemProxy } from "@qino/qino";
+import type { App, Db, ItemProxy, Usr } from "@qino/qino";
 import type { Currency } from "./rows.ts";
 
 const apps = new WeakMap<Db, App>(); // Db is per App, so this never mixes tenants
@@ -98,6 +98,18 @@ export async function syncFactors(app: App): Promise<void> {
     const rate = rates.get(row.$id);
     if (rate) row.factor = row.$id === main.$id ? 1 : rate / base;
   }
+}
+
+/** Listen to shop events until the module unlinks: `const on = listen(app, signal)`. The payloads
+ *  are declared as data (App.events), so a listener names the fields it reads. */
+// deno-lint-ignore no-explicit-any -- see above
+export const listen = (app: App, signal: AbortSignal) => (event: string, fn: (e: any) => unknown): void =>
+  app.on(event as never, fn as never, { signal });
+
+/** A user's groups (core's Usr.grps, 0 included); none for a guest. */
+export async function grpsOf(app: App, usrId: unknown): Promise<number[]> {
+  if (!Number(usrId)) return [];
+  return await (await app.db.table("usr").get<Usr>(usrId))?.grps() ?? [];
 }
 
 /** A configured list (`"weight.a, pickup"`): the names in order, empty when nothing is set. */

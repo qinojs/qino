@@ -1,0 +1,6 @@
+[qcms-mod="cont.shop.rent"] {
+  .-slots { overflow-x: auto; }
+  td button { width: 100%; white-space: nowrap; }
+  td small { display: block; }
+  .-mine { font-weight: bold; }
+}

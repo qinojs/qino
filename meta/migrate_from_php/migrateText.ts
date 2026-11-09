@@ -1,3 +1,5 @@
+import { sql } from "@qino/qino";
+
 import type { Db } from "@qino/qino";
 
 const has = async (db: Db, table: string) => !!(await db.columns(table).catch(() => [])).length;
@@ -9,8 +11,10 @@ const has = async (db: Db, table: string) => !!(await db.columns(table).catch(()
  *  rows aside, drop the old tables, let the migration create both tables, copy the rows back. An
  *  interrupted run continues from the copies. */
 export async function parkText(db: Db): Promise<void> {
-  if (!(await db.columns("text").catch(() => [])).some((c) => c.Field === "lang")) return;
-  await db.exec`CREATE TABLE text_park AS SELECT id AS text_id, lang, text, log_id, log_id_ch FROM text WHERE id IS NOT NULL`;
+  const columns = await db.columns("text").catch(() => []);
+  if (!columns.some((c) => c.Field === "lang")) return;
+  const logCh = columns.some((c) => c.Field === "log_id_ch") ? sql.id("log_id_ch") : sql.raw("NULL"); // older sites have none
+  await db.exec`CREATE TABLE text_park AS SELECT id AS text_id, lang, text, log_id, ${logCh} AS log_id_ch FROM text WHERE id IS NOT NULL`;
   await db.exec`DROP TABLE text`;
   // Text history, if cms.versions is installed.
   if (!await has(db, "_vers_text")) return;

@@ -23,7 +23,7 @@ test("migrateCss: module and node classes become qcms attributes", async () => {
 
 test("migrateCss: a file inside the folder it names keeps a clean path", async () => {
   const dir = await fs.tempDir() + "/";
-  await fs.mkdir(dir + "data/site/pub", { recursive: true });
+  await fs.mkdir(dir + "data/site/pub");
   const path = dir + "data/site/pub/main.css";
   await fs.write(path, "a { background:url(/qg/site/pub/img/a.svg) }");
   await migrateCss({ dir, db: { col: () => Promise.resolve([]) } } as unknown as App);

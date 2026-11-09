@@ -39,7 +39,7 @@ it is `ordered`, and `paid` once fin says the payments with its ref cover the to
 
 | Event | Payload | For |
 |---|---|---|
-| `shop:price-initial` → `-additions` → `-discount` → `-final` | `{ product, variant, price, quantity, order, currency, country, usrId, data, time }` | a unit price in four passes |
+| `shop:price-initial` → `-additions` → `-discount` → `-final` | `{ product, line, variant, price, quantity, order, currency, country, usrId, data, time }` | a unit price in four passes |
 | `shop:product-check`, `shop:line-check`, `shop:order-check` | `{ …, errors }` | what blocks; a line's check may add `solutions` (id → `{ label, solve }`), buttons next to the error |
 | `shop:product-fields` | `{ product, order, currency, fields }` | what a buying form asks besides the amount (`product.fields()`) |
 | `shop:line-quantity`, `shop:line-weight`, `shop:line-description` | `{ line, … }` | stock, packaging, texts |
@@ -47,6 +47,22 @@ it is `ordered`, and `paid` once fin says the payments with its ref cover the to
 | `shop:shippings`, `shop:payments` | `{ order, methods }` | take out what does not fit this order |
 | `shop:cart`, `shop:place`, `shop:pay` | | a new cart, the last word before placing, what a payment settles |
 | `shop:ordered`, `shop:status` | `{ order }`, `{ order, previous }` | mail, invoice, stock, export; once per change |
+
+## Extending
+
+A shop module changes nothing in cms.shop, it adds:
+
+| What | How | Example |
+|---|---|---|
+| Behaviour | listens with `const on = listen(app, signal)` to the events above | stock, discount, coupon |
+| Columns | a `dbSchema` on the shop's tables, typed with `declare module "@qino/qino/cms.shop"` | `stock`, `coupon`, `rent_interval` |
+| What a customer picks | the line's data, one key per module | `options`, `rent` |
+| Lines of its own | an extra with its key (`shop:extras`) | `minimum`, `coupon`, `rounding` |
+| Delivery | `export const shippingProvider` | shipping.weight, a site's freight |
+| A way out of an error | `solutions` in `shop:line-check` | stock, rent |
+| What a buying form asks | `shop:product-fields` | options |
+
+Helpers for them: `listen`, `listOf` (a list setting), `grpsOf` (core's groups), `orderTable` (an order as html).
 
 ## Delivery and payment
 
@@ -61,8 +77,9 @@ What the customer reads for a method is `labels` → method → language (`label
 
 ## Products on pages
 
-A product is a content of a page (its category). `productUrl(product)` is that page asked for the
-product alone (`?shop_product=<id>`); a category module shows only that product then.
+A product directly in a category has an address of its own, from the page and its title: the
+category module says `childUrls`, and shows that product alone there. On a page of its own, it has
+the page's. `productUrl(product)` is either.
 
 ## Texts
 
@@ -73,8 +90,9 @@ Every shop module translates in one namespace, `cms.shop` (`shopT(app)`, its `lo
 The country an order goes to decides its tax (`country.shop_tax_rate`, a product may have its own
 in `shop_product_tax`) and its currency: `country.shop_currency`, else the country's own if the
 shop offers it, else the main one. `shop_currency` holds the shop's currencies with their
-`factor` to the main one (synced from locale.currency's rates) and `rounding`, the step a reduced
-price lands on.
+`factor` to the main one (synced from locale.currency's rates), `rounding`, the step a reduced
+price lands on, and `closing`, the step the total to pay lands on: 5 is 0.05 CHF, the difference is
+a line of its own (`rounding`), without tax.
 
 Every price asks for these: `country`, `shop_currency` and `shop_product_tax` are read once per app
 and again after a write through their table (`table.update()`, not a raw `db.exec`). An `Order`

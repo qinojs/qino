@@ -169,6 +169,12 @@ export class CMS extends Emitter<CmsEvents> {
     );
   }
 
+  /** The child of this node asked for by its own address, if any. */
+  requestedChild(node: Node): Node | undefined {
+    const asked = cmsCtx(getCtx()).requestedNode;
+    return asked?.vs.type === "c" && Number(asked.vs.basis) === node.id ? asked : undefined;
+  }
+
   async link(node: Node | number): Promise<HtmlString> {
     const page = await this.node(Number(node));
     return html.raw(`<a${attrsHtml(await this.linkAttributes(page))}>${await page.showTitle()}</a>`);

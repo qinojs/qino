@@ -1,0 +1,6 @@
+{
+  "name": "cms.shop.shipping.product",
+  "description": "Delivery priced per product by the amount on the line: from 100, from 500 units …",
+  "dependencies": ["cms.shop"],
+  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts", "pub/module.svg"]
+}

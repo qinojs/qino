@@ -1,0 +1,86 @@
+{
+  "properties": {
+    "shop_product": {
+      "additionalProperties": {
+        "properties": {
+          "rent_interval": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "What is rented at a time: 1 hour, 1 day; none: not rented"
+          },
+          "rent_capacity": {
+            "type": "integer",
+            "default": 1,
+            "description": "How many can be rented for the same time: 5 bikes, 12 seats"
+          }
+        }
+      }
+    },
+    "shop_rental": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "product_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "shop_product",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "line_id": {
+            "type": "integer",
+            "x-index": true,
+            "description": "The order line that booked it"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "begins": {
+            "type": "integer",
+            "x-index": true,
+            "description": "Unix time"
+          },
+          "ends": {
+            "type": "integer",
+            "x-index": true,
+            "description": "Unix time"
+          }
+        }
+      }
+    },
+    "shop_rent_price": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "product_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "shop_product",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "selector": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "When it holds: weekday(monday-friday) hour(8-11)"
+          },
+          "multiplier": {
+            "type": "number",
+            "description": "On the product's price; none: not to be rented then"
+          }
+        }
+      }
+    }
+  }
+}

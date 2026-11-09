@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { shopT } from "@qino/qino/cms.shop";
+import { orderTable, shopT } from "@qino/qino/cms.shop";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -35,30 +35,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 }
 
 async function detail(node: Node, ctx: Ctx, order: Order, url: URL): Promise<HtmlString> {
-  const t = shopT(node.app), currency = await order.currencyRow();
-  const money = (v: number) => currency?.format(v) ?? String(v);
-  const { rates } = await order.totals();
+  const t = shopT(node.app);
   return html.async`<div>
   <a class=-back href="${url.pathname}">${t`Back`}</a>
   <h2>${t`Order`} ${order.$id}</h2>
-  <table class=u2-table>
-    <thead><tr>
-      <th>${t`Article`}
-      <th>${t`Quantity`}
-      <th>${t`Price`}
-      <th>${t`Total`}
-    <tbody>${(await order.lines()).map((l) => html`<tr>
-      <td>${l.name}${String(l.description ?? "").split("\n").filter(Boolean).map((d) => html`<div class=-description>${d}</div>`)}
-      <td>${Number(l.quantity)}
-      <td>${money(Number(l.price))}
-      <td>${money(l.total())}`)}
-    <tbody>${(await order.extras()).map((x) => html`<tr>
-      <td colspan=3>${x.name}
-      <td>${money(x.price)}`)}
-    <tfoot>
-      ${rates.filter((r) => r.rate).map((r) => html.async`<tr><th colspan=3>${t`VAT`} ${r.rate}%<td>${money(r.tax)}`)}
-      <tr><th colspan=3>${t`Total`} ${order.currency}<td>${money(Number(order.total))}
-  </table>
+  ${orderTable(order)}
   <p>${t`Delivery`}: ${order.label(order.shipping)}<br>${t`Payment`}: ${order.label(order.payment)}</p>
   ${order.status === "ordered" && order.payment && Number(order.total) ? html.async`<button class=-pay data-order="${order.$id}">${t`Pay now`}</button>` : ""}
 </div>`;

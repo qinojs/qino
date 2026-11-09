@@ -2,5 +2,5 @@
   "name": "cms.backend.shop",
   "description": "Shop overview: orders waiting, what was sold, and the shop's backend pages.",
   "dependencies": ["cms.backend", "cms.shop"],
-  "files": ["manifest.json", "plugin.ts", "mod.ts", "rows.ts", "pub/rows.js"]
+  "files": ["manifest.json", "plugin.ts", "mod.ts", "rows.ts", "pub/rows.js", "pub/module.svg"]
 }

@@ -2,5 +2,5 @@
   "name": "cms.shop.invoice",
   "description": "Every placed order gets its invoice (fin.invoice); paying the order pays the invoice.",
   "dependencies": ["cms.shop", "fin.invoice"],
-  "files": ["README.md", "manifest.json", "plugin.ts"]
+  "files": ["README.md", "manifest.json", "plugin.ts", "pub/module.svg"]
 }

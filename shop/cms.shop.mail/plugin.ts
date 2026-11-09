@@ -1,5 +1,5 @@
 import { App, hee, s } from "@qino/qino";
-import { shopT } from "@qino/qino/cms.shop";
+import { listen, shopT } from "@qino/qino/cms.shop";
 import { send } from "@qino/qino/messaging.email";
 
 import type { EventDecls } from "@qino/qino";
@@ -60,6 +60,6 @@ async function mail(app: App, order: Order): Promise<void> {
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("shop:ordered", (({ order }: { order: Order }) =>
-    mail(app, order).catch((e) => console.error(`cms.shop.mail: order ${order.$id}:`, e))) as never, { signal });
+  listen(app, signal)("shop:ordered", ({ order }: { order: Order }) =>
+    mail(app, order).catch((e) => console.error(`cms.shop.mail: order ${order.$id}:`, e)));
 }

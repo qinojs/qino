@@ -27,10 +27,11 @@ export const setCurrency = (value) => shop.cart.currency.put({ value });
 
 export const setData = (values) => shop.cart.data.put({ values });
 
-/** Render a node anew in place — frontend layouts need not load cms.mjs, so not cms.reloadNode. */
-export const reload = (el) => {
+/** Render a node anew in place, with vars for its render — frontend layouts need not load cms.mjs,
+ *  so not cms.reloadNode. */
+export const reload = (el, vars = {}) => {
   const nid = el.closest("[qcms-id]").getAttribute("qcms-id");
-  return api.cms.node(Number(nid)).html.post({}).then((html) =>
+  return api.cms.node(Number(nid)).html.post({ vars }).then((html) =>
     document.querySelectorAll(`[qcms-id="${nid}"]`).forEach((n) => n.outerHTML = html));
 };
 

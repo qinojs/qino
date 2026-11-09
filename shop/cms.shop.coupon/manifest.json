@@ -1,0 +1,15 @@
+{
+  "name": "cms.shop.coupon",
+  "description": "Coupons: a percentage or an amount, for a part of the shop, once per customer if wanted.",
+  "dependencies": [
+    "cms.shop",
+    "fin"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

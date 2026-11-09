@@ -22,3 +22,17 @@ test("a placed order is invoiced one to one, the paid invoice pays the order", a
     });
   });
 });
+
+test("a canceled order cancels its invoice", async () => {
+  await withShop(["cms.shop.invoice"], async (app) => {
+    const product = (await app.db.table("shop_product").get<Product>(10))!;
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      await order.add(product);
+      await order.setParty("bill", { name: "Anna Muster", address: { addressCountry: "CH" } });
+      assertEquals((await order.place()).ok, true);
+      await order.cancel();
+      assertEquals(await app.db.one`SELECT status FROM invoice WHERE ref = ${"cms.shop:" + order.$id}`, "canceled");
+    });
+  });
+});

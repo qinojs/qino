@@ -104,6 +104,7 @@
     "./cms.backend.shop": "./shop/cms.backend.shop/mod.ts",
     "./cms.shop": "./shop/cms.shop/mod.ts",
     "./cms.shop.countries": "./shop/cms.shop.countries/mod.ts",
+    "./cms.shop.rent": "./shop/cms.shop.rent/mod.ts",
     "./starter.cms": "./module/starter.cms/mod.ts",
     "./ticket": "./module/ticket/mod.ts",
     "./u2": "./module/u2/mod.ts",

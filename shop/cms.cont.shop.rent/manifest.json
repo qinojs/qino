@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.shop.rent",
+  "description": "A product rented by the hour or the day: a week of times to book, with price and what is still free.",
+  "dependencies": ["cms", "cms.shop", "cms.shop.rent"],
+  "files": ["manifest.json", "plugin.ts", "pub/main.css", "pub/main.js", "pub/module.svg"]
+}

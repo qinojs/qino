@@ -1,11 +1,11 @@
+import { cms as cmsOf } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
-import { renderRows, saveRows } from "@qino/qino/cms.backend.shop";
+import { rowsPage } from "@qino/qino/cms.backend.shop";
 import { shopT } from "@qino/qino/cms.shop";
 
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
 import type { Rows } from "@qino/qino/cms.backend.shop";
 
 const { name } = manifest;
@@ -27,8 +27,10 @@ async function rows(app: App): Promise<Rows> {
     columns: [
       { name: "title", label: t`Title` },
       { name: "node_id", label: t`Product or category`, type: "page" },
+      { label: "", show: async (row) => Number(row.node_id) ? (await cmsOf(app).node(Number(row.node_id))).showTitle() : await t`All products` },
       { name: "grp_id", label: t`Group`, type: "select", options: [["0", await t`Everybody`], ...groups.map((g) => [String(g.id), String(g.name)] as [string, string])] },
       { name: "min_quantity", label: t`From quantity`, type: "number" },
+      { name: "per_line", label: t`Per line`, type: "checkbox" },
       { name: "factor", label: t`Factor`, type: "number" },
       { name: "start", label: t`From`, type: "date" },
       { name: "end", label: t`Until`, type: "date", until: true },
@@ -36,7 +38,4 @@ async function rows(app: App): Promise<Rows> {
   };
 }
 
-const render = async (node: Node) => renderRows(node, await rows(node.app));
-const api = async (node: Node, vars: Record<string, unknown>) => saveRows(node, [await rows(node.app)], vars);
-
-export const cms = { node: { render, api, js: ["../cms.backend.shop/pub/rows.js"] } };
+export const cms = { node: rowsPage(async (app) => [await rows(app)]) };

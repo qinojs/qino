@@ -2,5 +2,5 @@
   "name": "cms.shop.shipping.weight",
   "description": "Delivery tariffs by weight and country, free from an amount.",
   "dependencies": ["cms.shop"],
-  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts"]
+  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts", "pub/module.svg"]
 }

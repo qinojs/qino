@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.shop.accept",
+  "description": "What has to be agreed to before ordering: a checkbox with its text.",
+  "dependencies": [
+    "cms",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -65,7 +65,7 @@ export const ctxSettingsSchema = {
     },
 };
 
-export function init(app: App, { signal }: { signal: AbortSignal }) {
+export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     cmsInstances.set(app, new CMS(app));
 
@@ -140,9 +140,16 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         }
     }, { signal });
 
+
+    // the languages are read at the start, so a new one shows here: its addresses
+    for (const lang of app.languages.all) {
+        if (await app.db.one`SELECT 1 FROM page_url WHERE lang = ${lang} LIMIT 1`) continue;
+        if (await app.db.one`SELECT 1 FROM page WHERE id = 1`) await (await cms(app).node(1)).urlsGen(lang); // none yet: nothing to do, and no node to cache
+    }
 }
 
 export async function install({ app }: { app: App }): Promise<void> {
+  await app.db.exec`DELETE FROM page_url WHERE url LIKE ${"#cmspid%"}`; // computed now, and copies carried wrong ones
   if (!await app.db.one`SELECT id FROM page WHERE id = 1`) {
     await app.db.table('page').insert({ id: 1, access: 1, visible: true, searchable: true, module: "cms.layout.standard.2", basis: 0, type: "p" });
     await (await cms(app).node(1)).title("en", "root");

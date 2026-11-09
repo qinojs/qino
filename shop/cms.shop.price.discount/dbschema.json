@@ -7,6 +7,7 @@
           "node_id": { "type": "integer", "default": 0, "x-index": true, "description": "A product or a category: everything below it; 0: all products" },
           "grp_id": { "type": "integer", "default": 0, "x-index": true, "description": "Only for members of this group; 0: everybody" },
           "min_quantity": { "type": "integer", "default": 0, "description": "From this many units — counted together over all lines below node_id" },
+          "per_line": { "type": "boolean", "default": false, "description": "Count the units of each line on its own" },
           "factor": { "type": "number", "default": 1, "description": "0.9 is 10 % off" },
           "start": { "type": "integer", "default": 0, "description": "Unix time from which it holds; 0: always" },
           "end": { "type": "integer", "default": 0, "description": "Unix time until which it holds; 0: always" },

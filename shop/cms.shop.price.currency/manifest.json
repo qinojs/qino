@@ -2,5 +2,5 @@
   "name": "cms.shop.price.currency",
   "description": "Fixed prices per currency, instead of converting the main currency's.",
   "dependencies": ["cms.shop"],
-  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts"]
+  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts", "pub/module.svg"]
 }

@@ -120,9 +120,9 @@
             "description": "Relative to the main currency"
           },
           "rounding": {
-            "type": "integer",
+            "type": "number",
             "default": 1,
-            "description": "Step a reduced price is rounded to, in minor units (5: 0.05 CHF)"
+            "description": "Step a reduced price is rounded to, in minor units (5: 0.05 CHF; 0.05: a twentieth of a centime)"
           },
           "active": {
             "type": "boolean",
@@ -131,6 +131,11 @@
           "main": {
             "type": "boolean",
             "default": false
+          },
+          "closing": {
+            "type": "integer",
+            "default": 1,
+            "description": "Step the total to pay is rounded to, in minor units (5: 0.05 CHF); the difference is a line of its own"
           }
         }
       }
@@ -213,6 +218,12 @@
           "bill": {
             "type": "string",
             "description": "Billing party, JSON: name, honorificPrefix, givenName, familyName, organization, email, telephone, address (schema.org)"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "x-index": true,
+            "description": "The billing party's, lowercase, to find a customer's orders"
           },
           "ship": {
             "type": "string",

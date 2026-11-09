@@ -7,10 +7,12 @@ Elixan. Nichts davon ist angefasst, es sind Vorschläge. Stand 09.11.2026.
 
 1. ~~**cms.cont.nav liest migrierte Einstellungen nicht.**~~ Erledigt: `migrate_from_php` wandelt
    Seiten-Einstellungen nach dem Schema des Moduls um (`coerceSettings.ts`, PHP speicherte `"10"`).
-2. **Inhalte haben keine eigene Adresse.** Produkte sind Inhaltsblöcke (`type c`) in einer
-   Kategorie. PHP gab ihnen eigene Adressen (realurl, `/lascaux-artist/114-i1`). qino kennt nur
-   Seiten-Adressen, deshalb `?shop_product=` und Weiterleitungen. Vorschlag: `page_url` auch für
-   Inhalte, gerendert als ihre Seite mit dem Inhalt als Hauptknoten.
+2. **Inhalte mit eigener Adresse: gebaut, ohne Backend.** Ein Inhalt ist ein berechneter Anker `#cmspidN`
+   ohne Zeile in `page_url`, ausser jemand gibt ihm einen Namen (`#kontakt`). Ein Modul sagt `childUrls`,
+   dann haben seine direkten Kinder dort eine echte Adresse; sie folgt Titel und Seite. Dort
+   rendert die Seite normal, die Kategorie zeigt nur das angefragte Kind. Produkte auf eigener
+   Seite und One-Pager bleiben wie sie sind. Offen: ein Backend-Panel für Adresse und SEO-Texte von
+   Inhalten; nach einer Umbenennung gibt es keine automatische Weiterleitung.
 3. **cms `Node.set({ settings | module })` lässt `node.settings` veraltet.** Das
    Einstellungs-Objekt wird beim Laden gebaut. Wer in `install()` per `set()` schreibt, sieht im
    selben Prozess bis zum Neustart die alten Werte (bzw. das alte Schema). Deshalb renderten die
@@ -73,3 +75,8 @@ Elixan. Nichts davon ist angefasst, es sind Vorschläge. Stand 09.11.2026.
     lädt es deshalb selbst. Vorschlag: Die Bausteine nennen `cms.mjs` in ihren eigenen `js`.
 25. **`usr.ship_*`:** `user.profile` kennt nur eine Adresse. Für eine gespeicherte Lieferadresse
     bräuchte es eine zweite, oder Bestellungen merken sich die letzte.
+
+## Von drucken.ch
+
+25. **`migrateText` setzte `text.log_id_ch` voraus,** ältere Sites haben die Spalte nicht. Behoben. Weitere Annahmen dieser Art können in `migrate_from_php` noch stecken; geprüft ist nur, was dieser Test berührt.
+26. **`fin.payment.datatrans`** fehlt. Nötig, sobald eine Datatrans-Site wirklich migriert wird.

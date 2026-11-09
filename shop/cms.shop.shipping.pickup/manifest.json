@@ -2,5 +2,5 @@
   "name": "cms.shop.shipping.pickup",
   "description": "Delivery: the customer collects the order.",
   "dependencies": ["cms.shop"],
-  "files": ["manifest.json", "plugin.ts"]
+  "files": ["manifest.json", "plugin.ts", "pub/module.svg"]
 }

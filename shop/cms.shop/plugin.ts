@@ -2,7 +2,7 @@ import { App, s } from "@qino/qino";
 
 import { adopt } from "./lib/cart.ts";
 import { idOf, registerRows } from "./lib/rows.ts";
-import { bind, CACHED, forget, shopT, syncFactors } from "./lib/shop.ts";
+import { bind, CACHED, forget, listen, shopT, syncFactors } from "./lib/shop.ts";
 
 import type { EventDecls } from "@qino/qino";
 import type { Extra, Order } from "./lib/rows.ts";
@@ -26,7 +26,7 @@ export const settingsSchema = {
 const row = s.any();
 const errors = s.record<string>().describe("Key → message; fill in what blocks.");
 const price = s.object({
-  product: row, variant: s.optional(row), price: s.number().describe("Unit price in minor units of the currency; change it."),
+  product: row, line: s.optional(row).describe("The cart line priced, if any."), variant: s.optional(row), price: s.number().describe("Unit price in minor units of the currency; change it."),
   quantity: s.number(), order: s.optional(row), currency: s.optional(row), country: s.string(),
   usrId: s.optional(s.number()), data: s.any(), time: s.number().describe("Unix time the price is asked for."),
 });
@@ -73,8 +73,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   bind(app);
   registerRows(app);
   const t = shopT(app);
-  // deno-lint-ignore no-explicit-any -- payloads are declared above, as data
-  const on = (event: string, fn: (e: any) => unknown) => app.on(event, fn as never, { signal });
+  const on = listen(app, signal);
 
   for (const event of ["table:insert-after", "table:update-after", "table:delete-after"] as const) {
     app.db.on(event, ({ table }) => { if (CACHED.includes(table.name)) forget(app, table.name); }, { signal });

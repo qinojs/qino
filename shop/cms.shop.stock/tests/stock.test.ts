@@ -2,14 +2,17 @@ import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { asVisitor, withShop } from "../../tests/app.ts";
+import type {} from "../plugin.ts"; // its column on the product
 import { cart } from "@qino/qino/cms.shop";
 
 import type { Product } from "@qino/qino/cms.shop";
 
-test("stock blocks what is not there and is taken off when ordered", async () => {
+test("stock blocks what is not there and is taken off when ordered; none is not kept", async () => {
   await withShop(["cms.shop.stock"], async (app) => {
     const product = (await app.db.table("shop_product").get<Product>(10))!;
     await asVisitor(app, async (ctx) => {
+      assertEquals(Object.keys(await product.errors()), [], "no stock kept: always there");
+      product.stock = 0;
       assertEquals(Object.keys(await product.errors()), ["out of stock"]);
       const variant = await app.db.table("shop_variant").insert({ product_id: 10, stock: 2 });
       assertEquals(Object.keys(await product.errors()), []); // in stock as its variants are
@@ -23,6 +26,8 @@ test("stock blocks what is not there and is taken off when ordered", async () =>
       await order.setParty("bill", { name: "Anna", address: { addressCountry: "CH" } });
       assertEquals((await order.place()).ok, true);
       assertEquals(Number((await product.variant(variant))!.$get("stock")), 0);
+      await order.cancel();
+      assertEquals(Number((await product.variant(variant))!.$get("stock")), 2, "canceled: back in stock");
     });
   });
 });

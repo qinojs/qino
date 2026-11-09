@@ -554,7 +554,8 @@ const node = {
         input: s.object({ url: s.string() }),
         execute: async ({ node, lang, url }: any) => {
           await node.urlSet(lang, { url: cleanCustomUrl(url), custom: 1 });
-          return node.urlSeoGen(lang);
+          await node.urlsGen(lang);
+          return node.urlSeo(lang);
         },
       },
 
@@ -564,7 +565,8 @@ const node = {
           ...nodeWrite,
           execute: async ({ node, lang }: any) => {
             await node.urlSet(lang, { custom: 0 });
-            return node.urlSeoGen(lang);
+            await node.urlsGen(lang);
+            return node.urlSeo(lang);
           },
         },
       },

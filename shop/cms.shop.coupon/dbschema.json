@@ -1,0 +1,68 @@
+{
+  "properties": {
+    "shop_coupon": {
+      "additionalProperties": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "What the customer reads"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 16,
+            "default": "percent",
+            "description": "percent or money"
+          },
+          "value": {
+            "type": "number",
+            "default": 0,
+            "description": "Percent, or the amount left in the main currency (20.50)"
+          },
+          "node_id": {
+            "type": "integer",
+            "default": 0,
+            "x-index": true,
+            "description": "For the products below this node; 0: the whole order"
+          },
+          "constant": {
+            "type": "boolean",
+            "default": false,
+            "description": "An amount stays as it is instead of being used up"
+          },
+          "once": {
+            "type": "boolean",
+            "default": false,
+            "description": "Once per customer"
+          },
+          "start": {
+            "type": "integer",
+            "default": 0,
+            "description": "Unix time from which it holds; 0: always"
+          },
+          "end": {
+            "type": "integer",
+            "default": 0,
+            "description": "Unix time of its last day; 0: always"
+          }
+        }
+      }
+    },
+    "shop_order": {
+      "additionalProperties": {
+        "properties": {
+          "coupon": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": true
+          }
+        }
+      }
+    }
+  }
+}
