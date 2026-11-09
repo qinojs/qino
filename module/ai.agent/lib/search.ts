@@ -60,5 +60,5 @@ export async function agents(app: App, query?: string, limit = 10): Promise<{ id
   }
   const ids = [...best.keys()].slice(0, limit);
   const roles = new Map((await db.query`SELECT id, system FROM ai_agent WHERE ${sql.in("id", ids)}`).map((a) => [Number(a.id), first(a.system)]));
-  return ids.flatMap((id) => roles.has(id) ? [{ id, role: roles.get(id)!, score: best.get(id) }] : []);
+  return ids.filter((id) => roles.has(id)).map((id) => ({ id, role: roles.get(id)!, score: best.get(id) }));
 }

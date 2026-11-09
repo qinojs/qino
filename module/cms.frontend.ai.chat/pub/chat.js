@@ -323,7 +323,7 @@ function describe(el) {
   const input = el.closest("input, select, textarea, button");
   if (input) {
     const label = [...input.labels ?? []].map((l) => l.innerText).join(" ").trim();
-    const value = input.type === "password" || input.localName === "button" ? "" : String(input.value ?? "");
+    const value = input.type === "password" || input.localName === "button" ? "" : input.value;
     lines.push(`- form field: <${input.localName}>` + [
       input.name && ` name "${input.name}"`, input.type && `, type ${input.type}`, label && `, label "${short(label, 120)}"`,
       value && `, value "${short(value, 120)}"`, input.form?.action && `, form action ${input.form.action}`,

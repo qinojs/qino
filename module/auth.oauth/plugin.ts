@@ -67,14 +67,12 @@ function jwtPayload(token: string) {
 // public IdP metadata, keyed by issuer — identical across tenants, so a shared cache is safe
 const discoveryCache = new Map<string, Promise<any>>();
 function discover(issuer: string) {
-  let doc = discoveryCache.get(issuer);
-  if (!doc) {
-    doc = fetch(issuer.replace(/\/$/, "") + "/.well-known/openid-configuration")
+  return discoveryCache.getOrInsertComputed(issuer, () => {
+    const doc = fetch(issuer.replace(/\/$/, "") + "/.well-known/openid-configuration")
       .then((r) => { if (!r.ok) throw new Output("oauth discovery failed", { status: 502 }); return r.json(); });
     doc.catch(() => discoveryCache.delete(issuer)); // never cache a failed lookup
-    discoveryCache.set(issuer, doc);
-  }
-  return doc;
+    return doc;
+  });
 }
 
 /** A provider's endpoints. `authorize_url` set = OAuth2 (identity via userinfo); else OIDC discovery. */

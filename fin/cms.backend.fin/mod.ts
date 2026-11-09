@@ -72,7 +72,7 @@ export async function sources(app: App, id: string): Promise<HtmlString> {
     ? await app.db.query`SELECT number, name FROM accounting_account WHERE ${sql.in("number", numbers)}`
     : []).map((row) => [String(row.number), String(row.name)]));
   return html`<datalist id="${id}">${[...all].map(([source, number]) =>
-    html`<option value="${source}">${number} ${names.get(number) ?? ""}`)}</datalist>`;
+    html`<option value="${source}">${number} ${names.get(number)}`)}</datalist>`;
 }
 
 /** A small badge, in a color of the palette (`--red`) where it should stand out. */

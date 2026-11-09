@@ -25,8 +25,9 @@ async function decide(call: Call, { content, question, options }: DecideInput, p
   }
   if (!Object.hasOwn(options, answer.choice)) throw new AiError(`Not an option: ${answer.choice}`);
   const probabilities = answer.probabilities;
-  if (!probabilities || Object.keys(probabilities).length !== Object.keys(options).length ||
-    Object.keys(options).some((name) => !Object.hasOwn(probabilities, name) || !probability(probabilities[name]))) {
+  const names = Object.keys(options);
+  if (!probabilities || Object.keys(probabilities).length !== names.length ||
+    names.some((name) => !Object.hasOwn(probabilities, name) || !probability(probabilities[name]))) {
     throw new AiError("Invalid probabilities in the answer");
   }
   return { choice: answer.choice, probabilities };

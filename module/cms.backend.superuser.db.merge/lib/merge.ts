@@ -105,8 +105,9 @@ export function merge(db: Db, table: string, into: unknown, from: unknown): Prom
     for (const [column, value] of Object.entries(gone)) {
       if (column !== key && !history(column) && empty(keep[column]) && !empty(value)) fill[column] = value;
     }
-    if (Object.keys(fill).length) await db.table(table).update(into, fill);
-    result.filled = Object.keys(fill);
+    const filled = Object.keys(fill);
+    if (filled.length) await db.table(table).update(into, fill);
+    result.filled = filled;
     return result;
   });
 }

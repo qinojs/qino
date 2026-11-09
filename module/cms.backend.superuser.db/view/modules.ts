@@ -58,9 +58,9 @@ export async function renderModules(app: App, modules: Map<string, any>): Promis
 
   if (!moduleRows.length) return html.async`<div class=u2-card><div>${t`No modules with dbSchema.`}</div></div>`;
 
-  const moduleCount = Object.keys(index).length;
-  const tableCount = Object.values(index).reduce((sum, tables) => sum + Object.keys(tables).length, 0);
-  const fieldCount = Object.values(index).reduce((sum, tables) =>
+  const grouped = Object.values(index), moduleCount = grouped.length;
+  const tableCount = grouped.reduce((sum, tables) => sum + Object.keys(tables).length, 0);
+  const fieldCount = grouped.reduce((sum, tables) =>
     sum + Object.values(tables).reduce((s, fields) => s + fields.length, 0), 0);
 
   return html.async`<div class="u2-card">

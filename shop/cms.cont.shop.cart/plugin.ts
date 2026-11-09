@@ -57,7 +57,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <tfoot>
       ${taxes}
       <tr class=-sum>
-        <th colspan=3>${t`Total`} ${currency?.$id ?? ""}
+        <th colspan=3>${t`Total`} ${currency?.$id}
         <td>${money(total)}
         ${cell}
   </table>

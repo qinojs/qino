@@ -52,7 +52,7 @@ export async function history(app: App, id: number, period: Period): Promise<{ d
     buckets.getOrInsert(time, []).push(sample);
   }
   return { datapoint: point, samples: [...buckets].map(([time, samples]) => {
-    const numbers = samples.flatMap((sample) => sample.value === null ? [] : [sample.value]);
+    const numbers = samples.map((sample) => sample.value).filter((value) => value !== null);
     const sum = numbers.reduce((sum, value) => sum + value, 0);
     const mean = numbers.length ? sum / numbers.length : null;
     const value = consumption ? numbers.length ? sum : null : point.type === "state" ? samples.at(-1)!.value : mean;

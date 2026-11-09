@@ -62,8 +62,8 @@ function billing(app: App, d: Row, subs: Row[]) {
 
 /** The fields of a domain: where it is registered and hosted; an alias has no host. */
 const placeFields = (app: App, d: Row | undefined) => html.async`
-  ${app.t`Registrar`} <input name=registrar value="${d?.registrar ?? ""}">
-  ${d?.alias_of ? "" : html.async`${app.t`Host`} <input name=host value="${d?.host ?? ""}">`}`;
+  ${app.t`Registrar`} <input name=registrar value="${d?.registrar}">
+  ${d?.alias_of ? "" : html.async`${app.t`Host`} <input name=host value="${d?.host}">`}`;
 
 /** What is still to do — domains we bill for without a customer, or a customer's without a
  *  subscription for what we bill —, and the sources' sync; nothing but the sync when all is done. */
@@ -90,10 +90,10 @@ async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
 function sourceFields(app: App, types: string[], current?: Row) {
   const t = app.t;
   return html.async`<template><u2-fields>
-    ${t`Name`} <input name=name required value="${current?.name ?? ""}" placeholder="s3">
+    ${t`Name`} <input name=name required value="${current?.name}" placeholder="s3">
     ${t`Type`} <select name=type>${types.map((type) => html`<option${selected(type === current?.type)}>${type}`)}</select>
-    ${t`URL`} <input name=url value="${current?.url ?? ""}" placeholder="https://s3.example.com:8443">
-    ${t`User`} <input name=user value="${current?.user ?? ""}" autocomplete=off>
+    ${t`URL`} <input name=url value="${current?.url}" placeholder="https://s3.example.com:8443">
+    ${t`User`} <input name=user value="${current?.user}" autocomplete=off>
     ${t`Secret`} <input name=secret type=password autocomplete=new-password placeholder="${current?.secret ? t`unchanged` : ""}">
   </u2-fields></template>`;
 }

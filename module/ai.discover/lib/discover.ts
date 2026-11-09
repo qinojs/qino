@@ -102,5 +102,5 @@ export async function find(app: App, kind: Kind, query: string | number[], among
   if (!hits) return byWords(query, among, limit);
   const byName = new Map(among.map((e) => [e.name, e])), best = new Map<string, number>();
   for (const { key, score } of hits) best.getOrInsert(String(key.name), score); // the nearest chunk
-  return [...best].flatMap(([name, score]) => byName.has(name) ? [{ ...byName.get(name)!, score }] : []).slice(0, limit);
+  return [...best].filter(([name]) => byName.has(name)).map(([name, score]) => ({ ...byName.get(name)!, score })).slice(0, limit);
 }

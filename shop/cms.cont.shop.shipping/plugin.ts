@@ -25,7 +25,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     items.push(html.async`<label>
         ${edit ? html`<span><input required type=radio name=method value="${m.name}" ${m.name === active ? html`checked` : ""}></span>` : ""}
         <span><span>${m.label}</span>
-          ${currency?.show(await order.shippingCost(m.name)) ?? ""}</span>
+          ${currency?.show(await order.shippingCost(m.name))}</span>
       </label>`);
   }
   return html.async`<form>

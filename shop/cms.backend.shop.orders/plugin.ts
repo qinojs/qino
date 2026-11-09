@@ -57,7 +57,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
     <tbody>${orders.slice(0, PER_PAGE).map((o) => html.async`<tr>
       <td><a href="${link({ order: o.$id })}">${o.$id}</a>
       <td>${date(o.ordered)}
-      <td>${o.party("bill")?.name ?? ""}
+      <td>${o.party("bill")?.name}
       <td>${o.country}
       <td>${o.currency} ${(Number(o.total) / 100).toFixed(2)}
       <td>${names[o.status] ?? o.status}`)}
