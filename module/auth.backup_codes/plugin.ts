@@ -2,7 +2,7 @@ import { Access, getCtx, s } from "@qino/qino";
 
 import { generate, left, spend } from "./mod.ts";
 
-import type { ApiTree, App, Params } from "@qino/qino";
+import type { ApiTree, Params } from "@qino/qino";
 import type { Factor } from "@qino/qino/auth";
 
 export const authFactors: Factor[] = [{
@@ -11,7 +11,7 @@ export const authFactors: Factor[] = [{
   second: true, // never the only one: a code alone is no way into an account
   stepUp: true,
   order: 90, // the way out when nothing else is at hand, so never the first offer
-  has: async (app: App, usrId: number) => await left(app, usrId) > 0,
+  has: async (app, usrId) => await left(app, usrId) > 0,
 }];
 
 export const api: ApiTree = {
