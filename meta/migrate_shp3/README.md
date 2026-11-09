@@ -31,4 +31,5 @@ Payments of old orders are not recreated in fin.payment — the status (`paid`) 
 
 Throwaway helpers for test migrations, run from a site's folder. `tools/dump2sqlite.py` makes SQLite
 from a MySQL dump (no database server needed), `tools/verify.ts` recalculates recent orders against
-what PHP charged, `tools/backend.ts` renders every backend page of the shop.
+what PHP charged, `tools/backend.ts` renders every backend page of the shop, `tools/checkout.ts` places one order,
+`tools/testuser.ts` makes a local superuser for the backend.

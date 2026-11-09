@@ -97,8 +97,8 @@ schreiben.
     MwSt, Preise je Währung, Länder, Optionen, `prop_*`-Merkmale), Rabatte, Versand, Währungen und
     Länder. Bei Lascaux dazu Blending und Bestell-Export im Projekt.
 27. **Anders aufgebaut:** Die Seiten sind einfache Tabellen, eine Zeile speichert beim Ändern
-    (`renderRows`). Länder und Produkt/Kategorie gibt man als Code bzw. Seite ein, es gibt keine
-    Massenbearbeitung. Die alten Backend-Seiten ersetzt `migrate_shp3`, statt sie doppelt zu führen.
+    (`renderRows`). Länder gibt man als Code ein, es gibt keine Massenbearbeitung. Ein Produkt zeigt
+    seine eigenen Felder untereinander (`single`), was leer bleibt, bekommt beim Anlegen den Standardwert. Die alten Backend-Seiten ersetzt `migrate_shp3`, statt sie doppelt zu führen.
     Datumswerte gelten als Tag in UTC.
 
 ## Elixan

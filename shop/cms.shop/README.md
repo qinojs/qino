@@ -14,6 +14,9 @@ const { ok, errors } = await order.place();
 const { redirect } = await order.pay({ return: "/done" }); // fin.payment, ref cms.shop:<id>
 ```
 
+A placed order stands even if its payment does not start: the API answers `paymentFailed`, and
+`order/:id/pay` tries again, for the customer's own order or one placed in this session.
+
 ## Conventions
 
 | | |

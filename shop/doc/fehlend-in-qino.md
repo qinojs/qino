@@ -64,11 +64,12 @@ Elixan. Nichts davon ist angefasst, es sind Vorschläge. Stand 09.11.2026.
 
 21. **`renamedModules.ts`: `cms.cont.my.change_pw1` fehlt.** Das Modul heisst jetzt
     `cms.cont.my.password`, die Seite bleibt sonst ohne Modul.
-22. **Bestellt, aber Zahlung startet nicht.** Scheitert `order.pay()` nach `place()` (Provider nicht
-    erreichbar, `core.url` leer), ist die Bestellung platziert und der Warenkorb verbraucht, der Kunde
-    sieht aber nur einen Fehler. Vorschlag: Die API fängt das ab und meldet „bestellt, Zahlung offen“,
-    mit einem Weg zur erneuten Zahlung (auch in `cms.cont.shop.my.orders`).
+22. ~~**Bestellt, aber Zahlung startet nicht.**~~ Erledigt: Die API meldet `paymentFailed`, die Kasse fragt nach,
+    `order/:id/pay` und „Jetzt bezahlen“ in `cms.cont.shop.my.orders` versuchen es erneut.
 23. **migrate_from_php/accounting (16) bei Elixan:** 305 alte Rechnungen liegen weiter nur in
     `accounting1_*`. Die Bestellung kennt ihre Nummer (`data.accounting1`).
-24. **`usr.ship_*`:** `user.profile` kennt nur eine Adresse. Für eine gespeicherte Lieferadresse
+24. **`cms.cont.my.*` brauchen `cms.mjs`.** Sie rufen `cms.initNode`, laden es aber nicht. Eine Site-Layout
+    ohne `cms.mjs` wirft auf der Kontoseite `cms is not defined`, die Bausteine bleiben tot. Elixans Layout
+    lädt es deshalb selbst. Vorschlag: Die Bausteine nennen `cms.mjs` in ihren eigenen `js`.
+25. **`usr.ship_*`:** `user.profile` kennt nur eine Adresse. Für eine gespeicherte Lieferadresse
     bräuchte es eine zweite, oder Bestellungen merken sich die letzte.
