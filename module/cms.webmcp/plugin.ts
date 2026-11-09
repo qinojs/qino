@@ -4,7 +4,6 @@ import { cms } from "@qino/qino/cms";
 import { webmcpTools } from "./mod.ts";
 
 import type { App, ApiTree, Params, Ctx } from "@qino/qino";
-import type {} from "@qino/qino/cms";
 
 export const api: ApiTree = {
   tools: {

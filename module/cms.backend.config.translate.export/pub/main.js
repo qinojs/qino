@@ -4,31 +4,22 @@ cms.initNode("backend.config.translate.export", (el) => {
   const node = api.cms.node(cms.el.nid(el));
   const result = el.querySelector("[data-result]");
 
-  el.querySelector("[data-action=export]")?.addEventListener("click", async (e) => {
-    e.target.disabled = true;
+  const show = {
+    export: (r) => result.textContent = r?.written?.length ? `${r.written.length} files written` : "nothing exported",
+    preview: (r) => result.replaceChildren(renderChanges(r?.changes)),
+  };
+  el.addEventListener("click", async (e) => {
+    const button = e.target.closest("[data-action]");
+    if (!button) return;
+    const { action } = button.dataset;
+    button.disabled = true;
     result.textContent = "…";
     try {
-      const r = await node.api.post({ export: 1 });
-      result.textContent = r?.written?.length
-        ? `${r.written.length} files written`
-        : "nothing exported";
-    } catch (e) {
-      result.textContent = e.message;
+      show[action](await node.api.post({ [action]: 1 }));
+    } catch (err) {
+      result.textContent = err.message;
     } finally {
-      e.target.disabled = false;
-    }
-  });
-
-  el.querySelector("[data-action=preview]")?.addEventListener("click", async (e) => {
-    e.target.disabled = true;
-    result.textContent = "…";
-    try {
-      const r = await node.api.post({ preview: 1 });
-      result.replaceChildren(renderChanges(r?.changes));
-    } catch (e) {
-      result.textContent = e.message;
-    } finally {
-      e.target.disabled = false;
+      button.disabled = false;
     }
   });
 });
