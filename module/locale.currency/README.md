@@ -42,4 +42,4 @@ rate keeps it with the booking. Asking for a date is asking a source, whatever `
 BAZG publishes a day's rates the day before; asked for a day, it is asked for the eve.
 
 *Not* here: which currencies a site offers, rounding, the main currency. That belongs to whoever
-sets prices — `shp3` keeps it in `shp3_currency`, as in PHP.
+sets prices — `cms.shop` keeps it in `shop_currency`.

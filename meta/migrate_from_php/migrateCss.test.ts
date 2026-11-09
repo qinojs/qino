@@ -20,3 +20,12 @@ test("migrateCss: module and node classes become qcms attributes", async () => {
     '[qcms-id="123"] [qcms-mod="cont.form"], .-pid1234x { background:url(pub/a.svg) }',
   );
 });
+
+test("migrateCss: a file inside the folder it names keeps a clean path", async () => {
+  const dir = await fs.tempDir() + "/";
+  await fs.mkdir(dir + "data/site/pub", { recursive: true });
+  const path = dir + "data/site/pub/main.css";
+  await fs.write(path, "a { background:url(/qg/site/pub/img/a.svg) }");
+  await migrateCss({ dir, db: { col: () => Promise.resolve([]) } } as unknown as App);
+  assertEquals(await fs.text(path), "a { background:url(../pub/img/a.svg) }");
+});

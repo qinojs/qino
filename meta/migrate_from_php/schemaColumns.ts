@@ -7,7 +7,7 @@ import { fs } from "@qino/qino";
 export async function schemaColumns(qino: string): Promise<Record<string, Record<string, string>>> {
   const tables: Record<string, Record<string, string>> = {};
   qino = resolve(qino);
-  for (const storeFile of ["module/store.json", "shp3/store.json", "cms-legacy/store.json"]) {
+  for (const storeFile of ["module/store.json", "shop/store.json", "cms-legacy/store.json"]) {
     const storePath = qino + "/" + storeFile;
     const store = JSON.parse(await fs.text(storePath));
     const base = fileURLToPath(new URL("./", pathToFileURL(storePath)));

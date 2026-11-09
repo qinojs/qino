@@ -33,7 +33,6 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.cont.images.cd` | — | ported linked image row |
 | `cms.cont.product_overview.cd` | — | ported product overview shell |
 | `cms.cont.quote.cd` | — | site-template wrapper for quotes |
-| `cms.cont.shp3.currency_chooser` | — | ported currency chooser behavior |
 | `cms.cont.text_and_slider.cd` | — | ported text and image slider |
 | `cms.cont.cols2` | — | ported responsive column layout |
 | `cms.cont.spacer` | — | ported spacing element |

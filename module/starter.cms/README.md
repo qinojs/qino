@@ -33,7 +33,8 @@ both are loaded twice. The first start downloads everything and takes a minute.
    logo, sending mail, imprint and privacy policy, languages. Delete the page when it is done.
 
 More starters build on this one. `starter.account` and `starter.ai` are added the same way;
-`starter.shop` comes from `qino + "shp3/store.json"`, `starter.fin` from `qino + "fin/store.json"`.
+`starter.shop` comes from `qino + "shop/store.json"`, `starter.fin` from `qino + "fin/store.json"`
+(the shop needs the `fin` store too).
 
 ### From a checkout
 

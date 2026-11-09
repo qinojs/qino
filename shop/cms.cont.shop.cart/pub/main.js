@@ -1,7 +1,7 @@
 // Delegated on document: frontend layouts have no cms.mjs.
 import { api } from "@qino/pub/api.js";
 
-import { reload, remove, setQuantity } from "../../cms.shop/pub/shop.js";
+import { reload, remove, setQuantity, solve } from "../../cms.shop/pub/shop.js";
 
 const root = "[qcms-mod='cont.shop.cart'] ";
 const lineOf = (target) => target.closest("[data-line]")?.dataset.line;
@@ -15,5 +15,7 @@ document.addEventListener("change", (e) => {
 });
 document.addEventListener("click", (e) => {
   const button = e.target.closest?.(root + "[data-line] button");
-  if (button) remove(lineOf(button));
+  if (!button) return;
+  const { solution } = button.dataset;
+  solution ? solve(lineOf(button), solution) : remove(lineOf(button));
 });

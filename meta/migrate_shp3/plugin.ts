@@ -1,4 +1,4 @@
-// shp3 → cms.shop, once: the legacy tables of the PHP shop (or of qino's shp3 port) into the shop's
+// shp3 → cms.shop, once: the legacy tables of the PHP shop into the shop's
 // own. The legacy tables stay as they are; nothing here runs again after the install.
 import { $item, fs, sql } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
@@ -18,10 +18,17 @@ const MODULES: Record<string, string> = {
   "cms.cont.shp3.order.payment": "cms.cont.shop.payment",
   "cms.cont.shp3.order.buy1": "cms.cont.shop.buy",
   "cms.cont.shp3.order.nextButton": "cms.cont.shop.next",
+  "cms.cont.shp3.currency_chooser": "cms.cont.shop.currency",
+  "cms.cont.shp3.my.orders1": "cms.cont.shop.my.orders",
+  "cms.cont.shp3.my.addresses2": "cms.cont.my.address",
   "cms.backend.shp3": "cms.backend.shop",
   "cms.backend.shp3.orders1": "cms.backend.shop.orders",
   "cms.backend.shp3.products": "cms.backend.shop.products",
   "cms.backend.shp3.settings": "cms.backend.shop.settings",
+  "cms.backend.shp3.campaign1": "cms.backend.shop.discounts",
+  "cms.backend.shp3.discount1": "cms.backend.shop.discounts",
+  "cms.backend.shp3.shipping_by_weight_and_country": "cms.backend.shop.shipping",
+  "cms.backend.shp3.props": "cms.backend.shop.products", // marks are columns of the product page now
 };
 
 /** Old keys of lines the shop added itself → the ones the modules use now. */
@@ -36,12 +43,14 @@ export const method = (name: string): string => {
   if (weight) return `weight.${weight[1]}`;
   const saferpay = /^saferpay\.(.+)$/.exec(name);
   if (saferpay) return saferpay[1] === "*" ? "saferpay" : `saferpay.${saferpay[1].toLowerCase()}`;
+  if (name === "invoice") return "qrbill"; // paying by invoice is fin's QR bill on it (cms.shop.invoice)
   return name;
 };
 
 const columnsOf = async (db: Db, table: string) => new Set((await db.columns(table).catch(() => [])).map((c) => String(c.Field)));
 /** Unix time from what a legacy column holds: a number, its string, or a datetime ("0000-…": none). */
 const time = (v: unknown) => /^\d+$/.test(String(v ?? "")) ? Number(v) : Math.floor(Date.parse(String(v ?? "").replace(" ", "T")) / 1000) || 0;
+const listOf = async (value: unknown) => String(await value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 const num = (v: unknown) => v == null || v === "" ? null : Number(v);
 const json = (v: unknown) => { try { return JSON.parse(String(v || "null")); } catch { return null; } };
 
@@ -116,7 +125,9 @@ export async function install({ app }: { app: App }): Promise<void> {
     if (countryCols.has("shp3_default_vat_rate")) await db.exec`UPDATE country SET shop_tax_rate = shp3_default_vat_rate WHERE shp3_default_vat_rate IS NOT NULL`;
 
     // products and variants; stock only where cms.shop.stock is there to keep it
-    const productCols = await columnsOf(db, "shp3_product"), stock = (await columnsOf(db, "shop_product")).has("stock");
+    const productCols = await columnsOf(db, "shp3_product"), shopCols = await columnsOf(db, "shop_product"), stock = shopCols.has("stock");
+    // marks (prop_*): the site's own columns, where its module declares them on shop_product too
+    const marks = [...productCols].filter((c) => c.startsWith("prop_") && shopCols.has(c));
     const pick = (row: Row, cols: Set<string>) => ({
       weight: num(row.weight), sku: cols.has("mpn") ? row.mpn ?? null : null, gtin: cols.has("gtin") ? row.gtin ?? null : null,
       length: cols.has("dim_length") ? num(row.dim_length) : null, width: cols.has("dim_width") ? num(row.dim_width) : null,
@@ -125,7 +136,10 @@ export async function install({ app }: { app: App }): Promise<void> {
     const products = await db.query`SELECT * FROM shp3_product`;
     for (const p of products) {
       const values = pick(p, productCols);
-      await db.table("shop_product").insert({ id: p.id, price: fine(p.price) ?? 0, ...values, weight: values.weight ?? 0, length: values.length ?? 0, width: values.width ?? 0, height: values.height ?? 0 });
+      await db.table("shop_product").insert({
+        id: p.id, price: fine(p.price) ?? 0, ...values, weight: values.weight ?? 0, length: values.length ?? 0, width: values.width ?? 0, height: values.height ?? 0,
+        ...Object.fromEntries(marks.map((c) => [c, !!Number(p[c])])),
+      });
     }
     report.push(`${products.length} products`);
     const variantCols = await columnsOf(db, "shp3_product_variant");
@@ -167,6 +181,18 @@ export async function install({ app }: { app: App }): Promise<void> {
           await discounts.insert({ node_id: c.page_id, factor: Number(c.value), title: c.title, start: time(c.start), end: c.end ? time(c.end) + 86400 : 0 });
         }
       }
+    }
+    if (await has("shop_option") && await has("shp3_product_opt")) {
+      await db.exec`INSERT INTO shop_option (product_id, name, sort) SELECT product_id, opt, sort FROM shp3_product_opt`;
+      for (const v of await db.query`SELECT * FROM shp3_product_opt_value`) {
+        await db.table("shop_option_value").insert({ product_id: v.product_id, name: v.opt, value: v.value, price: fine(v.price) ?? 0, per_line: !!Number(v.price_per_order_item), sort: v.sort });
+      }
+    }
+    // what PHP kept on the user is the profile of user.profile, where that is here and says nothing yet
+    const usrCols = await columnsOf(db, "usr");
+    if (usrCols.has("bill_street") && usrCols.has("street_address")) {
+      await db.exec`UPDATE usr SET street_address = bill_street, postal_code = bill_zip, address_locality = bill_city, address_country = bill_country
+        WHERE (street_address IS NULL OR street_address = '') AND bill_street <> ''`;
     }
     if (await has("shop_shipping_rate") && await has("shp3_shipping_by_weight_and_country")) {
       for (const r of await db.query`SELECT * FROM shp3_shipping_by_weight_and_country`) {
@@ -221,14 +247,38 @@ export async function install({ app }: { app: App }): Promise<void> {
       if (client) await app.settings["cms.shop.mail"].toCustomer(client.value === "1");
     }
 
+    // the payment accounts, where the site has them and fin's providers are here. Never switched
+    // live: a copy of a site must not take real money until someone says so
+    const saferpay = app.modules.get("fin.payment.saferpay") && await setting(db, ["shp3.payment.saferpay", "production"]);
+    if (saferpay) {
+      const account = await children(db, saferpay.id), value = (name: string) => String(account.get(name)?.value ?? "");
+      const target = app.settings["fin.payment.saferpay"];
+      if (value("json_api_username")) {
+        await target.user(value("json_api_username"));
+        await target.password(value("json_api_password"));
+        await target.terminalId(value("terminal_id"));
+        await target.customerId(/^API_(\d+)_/.exec(value("json_api_username"))?.[1] ?? "");
+        const offered = (await listOf(await shop.payments())).filter((m) => m.startsWith("saferpay.")).map((m) => m.slice(9).toUpperCase());
+        await target.methods(offered.join(", "));
+      }
+    }
+    if (app.modules.get("fin.payment.qrbill")) {
+      const iban = (await setting(db, ["cms.backend.accounting1", "QR-IBAN"]))?.value || (await setting(db, ["cms.backend.accounting1", "IBAN"]))?.value;
+      if (iban) await app.settings["fin.payment.qrbill"].iban(iban);
+    }
+
     // placed orders; open carts are gone with the old sessions anyway
+    const paidInvoices = await has("accounting1_invoice")
+      ? new Set((await db.query`SELECT id, paid_time FROM accounting1_invoice`).filter((i) => time(i.paid_time) > 0).map((i) => Number(i.id)))
+      : new Set<number>();
     const orders = (await db.query`SELECT * FROM shp3_order ORDER BY id`).filter((o) => time(o.time_ordered) > 0);
     const lines = db.table("shop_order_line");
     const generated: Row[] = []; // after all kept ids are in: theirs are drawn anew
     let mismatch = 0;
     for (const o of orders) {
       const currency = String(o.currency || main);
-      const paid = time(o.time_paid) > 0 || Number(o.paid) >= Number(o.cost);
+      // paying by invoice was booked on the invoice, not on the order
+      const paid = time(o.time_paid) > 0 || Number(o.paid) >= Number(o.cost) || paidInvoices.has(Number(o.invoice_id));
       const ship = Number(o.ship_unlike_bill) ? party(o, "ship") : null;
       const items = await db.query`SELECT * FROM shp3_order_item WHERE order_id = ${o.id} ORDER BY id`;
       // stored net, with fractions of a cent where prices included tax: gross again, as it was charged
@@ -239,6 +289,10 @@ export async function install({ app }: { app: App }): Promise<void> {
         const config = json(i.config) ?? {};
         const variant = config.shp3_variant ? Number(config.shp3_variant) : null;
         delete config.shp3_variant;
+        if (config.shp3_opt) { // what was picked is the line's options now
+          config.options = config.shp3_opt;
+          delete config.shp3_opt;
+        }
         const rate = Number(i.vat_rate ?? 0), unit = price(i.price, rate), amount = Math.round(unit * Number(i.quantity));
         sums.push({ name: "", quantity: Number(i.quantity), price: unit, taxRate: rate });
         await lines.insert({
@@ -288,6 +342,8 @@ export async function install({ app }: { app: App }): Promise<void> {
 
     // pages: the shop's own modules under their new names, their settings under the new keys —
     // where the app has the new module; the others wait (the shop's backend pages for products …)
+    // a backend page the new module made for itself stands: the old one, and what hung below it, goes
+    const replaced: string[] = [];
     const waiting: string[] = [], moves = Object.entries(MODULES).filter(([, to]) => app.modules.get(to));
     for (const [from, to] of Object.entries(MODULES)) {
       const pages = await db.query`SELECT id, settings FROM page WHERE module = ${from}`;
@@ -296,8 +352,17 @@ export async function install({ app }: { app: App }): Promise<void> {
         continue;
       }
       for (const page of pages) {
+        const old = await cms(app).node(Number(page.id));
+        if (!old.exists()) continue; // gone with its parent
+        if (to.startsWith("cms.backend.") && await cms(app).nodeByModule(to)) {
+          const was = await old.page();
+          await (await was.parent())?.removeChild(was);
+          replaced.push(from);
+          continue;
+        }
         const s = json(page.settings) ?? {};
         const out: Record<string, unknown> = {};
+        if (to === "cms.cont.shop.cart.small") out.mode = s.mode === "m" || s.mode === "s" ? "count" : "lines"; // PHP's default was the lines
         if ("not_editable" in s) out.editable = s.not_editable !== "1";
         if (s.heading) out.heading = Number(s.heading);
         if ("go back" in s) out.back = String(s["go back"] ?? "");
@@ -316,6 +381,7 @@ export async function install({ app }: { app: App }): Promise<void> {
       }
       if (pages.length) report.push(`${pages.length} × ${from} → ${to}`);
     }
+    if (replaced.length) report.push(`old backend pages replaced: ${replaced.join(", ")}`);
     if (waiting.length) report.push(`left without a qino module: ${waiting.join(", ")}`);
     // the site's own files of these modules (data/<module>/: css, images) under the new name, and
     // its css addressing the new name — qino loads data/<module>/pub/main.css by itself
@@ -335,6 +401,7 @@ export async function install({ app }: { app: App }): Promise<void> {
         after = after.replaceAll(`[qcms-mod="${from.replace(/^cms\./, "")}"]`, `[qcms-mod="${name}"]`)
           .replace(new RegExp(RegExp.escape(".-m-" + from.replaceAll(".", "-")) + "(?![\\w-])", "g"), `[qcms-mod="${name}"]`);
       }
+      after = after.replaceAll("[shp3-price", "[shop-price").replaceAll("[shp3-add", "[shop-add"); // the shop's attributes
       if (after !== before) await fs.write(path, after);
     }
 

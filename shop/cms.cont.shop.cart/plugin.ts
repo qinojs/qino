@@ -7,6 +7,7 @@ import type { Node } from "@qino/qino/cms";
 const settingsSchema = {
   properties: {
     editable: { type: "boolean", default: true, description: "Quantities can be changed here." },
+    next: { type: "integer", description: "Page of the checkout: a button below the total leads there; none: no button." },
   },
 };
 
@@ -22,13 +23,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const money = (v: number) => currency?.format(v) ?? String(v);
   const { rates, total } = await order!.totals();
   const cell = editable ? html`<td>` : "";
+  const next = Number(await node.settings.next() || 0);
 
   const rows: Promise<HtmlString>[] = [];
   for (const line of lines) {
-    const errors = Object.values(await line.errors());
+    const errors = Object.values(await line.errors()), solutions = Object.entries(await line.solutions());
     rows.push(html.async`<tr data-line="${line.id}">
       <td class=-title>${line.name}<div class=-description>${(await line.describe()).split("\n").map((d) => html`<div>${d}</div>`)}</div>
-        ${errors.length ? html`<div class=-errors>${errors.map((e) => html`<div>${e}</div>`)}</div>` : ""}
+        ${errors.length ? html`<div class=-errors>${errors.map((e) => html`<div>${e}</div>`)}${solutions.map(([id, s]) => html`<button type=button class=-solve data-solution="${id}">${s.label}</button>`)}</div>` : ""}
       <td class=-quantity>${editable ? html.async`<input type=number min=0 step=1 value="${line.quantity}" aria-label="${t`Quantity`}">` : line.quantity}
       <td class=-price>${money(line.price)}
       <td class=-total>${money(line.total())}
@@ -61,6 +63,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         <td>${money(total)}
         ${cell}
   </table>
+  ${next ? html.async`<a class=-next href="${(await node.cms.node(next)).url()}"><button type=button>${node.cms.text(node, "next", { tag: "span", initial: { de: "Zur Kasse", en: "Checkout" } })}</button></a>` : ""}
 </div>`;
 }
 

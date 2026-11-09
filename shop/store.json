@@ -1,11 +1,18 @@
 {
   "modules": {
     "cms.backend.shop": {},
+    "cms.backend.shop.discounts": {},
     "cms.backend.shop.orders": {},
+    "cms.backend.shop.products": {},
+    "cms.backend.shop.settings": {},
+    "cms.backend.shop.shipping": {},
     "cms.cont.shop.address": {},
     "cms.cont.shop.buy": {},
     "cms.cont.shop.cart": {},
+    "cms.cont.shop.cart.small": {},
     "cms.cont.shop.category": {},
+    "cms.cont.shop.currency": {},
+    "cms.cont.shop.my.orders": {},
     "cms.cont.shop.next": {},
     "cms.cont.shop.payment": {},
     "cms.cont.shop.product": {},
@@ -16,10 +23,12 @@
     "cms.shop.invoice": {},
     "cms.shop.mail": {},
     "cms.shop.minimum": {},
+    "cms.shop.options": {},
     "cms.shop.price.currency": {},
     "cms.shop.price.discount": {},
     "cms.shop.shipping.pickup": {},
     "cms.shop.shipping.weight": {},
-    "cms.shop.stock": {}
+    "cms.shop.stock": {},
+    "starter.shop": {}
   }
 }

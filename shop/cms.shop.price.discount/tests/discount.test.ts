@@ -2,10 +2,10 @@ import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
 
 import { asVisitor, withShop } from "../../tests/app.ts";
-import { cart } from "../../cms.shop/mod.ts";
+import { cart } from "@qino/qino/cms.shop";
 
 import type { App } from "@qino/qino";
-import type { Product } from "../../cms.shop/mod.ts";
+import type { Product } from "@qino/qino/cms.shop";
 
 /** A range (page 20) with two colours (10 and 11). */
 async function range(app: App) {

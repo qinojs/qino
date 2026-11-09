@@ -9,10 +9,12 @@ import { currency as iso } from "@qino/qino/locale.currency";
 
 import { appOf, country, currency, currencyFor, listOf, mainCurrency, pick, productTaxRate, settingsOf, shopT, taxIncluded, taxRate } from "./shop.ts";
 
-import type { App } from "@qino/qino";
+import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export type Errors = Record<string, string>;
+/** A way out of a line's error, offered next to it: what the customer reads, what it does. */
+export type Solution = { label: string; solve(): unknown };
 export type Method = { name: string; label: string };
 /** A party as fin.invoice takes it, plus how to reach it. */
 export type Party = {
@@ -126,6 +128,13 @@ export class Product extends ShopRow {
       : { price: e.price, net: e.price, gross: e.price * factor };
   }
 
+  /** What a buying form asks besides the amount, from the modules (options …). */
+  async fields({ order, currency }: { order?: Order; currency?: Currency }): Promise<HtmlString[]> {
+    const e = { product: this, order, currency, fields: [] as HtmlString[] };
+    await this.$app.fire("shop:product-fields", e);
+    return e.fields;
+  }
+
   /** What keeps it (or a variant of it) out of a cart; empty when it can be sold. */
   async errors(variant?: Variant): Promise<Errors> {
     const e = { product: this, variant, errors: {} as Errors };
@@ -226,11 +235,25 @@ export class Line extends ShopRow {
     return e.weight;
   }
 
-  /** What is wrong with this line; empty when it is fine. */
-  async errors(): Promise<Errors> {
-    const e = { line: this, errors: {} as Errors };
+  async #inspect(): Promise<{ errors: Errors; solutions: Record<string, Solution> }> {
+    const e = { line: this, errors: {}, solutions: {} };
     await this.$app.fire("shop:line-check", e);
-    return e.errors;
+    return e;
+  }
+
+  /** What is wrong with this line; empty when it is fine. */
+  async errors(): Promise<Errors> { return (await this.#inspect()).errors; }
+
+  /** What the customer can do about it. */
+  async solutions(): Promise<Record<string, Solution>> { return (await this.#inspect()).solutions; }
+
+  /** Take a way out; false if it is not on offer (any more). */
+  async solve(id: string): Promise<boolean> {
+    const solution = (await this.solutions())[id];
+    if (!solution) return false;
+    await solution.solve();
+    await (await this.order())?.reprice();
+    return true;
   }
 
   /** quantity × price, rounded as fin rounds it. */
@@ -442,10 +465,13 @@ export class Order extends ShopRow {
     return e.methods;
   }
 
-  /** Methods named as the shop labels them in the order's language; the provider's name else. */
-  async #labelled(methods: Method[]): Promise<Method[]> {
+  /** A method as the shop labels it in the order's language; `fallback` else, its name without one. */
+  async label(name: string, fallback = name): Promise<string> {
     const labels = settingsOf(this.$app).labels, lang = this.lang || this.$app.languages.def;
-    return Promise.all(methods.map(async (m) => ({ ...m, label: String(await labels[m.name]?.[lang] || await labels[m.name]?.[this.$app.languages.def] || m.label) })));
+    return String(await labels[name]?.[lang] || await labels[name]?.[this.$app.languages.def] || fallback);
+  }
+  #labelled(methods: Method[]): Promise<Method[]> {
+    return Promise.all(methods.map(async (m) => ({ ...m, label: await this.label(m.name, m.label) })));
   }
 
   /** The method in force: the chosen one if it still fits, else the only one. Frozen once placed. */

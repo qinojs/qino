@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "shop_option": {
+      "additionalProperties": {
+        "properties": {
+          "product_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "shop_product", "x-qg-on-parent-delete": "cascade" },
+          "name": { "type": "string", "maxLength": 64, "x-index": "primary" },
+          "sort": { "type": "integer", "default": 0 }
+        }
+      }
+    },
+    "shop_option_value": {
+      "additionalProperties": {
+        "properties": {
+          "product_id": { "type": "integer", "x-index": "primary", "x-qg-parent": "shop_product", "x-qg-on-parent-delete": "cascade" },
+          "name": { "type": "string", "maxLength": 64, "x-index": "primary", "description": "The option it belongs to" },
+          "value": { "type": "string", "maxLength": 64, "x-index": "primary" },
+          "price": { "type": "number", "default": 0, "description": "On top, in minor units of the main currency" },
+          "per_line": { "type": "boolean", "default": false, "description": "Charged once per line instead of per unit" },
+          "sort": { "type": "integer", "default": 0 }
+        }
+      }
+    }
+  }
+}

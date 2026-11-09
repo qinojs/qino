@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.shop.products",
+  "description": "The shop's products: price, measures, variants, and what the installed shop modules keep per product.",
+  "dependencies": ["cms.backend.shop"],
+  "files": ["manifest.json", "plugin.ts"]
+}

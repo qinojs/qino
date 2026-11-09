@@ -23,9 +23,9 @@ const labels = async (app: App): Promise<Record<string, string>> =>
   ({ ordered: await shopT(app)`Ordered`, paid: await shopT(app)`Paid`, canceled: await shopT(app)`Canceled` });
 const date = (time: unknown) => Number(time) ? new Date(Number(time) * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
 
-function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const url = ctx.req.url.toURL();
-  const id = Number(url.searchParams.get("order"));
+  const id = Number(vars.order ?? url.searchParams.get("order")); // a reload has its own address
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : list(node, url);
 }
 

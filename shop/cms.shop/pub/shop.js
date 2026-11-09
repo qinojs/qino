@@ -17,9 +17,13 @@ export const setQuantity = (line, quantity) => shop.cart.lines(line).put({ quant
 
 export const remove = (line) => shop.cart.lines(line).delete();
 
+export const solve = (line, solution) => shop.cart.lines(line).solve.post({ solution });
+
 export const choose = (what, value) => shop.cart[what].put({ value });
 
 export const setParty = (kind, party) => shop.cart.party.put({ kind, party });
+
+export const setCurrency = (value) => shop.cart.currency.put({ value });
 
 export const setData = (values) => shop.cart.data.put({ values });
 
@@ -33,6 +37,26 @@ export const reload = (el) => {
 /** Place the order; the answer may send the payer to the payment. */
 export const order = (back = location.href) => shop.cart.order.post({ return: back });
 
+/** Fields of a form as data: `options[Box]` is `{ options: { Box } }`. */
+const dataOf = (form) => {
+  const data = {};
+  for (const [name, value] of new FormData(form)) {
+    if (["product", "variant", "quantity"].includes(name)) continue;
+    const [, group, key] = /^(.+)\[(.+)\]$/.exec(name) ?? [];
+    if (group) (data[group] ??= {})[key] = value;
+    else data[name] = value;
+  }
+  return Object.keys(data).length ? data : undefined;
+};
+
+// [shop-price] inside a buying form follows what is picked in it
+document.addEventListener("change", async (e) => {
+  const form = e.target.closest?.("[shop-add]"), shown = form?.querySelector("[shop-price]");
+  if (!shown) return;
+  const res = await shop.price.post({ product: form.elements.product.value, variant: form.elements.variant?.value || undefined, quantity: Number(form.elements.quantity?.value ?? 1), data: dataOf(form) });
+  if (res?.grossText) shown.textContent = res.grossText;
+});
+
 // A form names the product (product), optionally the variant and the amount; every other field
 // is the line's data. Several amounts at once: inputs named quantity inside elements carrying
 // data-variant.
@@ -43,8 +67,7 @@ document.addEventListener("submit", async (e) => {
   if (!form.reportValidity()) return;
   const product = form.elements.product?.value;
   if (!product) throw new Error("cms.shop: the form has no input named product");
-  const fields = Object.fromEntries([...new FormData(form)].filter(([name]) => !["product", "variant", "quantity"].includes(name)));
-  const data = Object.keys(fields).length ? fields : undefined;
+  const data = dataOf(form);
   const rows = [...form.querySelectorAll("[data-variant]")];
   const picks = rows.length
     ? rows.map((row) => ({ variant: row.dataset.variant, quantity: Number(row.querySelector("[name=quantity]")?.value ?? 0), data }))

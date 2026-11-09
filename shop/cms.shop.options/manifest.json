@@ -1,0 +1,6 @@
+{
+  "name": "cms.shop.options",
+  "description": "What a customer picks for a product (with a box: yes, no), each value at its own surcharge.",
+  "dependencies": ["cms.shop"],
+  "files": ["README.md", "dbschema.json", "manifest.json", "plugin.ts"]
+}

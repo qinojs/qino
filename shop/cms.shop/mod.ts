@@ -5,7 +5,7 @@ export { Currency, idOf, Line, Order, Product, refOf, Variant } from "./lib/rows
 export { cart } from "./lib/cart.ts";
 export { stepUrl } from "./lib/steps.ts";
 export { appOf, countries, country, currency, currencyFor, mainCurrency, sellsTo, settingsOf, shopT, taxIncluded, taxRate } from "./lib/shop.ts";
-export type { Errors, Extra, Method, Party, PriceQuery, ShippingProvider, Status } from "./lib/rows.ts";
+export type { Errors, Extra, Method, Party, PriceQuery, ShippingProvider, Solution, Status } from "./lib/rows.ts";
 
 /** The product row of a page that renders as one, created on first sight. */
 export async function ensureProduct(node: Node): Promise<Product> {

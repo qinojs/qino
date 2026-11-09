@@ -10,13 +10,13 @@ const moduleDir = fileURLToPath(new URL("../../", import.meta.url));
 const cmsLegacyDir = fileURLToPath(new URL("../../../cms-legacy/", import.meta.url));
 const metaDir = fileURLToPath(new URL("../../../meta/", import.meta.url));
 const testModuleDir = fileURLToPath(new URL("../../../test-modules/", import.meta.url));
-const shp3Dir = fileURLToPath(new URL("../../../shp3/", import.meta.url));
+const shopDir = fileURLToPath(new URL("../../../shop/", import.meta.url));
 const finDir = fileURLToPath(new URL("../../../fin/", import.meta.url));
 const iotDir = fileURLToPath(new URL("../../../iot/", import.meta.url));
 const opsDir = fileURLToPath(new URL("../../../ops/", import.meta.url));
 const qinoDir = fileURLToPath(new URL("../../../", import.meta.url));
-const stores = [moduleDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
-const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, finDir, iotDir, opsDir, testModuleDir];
+const stores = [moduleDir, shopDir, finDir, iotDir, opsDir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shopDir, finDir, iotDir, opsDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for (const entry of await fs.list(dir)) {

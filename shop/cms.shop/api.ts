@@ -123,6 +123,19 @@ export const api: ApiTree = {
             return { cart: await summary(order) };
           },
         },
+        solve: {
+          post: {
+            description: "Take a way out of an error of a line, as offered by its check",
+            access: Access.PUBLIC,
+            input: s.object({ solution: s.string() }),
+            execute: async ({ id, solution }: { id: string; solution: string }) => {
+              const [order, found] = await own(id);
+              if (!found) return { error: "not in your cart" };
+              if (!await found.solve(solution)) return { error: "not available" };
+              return { cart: await summary(order) };
+            },
+          },
+        },
       },
     },
     country: {

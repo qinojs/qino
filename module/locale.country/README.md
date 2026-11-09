@@ -12,7 +12,7 @@ await country.sorted(db, "de");  // ids, ordered the way German sorts the names
 ```
 
 Usage is up to the consumer: a shop decides where it delivers, a form what it offers — each by
-adding its own columns, like `shp3` adds `shp3_enabled` and `shp3_default_vat_rate`. Table and
+adding its own columns, like `cms.shop` adds `shop_enabled` and `shop_tax_rate`. Table and
 column names match the PHP original, so migrated databases fit as is.
 
 `install()` only adds what is missing; an edited row keeps its values.

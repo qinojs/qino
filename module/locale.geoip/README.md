@@ -36,7 +36,7 @@ must hold.
 ## Ideas
 
 - **Visitor's country**: profile, else IP, else a default setting — preselects country (and its
-  currency) in forms, e.g. shp3 addresses. The PHP original had it as `locations1::country()`.
+  currency) in forms, e.g. shop addresses. The PHP original had it as `locations1::country()`.
 - **Login from a new country**: notify the user or fire `suspicious`.
 - **Visitors by country**: a widget in the requests backend, counted while rendering.
 - **Country restrictions**: e.g. backend login only from CH — a coarse filter, VPNs pass.

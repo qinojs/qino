@@ -25,7 +25,6 @@ export const renamedModules: Record<string, string> = {
   "cms.cont.login6": "cms.cont.login.password", // lost pw page, placeholder, logout_redirect fall back
   "cms.cont.youtubevideo": "cms.cont.video.youtube2",
   "cms.backendLayout": "cms.layout.backend",
-  "cms.cont.shp3.order.cart3": "cms.cont.shp3.order.cart1",
   "cms.backend.struct": "cms.backend.cms.tree",
   "cms.backend.struct.grpaccess": "cms.backend.cms.tree.access",
   "cms.backend.mails": "cms.backend.superuser.messaging", // the sent mails; messaging keeps them now

@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.shop.settings",
+  "description": "The shop's currencies and countries: what it sells in, where it delivers, what tax applies.",
+  "dependencies": ["cms.backend.shop"],
+  "files": ["manifest.json", "plugin.ts"]
+}

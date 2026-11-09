@@ -3,9 +3,9 @@ import { assertEquals } from "@qino/qino/tests";
 import { record } from "@qino/qino/fin.payment";
 
 import { asVisitor, withShop } from "../../tests/app.ts";
-import { cart } from "../../cms.shop/mod.ts";
+import { cart } from "@qino/qino/cms.shop";
 
-import type { Product } from "../../cms.shop/mod.ts";
+import type { Product } from "@qino/qino/cms.shop";
 
 test("a placed order is invoiced one to one, the paid invoice pays the order", async () => {
   await withShop(["cms.shop.invoice"], async (app) => {

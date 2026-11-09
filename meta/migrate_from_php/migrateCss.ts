@@ -47,7 +47,7 @@ function relativeDir(from: string, to: string): string {
   let common = 0;
   while (fromParts[common] === toParts[common] && common < fromParts.length) common++;
   const path = "../".repeat(fromParts.length - common) + toParts.slice(common).join("/");
-  return path ? path + "/" : "";
+  return path && !path.endsWith("/") ? path + "/" : path;
 }
 
 async function* cssFiles(dir: string): AsyncGenerator<string> {

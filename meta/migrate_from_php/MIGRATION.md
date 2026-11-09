@@ -147,9 +147,8 @@ in `qino/module/` gibt, landet im Standard-Store, was in `cms-legacy/` liegt im 
 Rest als Kommentarblock am Ende — genau die Module, die noch portiert werden müssen. Vorlage ist
 [server.template.ts](tools/server.template.ts).
 
-Die Legacy-Module werden dabei **einzeln** aufgezählt statt mit `legacy.addAll()`: im Store liegen
-inzwischen auch Module, die `shp3` brauchen (`cms.cont.shp3.currency_chooser`), und die reissen den
-Start einer Site ohne Shop ab.
+Die Legacy-Module werden dabei **einzeln** aufgezählt statt mit `legacy.addAll()`: eine Site bekommt
+nur, was sie verwendet.
 
 Ein erneuter Aufruf von `tools/new-project.sh` legt nur an, was fehlt — Site-Ordner, Datenbanken und
 `server.ts` bleiben stehen. Wer neu importieren will, nimmt den Reset weiter unten.
@@ -336,8 +335,8 @@ Dieser Lauf hat zwei weitere generische Lücken geschlossen:
    `dbschema.json` zu suchen übersah Inline-`dbSchema`, unter anderem `currency.name/sign` und
    mehrere `country`-Spalten, und ließ dadurch den ersten Shop-Start scheitern.
 2. Reine Nachfolger werden während der Migration umbenannt: `cms.cont.text.cd` → `cms.cont.text`
-   und `cms.cont.shp3.order.cart3` → `cms.cont.shp3.order.cart1`. Die projektspezifischen Module für
-   Zitat, Bildzeile, Produktübersicht, Währungswahl und Text-Slider bleiben dagegen als Ports im
+   (der Shop wandert mit [migrate_shp3](../migrate_shp3/README.md) nach `cms.shop`). Die
+   projektspezifischen Module für Zitat, Bildzeile, Produktübersicht und Text-Slider bleiben dagegen als Ports im
    `cms-legacy`-Store.
 
 Die Site zeigt ihren eigentlichen Shop nur angemeldeten Benutzern. Ein Login-Vergleich bestätigt

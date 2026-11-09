@@ -6,7 +6,8 @@ cms.initNode("backend.shop.orders", (el) => {
     const button = e.target.closest("[data-status]");
     if (!button) return;
     button.disabled = true;
-    await api.cms.node(nid).api.post({ order: button.closest("[data-order]").dataset.order, status: button.dataset.status });
-    cms.reloadNode(nid);
+    const { order } = button.closest("[data-order]").dataset;
+    await api.cms.node(nid).api.post({ order, status: button.dataset.status });
+    cms.reloadNode(nid, { order });
   });
 });

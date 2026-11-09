@@ -1,5 +1,5 @@
 import { cms } from "@qino/qino/cms";
-import { adopt, before, link, moduleLink, page, prose, section, title, todo } from "@qino/qino/starter.cms";
+import { adopt, before, moduleLink, page, prose, section, title, todo } from "@qino/qino/starter.cms";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -23,11 +23,8 @@ async function build(app: App) {
     { ...shown, searchable: false }, async (p) => {
       await before(p, "contact");
       await prose(p, { en: "<h1>Cart</h1>", de: "<h1>Warenkorb</h1>", fr: "<h1>Panier</h1>", it: "<h1>Carrello</h1>" });
-      await section(p, "cms.cont.shp3.order.cart1");
-      const to = await checkout(p);
-      await prose(p, Object.fromEntries(Object.entries({
-        en: "Continue to checkout", de: "Weiter zur Kasse", fr: "Passer la commande", it: "Procedi alla cassa",
-      }).map(([lang, label]) => [lang, `<p>${link(to, label + " →")}</p>`])));
+      const box = await section(p, "cms.cont.shop.cart");
+      await box.settings.next((await checkout(p)).id);
     });
   await checkout(cart);
 
@@ -39,32 +36,32 @@ async function build(app: App) {
       fr: "<h1>Boutique</h1>\n<p>Ces produits sont des exemples — modifiez-les dans le backend sous <i>Shop</i>.</p>",
       it: "<h1>Negozio</h1>\n<p>Questi prodotti sono esempi — modificateli nel backend sotto <i>Shop</i>.</p>",
     });
-    const small = await section(p, "cms.cont.shp3.order.cart.small");
-    await small.settings.cart_page(cart.id);
+    const small = await section(p, "cms.cont.shop.cart.small");
+    await small.settings.cart(cart.id);
     // Products are contents of the category, as in the PHP shop: each one is listed with its own
     // add-to-cart form. A product as page of its own is not rendered in a layout.
-    const category = await section(p, "cms.cont.shp3.category1");
+    const category = await section(p, "cms.cont.shop.category");
     for (const [i, price] of [19, 29, 49].entries()) {
-      const product = await category.createCont({ module: "cms.cont.shp3.product.default", visible: true });
+      const product = await category.createCont({ module: "cms.cont.shop.product", visible: true });
       const n = i + 1;
       await title(product, {
         en: `Sample product ${n}`, de: `Beispielprodukt ${n}`, fr: `Produit exemple ${n}`, it: `Prodotto di esempio ${n}`,
       });
-      await app.db.table("shp3_product").ensure({ id: product.id, price });
+      await app.db.table("shop_product").ensure({ id: product.id, price: price * 100, weight: 500 });
     }
   });
 
-  const settings = await moduleLink(app, "cms.backend.shp3.settings", "Backend → Shop → Settings");
-  const products = await moduleLink(app, "cms.backend.shp3.products", "Backend → Shop → Products");
+  const settings = await moduleLink(app, "cms.backend.shop.settings", "Backend → Shop → Settings");
+  const products = await moduleLink(app, "cms.backend.shop.products", "Backend → Shop → Products");
   await todo(app, "todo-shop", { en: "Shop", de: "Shop", fr: "Boutique", it: "Negozio" }, {
-    en: `<p>Enter the shop's address, currencies, VAT and the countries you deliver to under ${settings}. Change the prices of the sample products or delete them under ${products}. Order confirmations need the mail server.</p>`,
-    de: `<p>Tragen Sie Adresse, Währungen, MWST und die Lieferländer des Shops unter ${settings} ein. Preise der Beispielprodukte ändern oder sie löschen können Sie unter ${products}. Bestellbestätigungen brauchen den Mailserver.</p>`,
-    fr: `<p>Indiquez l'adresse, les devises, la TVA et les pays de livraison sous ${settings}. Modifiez les prix des produits exemples ou supprimez-les sous ${products}. Les confirmations de commande nécessitent le serveur de messagerie.</p>`,
-    it: `<p>Inserite indirizzo, valute, IVA e paesi di consegna sotto ${settings}. Modificate i prezzi dei prodotti di esempio o eliminateli sotto ${products}. Le conferme d'ordine richiedono il server di posta.</p>`,
+    en: `<p>Enter the shop's currencies, VAT and the countries you deliver to under ${settings}. Change the prices of the sample products or delete them under ${products}. Order confirmations need the mail server.</p>`,
+    de: `<p>Tragen Sie Währungen, MWST und die Lieferländer des Shops unter ${settings} ein. Preise der Beispielprodukte ändern oder sie löschen können Sie unter ${products}. Bestellbestätigungen brauchen den Mailserver.</p>`,
+    fr: `<p>Indiquez les devises, la TVA et les pays de livraison sous ${settings}. Modifiez les prix des produits exemples ou supprimez-les sous ${products}. Les confirmations de commande nécessitent le serveur de messagerie.</p>`,
+    it: `<p>Inserite valute, IVA e paesi di consegna sotto ${settings}. Modificate i prezzi dei prodotti di esempio o eliminateli sotto ${products}. Le conferme d'ordine richiedono il server di posta.</p>`,
   });
 }
 
-/** Checkout below the cart, and the thank-you page cms.cont.shp3.order.buy1 leads to: its first child. */
+/** Checkout below the cart, and the thank-you page cms.cont.shop.buy leads to: its first child. */
 async function checkout(cart: Node) {
   const p = await page(cart, "checkout", { en: "Checkout", de: "Kasse", fr: "Commande", it: "Cassa" },
     { access: 1, visible: false, searchable: false }, async (p) => {
@@ -74,7 +71,7 @@ async function checkout(cart: Node) {
         fr: "<h1>Commande</h1>\n<p>Où devons-nous livrer, et comment souhaitez-vous payer ?</p>",
         it: "<h1>Cassa</h1>\n<p>Dove dobbiamo consegnare, e come desiderate pagare?</p>",
       });
-      for (const step of ["addresses2", "shipping", "payment", "buy1"]) await section(p, `cms.cont.shp3.order.${step}`);
+      for (const step of ["address", "shipping", "payment", "buy"]) await section(p, `cms.cont.shop.${step}`);
     });
   await page(p, "order-placed", { en: "Thank you", de: "Vielen Dank", fr: "Merci", it: "Grazie" },
     { access: 1, visible: false, searchable: false }, (p) => prose(p, {

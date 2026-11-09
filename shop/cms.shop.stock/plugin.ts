@@ -1,7 +1,7 @@
 import { shopT } from "@qino/qino/cms.shop";
 
 import type { App } from "@qino/qino";
-import type { Line, Order, Product, Variant } from "@qino/qino/cms.shop";
+import type { Line, Order, Product, Solution, Variant } from "@qino/qino/cms.shop";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
@@ -28,9 +28,11 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     }
   });
 
-  on("shop:line-check", async ({ line, errors }: { line: Line; errors: Record<string, string> }) => {
+  on("shop:line-check", async ({ line, errors, solutions }: { line: Line; errors: Record<string, string>; solutions: Record<string, Solution> }) => {
     const stock = Number((await holder(line))?.stock ?? 0);
-    if (stock >= 1 && stock < line.quantity) errors["out of stock"] = `${await t`Units left in stock`}: ${stock}`;
+    if (stock < 1 || stock >= line.quantity) return;
+    errors["out of stock"] = `${await t`Units left in stock`}: ${stock}`;
+    solutions["set quantity"] = { label: await t`Adjust quantity`, solve: () => line.setQuantity(stock) };
   });
 
   on("shop:ordered", async ({ order }: { order: Order }) => {
