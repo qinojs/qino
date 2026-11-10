@@ -19,15 +19,16 @@ async function importPending(app: App, c: Config, signal?: AbortSignal): Promise
   for (const file of await fs.list(c.spool)) {
     if (!file.isFile || !/^[0-9a-f]{64}\.zip$/.test(file.name)) continue;
     signal?.throwIfAborted();
+    const path = c.spool + file.name;
     try {
-      const { added, matched } = await ingestZip(app, await fs.bytes(c.spool + file.name));
+      const { added, matched } = await ingestZip(app, await fs.bytes(path));
       result.added += added;
       result.matched += matched;
-      await fs.rename(c.spool + file.name, `${c.spool}archive/${file.name}`);
+      await fs.rename(path, `${c.spool}archive/${file.name}`);
     } catch (error) {
       console.error(`fin.bank.ebics: ${file.name}`, error);
       result.failed.push(file.name);
-      await fs.rename(c.spool + file.name, `${c.spool}failed/${file.name}`);
+      await fs.rename(path, `${c.spool}failed/${file.name}`);
     }
   }
   return result;

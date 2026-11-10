@@ -91,8 +91,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const day = new Intl.DateTimeFormat(lang, { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
     const hour = new Intl.DateTimeFormat(lang, { hour: "2-digit", minute: "2-digit" });
     const parts = ranges.map(({ begin, end }) => {
-      const from = new Date(begin * 1000), to = new Date(end * 1000);
-      return `${day.format(from)} ${hour.format(from)}–${day.format(from) === day.format(to) ? "" : day.format(to) + " "}${hour.format(to)}`;
+      const from = new Date(begin * 1000), to = new Date(end * 1000), start = day.format(from), finish = day.format(to);
+      return `${start} ${hour.format(from)}–${start === finish ? "" : finish + " "}${hour.format(to)}`;
     });
     e.description = [e.description, ...parts].filter(Boolean).join("\n");
   });
