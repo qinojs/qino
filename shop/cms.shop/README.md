@@ -31,7 +31,8 @@ A placed order stands even if its payment does not start: the API answers `payme
 ## Rows
 
 `Product` (id = page id), `Variant` (its name is the text `variant_<id>` of the product's page),
-`Order`, `Line`, `Currency`. An open order is a cart (`status` `cart`); `place()` freezes its lines
+`Order`, `Line`, `Currency`. A product with variants is sold as one of them, never by itself. An open
+order is a cart (`status` `cart`); `place()` takes the country of the delivery address, freezes its lines
 and adds the lines the shop computed (`extras`: shipping, surcharges) as lines of their own, then
 it is `ordered`, and `paid` once fin says the payments with its ref cover the total.
 

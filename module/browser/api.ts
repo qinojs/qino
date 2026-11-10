@@ -7,6 +7,8 @@ import type { Page } from "./mod.ts";
 
 /** A page opened through the api closes itself after this long unused. */
 const IDLE = 10 * 60_000;
+/** Pages a user keeps open at once: each is a browser context, and memory is the server's. */
+const PAGES = 5;
 /** How long an action waits for its element. */
 const WAIT = 10_000;
 const REF = s.string().describe("From the snapshot, e.g. e12");
@@ -80,6 +82,8 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async ({ url }: { url?: string }, ctx: Ctx) => {
         if (url) web(url);
+        const mine = of(ctx.app).values().filter((k) => k.usrId === ctx.userId).toArray();
+        if (mine.length >= PAGES) throw new ConflictError(`${PAGES} pages are open: close one first`);
         const page = await open(ctx.app), id = uid();
         page.setDefaultTimeout(WAIT);
         // a page that does not load is closed: there is no id yet to close it by

@@ -93,7 +93,11 @@ export const api: ApiTree = {
         const ctx = getCtx(), order = await cart(ctx);
         if (order?.status !== "cart") return { ok: false };
         const value = code.trim();
-        if (value && !valid(await couponOf(ctx.app, value))) return { ok: false };
+        if (value && !valid(await couponOf(ctx.app, value))) {
+          // codes are guessed one by one: security adds up the misses per address
+          ctx.app.fire("suspicious", { ctx, reason: "cms.shop.coupon: unknown code" }).catch(() => {});
+          return { ok: false };
+        }
         order.coupon = value || null;
         order.forget();
         return { ok: true };

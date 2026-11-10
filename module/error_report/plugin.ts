@@ -28,12 +28,13 @@ export const settingsSchema = {
 };
 
 // The three report routes accept anonymous writes, so a rate cap protects the table (and the disk
-// read in handleCssError). Counted per client and process.
+// read in handleCssError). Counted per address and app: a client without cookie is new each time.
 const INTAKE_MAX = 20;
 const INTAKE_WINDOW = 600;
-const intake = new Map<string, { n: number; until: number }>();
+const intakes = new WeakMap<App, Map<string, { n: number; until: number }>>();
 function intakeAllowed(ctx: Ctx) {
-  const who = String(ctx.clientId || ctx.req.clientIp);
+  const intake = intakes.getOrInsertComputed(ctx.app, () => new Map());
+  const who = ctx.req.clientIp;
   const now = unixTime();
   const seen = intake.get(who);
   if (seen && seen.until > now) return ++seen.n <= INTAKE_MAX;
@@ -168,7 +169,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   // Track every 404 response (pages, api, dbFile, static). A direct visit of the
   // cms not-found page renders with status 200, so it is not reported.
-  app.on("response-ready", async ({ request, res, peerAddr, ctx }) => {
+  app.on("response-ready", ({ request, res, peerAddr, ctx }) => {
     if (res.status !== 404) return;
     const report: Report = { source: "404", message: request.url, file: new URL(request.url).pathname, prio: "notice" };
     if (!ctx) { // static path has no request context, addReport can't fill these
@@ -177,7 +178,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       report.browser = request.headers.get("user-agent") ?? "";
       report.ip = clientIp(request, peerAddr, app.trustedProxyHops);
     }
-    await addReport(app, report);
+    addReport(app, report); // not awaited: the answer need not wait for its log row
   }, { signal });
 
   // Log every "suspicious" event (failed logins, probes, …); the security module scores it.

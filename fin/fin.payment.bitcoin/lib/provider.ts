@@ -22,11 +22,22 @@ async function settings(app: App) {
 }
 
 async function get(url: string) {
-  const res = await fetch(url).catch((e) => {
+  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) }).catch((e) => {
     throw new Error(`fin.payment.bitcoin: unreachable — ${errMsg(e)}`);
   });
   if (!res.ok) throw new Error(`fin.payment.bitcoin: ${res.status} from ${new URL(url).host}`);
   return res.json();
+}
+
+/** Whether bitcoin is offered is asked by every checkout page: the prices are asked once a minute. */
+const PRICES = 60;
+const prices = new WeakMap<App, { esplora: string; until: number; value: Promise<Record<string, number>> }>();
+function offered(app: App, esplora: string) {
+  const kept = prices.get(app);
+  if (kept?.esplora === esplora && kept.until > unixTime()) return kept.value;
+  const value = get(`${esplora}/v1/prices`).catch(() => ({}));
+  prices.set(app, { esplora, until: unixTime() + PRICES, value });
+  return value;
 }
 
 /** What arrived at an address, in satoshis: all of it, and what is confirmed deep enough. */
@@ -58,8 +69,7 @@ export const paymentProvider: Provider = {
   async methods(app, { currency }) {
     const { key, esplora } = await settings(app);
     if (!key) return [];
-    const prices = await get(`${esplora}/v1/prices`).catch(() => ({}));
-    return Number(prices[currency]) > 0 ? [{ name: "", label: "Bitcoin" }] : [];
+    return Number((await offered(app, esplora))[currency]) > 0 ? [{ name: "", label: "Bitcoin" }] : [];
   },
 
   async start(app, payment, urls) {

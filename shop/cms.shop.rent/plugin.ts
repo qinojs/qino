@@ -1,3 +1,4 @@
+import { unixTime } from "@qino/qino";
 import { listen, shopT } from "@qino/qino/cms.shop";
 
 import { factorAt, free, moments, rules, step } from "./mod.ts";
@@ -14,7 +15,22 @@ declare module "@qino/qino/cms.shop" {
   interface Product { rent_interval: string | null; rent_capacity: number }
 }
 
-const rangesOf = (data: unknown): Range[] | undefined => (data as { rent?: Range[] } | null)?.rent;
+/** Intervals a line rents at most: more is no booking, and the price would loop over them. */
+const MAX = 10_000;
+
+/** The times a line's data asks for; none: no rental. Empty when they are no times: not whole
+ *  seconds, not forwards, or more than MAX intervals of `seconds`. */
+function rangesOf(data: unknown, seconds: number): Range[] | undefined {
+  const ranges = (data as { rent?: unknown } | null)?.rent;
+  if (ranges === undefined) return;
+  if (!Array.isArray(ranges)) return [];
+  let steps = 0;
+  for (const { begin, end } of ranges.map((r) => r ?? {})) {
+    if (!Number.isSafeInteger(begin) || !Number.isSafeInteger(end) || end <= begin) return [];
+    if ((steps += Math.ceil((end - begin) / seconds)) > MAX) return [];
+  }
+  return ranges;
+}
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const t = shopT(app);
@@ -22,9 +38,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   // the unit price: what the intervals cost on average, each by the rules for its moment
   on("shop:price-initial", async (e) => {
-    const ranges = rangesOf(e.data);
+    const seconds = step(e.product), ranges = rangesOf(e.data, seconds);
     if (!ranges?.length) return;
-    const all = await rules(app, e.product.$id), seconds = step(e.product);
+    const all = await rules(app, e.product.$id);
     let total = 0, count = 0;
     for (const range of ranges) {
       // closed moments are the line check's: here they cost the price
@@ -35,25 +51,25 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   // the amount is the number of intervals, whatever was asked
   on("shop:line-quantity", async (e: { line: Line; quantity: number }) => {
-    const ranges = rangesOf(e.line.dataOf());
+    const seconds = step(await e.line.product()), ranges = rangesOf(e.line.dataOf(), seconds);
     if (!ranges) return;
-    const seconds = step(await e.line.product());
     e.quantity = ranges.reduce((sum, { begin, end }) => sum + Math.ceil((end - begin) / seconds), 0);
   });
 
   on("shop:line-check", async ({ line, errors, solutions }: { line: Line; errors: Record<string, string>; solutions: Record<string, Solution> }) => {
-    const ranges = rangesOf(line.dataOf());
+    const product = await line.product(), seconds = step(product), ranges = rangesOf(line.dataOf(), seconds);
     if (!ranges) return;
-    const product = await line.product(), all = await rules(app, line.product_id);
+    const all = await rules(app, line.product_id), now = unixTime();
     // what the lines before it in the order take counts too: the first in the cart gets it
     const lines = (await (await line.order())?.lines() ?? []).filter((l) => String(l.product_id) === String(line.product_id));
     const at = lines.findIndex((l) => l.$id === line.$id);
     const before = (at < 0 ? lines : lines.slice(0, at))
-      .flatMap((l) => rangesOf(l.dataOf()) ?? []).map((r) => ({ begins: r.begin, ends: r.end }));
-    // the same time twice in a line is two of the product
+      .flatMap((l) => rangesOf(l.dataOf(), seconds) ?? []).map((r) => ({ begins: r.begin, ends: r.end }));
+    // the same time twice in a line is two of the product; a time begun is gone
     const kept: Range[] = [], asked = Map.groupBy(ranges, (r) => `${r.begin}-${r.end}`);
     for (const same of asked.values()) {
-      const range = same[0], open = [...moments(range, step(product))].every((moment) => factorAt(all, moment) != null);
+      const range = same[0];
+      const open = range.begin >= now && [...moments(range, seconds)].every((moment) => factorAt(all, moment) != null);
       kept.push(...same.slice(0, open ? await free(app, line.product_id, range, before) : 0));
     }
     if (kept.length === ranges.length) return;
@@ -69,7 +85,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   });
 
   on("shop:line-description", async (e: { line: Line; description: string }) => {
-    const ranges = rangesOf(e.line.dataOf());
+    const ranges = rangesOf(e.line.dataOf(), step(await e.line.product()));
     if (!ranges) return;
     const lang = (await e.line.order())?.lang || app.languages.def;
     const day = new Intl.DateTimeFormat(lang, { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
@@ -85,7 +101,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   on("shop:ordered", async ({ order }: { order: Order }) => {
     const name = order.party("bill")?.name ?? "";
     for (const line of await order.lines()) {
-      for (const { begin, end } of rangesOf(line.dataOf()) ?? []) {
+      for (const { begin, end } of rangesOf(line.dataOf(), step(await line.product())) ?? []) {
         await app.db.table("shop_rental").insert({ product_id: line.product_id, line_id: line.$id, usr_id: order.usr_id, name, begins: begin, ends: end });
       }
     }

@@ -72,3 +72,16 @@ test("a table of very many rows stops, and says how many there are", async () =>
     });
   });
 });
+
+test("money reads as typed, a locked cell stays as it is", async () => {
+  await withShop(["cms.shop.shipping.weight"], async (app) => {
+    await asVisitor(app, async () => {
+      const node = await cms(app).node(10), db = app.db;
+      const spec: Rows = { ...rates, columns: rates.columns.map((c) => c.name === "weight" ? { ...c, locked: () => true } : c) };
+      await saveRows(node, [spec], { table: spec.table, values: { country: "CH", method: "a", weight: "500", price: "19.99" } });
+      assert(String(await renderRows(node, spec)).includes('value="19.99"'));
+      await saveRows(node, [spec], { table: spec.table, id: "CH:a:500", values: { weight: "1", price: "5" } });
+      assertEquals(await db.row`SELECT weight, price FROM shop_shipping_rate`, { weight: 500, price: 500 });
+    });
+  });
+});

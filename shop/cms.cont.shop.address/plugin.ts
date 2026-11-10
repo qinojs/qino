@@ -1,8 +1,8 @@
 import { html } from "@qino/qino";
 import { country as countryName } from "@qino/qino/locale.country";
-import { cart, countries, country as shopCountry, shopT } from "@qino/qino/cms.shop";
+import { cart, countries, listen, country as shopCountry, shopT } from "@qino/qino/cms.shop";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Order, Party } from "@qino/qino/cms.shop";
 
@@ -33,6 +33,18 @@ const nodeSettingsSchema = {
 
 const value = (p: Party | undefined, f: string) =>
   String((IN_ADDRESS.has(f) ? p?.address?.[f] : (p as Record<string, unknown> | undefined)?.[f]) ?? "");
+
+/** The fields required here hold the order back on the server too, not only in the form. */
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
+  const t = shopT(app), req = app.settings["cms.cont.shop.address"].required;
+  listen(app, signal)("shop:order-check", async ({ order, errors }: { order: Order; errors: Record<string, string> }) => {
+    for (const kind of order.ship ? ["bill", "ship"] as const : ["bill"] as const) {
+      for (const f of FIELDS) {
+        if (await req[kind][f] === true && !value(order.party(kind), f)) return void (errors["has address"] = await t`The address is incomplete`);
+      }
+    }
+  });
+}
 
 /** The countries to choose from: the current one first, the shop's own next, the rest by name. */
 async function choices(node: Node, ctx: Ctx, order?: Order) {

@@ -1,6 +1,6 @@
 // Row classes of the shop. Columns are data, methods are verbs: `price` is a column, so the
 // calculation is `prices()`. Amounts are minor units (fin's rule): 2450 is CHF 24.50.
-import { DbRow, sql, unixTime } from "@qino/qino";
+import { ConflictError, DbRow, sql, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { fromMinor } from "@qino/qino/fin";
 import { totals } from "@qino/qino/fin.invoice";
@@ -293,6 +293,7 @@ export class Order extends ShopRow {
   #shippings: Promise<Method[]> | null = null;
   #payments: Promise<Method[]> | null = null;
   #grps: Promise<number[]> | null = null;
+  #placing = false;
 
   /** Drop what was worked out from the lines, the settings and the tables. */
   forget(): this {
@@ -502,16 +503,25 @@ export class Order extends ShopRow {
     return e.errors;
   }
 
-  /** The checkout: priced anew, checked, and placed unless a module still stops it. */
+  /** The checkout: priced anew, checked, and placed unless a module still stops it. One at a time:
+   *  the row is the same for every request (identity map), so a second click waits for nothing. */
   async place(): Promise<{ ok: boolean; errors: Errors; redirect: string }> {
-    if (this.status !== "cart") throw new Error(`cms.shop: order ${this.$id} was already placed`);
-    for (const line of await this.lines()) await line.recheck(); // stock and friends look again
-    await this.reprice();
-    const e = { order: this, errors: await this.errors(), prevent: false, redirect: "" };
-    await this.$app.fire("shop:place", e);
-    const ok = !e.prevent && !Object.keys(e.errors).length;
-    if (ok) await this.#freeze();
-    return { ok, errors: e.errors, redirect: e.redirect };
+    if (this.status !== "cart" || this.#placing) throw new ConflictError(`cms.shop: order ${this.$id} is placed already`);
+    this.#placing = true;
+    try {
+      // the address decides where it goes, whatever was chosen since
+      const country = this.party("ship")?.address?.addressCountry;
+      if (country && country !== this.country) await this.setCountry(country);
+      for (const line of await this.lines()) await line.recheck(); // stock and friends look again
+      await this.reprice();
+      const e = { order: this, errors: await this.errors(), prevent: false, redirect: "" };
+      await this.$app.fire("shop:place", e);
+      const ok = !e.prevent && !Object.keys(e.errors).length;
+      if (ok) await this.#freeze();
+      return { ok, errors: e.errors, redirect: e.redirect };
+    } finally {
+      this.#placing = false;
+    }
   }
 
   /** Freeze what was live, then mark it ordered. */

@@ -76,3 +76,21 @@ test("a capacity: as many at once as there are, the same time twice in a line is
     });
   });
 });
+
+test("times that are none, too many or begun already are not rented", async () => {
+  await withShop(["cms.shop.rent"], async (app) => {
+    await app.db.table("shop_product").update(10, { price: 10000, rent_interval: "1 hour" });
+    const product = (await app.db.table("shop_product").get<Product>(10))!;
+    const begin = at(7, 9);
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      for (const rent of [[{ begin, end: begin + 36000 }, { begin: begin + 32400, end: begin }], [{ begin: 0, end: 4e10 }], "x"]) {
+        const line = await order.add(product, { data: { rent } });
+        assertEquals([Number(line.quantity), Object.keys(await line.errors())], [0, ["quantity"]]);
+        await order.remove(line);
+      }
+      const past = await order.add(product, { data: { rent: [{ begin: 3600, end: 7200 }] } });
+      assertEquals(Object.keys(await past.errors()), ["rent taken"]);
+    });
+  });
+});

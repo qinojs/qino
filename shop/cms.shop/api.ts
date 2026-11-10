@@ -65,8 +65,10 @@ async function own(id: string) {
 /** Start the payment. The order stands either way: if the provider fails, the customer is told and
  *  can try again — an error here must not look as if nothing had been ordered. */
 async function startPayment(order: Order, back: string): Promise<{ redirect: string; paymentFailed?: boolean }> {
+  // the payer comes back to this site only: the link would otherwise lead anywhere
+  const { url, appUrl } = getCtx().req, to = URL.parse(back, url.href);
   try {
-    return await order.pay({ return: back });
+    return await order.pay({ return: to?.origin === url.origin ? to.href : url.origin + appUrl });
   } catch (e) {
     console.error(`cms.shop: payment of order ${order.$id} did not start`, e);
     return { redirect: "", paymentFailed: true };

@@ -122,6 +122,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const product = await line.product();
     if (!product) return void (errors["not exists"] = await t`This product no longer exists`);
     if (line.variant_id && !await line.variant()) errors["not exists"] = await t`This variant no longer exists`;
+    // with variants one of them is sold, never the product itself
+    else if (!line.variant_id && (await product.variants()).length) errors["no variant"] = await t`Please choose a variant`;
     if (line.quantity <= 0) errors["quantity"] = await t`Not available in this quantity`;
     Object.assign(errors, await product.errors(await line.variant()));
   });

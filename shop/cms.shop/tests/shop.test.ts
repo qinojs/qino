@@ -139,3 +139,30 @@ test("a payment that does not start leaves the order standing, and only its owne
     });
   });
 });
+
+test("an order goes where its address is, is placed once, takes a variant if there are any, and pays back to this site", async () => {
+  await withShop([], async (app) => {
+    const product = (await app.db.table("shop_product").get<Product>(10))!;
+    let back = "";
+    app.on("shop:payments", (e: { methods: unknown[] }) => { e.methods = [{ name: "x", label: "X" }]; });
+    app.on("shop:pay", (e: { payment: { return: string } }) => { back = e.payment.return; throw new Error("no provider"); });
+    await asVisitor(app, async (ctx) => {
+      const order = (await cart(ctx))!;
+      const line = await order.add(product);
+      await order.setParty("bill", { name: "Anna", address: { addressCountry: "CH" } });
+      await order.setCountry("DE"); // chosen after the address: the address wins
+      const variant = await app.db.table("shop_variant").insert({ product_id: 10, price: 3000 });
+      assertEquals(Object.keys(await line.errors()), ["no variant"]);
+      await app.db.table("shop_variant").delete(variant);
+      const placed = await Promise.allSettled([
+        invoke(api, "POST", "/cart/order", { return: "https://evil.example/" }),
+        invoke(api, "POST", "/cart/order", { return: "/done" }),
+      ]);
+      assertEquals(placed.map((p) => p.status), ["fulfilled", "rejected"], "a second click places nothing");
+      assertEquals([order.country, order.status, back], ["CH", "ordered", "http://shop.test/"]);
+      assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM shop_order_line WHERE order_id = ${order.$id}`), 1);
+      await invoke(api, "POST", `/order/${order.$id}/pay`, { return: "/done" });
+      assertEquals(back, "http://shop.test/done");
+    });
+  });
+});

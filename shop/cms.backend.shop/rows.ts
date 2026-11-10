@@ -51,7 +51,7 @@ const LIMIT = 500; // a page stays a page, whatever a shop has
 function shown(column: Column, row: Row): string {
   const value = row[column.name!];
   if (value == null || value === "") return "";
-  if (column.type === "money") return String(fromMinor(1, column.currency?.(row) ?? "") * Number(value));
+  if (column.type === "money") return String(fromMinor(Number(value), column.currency?.(row) ?? ""));
   if (column.type === "date") return Number(value) ? new Date((Number(value) - (column.until ? 1 : 0)) * 1000).toISOString().slice(0, 10) : "";
   return String(value);
 }
@@ -128,7 +128,7 @@ export async function saveRows(node: Node, specs: Rows[], vars: Record<string, u
   const before = vars.id != null ? await table.selectByID(String(vars.id)) : undefined;
   if (vars.id != null ? !before : spec.fixed) return { ok: false };
   const key = before ? new Set(Object.keys(table.entryIdValues(before) ?? {})) : new Set<string>();
-  const columns = spec.columns.filter((c) => c.name && !key.has(c.name) && c.name in given);
+  const columns = spec.columns.filter((c) => c.name && !key.has(c.name) && c.name in given && !(before && c.locked?.(before)));
   const row: Row = { ...before, ...given, ...spec.where };
   const values = Object.fromEntries(columns.map((c) => [c.name!, parsed(c, given[c.name!], row)]));
   if (before) {
