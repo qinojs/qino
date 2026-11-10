@@ -10,7 +10,7 @@ type El = ReturnType<typeof parseDocument>["children"][number] & { name?: string
 
 /** Read camt.053 (statement) or camt.054 (notification) and store its lines. */
 export async function ingest(app: App, xml: string): Promise<{ added: number; matched: number }> {
-  return await storeAll(app, parse(xml));
+  return storeAll(app, parse(xml));
 }
 
 /** A bounded ZIP of camt files: every XML is read before any of it is stored. */
@@ -27,7 +27,7 @@ export async function ingestZip(app: App, zip: Uint8Array): Promise<{ added: num
   } });
   if (!count) throw new Error("fin.bank.camt: ZIP contains no XML");
   const decoder = new TextDecoder("utf-8", { fatal: true });
-  return await storeAll(app, Object.values(files).flatMap((bytes) => parse(decoder.decode(bytes))));
+  return storeAll(app, Object.values(files).flatMap((bytes) => parse(decoder.decode(bytes))));
 }
 
 async function storeAll(app: App, statements: Statement[]): Promise<{ added: number; matched: number }> {

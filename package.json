@@ -116,6 +116,7 @@
     "./node": "./node.mjs"
   },
   "dependencies": {
+    "@kage0x3b/ebics-client": "6.0.0-beta.4",
     "@nuxodin/dump": "^1.5.2",
     "@nuxodin/reporter": "^1.3.0",
     "@qino/item": "npm:@nuxodin/item@^0.6.24",
