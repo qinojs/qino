@@ -1,7 +1,9 @@
 import { test } from "node:test";
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 
-import { parse } from "../mod.ts";
+import { parse, ingestZip } from "../mod.ts";
+import { zipSync } from "fflate";
+import { withFinApp } from "../../tests/app.ts";
 
 const statement = `<?xml version="1.0" encoding="UTF-8"?>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.04">
@@ -75,6 +77,11 @@ test("a statement becomes its account and lines; batches are split, signs follow
   ]);
 });
 
+test("financial amounts reject excess precision and invalid digits", () => {
+  assertThrows(() => parse(statement.replace("472.26", "472.261")), Error, "excess decimal places");
+  assertThrows(() => parse(statement.replace("472.26", "not-a-number")), Error, "invalid amount");
+});
+
 test("a notification reads alike, prefixed elements and currencies with other decimals too", () => {
   const xml = `<c:Document xmlns:c="urn:iso:std:iso:20022:tech:xsd:camt.054.001.08"><c:BkToCstmrDbtCdtNtfctn><c:Ntfctn>
     <c:Id>N1</c:Id><c:Acct><c:Id><c:IBAN>KW81CBKU0000000000001234560101</c:IBAN></c:Id><c:Ccy>KWD</c:Ccy></c:Acct>
@@ -96,6 +103,30 @@ test("without the bank's reference, an entry is known by what it says: in both d
   const statement = ids(doc("Stmt", "S-1"));
   assertEquals(ids(doc("Ntfctn", "N-1")), statement); // the same lines, though the documents differ
   assertEquals(new Set(statement).size, 3); // two alike in one document are two
+});
+
+test("a notification settles only booked entries and rejects reversals", () => {
+  const entry = (status: string, id: string, reversal = "") => `<Ntry><Amt Ccy="CHF">10.00</Amt>
+    <CdtDbtInd>CRDT</CdtDbtInd><Sts><Cd>${status}</Cd></Sts><BookgDt><Dt>2026-10-07</Dt></BookgDt>
+    <AcctSvcrRef>${id}</AcctSvcrRef>${reversal}</Ntry>`;
+  const xml = `<Document><BkToCstmrDbtCdtNtfctn><Ntfctn>
+    <Acct><Id><IBAN>CH5604835012345678009</IBAN></Id><Ccy>CHF</Ccy></Acct>
+    ${entry("PDNG", "pending")}${entry("BOOK", "booked")}
+  </Ntfctn></BkToCstmrDbtCdtNtfctn></Document>`;
+  assertEquals(parse(xml)[0].transactions.map((tx) => tx.id), ["booked"]);
+  assertThrows(() => parse(xml.replace("</Ntfctn>", `${entry("BOOK", "reversed", "<RvslInd>true</RvslInd>")}</Ntfctn>`)), Error, "reversed booking");
+});
+
+test("a ZIP imports its camt.054 credits once and rejects unexpected entries", async () => {
+  await withFinApp(["fin.payment", "fin.bank", "fin.bank.camt"], async (app) => {
+    const xml = `<Document><BkToCstmrDbtCdtNtfctn><Ntfctn><Acct><Id><IBAN>CH5604835012345678009</IBAN></Id><Ccy>CHF</Ccy></Acct>
+      <Ntry><Amt Ccy="CHF">10.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><Sts><Cd>BOOK</Cd></Sts><BookgDt><Dt>2026-10-07</Dt></BookgDt><AcctSvcrRef>A1</AcctSvcrRef></Ntry>
+    </Ntfctn></BkToCstmrDbtCdtNtfctn></Document>`;
+    const zip = zipSync({ "advice.xml": new TextEncoder().encode(xml) });
+    assertEquals(await ingestZip(app, zip), { added: 1, matched: 0 });
+    assertEquals(await ingestZip(app, zip), { added: 0, matched: 0 });
+    await assertRejects(() => ingestZip(app, zipSync({ "notes.txt": new TextEncoder().encode("x") })), Error, "ZIP entry");
+  });
 });
 
 test("anything else is refused", () => {
