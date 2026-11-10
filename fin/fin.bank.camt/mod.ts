@@ -10,16 +10,10 @@ type El = ReturnType<typeof parseDocument>["children"][number] & { name?: string
 
 /** Read camt.053 (statement) or camt.054 (notification) and store its lines. */
 export async function ingest(app: App, xml: string): Promise<{ added: number; matched: number }> {
-  let added = 0, matched = 0;
-  for (const statement of parse(xml)) {
-    const result = await store(app, statement);
-    added += result.added;
-    matched += result.matched;
-  }
-  return { added, matched };
+  return await storeAll(app, parse(xml));
 }
 
-/** A bounded Swiss camt.054 ZIP: validate every XML before storing any of its payments. */
+/** A bounded ZIP of camt files: every XML is read before any of it is stored. */
 export async function ingestZip(app: App, zip: Uint8Array): Promise<{ added: number; matched: number }> {
   if (zip.length > 20 * 1024 * 1024) throw new Error("fin.bank.camt: ZIP is too large");
   let count = 0, size = 0;
@@ -32,16 +26,14 @@ export async function ingestZip(app: App, zip: Uint8Array): Promise<{ added: num
     return true;
   } });
   if (!count) throw new Error("fin.bank.camt: ZIP contains no XML");
-  const xmls = Object.values(files).map((bytes) => new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-  for (const xml of xmls) {
-    const doc = parseDocument(xml, { xmlMode: true });
-    if (!all(doc.children as El[], "BkToCstmrDbtCdtNtfctn").length || !parse(xml).length) {
-      throw new Error("fin.bank.camt: ZIP contains no camt.054 notification");
-    }
-  }
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  return await storeAll(app, Object.values(files).flatMap((bytes) => parse(decoder.decode(bytes))));
+}
+
+async function storeAll(app: App, statements: Statement[]): Promise<{ added: number; matched: number }> {
   let added = 0, matched = 0;
-  for (const xml of xmls) {
-    const result = await ingest(app, xml);
+  for (const statement of statements) {
+    const result = await store(app, statement);
     added += result.added;
     matched += result.matched;
   }
@@ -64,10 +56,10 @@ export function parse(xml: string): Statement[] {
     // (camt.053) and the notification of it (camt.054); the same twice in one document counts on
     const seen = new Map<string, number>();
     const transactions = kids(report, "Ntry").flatMap((entry) => {
-      // A camt.054 may announce pending entries. Only booked money settles a payment.
+      // Pending entries are announced, not booked: only booked money settles a payment. A reversal
+      // is an ordinary line, its sign follows CdtDbtInd.
       const status = text(entry, "Sts", "Cd") || text(entry, "Sts");
       if (status && status !== "BOOK") return [];
-      if (text(entry, "RvslInd").toLowerCase() === "true") throw new Error("fin.bank.camt: reversed booking needs reconciliation");
       const key = [
         text(entry, "BookgDt", "Dt") || text(entry, "BookgDt", "DtTm").slice(0, 10),
         text(entry, "CdtDbtInd"),
@@ -120,14 +112,10 @@ function amountOf(el: El | undefined, fallback: string) {
   const currency = el?.attribs?.Ccy ?? fallback;
   const digits = currencies.decimals(currency);
   const raw = content(el).trim();
-  if (!Number.isInteger(digits) || digits < 0 || digits > 6 || !/^\d+(?:\.\d+)?$/.test(raw)) {
-    throw new Error("fin.bank.camt: invalid amount or currency");
-  }
+  if (!/^\d+(?:\.\d+)?$/.test(raw)) throw new Error("fin.bank.camt: invalid amount");
   const [whole, fraction = ""] = raw.split(".");
   if (fraction.length > digits) throw new Error("fin.bank.camt: amount has excess decimal places");
-  const value = Number(whole + fraction.padEnd(digits, "0"));
-  if (!Number.isSafeInteger(value)) throw new Error("fin.bank.camt: amount exceeds safe integer range");
-  return { value, currency };
+  return { value: Number(whole + fraction.padEnd(digits, "0")), currency };
 }
 
 // Elements are matched by local name: some banks prefix the camt namespace.

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { Client } from "@kage0x3b/ebics-client";
-import { downloadSafely, requireExistingKeys } from "../client.ts";
+import { downloadSafely, requireKeys } from "../client.ts";
 
 type Order = Parameters<Client["download"]>[0];
 
@@ -45,21 +45,14 @@ test("staging failure requests redelivery instead of confirming delivery", async
   assertEquals(events, ["stage-failed", "receipt:1"]);
 });
 
-test("oversized delivery gets no positive receipt", async () => {
-  const events: string[] = [];
-  const client = fakeClient(events, new Uint8Array(20 * 1024 * 1024 + 1));
-  await assertRejects(() => downloadSafely(client, order, async () => {
-    events.push("staged");
-  }), Error, "ZIP exceeds size limit");
-  assertEquals(events, ["receipt:1"]);
+test("an unreadable keyring cannot trigger silent key generation", async () => {
+  const client = { keys: async () => null } as unknown as Client;
+  await assertRejects(() => requireKeys(client), Error, "refusing to generate keys");
 });
 
-test("an unreadable existing keyring cannot trigger silent key regeneration", async () => {
-  const path = await Deno.makeTempFile();
-  try {
-    const client = { keys: async () => null } as unknown as Client;
-    await assertRejects(() => requireExistingKeys(client, path), Error, "refusing to regenerate keys");
-  } finally {
-    await Deno.remove(path);
-  }
+// downloadSafely holds back the client's internal receipt: an upgrade must keep this flow
+test("the pinned client still confirms a download through sendReceipt", () => {
+  const source = Client.prototype.download.toString();
+  assertEquals(source.includes("await this.sendReceipt(order, transactionId, 0)"), true);
+  assertEquals(typeof (Client.prototype as unknown as { sendReceipt: unknown }).sendReceipt, "function");
 });

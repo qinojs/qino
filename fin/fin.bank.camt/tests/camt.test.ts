@@ -105,19 +105,18 @@ test("without the bank's reference, an entry is known by what it says: in both d
   assertEquals(new Set(statement).size, 3); // two alike in one document are two
 });
 
-test("a notification settles only booked entries and rejects reversals", () => {
-  const entry = (status: string, id: string, reversal = "") => `<Ntry><Amt Ccy="CHF">10.00</Amt>
-    <CdtDbtInd>CRDT</CdtDbtInd><Sts><Cd>${status}</Cd></Sts><BookgDt><Dt>2026-10-07</Dt></BookgDt>
-    <AcctSvcrRef>${id}</AcctSvcrRef>${reversal}</Ntry>`;
+test("a notification settles only booked entries; a reversal is an ordinary line", () => {
+  const entry = (status: string, id: string, sign = "CRDT", reversal = "") => `<Ntry><Amt Ccy="CHF">10.00</Amt>
+    <CdtDbtInd>${sign}</CdtDbtInd>${reversal}<Sts><Cd>${status}</Cd></Sts><BookgDt><Dt>2026-10-07</Dt></BookgDt>
+    <AcctSvcrRef>${id}</AcctSvcrRef></Ntry>`;
   const xml = `<Document><BkToCstmrDbtCdtNtfctn><Ntfctn>
     <Acct><Id><IBAN>CH5604835012345678009</IBAN></Id><Ccy>CHF</Ccy></Acct>
-    ${entry("PDNG", "pending")}${entry("BOOK", "booked")}
+    ${entry("PDNG", "pending")}${entry("BOOK", "booked")}${entry("BOOK", "reversed", "DBIT", "<RvslInd>true</RvslInd>")}
   </Ntfctn></BkToCstmrDbtCdtNtfctn></Document>`;
-  assertEquals(parse(xml)[0].transactions.map((tx) => tx.id), ["booked"]);
-  assertThrows(() => parse(xml.replace("</Ntfctn>", `${entry("BOOK", "reversed", "<RvslInd>true</RvslInd>")}</Ntfctn>`)), Error, "reversed booking");
+  assertEquals(parse(xml)[0].transactions.map((tx) => [tx.id, tx.amount]), [["booked", 1000], ["reversed", -1000]]);
 });
 
-test("a ZIP imports its camt.054 credits once and rejects unexpected entries", async () => {
+test("a ZIP imports its credits once and rejects unexpected entries", async () => {
   await withFinApp(["fin.payment", "fin.bank", "fin.bank.camt"], async (app) => {
     const xml = `<Document><BkToCstmrDbtCdtNtfctn><Ntfctn><Acct><Id><IBAN>CH5604835012345678009</IBAN></Id><Ccy>CHF</Ccy></Acct>
       <Ntry><Amt Ccy="CHF">10.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><Sts><Cd>BOOK</Cd></Sts><BookgDt><Dt>2026-10-07</Dt></BookgDt><AcctSvcrRef>A1</AcctSvcrRef></Ntry>
