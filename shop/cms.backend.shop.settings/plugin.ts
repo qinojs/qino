@@ -70,9 +70,9 @@ async function general(node: Node, ctx: Ctx): Promise<HtmlString> {
     <tr><th>${t`Prices include VAT`}
       <td><input type=checkbox name=taxIncluded ${await set.taxIncluded !== false ? html`checked` : ""}>
     <tr><th>${t`Payment methods offered`}
-      <td><input name=payments value="${String(await set.payments ?? "")}" placeholder="${t`All that fit`}">
+      <td><input name=payments value="${set.payments}" placeholder="${t`All that fit`}">
     <tr><th>${t`Delivery methods offered`}
-      <td><input name=shippings value="${String(await set.shippings ?? "")}" placeholder="${t`All that fit`}">
+      <td><input name=shippings value="${set.shippings}" placeholder="${t`All that fit`}">
     ${identity ? html.async`<tr><th>${t`Address`}<td><a href="${identity.url()}">${identity.showTitle()}</a>` : ""}
   </table>
 </div>`;
@@ -87,7 +87,7 @@ async function labels(node: Node): Promise<HtmlString> {
   const rows = [];
   for (const method of names) {
     const cells = [];
-    for (const lang of langs) cells.push(html`<td><input name="labels|${method}|${lang}" value="${String(await set.labels[method]?.[lang] ?? "")}" aria-label="${method} ${lang}">`);
+    for (const lang of langs) cells.push(html`<td><input name="labels|${method}|${lang}" value="${await set.labels[method]?.[lang]}" aria-label="${method} ${lang}">`);
     rows.push(html`<tr><th>${method}${cells}`);
   }
   return html.async`<div class=u2-card data-settings>

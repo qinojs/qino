@@ -2,8 +2,6 @@ import { sync } from "./mod.ts";
 
 import type { Jobs } from "@qino/qino/cron";
 
-export { api } from "./api.ts";
-
 export const settingsSchema = {
   properties: {
     url: { type: "string", description: "The bank's EBICS 3.0 endpoint (HTTPS)" },

@@ -19,6 +19,7 @@
     "fin.accounting.ch": {},
     "fin.bank": {},
     "fin.bank.camt": {},
+    "fin.bank.ebics": {},
     "fin.hosting": {},
     "fin.hosting.infomaniak": {},
     "fin.hosting.plesk": {},

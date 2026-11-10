@@ -23,7 +23,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     </header>
     ${node.cont("known", "cms.cont.login.known")}
     ${node.cont("password", "cms.cont.login.password")}
-    ${reset ? html.async`<a href="${await reset.url()}">${t`Forgot your password?`}</a>` : ""}
+    ${reset ? html.async`<a href="${reset.url()}">${t`Forgot your password?`}</a>` : ""}
     <div class=-or>${t`or`}</div>
     ${node.cont("passkey", "cms.cont.login.webauthn")}
     <div class="-providers u2-flex">${node.cont("oauth", "cms.cont.login.oauth")}</div>

@@ -59,6 +59,7 @@
     "./cms.webmcp": "./module/cms.webmcp/mod.ts",
     "./core": "./module/core/mod.ts",
     "./cron": "./module/cron/mod.ts",
+    "./hono": "./module/core/lib/hono.ts",
     "./fileEditor": "./module/fileEditor/mod.ts",
     "./cms.backend.fin": "./fin/cms.backend.fin/mod.ts",
     "./fin": "./fin/fin/mod.ts",
@@ -133,7 +134,6 @@
     "@upyo/smtp": "^0.6",
     "bcryptjs": "^3",
     "fflate": "^0.8",
-    "hono": "^4",
     "htmlparser2": "^10",
     "imapflow": "^1",
     "mailparser": "^3.12",
@@ -149,14 +149,16 @@
     "temporal-polyfill": "^1",
     "web-push-neo": "0.1.2"
   },
-  "// peerDependencies": "optional: installed only where they are used — playwright-core and puppeteer-core by browser (and so pdf), @kage0x3b/ebics-client by fin.bank.ebics",
+  "// peerDependencies": "optional: installed only where they are used — playwright-core and puppeteer-core by browser (and so pdf), @kage0x3b/ebics-client by fin.bank.ebics, hono by the adapter qinojs/hono",
   "peerDependencies": {
     "@kage0x3b/ebics-client": "6.0.0-beta.4",
+    "hono": "^4",
     "playwright-core": "^1",
     "puppeteer-core": "^24"
   },
   "peerDependenciesMeta": {
     "@kage0x3b/ebics-client": { "optional": true },
+    "hono": { "optional": true },
     "playwright-core": { "optional": true },
     "puppeteer-core": { "optional": true }
   },
@@ -165,6 +167,7 @@
     "@std/assert": "npm:@jsr/std__assert@^1",
     "@types/mime-types": "^3",
     "@types/sanitize-html": "^2",
+    "hono": "^4",
     "playwright-core": "^1",
     "puppeteer-core": "^24"
   }

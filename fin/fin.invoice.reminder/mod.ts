@@ -114,8 +114,8 @@ async function feeLines(app: App, items: Row[], fee: number) {
     for (const line of await lines(app, Number(item.id))) {
       const [taxRate, taxCategory] = [Number(line.tax_rate), String(line.tax_category || "S")];
       const key = `${taxCategory}:${taxRate}`;
-      const entry = weights.get(key) ?? { taxRate, taxCategory, weight: 0 };
-      weights.set(key, { ...entry, weight: entry.weight + Number(line.amount) * share });
+      const entry = weights.getOrInsertComputed(key, () => ({ taxRate, taxCategory, weight: 0 }));
+      entry.weight += Number(line.amount) * share;
     }
   }
   const parts = [...weights.values()].filter((part) => part.weight > 0);

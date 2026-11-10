@@ -35,7 +35,8 @@ async function get(url: string) {
 
 /** DB-IP publishes at the start of a month; until then last month's file is the latest. */
 async function dbip() {
-  const month = (back: number) => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - back)).toISOString().slice(0, 7);
+  const now = new Date();
+  const month = (back: number) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back)).toISOString().slice(0, 7);
   const url = (back: number) => `https://download.db-ip.com/free/dbip-country-lite-${month(back)}.csv.gz`;
   return get(url(0)).catch(() => get(url(1)));
 }

@@ -1,3 +1,4 @@
+import "@qino/m/core/pub/js/SettingsEditor.mjs";
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
 
 cms.initNode("backend.fin.bank", (el) => {
@@ -10,6 +11,9 @@ cms.initNode("backend.fin.bank", (el) => {
       // statements are small XML files: read here, sent as text
       const texts = await Promise.all([...form.elements.file.files].map((file) => file.text()));
       execute(e.submitter, { camt: texts });
+    } else if (form.matches("[data-ebics]")) {
+      e.preventDefault();
+      execute(e.submitter, { ebics: e.submitter?.value });
     } else if (form.dataset.assign) {
       e.preventDefault();
       execute(e.submitter, { assign: { ...fields(form), id: form.dataset.assign } });

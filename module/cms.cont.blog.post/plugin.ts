@@ -40,6 +40,7 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
+  const date = published && new Date(published * 1000);
   u2.assets(ctx, ["attr/behavior/behavior.js"]);
   ctx.res.html.legacyScripts.add(SHARE_POLYFILL);
   ctx.res.csp["script-src"][SHARE_POLYFILL] = true;
@@ -51,8 +52,8 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
     <header>
       ${await node.edit() || (await node.showTitle()).plain()
         ? node.cms.text(node, "title", { tag: "h1" }) : html`<h1>${title}</h1>`}
-      ${published ? html`<time datetime="${new Date(published * 1000).toISOString()}">
-        ${new Date(published * 1000).toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
+      ${date ? html`<time datetime="${date.toISOString()}">
+        ${date.toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
       <button type=button u2-behavior=share data-url="${canonical}" data-title="${title}">
         ${node.app.t`Share`}</button>
     </header>

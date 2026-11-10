@@ -52,7 +52,7 @@ export const sellsTo = async (app: App, country: string): Promise<boolean> => (a
 
 /** Where the shop stands: prices are calculated for it until the customer names a country. */
 export async function country(app: App): Promise<string> {
-  return String(await settingsOf(app).country ?? "") || [...await countryRows(app)].find(([, c]) => c.enabled)?.[0] || "";
+  return String(await settingsOf(app).country ?? "") || (await countryRows(app)).entries().find(([, c]) => c.enabled)?.[0] || "";
 }
 
 /** The VAT rate of a country, in percent. */

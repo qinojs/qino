@@ -9,7 +9,7 @@ export async function tableIndexes(db: Db, table: string) {
     const indexes = new Map<string, { name: string; fields: string[]; primary: boolean; unique: boolean; type: string; safe: boolean; valid: boolean }>();
     for (const row of rows) {
       const name = String(row.Key_name);
-      const index = indexes.get(name) ?? {
+      const index = indexes.getOrInsertComputed(name, () => ({
         name,
         fields: [],
         primary: name === "PRIMARY",
@@ -17,10 +17,9 @@ export async function tableIndexes(db: Db, table: string) {
         type: String(row.Index_type ?? "").toLowerCase(),
         safe: true,
         valid: true,
-      };
+      }));
       if (row.Column_name == null || row.Sub_part != null || row.Expression != null) index.safe = false;
       else index.fields[Number(row.Seq_in_index) - 1] = String(row.Column_name);
-      indexes.set(name, index);
     }
     return [...indexes.values()];
   }
@@ -42,7 +41,7 @@ export async function tableIndexes(db: Db, table: string) {
     const indexes = new Map<string, { name: string; fields: string[]; primary: boolean; unique: boolean; type: string; safe: boolean; valid: boolean }>();
     for (const row of rows) {
       const name = String(row.name);
-      const index = indexes.get(name) ?? {
+      const index = indexes.getOrInsertComputed(name, () => ({
         name,
         fields: [],
         primary: !!row.primary,
@@ -50,10 +49,9 @@ export async function tableIndexes(db: Db, table: string) {
         type: String(row.type ?? "").toLowerCase(),
         safe: !row.protected,
         valid: !!row.valid,
-      };
+      }));
       if (row.field == null) index.safe = false;
       else index.fields[Number(row.ord) - 1] = String(row.field);
-      indexes.set(name, index);
     }
     return [...indexes.values()];
   }

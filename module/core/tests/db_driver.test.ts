@@ -10,8 +10,9 @@ test("PostgreSQL driver exposes its dialect and escapes identifiers", async () =
   await driver.close();
 });
 
-test("PostgreSQL dates come as text, like on the other backends; other types parse as usual", () => {
-  const parse = (oid: number, text: string) => pgTypes.getTypeParser(oid)(text);
+test("PostgreSQL dates come as text, like on the other backends; other types parse as usual", async () => {
+  const types = pgTypes((await import("pg")).default);
+  const parse = (oid: number, text: string) => types.getTypeParser(oid)(text);
   assertEquals(parse(1082, "2026-10-07"), "2026-10-07");
   assertEquals(parse(1114, "2026-10-07 15:25:32"), "2026-10-07 15:25:32");
   assertEquals(parse(1184, "2026-10-07 15:25:32+02"), "2026-10-07 15:25:32+02");

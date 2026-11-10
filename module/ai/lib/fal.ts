@@ -24,7 +24,7 @@ function schema(call: Call): Promise<{ properties?: Record<string, any>; require
   return cache.getOrInsertComputed(call.model, () =>
     fetch(`${MODELS}?endpoint_id=${encodeURIComponent(call.model)}&expand=openapi-3.0`, { signal: AbortSignal.timeout(30_000) }).then(async (res) => {
       const api = (await res.json()).models?.[0]?.openapi;
-      const post = Object.values(api?.paths ?? {}).map((p: any) => p.post).find((p: any) => p?.requestBody);
+      const post = Object.values<any>(api?.paths ?? {}).find((p) => p.post?.requestBody)?.post;
       const ref = post?.requestBody.content["application/json"].schema.$ref;
       if (!ref) throw new AiError(`fal: no input schema for "${call.model}"`, 502);
       return api.components.schemas[ref.split("/").pop()];

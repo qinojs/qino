@@ -3,7 +3,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { createServer } from "node:net";
 import { pathToFileURL } from "node:url";
 import { assertEquals } from "./deps.ts";
-import { Hono } from "../deps.ts";
+import { Hono } from "hono";
 import { App } from "../lib/App.ts";
 import { fs } from "../lib/fs.ts";
 import { honoAdapter } from "../lib/hono.ts";

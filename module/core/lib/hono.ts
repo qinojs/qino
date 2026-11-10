@@ -1,4 +1,5 @@
-import { Hono, basePath } from "../deps.ts";
+import { Hono } from "hono";
+import { basePath } from "hono/route";
 
 import type { App } from "./App.ts";
 

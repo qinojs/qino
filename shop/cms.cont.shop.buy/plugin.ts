@@ -18,7 +18,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const errors = order ? Object.values(await order.errors()) : [await t`Your shopping cart is empty`];
   const page = await node.page();
   const success = Number(await node.settings.success() || 0);
-  const first = [...(await page.children()).values()].find((n) => n.vs.type === "p");
+  const first = (await page.children()).values().find((n) => n.vs.type === "p");
   const done = success ? await (await node.cms.node(success)).url() : first ? await first.url() : "";
   const back = await stepUrl(node, await node.settings.back(), "back");
   // main: what has to be agreed to before ordering (terms, privacy) — required fields hold the order back;

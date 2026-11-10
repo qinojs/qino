@@ -2,5 +2,5 @@
   "name": "fin.bank.ebics",
   "description": "Fetch camt.054 notifications over EBICS 3.0 and import QR credits.",
   "dependencies": ["fin.bank.camt", "cron"],
-  "files": ["README.md", "api.ts", "client.ts", "config.ts", "mod.ts", "plugin.ts", "manifest.json"]
+  "files": ["README.md", "client.ts", "config.ts", "mod.ts", "plugin.ts", "manifest.json"]
 }

@@ -3,7 +3,7 @@
   "// minimumDependencyAge, unstable, nodeModulesDir": "stay here: in the published repo this file is the root and Deno reads it. Inside the monorepo it is a workspace member, where the root wins and Deno warns about these lines — that warning is the cheaper price. nodeModulesDir none: Deno takes npm packages from its cache, without a node_modules folder (package.json is for Node and Bun).",
   "minimumDependencyAge": {
     "age": "P1D",
-    "exclude": ["jsr:@nuxodin/item", "npm:@nuxodin/dump", "npm:@nuxodin/reporter"]
+    "exclude": ["jsr:@nuxodin/item", "npm:@nuxodin/item", "npm:@nuxodin/dump", "npm:@nuxodin/reporter"]
   },
   "unstable": ["worker-options"],
   "nodeModulesDir": "none",
@@ -53,6 +53,7 @@
     "./cms.webmcp": "./module/cms.webmcp/mod.ts",
     "./core": "./module/core/mod.ts",
     "./cron": "./module/cron/mod.ts",
+    "./hono": "./module/core/lib/hono.ts",
     "./fileEditor": "./module/fileEditor/mod.ts",
     "./cms.backend.fin": "./fin/cms.backend.fin/mod.ts",
     "./fin": "./fin/fin/mod.ts",
@@ -158,6 +159,7 @@
     "@qino/qino/cms.versions": "./module/cms.versions/mod.ts",
     "@qino/qino/cms.webmcp": "./module/cms.webmcp/mod.ts",
     "@qino/qino/core": "./module/core/mod.ts",
+    "@qino/qino/hono": "./module/core/lib/hono.ts",
     "@qino/qino/cron": "./module/cron/mod.ts",
     "@qino/qino/fileEditor": "./module/fileEditor/mod.ts",
     "@qino/qino/cms.backend.fin": "./fin/cms.backend.fin/mod.ts",

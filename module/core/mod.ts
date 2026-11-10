@@ -3,7 +3,6 @@
 // App + request context
 export { App } from "./lib/App.ts";
 export type { AppEvents } from "./lib/AppEvents.ts";
-export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
 export { runAs } from "./lib/ctx/runAs.ts";
 export { Emitter } from "./lib/Emitter.ts";

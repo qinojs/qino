@@ -46,3 +46,15 @@ test("a statement is read, its unclaimed line suggests the invoice of its amount
     assert(!page.includes("data-assign"));
   });
 });
+
+test("with EBICS linked, the page offers its settings and enrolment; without a connection a step says so", async () => {
+  await withFinApp([...FIN, "fin.bank.ebics"], async (app) => {
+    const node = backendNode(app, "/backend/bank");
+    const page = String(await inRequest(app, "http://qino.test/backend/bank", () => render(node)));
+    for (const part of [`source="/api/core/settings/fin.bank.ebics"`, "data-ebics", "value=keys", "value=sync"]) {
+      assertStringIncludes(page, part);
+    }
+    const answer = await inRequest(app, "http://qino.test/backend/bank", () => api(node, { ebics: "keys" })) as { ok: boolean; message: string };
+    assertEquals(answer, { ok: false, message: "fin.bank.ebics: no connection configured" });
+  });
+});

@@ -23,6 +23,6 @@ export function uaInfo(ua: string): { browser: string; version: string; os: stri
     /http-?client|curl|wget|python|java\/|okhttp|axios|undici|node-fetch|libwww|scrapy|networkingextension/i.test(ua); // HTTP libraries
   const os = OS_TESTS.find(([, re]) => re.test(ua))?.[0] ?? "";
   const mobile = /Mobi|Android|iPhone|iPad|iPod/.test(ua);
-  const [browser, m] = UA_TESTS.map(([name, re]) => [name, re.exec(ua)] as const).find(([, m]) => m) ?? [ua ? "?" : "-", null];
-  return { browser, version: m?.[1] ?? "", os, mobile, bot };
+  const hit = UA_TESTS.find(([, re]) => re.test(ua));
+  return { browser: hit?.[0] ?? (ua ? "?" : "-"), version: hit?.[1].exec(ua)?.[1] ?? "", os, mobile, bot };
 }

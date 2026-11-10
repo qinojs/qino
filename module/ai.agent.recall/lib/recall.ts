@@ -15,7 +15,7 @@ async function memories(app: App, agent: number, vector: number[], known: Set<st
   const lines = new Map<string, string>();
   for (const { key, content, score } of await search(app, { ai_agent_memory: sql`e.agent_id = ${agent}` }, vector, { limit: MOST * 3 })) {
     const id = String(key.memory_id); // the nearest chunk of each
-    if (score >= CLOSE && !known.has(id) && !lines.has(id)) lines.set(id, `[${id}] ${content}`);
+    if (score >= CLOSE && !known.has(id)) lines.getOrInsertComputed(id, () => `[${id}] ${content}`);
   }
   return [...lines].slice(0, MOST);
 }
@@ -35,8 +35,8 @@ async function said(app: App, agent: number, id: number, vector: number[], known
     .map((m) => [`#${m.id}`, JSON.parse(String(m.message)).role]));
   for (const { key, content, score } of hits) {
     const ref = `#${key.message_id}`;
-    if (score < CLOSE || content.length < SHORT || known.has(ref) || lines.has(ref)) continue;
-    lines.set(ref, `[${ref} ${roles.get(ref)}] ${content.length > LONG ? content.slice(0, LONG) + "…" : content}`);
+    if (score < CLOSE || content.length < SHORT || known.has(ref)) continue;
+    lines.getOrInsertComputed(ref, () => `[${ref} ${roles.get(ref)}] ${content.length > LONG ? content.slice(0, LONG) + "…" : content}`);
   }
   return [...lines].slice(0, MOST);
 }

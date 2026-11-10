@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { fs } from "@qino/qino";
 import { ingestZip } from "@qino/qino/fin.bank.camt";
 
-import { atomicWrite, clientOf, downloadSafely, ebics, trustBank } from "./client.ts";
+import { atomicWrite, clientOf, downloadSafely, ebics, requireKeys, submit, trustBank } from "./client.ts";
 import { config } from "./config.ts";
 
 import type { App } from "@qino/qino";
@@ -52,4 +52,28 @@ export async function sync(app: App, signal?: AbortSignal): Promise<{ added: num
   const failed = [...earlier.failed, ...next.failed];
   if (failed.length) throw new Error(`fin.bank.ebics: moved to failed/: ${failed.join(", ")}`);
   return { added: earlier.added + next.added, matched: earlier.matched + next.matched };
+}
+
+export type Step = "keys" | "ini" | "hia" | "hpb";
+
+/** One step of the one-time enrolment, in this order: keys, ini, hia, then the bank activates the
+ *  user, then hpb. `keys` answers the fingerprints for the bank's initialisation letter. */
+export async function enrol(app: App, step: Step): Promise<Record<string, string> | undefined> {
+  const c = await config(app);
+  if (!c) throw new Error("fin.bank.ebics: no connection configured");
+  const client = await clientOf(c);
+  if (step === "hpb") {
+    await trustBank(client, c);
+    return;
+  }
+  if (step !== "keys") {
+    await requireKeys(client);
+    await submit(client, step === "ini" ? "INI" : "HIA");
+    return;
+  }
+  if (await fs.stat(c.keyring, { ttl: 0 })) throw new Error("fin.bank.ebics: keyring exists; refusing to replace enrolment keys");
+  const keys = await client.generateKeys({ subject: c.userId });
+  const a = keys?.a(), x = keys?.x(), e = keys?.e();
+  if (!a || !x || !e) throw new Error("fin.bank.ebics: key generation incomplete");
+  return { partnerId: c.partnerId, userId: c.userId, A006: a.sha256(), X002: x.sha256(), E002: e.sha256() };
 }

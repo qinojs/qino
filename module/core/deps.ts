@@ -1,10 +1,7 @@
 // Third-party imports of core. Versions are pinned in deno.json. Other modules import item.js from
 // mod.ts, so there is only one copy (each copy has its own `$item` Symbol).
-// Hono is only used by the optional adapter lib/hono.ts.
-export { Hono } from "hono";
-export { basePath } from "hono/route";
-export { default as mysql } from "mysql2/promise";
-export { default as postgres } from "pg";
+// Loaded where used, so not every app gets them: hono by the optional adapter lib/hono.ts,
+// mysql2 and pg by their driver in lib/db/DbDriver.ts.
 export type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 export { default as bcrypt } from "bcryptjs";
 // @ts-types="@types/mime-types"

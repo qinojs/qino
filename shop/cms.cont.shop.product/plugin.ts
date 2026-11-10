@@ -40,7 +40,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <input type=hidden name=product value="${product.id}">
     <table class=u2-table><tbody>${rows}</tbody></table>
     ${product.fields({ order, currency })}
-    <small class=-tax>${t`including VAT`} ${await product.taxRate(where)}%</small>
+    <small class=-tax>${t`including VAT`} ${product.taxRate(where)}%</small>
     <button>${t`Add to cart`}</button>
   </form>
 </div>`;

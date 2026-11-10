@@ -23,7 +23,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 
 /** Its first image; an offline product's would be refused. */
 async function thumbnail(node: Node) {
-  const file = await node.isReadable() ? [...(await node.files()).values()].find((f) => String(f.vs?.mime ?? "").startsWith("image/")) : undefined;
+  const file = await node.isReadable() ? (await node.files()).values().find((f) => String(f.vs?.mime ?? "").startsWith("image/")) : undefined;
   return file ? html`<img src="${await file.url({ w: 60, h: 40, max: true })}" width=60 alt="" loading=lazy>` : "";
 }
 

@@ -1,5 +1,6 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { badge, money, option, pager, rowLink } from "@qino/qino/cms.backend.fin";
+import * as u2 from "@qino/qino/u2";
 
 import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -44,6 +45,7 @@ export async function render(node: Node): Promise<HtmlString> {
       </form>`
       : html.async`<p>${t`Link fin.bank.camt to read camt files.`}`}
   </div>
+  ${app.modules.linked("fin.bank.ebics") ? ebics(app) : ""}
   <div class=u2-card style="flex:1 1 100%">
     <div class=-head>${t`Lines`}</div>
     <form method=get>
@@ -62,6 +64,27 @@ export async function render(node: Node): Promise<HtmlString> {
     <div style="overflow:auto; max-height:70vh; padding:0">${lines(node, url)}</div>
   </div>
 </div>`;
+}
+
+/** The automatic download from the bank: its settings, the one-time enrolment, how the hourly job went. */
+async function ebics(app: App) {
+  const t = app.t;
+  const { status } = await import("@qino/qino/cron");
+  const job = (await status(app)).find((j) => j.id === "fin.bank.ebics:download");
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`Automatic reconciliation (EBICS)`}</div>
+    <settings-editor source="/api/core/settings/fin.bank.ebics"></settings-editor>
+    <form data-ebics>
+      <p><small>${t`Once, in this order: create the keys, send INI and HIA, sign the letter and submit it to the bank. Once the bank has activated the user, fetch its keys.`}</small>
+      <button name=step value=keys>${t`Create keys`}</button>
+      <button name=step value=ini>INI</button>
+      <button name=step value=hia>HIA</button>
+      <button name=step value=hpb>${t`Fetch bank keys`}</button>
+      <button name=step value=sync>${t`Download now`}</button>
+    </form>
+    ${job?.lastFinished ? html.async`<p><small>${t`Last run`}: ${u2.el.time(job.lastFinished, { second: true })}
+      ${job.lastError ? badge(job.lastError, "--red") : ""}</small>` : ""}
+  </div>`;
 }
 
 /** One page of lines, newest first; an unassigned one with a form to say what it is. */

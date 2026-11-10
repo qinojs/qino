@@ -9,8 +9,13 @@ type JobStatus = Awaited<ReturnType<typeof status>>[number];
 
 /** active / running / failed, as shown in the card head and the dashboard widget. */
 export function counts(jobs: JobStatus[]) {
-  const active = jobs.filter((job) => job.active);
-  return { active: active.length, running: active.filter((job) => job.running).length, failed: active.filter((job) => job.failures).length };
+  let active = 0, running = 0, failed = 0;
+  for (const job of jobs) if (job.active) {
+    active++;
+    if (job.running) running++;
+    if (job.failures) failed++;
+  }
+  return { active, running, failed };
 }
 
 export function render(node: Node): Promise<HtmlString> {
@@ -29,10 +34,9 @@ export async function list(node: Node): Promise<HtmlString> {
   return renderJobs(node.app, await status(node.app));
 }
 
-export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlString> {
+export function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlString> {
   const t = app.t;
   const { active, running, failed } = counts(jobs);
-  const rows = jobs.map((job) => renderRow(app, job));
 
   return html.async`<div>
     <b>${active}</b> ${t`active jobs`}
@@ -51,7 +55,7 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
       <th>${t`Duration`}
       <th>${t`Failures`}
       <th>
-    <tbody>${rows}
+    <tbody>${jobs.map((job) => renderRow(app, job))}
   </table>`;
 }
 

@@ -41,13 +41,13 @@ async function group(node: Node, table: string, rows: Row[], same: string[], n: 
       <th>
       ${rows.map((r, i) => html`<th><label><input type=radio name=keep-${n} value="${r[key]}"${i ? "" : " checked"}> keep #${r[key]}</label>`)}
     <tbody>
-      ${columns.map((c) => html`<tr>
+      ${columns.map((c) => {
+        // a field the rows disagree on: whichever row is kept, its value wins, an empty one is filled
+        const differs = new Set(rows.map((r) => empty(r[c]) ? "" : String(r[c]))).size > 1;
+        return html`<tr>
         <th${same.includes(c) ? html` style="font-weight:bold"` : ""}>${c}
-        ${rows.map((r) => {
-          // a field the rows disagree on: whichever row is kept, its value wins, an empty one is filled
-          const differs = !empty(r[c]) && new Set(rows.map((o) => empty(o[c]) ? "" : String(o[c]))).size > 1;
-          return html`<td>${differs ? html`<mark>${show(r[c])}</mark>` : show(r[c])}`;
-        })}`)}
+        ${rows.map((r) => html`<td>${differs && !empty(r[c]) ? html`<mark>${show(r[c])}</mark>` : show(r[c])}`)}`;
+      })}
       ${refs[0].map((ref, i) => html`<tr>
         <th>→ ${ref.field.table}.${ref.field.name}
         ${refs.map((rs) => html`<td>${rs[i].count}`)}`)}

@@ -324,7 +324,6 @@ test("the qino layer never imports from the cms layer", async () => {
 // While every consumer lives in this tree, "nobody imports it" is a reliable signal and deleting is
 // free. The day an outside consumer exists the premise is gone, and the rule becomes "used, or listed".
 const EXTERNAL = new Set([
-  "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
   "core/mod.ts Route", // test-modules/cms.cont.apitest consumes this public type
   "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
   "cms.backend.ai/mod.ts CATALOG", // site modules outside this tree set up the known providers they have keys for

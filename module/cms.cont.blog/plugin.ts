@@ -87,10 +87,11 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
     const excerpt = await descriptionOf(post.node);
     const url = await post.node.url();
     const file = await image(post.node);
+    const created = post.created && new Date(post.created * 1000);
     items.push(html.async`<article>
-      ${file ? await cms_image(file, { alt: post.title, fit: fit(file) }) : ""}
+      ${file ? cms_image(file, { alt: post.title, fit: fit(file) }) : ""}
       <h2><a href="${url}">${post.title}</a>${post.draft ? html.async` <small>${t`Draft`}</small>` : ""}</h2>
-      ${post.created ? html`<time datetime="${new Date(post.created * 1000).toISOString()}">${new Date(post.created * 1000).toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
+      ${created ? html`<time datetime="${created.toISOString()}">${created.toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
       ${excerpt ? html`<p>${excerpt}</p>` : edit ? html.async`<p><small>${t`No description`}</small></p>` : ""}
     </article>`);
   }

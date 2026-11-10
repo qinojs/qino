@@ -148,7 +148,8 @@ Hono is optional. Use the adapter to mount Qino below an existing route:
 
 ```ts
 import { Hono } from "npm:hono@^4";
-import { App, honoAdapter, sys } from "jsr:@qino/qino";
+import { App, sys } from "jsr:@qino/qino";
+import { honoAdapter } from "jsr:@qino/qino/hono";
 
 const app = new App();
 await app.init();

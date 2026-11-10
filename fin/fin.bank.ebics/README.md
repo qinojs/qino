@@ -24,7 +24,8 @@ The bank must offer detailed camt.054 for incoming QR payments in the contract.
 
 ## Enrolment
 
-Once, in order, as superuser via the API (`POST /api/fin.bank.ebics/…`):
+Once, in order, on the bank page of the backend (cms.backend.fin.bank, which also edits the
+settings and can download at once), or with `enrol(app, step)`:
 
 1. `keys` creates the three keys and returns their fingerprints for the bank's initialisation
    letter. It refuses if a keyring exists: never replace keys already submitted.

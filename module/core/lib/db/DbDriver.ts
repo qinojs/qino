@@ -1,10 +1,19 @@
 // deno-lint-ignore-file no-explicit-any
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import { mysql, postgres, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
+import { mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
 
 import type { DatabaseSync } from "node:sqlite";
 import type { Pool } from "../../deps.ts";
+
+/** A client library is loaded by the first driver that needs it, so an app on one backend never
+ *  loads the others'. Until then `ready` is pending; afterwards a query checks one field. A failed
+ *  load is handled here and thrown where it is awaited, so it is not an unhandled rejection. */
+function load<T>(lib: Promise<T>, use: (lib: T) => void): Promise<void> {
+  const ready = lib.then(use);
+  ready.catch(() => {});
+  return ready;
+}
 
 export type ExecResult = { insertId: number; affectedRows: number };
 export type MigrateOptions = { patch?: boolean; force?: boolean };
@@ -61,7 +70,9 @@ const SQL_MODE = [
 
 class MysqlDriver extends DbDriver {
   dialect = "mysql" as const;
-  #pool: Pool;
+  #mysql: any;
+  #pool!: Pool;
+  #ready: Promise<void>;
   // A box, not the connection: clearing it on end sends late writes (debounced saves whose ALS
   // context still points here) to the pool instead of a released connection.
   #tx = new AsyncLocalStorage<{ conn: any }>();
@@ -74,30 +85,36 @@ class MysqlDriver extends DbDriver {
     this.#database = decodeURIComponent(url.pathname.slice(1));
     if (!this.#database) throw new Error(`MySQL connection string needs a database: ${conn}`);
     this.#connParams = { host: url.hostname || "localhost", ...(port && { port }), user: decodeURIComponent(url.username), password: decodeURIComponent(url.password) };
-    this.#pool = mysql.createPool({
-      ...this.#connParams, database: this.#database,
-      charset: "utf8mb4", multipleStatements: false,
-      waitForConnections: true, connectionLimit: 8, timezone: "Z",
-      // Dates as strings, like the sqlite driver: no Date per row, same shape on every backend.
-      dateStrings: true,
-      // Per connection; times connectionLimit still far below max_prepared_stmt_count.
-      maxPreparedStatements: 200,
+    this.#ready = load(import("mysql2/promise"), ({ default: mysql }) => {
+      this.#mysql = mysql;
+      this.#pool = mysql.createPool({
+        ...this.#connParams, database: this.#database,
+        charset: "utf8mb4", multipleStatements: false,
+        waitForConnections: true, connectionLimit: 8, timezone: "Z",
+        // Dates as strings, like the sqlite driver: no Date per row, same shape on every backend.
+        dateStrings: true,
+        // Per connection; times connectionLimit still far below max_prepared_stmt_count.
+        maxPreparedStatements: 200,
+      });
+      this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [SQL_MODE]));
     });
-    this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [SQL_MODE]));
   }
 
   quoteId(id: string) { return mysqlDialect.quoteId(id); }
   #conn() { return this.#tx.getStore()?.conn ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
+    if (!this.#pool) await this.#ready;
     const [res] = await this.#conn().query(sql, params);
     return res as Row[];
   }
   async exec(sql: string, params?: unknown[], _returning?: string) {
+    if (!this.#pool) await this.#ready;
     const [res] = await this.#conn().execute(sql, params as any);
     return res as unknown as ExecResult;
   }
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
     if (this.#tx.getStore()?.conn) return fn();
+    if (!this.#pool) await this.#ready;
     const conn = await this.#pool.getConnection();
     const box: { conn: any } = { conn };
     await conn.beginTransaction();
@@ -119,14 +136,18 @@ class MysqlDriver extends DbDriver {
     return schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
   }
   override async ensureDatabase() {
-    const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
+    await this.#ready;
+    const tmp = this.#mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
     try {
       await tmp.query(`CREATE DATABASE IF NOT EXISTS ${this.quoteId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci`);
     } finally {
       await tmp.end();
     }
   }
-  protected override closeDriver() { return this.#pool.end(); }
+  protected override async closeDriver() {
+    await this.#ready.catch(() => {});
+    await this.#pool?.end();
+  }
 }
 
 const { Bun, Deno, process } = globalThis as any;
@@ -250,16 +271,18 @@ class SqliteDriver extends DbDriver {
 /** Dates and times as the text Postgres sends, like the other backends: DATE, TIME, TIMESTAMP,
  *  TIMESTAMPTZ. Per pool, not `pg.types` — that one is process-wide, shared by every app. */
 const DATE_OIDS = new Set([1082, 1083, 1114, 1184]);
-export const pgTypes = {
+export const pgTypes = (pg: any) => ({
   getTypeParser: (oid: number, format?: string) =>
-    DATE_OIDS.has(oid) ? (value: string) => value : postgres.types.getTypeParser(oid, format),
-};
+    DATE_OIDS.has(oid) ? (value: string) => value : pg.types.getTypeParser(oid, format),
+});
 
 class PostgresDriver extends DbDriver {
   dialect = "postgres" as const;
   // An explicit id does not advance the sequence, so each such insert needs a sync.
   override insertSyncsAutoIncrement = false;
+  #pg: any;
   #pool: any;
+  #ready: Promise<void>;
   #tx = new AsyncLocalStorage<{ conn: any }>();
   #database: string;
   #adminParams: Record<string, unknown>;
@@ -270,15 +293,20 @@ class PostgresDriver extends DbDriver {
     this.#database = decodeURIComponent(url.pathname.slice(1));
     url.pathname = "/postgres";
     this.#adminParams = { connectionString: url.href };
-    this.#pool = new postgres.Pool({ connectionString: conn, types: pgTypes });
+    this.#ready = load(import("pg"), ({ default: pg }) => {
+      this.#pg = pg;
+      this.#pool = new pg.Pool({ connectionString: conn, types: pgTypes(pg) });
+    });
   }
 
   quoteId(id: string) { return pgDialect.quoteId(id); }
   #conn() { return this.#tx.getStore()?.conn ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
+    if (!this.#pool) await this.#ready;
     return (await this.#conn().query(sql, params)).rows as Row[];
   }
   async exec(sql: string, params?: unknown[], returning?: string) {
+    if (!this.#pool) await this.#ready;
     let pgSql = sql;
     if (/^\s*insert\b/i.test(pgSql) && !/\breturning\b/i.test(pgSql)) {
       pgSql = pgSql.replace(/;\s*$/, "") + ` RETURNING ${returning ? this.quoteId(returning) : "*"}`;
@@ -289,6 +317,7 @@ class PostgresDriver extends DbDriver {
   }
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
     if (this.#tx.getStore()?.conn) return fn();
+    if (!this.#pool) await this.#ready;
     const client = await this.#pool.connect();
     const box: { conn: any } = { conn: client };
     await client.query("BEGIN");
@@ -298,6 +327,7 @@ class PostgresDriver extends DbDriver {
   }
   // Own connection: setval isn't rolled back anyway and must not fail with the caller's transaction.
   override async syncAutoIncrement(table: string, field: string, value: number) {
+    if (!this.#pool) await this.#ready;
     await this.#pool.query(
       `SELECT setval(s::regclass, GREATEST($3, COALESCE(pg_sequence_last_value(s::regclass), 0)), true)
        FROM pg_get_serial_sequence($1, $2) s`,
@@ -353,7 +383,8 @@ class PostgresDriver extends DbDriver {
   }
   override async ensureDatabase() {
     if (!this.#database) return;
-    const pool = new postgres.Pool(this.#adminParams);
+    await this.#ready;
+    const pool = new this.#pg.Pool(this.#adminParams);
     try {
       const exists = await pool.query("SELECT 1 FROM pg_database WHERE datname = $1", [this.#database]);
       if (!exists.rowCount) await pool.query(`CREATE DATABASE ${this.quoteId(this.#database)}`);
@@ -361,5 +392,8 @@ class PostgresDriver extends DbDriver {
       await pool.end();
     }
   }
-  protected override closeDriver() { return this.#pool.end(); }
+  protected override async closeDriver() {
+    await this.#ready.catch(() => {});
+    await this.#pool?.end();
+  }
 }
