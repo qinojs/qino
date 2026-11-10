@@ -1,5 +1,4 @@
 import { DomUtils, parseDocument } from "htmlparser2";
-import { unzipSync } from "fflate";
 import { ingest as store } from "@qino/qino/fin.bank";
 import { currency as currencies } from "@qino/qino/locale.currency";
 
@@ -16,6 +15,7 @@ export async function ingest(app: App, xml: string): Promise<{ added: number; ma
 /** A bounded ZIP of camt files: every XML is read before any of it is stored. */
 export async function ingestZip(app: App, zip: Uint8Array): Promise<{ added: number; matched: number }> {
   if (zip.length > 20 * 1024 * 1024) throw new Error("fin.bank.camt: ZIP is too large");
+  const { unzipSync } = await import("fflate"); // only for who reads ZIPs
   let count = 0, size = 0;
   const files = unzipSync(zip, { filter(file) {
     if (file.name.endsWith("/")) return false;
@@ -85,7 +85,7 @@ function lines(entry: El, currency: string, fallbackId: string): Tx[] {
     return [{ id: entryId, date, amount: sign * value, currency: ccy, text: entryText || undefined }];
   }
   return details.map((tx, i) => {
-    const txSign = text(tx, "CdtDbtInd") ? (text(tx, "CdtDbtInd") === "DBIT" ? -1 : 1) : sign;
+    const direction = text(tx, "CdtDbtInd"), txSign = direction ? (direction === "DBIT" ? -1 : 1) : sign;
     const txAmount = child(tx, "Amt") ?? child(child(child(tx, "AmtDtls"), "TxAmt"), "Amt") ?? child(entry, "Amt");
     const amount = amountOf(txAmount, currency);
     const endToEnd = text(tx, "Refs", "EndToEndId");

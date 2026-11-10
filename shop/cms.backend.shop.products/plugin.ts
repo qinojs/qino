@@ -98,7 +98,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       return html.async`<tr data-id="${p.$id}">
       <td>${thumbnail(product)}
       <td><a href="${link({ product: p.$id })}">${p.title(lang)}</a>${await product.isOnline() ? "" : html.async` <small>${t`Offline`}</small>`}
-      <td>${(await categoryOf(product))?.showTitle() ?? ""}
+      <td>${(await categoryOf(product))?.showTitle()}
       <td>${p.sku}
       ${columns.map((c, i) => html`<td>${input({ ...c, label: labels[i] }, { [c.name!]: p.$get(c.name!) })}`)}`;
     })}

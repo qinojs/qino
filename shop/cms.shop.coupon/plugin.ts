@@ -16,7 +16,7 @@ declare module "@qino/qino/cms.shop" {
 const valid = (coupon: Row | undefined, now = unixTime()) =>
   !!coupon && (!Number(coupon.start) || Number(coupon.start) <= now) && (!Number(coupon.end) || Number(coupon.end) + 86400 > now);
 
-const couponOf = (app: App, code: unknown) => code ? app.db.row`SELECT * FROM shop_coupon WHERE code = ${code}` : Promise.resolve(undefined);
+const couponOf = (app: App, code: unknown) => code ? app.db.row`SELECT * FROM shop_coupon WHERE code = ${code}` : undefined;
 
 /** Whether this customer has placed an order with it: the user, or the same email. */
 async function used(order: Order, code: unknown): Promise<boolean> {

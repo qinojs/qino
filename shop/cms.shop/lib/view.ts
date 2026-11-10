@@ -8,7 +8,7 @@ import type { Order } from "./rows.ts";
 /** An order as a table: its lines, what the shop added, tax and total. For the backend and the customer. */
 export async function orderTable(order: Order): Promise<HtmlString> {
   const t = shopT(order.$app), currency = await order.currencyRow();
-  const money = (v: number) => currency?.format(v) ?? String(v);
+  const money = (v: number) => currency?.format(v) ?? v;
   const { rates, total } = await order.totals();
   return html.async`<table class=u2-table>
   <thead><tr>

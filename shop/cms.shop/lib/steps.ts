@@ -8,7 +8,7 @@ export async function stepUrl(node: Node, value: unknown, direction: "back" | "n
   if (!v) return "";
   if (v !== "auto") return (await node.cms.node(Number(v))).url();
   const page = await node.page(), parent = await page.parent();
-  const pages = (n?: Node) => n ? n.children().then((m) => [...m.values()].filter((c) => c.vs.type === "p")) : Promise.resolve([]);
+  const pages = (n?: Node) => n ? n.children().then((m) => [...m.values()].filter((c) => c.vs.type === "p")) : [];
   const siblings = await pages(parent);
   const i = siblings.findIndex((n) => n.id === page.id);
   const found = direction === "back" ? siblings[i - 1] ?? parent : (await pages(page))[0] ?? siblings[i + 1] ?? parent;

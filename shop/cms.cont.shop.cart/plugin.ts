@@ -20,7 +20,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const editable = await node.settings.editable() !== false;
   const currency = await order!.currencyRow();
-  const money = (v: number) => currency?.format(v) ?? String(v);
+  const money = (v: number) => currency?.format(v) ?? v;
   const { rates, total } = await order!.totals();
   const cell = editable ? html`<td>` : "";
   const next = Number(await node.settings.next() || 0);

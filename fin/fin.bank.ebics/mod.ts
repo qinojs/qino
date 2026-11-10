@@ -1,9 +1,8 @@
 import { createHash } from "node:crypto";
-import { OrdersH005 } from "@kage0x3b/ebics-client";
 import { fs } from "@qino/qino";
 import { ingestZip } from "@qino/qino/fin.bank.camt";
 
-import { atomicWrite, clientOf, downloadSafely, trustBank } from "./client.ts";
+import { atomicWrite, clientOf, downloadSafely, ebics, trustBank } from "./client.ts";
 import { config } from "./config.ts";
 
 import type { App } from "@qino/qino";
@@ -42,7 +41,7 @@ export async function sync(app: App, signal?: AbortSignal): Promise<{ added: num
   const client = await clientOf(c);
   await trustBank(client, c);
   signal?.throwIfAborted();
-  const order = OrdersH005.genericDownload({
+  const order = (await ebics()).OrdersH005.genericDownload({
     serviceName: c.btf.serviceName, scope: c.btf.scope,
     serviceOption: c.btf.serviceOption, msgName: "camt.054",
     msgVersion: c.btf.messageVersion, containerType: "ZIP",

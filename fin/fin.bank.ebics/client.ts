@@ -1,18 +1,19 @@
 import { createHash, timingSafeEqual, X509Certificate } from "node:crypto";
 import { dirname } from "node:path";
 import { open } from "node:fs/promises";
-import { Client, OrdersH005 } from "@kage0x3b/ebics-client";
 import { fs, sys } from "@qino/qino";
 
 import type { Config } from "./config.ts";
-import type { BankKeys } from "@kage0x3b/ebics-client";
+import type { BankKeys, Client, OrdersH005 } from "@kage0x3b/ebics-client";
+
+/** An optional peer dependency: only installations that connect over EBICS need it. */
+export const ebics = () => import("@kage0x3b/ebics-client");
 
 const OK = "000000";
 const NO_DATA = "090005";
 
 // The client's own orders lack the index signature of its OrderLike, hence one cast where they go in
 type Order = Parameters<Client["download"]>[0];
-type KeyOrder = typeof OrdersH005.INI;
 type Receipt = (order: Order, transactionId: string, code: 0 | 1) => Promise<void>;
 
 /** Written, fsynced and renamed: what EBICS is told it received survives a crash. */
@@ -42,6 +43,7 @@ export async function clientOf(c: Config): Promise<Client> {
   const passphrase = sys.env(c.passphraseEnv);
   if (!passphrase) throw new Error(`fin.bank.ebics: missing ${c.passphraseEnv}`);
   await fs.mkdir(dirname(c.keyring), { mode: 0o700 });
+  const { Client } = await ebics();
   return new Client({
     url: c.url, hostId: c.hostId, partnerId: c.partnerId, userId: c.userId, passphrase, timeout: 60_000,
     keyStorage: { read: () => fs.text(c.keyring), write: (data: string) => atomicWrite(c.keyring, new TextEncoder().encode(data)) },
@@ -54,7 +56,8 @@ export async function requireKeys(client: Client): Promise<void> {
 }
 
 /** An order the bank must accept. */
-export async function submit(client: Client, order: KeyOrder): Promise<void> {
+export async function submit(client: Client, type: "INI" | "HIA"): Promise<void> {
+  const order: typeof OrdersH005.INI = (await ebics()).OrdersH005[type];
   const result = await client.initialization(order as object as Order);
   if (result.technicalCode !== OK || result.businessCode !== OK) {
     throw new Error(`fin.bank.ebics: ${order.orderDetails.AdminOrderType} rejected (${result.technicalCode}/${result.businessCode})`);
@@ -85,7 +88,7 @@ function bankHashMatches(key: NonNullable<BankKeys["bankX002"]>, expected: strin
 /** HPB bank keys are stored only once both independently supplied fingerprints match. */
 export async function trustBank(client: Client, c: Config): Promise<void> {
   await requireKeys(client);
-  const result = await client.initialization(OrdersH005.HPB as object as Order);
+  const result = await client.initialization((await ebics()).OrdersH005.HPB as object as Order);
   if (result.technicalCode !== OK || result.businessCode !== OK) throw new Error(`fin.bank.ebics: HPB rejected (${result.technicalCode}/${result.businessCode})`);
   const { bankX002, bankE002 } = result.bankKeys;
   if (!bankX002 || !bankE002 || !bankHashMatches(bankX002, c.bankX002) || !bankHashMatches(bankE002, c.bankE002)) {

@@ -1,4 +1,3 @@
-import { OrdersH005 } from "@kage0x3b/ebics-client";
 import { Access, fs } from "@qino/qino";
 
 import { clientOf, requireKeys, submit, trustBank } from "./client.ts";
@@ -37,7 +36,7 @@ export const api: ApiTree = {
       execute: async (_: unknown, ctx: Ctx) => {
         const { client } = await connection(ctx);
         await requireKeys(client);
-        await submit(client, OrdersH005.INI);
+        await submit(client, "INI");
       },
     },
   },
@@ -48,7 +47,7 @@ export const api: ApiTree = {
       execute: async (_: unknown, ctx: Ctx) => {
         const { client } = await connection(ctx);
         await requireKeys(client);
-        await submit(client, OrdersH005.HIA);
+        await submit(client, "HIA");
       },
     },
   },
