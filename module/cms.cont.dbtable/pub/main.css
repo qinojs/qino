@@ -25,26 +25,41 @@
 	}
 	[data-f].-saving { opacity:.5; }
 	.-html { max-height:12rem; overflow:auto; }
-	/* a file field: a tile to click or drop a file on, a trash beside it */
-	.-file { display:inline-flex; align-items:center; gap:.4rem; }
+	/* a file field: a tile to click or drop a file on, the badge on its corner removes it */
+	.-file { display:inline-flex; align-items:center; gap:.6rem; vertical-align:middle; }
+	.-file > .-box { position:relative; display:inline-flex; }
 	.-tile {
-		position:relative; display:inline-flex; align-items:center; justify-content:center; gap:.3em;
-		box-sizing:border-box; border:0; border-radius:.25rem; padding:0; overflow:hidden; cursor:pointer;
-		background:none; color:inherit; font:inherit;
-		> img { width:100%; height:100%; object-fit:contain; }
+		--accent:var(--cms-color, var(--color));
+		position:relative; display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+		box-sizing:border-box; margin:0; padding:0; border:1px solid #0001; border-radius:.35rem; overflow:hidden;
+		background:#0000000a; color:inherit; font:inherit; font-size:.75rem; line-height:1.15; cursor:pointer;
+		> img { display:block; width:100%; height:100%; object-fit:contain; }
+		> .-ext { font-size:.85em; font-weight:bold; text-transform:uppercase; letter-spacing:.03em; }
+		> u2-ico { --size:1.5em; }
 		/* over the preview: what a click does */
-		> u2-ico { position:absolute; inset:0; margin:auto; padding:.15em; border-radius:50%; background:#fffd; opacity:0; }
-		&:is(:hover, :focus-visible, .-drop) > u2-ico { opacity:1; }
-		&:is(:hover, :focus-visible, .-drop) { outline:2px solid currentColor; outline-offset:1px; }
+		> .-hint {
+			position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+			background:#000a; color:#fff; opacity:0; transition:opacity .15s;
+			> u2-ico { --size:1.4em; }
+		}
+		&:is(:hover, :focus-visible, .-drop) > .-hint { opacity:1; }
+		&:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 	}
 	.-tile.-empty {
-		flex-direction:column; gap:0; font-size:.8em; line-height:1.1;
-		border:2px dashed currentColor; opacity:.7;
-		> u2-ico { position:static; opacity:1; background:none; padding:0; }
-		&:is(:hover, :focus-visible, .-drop) { opacity:1; outline:0; border-style:solid; }
+		border:1.5px dashed var(--accent); color:var(--accent);
+		background:color-mix(in srgb, var(--accent) 6%, transparent);
+		&:is(:hover, :focus-visible, .-drop) { border-style:solid; background:color-mix(in srgb, var(--accent) 16%, transparent); }
 	}
-	.-tile.-small { > u2-ico { position:static; opacity:1; background:none; } }
-	.-tile.-saving { opacity:.4; pointer-events:none; }
+	.-tile.-saving { opacity:.45; cursor:progress; pointer-events:none; }
+	.-remove {
+		position:absolute; top:-.5rem; right:-.5rem; display:flex; padding:.2rem;
+		border:0; border-radius:50%; background:#fff; color:#b00020; box-shadow:0 1px 3px #0005; cursor:pointer;
+		opacity:0; transition:opacity .15s;
+		> u2-ico { --size:.85rem; }
+		&:is(:hover, :focus-visible) { background:#b00020; color:#fff; }
+	}
+	.-box:is(:hover, :focus-within) > .-remove { opacity:1; }
+	@media (hover:none) { .-remove { opacity:1; } }
 }
 /* a new row opens in a dialog, outside the node */
 .u2x-modal.-dbtable {
