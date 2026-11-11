@@ -47,7 +47,7 @@ async function sent(app: App, agent: number, session: number) {
 export async function known(app: App, session: number): Promise<Set<string>> {
   const agent = Number(await app.db.one`SELECT agent_id FROM ai_session WHERE id = ${session}`);
   const { start, history } = await sent(app, agent, session);
-  return new Set([...start ? [start, ...history] : history].flatMap((row) =>
+  return new Set((start ? [start, ...history] : history).flatMap((row) =>
     [`#${row.id}`, ...row.message.tools?.map((tool: Tool) => tool.name) ?? [], ...row.message.known ?? []]));
 }
 

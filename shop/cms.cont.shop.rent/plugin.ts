@@ -31,8 +31,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars?: { week?: unk
   }
   // one price per factor: the rules make a few of them, the cart computes the same
   const prices = new Map<number, Promise<string>>();
-  const priceOf = (factor: number, range: Range) => prices.get(factor) ?? prices.set(factor,
-    product.prices({ order, currency, data: { rent: [range] } }).then(({ gross }) => String(currency?.show(gross) ?? gross))).get(factor)!;
+  const priceOf = (factor: number, range: Range) => prices.getOrInsertComputed(factor, () =>
+    product.prices({ order, currency, data: { rent: [range] } }).then(({ gross }) => String(currency?.show(gross) ?? gross)));
 
   const now = unixTime(), lang = ctx.lang;
   const slots = [...Array(Math.ceil(DAY / seconds))].map((_, i) => days.slice(0, 7).map((day) => {

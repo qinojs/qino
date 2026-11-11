@@ -69,16 +69,10 @@ export function geocode(address: string, agent: string, lang?: string): Promise<
   }
 
   // Same address, several requests in the same moment: one lookup, one answer for all.
-  const running = inFlight.get(key);
-  if (running) return running;
-
-  const task = serial(() => ask(q, agent, lang))
+  return inFlight.getOrInsertComputed(key, () => serial(() => ask(q, agent, lang))
     .then((place) => {
       if (!place) misses.set(key, Date.now());
       return place;
     })
-    .finally(() => inFlight.delete(key));
-
-  inFlight.set(key, task);
-  return task;
+    .finally(() => inFlight.delete(key)));
 }
