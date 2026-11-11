@@ -60,6 +60,10 @@ test("a new invoice opens in the editor, saves as one types, is issued, asked fo
     await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
     page = String(await as(`${base}?invoice=${id}`, () => render(node)));
     assertStringIncludes(page, 'value="120"'); // prices come back as typed
+    // a unit price finer than a minor unit stays so, and grouped amounts are read
+    await as(base, () => api(node, { save: { ...edited, price0: "0.2345", price5: "1'200,50", id: String(id) } }));
+    assertEquals(await app.db.col`SELECT price FROM invoice_line WHERE invoice_id = ${id} ORDER BY sort`, [23.45, 120050]);
+    await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
     await as(base, () => api(node, { save: { ...edited, text: "", id: String(id) } }));
     assertEquals((await app.db.row`SELECT text FROM invoice WHERE id = ${id}`)?.text, ""); // emptied is cleared
     await as(base, () => api(node, { save: { ...edited, date: "2027-01-02", id: String(id) } }));

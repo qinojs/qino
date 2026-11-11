@@ -89,8 +89,10 @@ export const paymentProvider: Provider = {
     if (session.payment_status !== "paid") return state;
     const fee = charge?.balance_transaction?.currency === String(payment.currency).toLowerCase()
       ? Number(charge.balance_transaction.fee) : undefined;
+    const paid = Number(session.amount_total);
     const refunded = Number(charge?.amount_refunded ?? 0);
-    return { ...state, status: "paid", paid: Number(session.amount_total), refunded, fee };
+    // all of it paid back is `refunded`, as `refund` leaves it
+    return { ...state, status: refunded && refunded >= paid ? "refunded" : "paid", paid, refunded, fee };
   },
 
   async refund(app, payment, amount) {

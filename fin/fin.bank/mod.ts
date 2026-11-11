@@ -53,7 +53,11 @@ export async function ingest(app: App, statement: Statement): Promise<{ added: n
         created: unixTime(),
       });
       added++;
-      if (payment) synced.add(payment);
+      if (!payment) continue;
+      // the money moved when the bank booked it: the latest transfer, where it comes in parts
+      await app.db.exec`UPDATE payment SET date = ${tx.date}
+        WHERE id = ${payment} AND (date IS NULL OR date < ${tx.date})`;
+      synced.add(payment);
     }
   });
   for (const id of synced) await sync(app, id);
@@ -62,7 +66,7 @@ export async function ingest(app: App, statement: Statement): Promise<{ added: n
 
 /**
  * Settle a line nobody claimed: it becomes a recorded payment for `ref` (an invoice, an order), in
- * the direction of its sign.
+ * the direction of its sign, on the day the bank booked it.
  */
 export async function assign(app: App, txId: number, ref: string): Promise<number> {
   const tx = await app.db.row`SELECT * FROM bank_tx WHERE id = ${txId}`;
@@ -77,6 +81,7 @@ export async function assign(app: App, txId: number, ref: string): Promise<numbe
       currency: String(tx.currency),
       ref,
       description: String(tx.party_name ?? "") || undefined,
+      date: String(tx.date),
     });
     await app.db.exec`UPDATE bank_tx SET payment_id = ${payment} WHERE id = ${txId}`;
     return payment;

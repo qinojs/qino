@@ -2,6 +2,7 @@
 // mail inbox, an API — it moves into a module of its own (fin.invoice.read).
 import { fs, s } from "@qino/qino";
 import { structured } from "@qino/qino/ai";
+import { parseAmount } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { attach, create } from "@qino/qino/fin.invoice";
 import { currency as currencies } from "@qino/qino/locale.currency";
@@ -75,8 +76,6 @@ export function valuesOf(read: Read, main = "") {
   const currency = String(read.currency || main).toUpperCase();
   if (!currency) throw new Error("No currency read, and no main currency (fin.mainCurrency)");
   const unit = 10 ** currencies.decimals(currency);
-  // a unit price may be finer than a minor unit (0.2345 CHF/kWh): four more decimals are kept
-  const minor = (value: number) => Math.round(Number(value) * unit * 1e4) / 1e4;
   const date = (value?: string) => /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? "")) ? value : undefined;
   const s = read.supplier ?? { name: "" };
   const address = Object.fromEntries(Object.entries({
@@ -99,7 +98,7 @@ export function valuesOf(read: Read, main = "") {
       description: line.description || undefined,
       quantity: Number(line.quantity) || 1,
       unit: line.unit || undefined,
-      price: minor(line.unitPrice),
+      price: parseAmount(line.unitPrice, currency, { fine: true }),
       taxRate: Number(line.taxRate) || 0,
     })),
     text: read.reference ? `Reference: ${read.reference}` : undefined,

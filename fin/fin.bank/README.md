@@ -29,10 +29,11 @@ ISO 20022 camt.053/054, the format banks across Europe export.
 A line's `reference` (QR reference, creditor reference `RF…`, end-to-end id) is compared — without
 spaces and case — with the payments' `external_id`, in the direction of its sign. A match links
 the line and syncs the payment; its provider asks `paid(app, paymentId)` what arrived, so two
-partial transfers on one QR bill add up. Payments stay the only place a status lives.
+partial transfers on one QR bill add up. Payments stay the only place a status lives. The payment's
+`date` is the line's booking date — the latest, where it comes in parts.
 
 A line without a match is assigned with `assign(app, txId, ref)`: it becomes a recorded payment
-(`provider` `bank`) for whatever `ref` names — an invoice, an order.
+(`provider` `bank`) for whatever `ref` names — an invoice, an order —, dated as the line.
 
 A statement read twice adds nothing: each line is stored under the bank's own id for it, with the
 account. Accounts are created from the statements themselves.

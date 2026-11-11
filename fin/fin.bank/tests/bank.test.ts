@@ -72,7 +72,7 @@ test("a reference settles its payment; partial transfers add up", async () => {
   ]));
   assertEquals(result, { added: 2, matched: 1 });
   assertEquals(await app.db.col`SELECT payment_id FROM bank_tx ORDER BY id`, [id, null]);
-  assertEquals([events.at(-1)?.status, events.at(-1)?.paid], ["paid", 4000]);
+  assertEquals([events.at(-1)?.status, events.at(-1)?.paid, events.at(-1)?.date], ["paid", 4000, "2026-10-07"]);
   await ingest(app, statement([{ id: "3", amount: 6000, reference: `REF${id}` }]));
   assertEquals((await app.db.row`SELECT paid FROM payment WHERE id = ${id}`)?.paid, 10000);
   assertEquals(await paid(app, id), 10000);
@@ -85,6 +85,7 @@ test("a line nobody claimed is assigned by hand and becomes a recorded payment",
   const payment = await assign(app, tx, "fin.invoice:9");
   const row = await app.db.row`SELECT * FROM payment WHERE id = ${payment}`;
   assertEquals([row?.direction, row?.provider, row?.amount, row?.ref, row?.status], ["out", "bank", 12000, "fin.invoice:9", "paid"]);
+  assertEquals(row?.date, "2026-10-07"); // the day the bank booked it, not the day it was assigned
   assertEquals(events.at(-1)?.id, payment);
   assertEquals(Number(await app.db.one`SELECT payment_id FROM bank_tx WHERE id = ${tx}`), payment);
   await assertRejects(() => assign(app, tx, "fin.invoice:9"), Error, "already assigned");

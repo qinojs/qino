@@ -230,6 +230,7 @@ export async function cancel(app: App, id: number): Promise<Row | undefined> {
     return get(app, id);
   }
   const canceled = await status(app, invoice, "canceled");
+  await withdraw(app, id);
   // a credit note taken back no longer counts on its invoice
   if (invoice.type === "credit_note") {
     await app.db.exec`DELETE FROM invoice_settlement WHERE credit_id = ${id}`;
@@ -472,20 +473,20 @@ async function settle(app: App, id: number): Promise<Row | undefined> {
   const settled = total < 0 ? paid <= total : paid >= total;
   const unsettled = invoice.status === "uncollectible" ? "uncollectible" : "open";
   const fresh = await status(app, invoice, settled ? "paid" : unsettled);
-  if (fresh?.status === "paid") {
-    // paid another way: what still waits for it, or for a reminder listing it, asks for nothing owed
-    const listing = await app.db.col`SELECT invoice_id FROM invoice_listed WHERE listed_id = ${id}`;
-    for (const doc of [id, ...listing.map(Number)]) await withdraw(app, doc);
-  }
+  // paid another way: what still waits for it asks for nothing owed
+  if (fresh?.status === "paid") await withdraw(app, id);
   return fresh;
 }
 
-/** Withdraw what still waits for a document (a QR bill) once it asks for nothing. */
+/** Withdraw what still waits (a QR bill) for a document, or for a reminder listing it, once that asks for nothing. */
 async function withdraw(app: App, id: number) {
-  const invoice = await get(app, id);
-  if (!invoice || invoice.type === "credit_note" || await owed(app, invoice) > 0) return;
-  const waiting = await app.db.col`SELECT id FROM payment WHERE ref = ${refOf(id)} AND status = 'pending'`;
-  for (const payment of waiting) await cancelPayment(app, Number(payment));
+  const listing = await app.db.col`SELECT invoice_id FROM invoice_listed WHERE listed_id = ${id}`;
+  for (const doc of [id, ...listing.map(Number)]) {
+    const invoice = await get(app, doc);
+    if (!invoice || invoice.type === "credit_note" || await owed(app, invoice) > 0) continue;
+    const waiting = await app.db.col`SELECT id FROM payment WHERE ref = ${refOf(doc)} AND status = 'pending'`;
+    for (const payment of waiting) await cancelPayment(app, Number(payment));
+  }
 }
 
 const get = (app: App, id: number): Promise<Row | undefined> => app.db.row`SELECT * FROM invoice WHERE id = ${id}`;

@@ -58,7 +58,7 @@
           "date": {
             "type": "string",
             "format": "date",
-            "description": "When the money moved, YYYY-MM-DD, where it is known: given to a recorded payment. Its entry is booked on it"
+            "description": "When the money moved, YYYY-MM-DD, where it is known: given to a recorded payment, or the booking date of the bank line that settled it. Its entry is booked on it"
           },
           "status": {
             "type": "string",

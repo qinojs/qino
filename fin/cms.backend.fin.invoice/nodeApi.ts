@@ -169,7 +169,7 @@ function valuesOf(v: Record<string, string>) {
       account: v[`account${i}`] || undefined,
       quantity: v[`quantity${i}`] ? decimal(v[`quantity${i}`]) : 1,
       unit: v[`unit${i}`] || undefined,
-      price: parseAmount(v[`price${i}`] || 0, currency),
+      price: parseAmount(v[`price${i}`] || 0, currency, { fine: true }),
       taxRate: v[`taxRate${i}`] ? decimal(v[`taxRate${i}`]) : undefined, // empty: the default
       taxCategory: v[`taxCategory${i}`] || undefined, // empty: by the rate
     };

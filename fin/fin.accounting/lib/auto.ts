@@ -43,9 +43,10 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
     const entry = await booked(app, ref);
     if (entry) await reverse(app, Number(entry));
   };
-  if (invoice.status === "canceled") return taken(ref);
   if (invoice.status === "uncollectible") return writeOff(app, invoice);
-  if (previous === "uncollectible") return taken(lossRef(Number(invoice.id)));
+  // given up no more — paid after all, or canceled: its loss goes with it
+  if (previous === "uncollectible") await taken(lossRef(Number(invoice.id)));
+  if (invoice.status === "canceled") return taken(ref);
   if (previous !== "draft" || await booked(app, ref)) return;
   const { roles, currency, closed } = await setup(app);
   if (invoice.currency !== currency) return; // another currency: booked by hand (see README)

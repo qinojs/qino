@@ -17,11 +17,13 @@ export function money(amount: unknown, currency: unknown): string {
 
 const nowrap = (text: string) => html`<span style="white-space:nowrap">${text}</span>`;
 
-/** What a person types (`120.50`, `120,50`, `1'200`) as minor units of the currency. */
-export function parseAmount(value: unknown, currency: string): number {
-  const amount = toMinor(Number(String(value ?? "").replace(/['\s]/g, "").replace(",", ".")), currency);
+/** What a person types (`120.50`, `120,50`, `1'200`) as minor units of the currency. A unit price
+ *  (`fine`) may be finer than a minor unit: four more decimals are kept, 0.2345 CHF is 23.45. */
+export function parseAmount(value: unknown, currency: string, { fine = false } = {}): number {
+  const scale = fine ? 1e4 : 1;
+  const amount = toMinor(Number(String(value ?? "").replace(/['\s]/g, "").replace(",", ".")) * scale, currency);
   if (!Number.isSafeInteger(amount)) throw new Error(`Not an amount: ${value}`);
-  return amount;
+  return amount / scale;
 }
 
 /** Minor units as typed into a field: `120`, `0.2345` — no grouping, a point; nothing for none. */

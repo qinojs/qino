@@ -3,7 +3,8 @@
 Subscriptions: what a user is billed for again and again — a hosting, a domain, a membership —
 period by period, in advance. A subscription has a price per period, a period of months or years
 (`interval_unit`, `interval_count`: 1 year, 3 months), a `start_date` and, once canceled, an
-`end_date`. A user may have several, of the same kind too (two domains).
+`end_date`. A user may have several, of the same kind too (two domains). Periods keep the start's
+day of the month: begun on 31 January, the next begins on 28 February, the one after on 31 March.
 
 ```ts
 import { bill, cancel, plan, remove, removePlan, subscribe, update } from "@qino/qino/fin.subscription";

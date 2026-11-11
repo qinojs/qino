@@ -46,6 +46,12 @@ test("a Checkout session in minor units; paid with its fee, refunded through its
       assertEquals([paid?.status, paid?.paid, paid?.fee], ["paid", 4726, 167]);
       await refund(app, id, 1000);
       assertEquals(new URLSearchParams(bodies.at(-1)).get("payment_intent"), "pi_1");
+      // paid back in part it stays paid; all of it is refunded, and a sync leaves it so
+      charge.amount_refunded = 1000;
+      assertEquals((await sync(app, id))?.status, "paid");
+      charge.amount_refunded = 4726;
+      const refunded = await sync(app, id);
+      assertEquals([refunded?.status, refunded?.refunded], ["refunded", 4726]);
     });
   });
 });

@@ -195,9 +195,11 @@ export async function bill(
   const last = until ?? await horizon(app);
   const groups = new Map<string, { usrId: number; currency: string; periods: Row[] }>();
   for (const sub of await withNext(app)) {
+    // periods keep the start's day of the month: begun on the 31st, a short month ends early, the next is the 31st again
+    const anchor = day(sub.start_date).slice(8);
     for (let start = String(sub.next); start <= last && (!sub.end_date || start < day(sub.end_date));) {
       // the day after the period: so many months or years on
-      const following = addMonths(start, Number(sub.count) * (sub.unit === "month" ? 1 : 12));
+      const following = addMonths(`${start.slice(0, 8)}${anchor}`, Number(sub.count) * (sub.unit === "month" ? 1 : 12));
       const currency = String(sub.currencyCode);
       const key = `${sub.usr_id}:${currency}`;
       groups.getOrInsertComputed(key, () => ({ usrId: Number(sub.usr_id), currency, periods: [] as Row[] }))

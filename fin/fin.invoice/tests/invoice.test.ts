@@ -194,6 +194,19 @@ test("paid another way, a payment still waiting for it is withdrawn", async () =
   assertEquals(await app.db.one`SELECT status FROM payment WHERE id = ${waiting}`, "canceled");
 });
 
+test("canceled, a payment still waiting for it, or for a reminder of it alone, is withdrawn", async () => {
+  const { app } = await setup();
+  const id = Number((await issue(app, await create(app, order)))?.id);
+  const reminder = Number((await issue(app, await create(app, {
+    currency: "CHF", type: "reminder", lines: [], listed: [{ id, open: 47226, level: 1 }],
+  })))?.id);
+  const table = app.db.table("payment");
+  const waiting = { direction: "in", provider: "qr", amount: 47226, currency: "CHF", status: "pending", created: 1, changed: 1 };
+  const ids = [Number(await table.insert({ ...waiting, ref: refOf(id) })), Number(await table.insert({ ...waiting, ref: refOf(reminder) }))];
+  await cancel(app, id);
+  assertEquals(await app.db.col`SELECT status FROM payment WHERE id IN (${ids[0]}, ${ids[1]}) ORDER BY id`, ["canceled", "canceled"]);
+});
+
 test("a draft can be thrown away; an issued invoice is revised into a new draft instead", async () => {
   const { app } = await setup();
   const draft = await create(app, order);

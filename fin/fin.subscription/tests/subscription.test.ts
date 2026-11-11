@@ -69,6 +69,21 @@ test("with send set, the invoices go out issued and by mail; without, nothing is
   });
 });
 
+test("begun on the 31st, a monthly period keeps its day: a short month does not shift the ones after", async () => {
+  await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
+    const usr = Number(await app.db.table("usr").insert({ active: 1, pw: "", superuser: 0, family_name: "Muster" }));
+    const id = await subscribe(app, { usrId: usr, name: "Support", price: 1000, currency: "CHF", unit: "month", start: "2027-01-31" });
+    await bill(app, { until: "2027-03-31" });
+    const periods = await app.db.query`SELECT period_start, period_end FROM subscription_invoice
+      WHERE subscription_id = ${id} ORDER BY period_start`;
+    assertEquals(periods.map((p) => [String(p.period_start).slice(0, 10), String(p.period_end).slice(0, 10)]), [
+      ["2027-01-31", "2027-02-27"],
+      ["2027-02-28", "2027-03-30"],
+      ["2027-03-31", "2027-04-29"],
+    ]);
+  });
+});
+
 test("a plan fills in what a subscription leaves empty; its own fields win", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const usr = Number(await app.db.table("usr").insert({

@@ -248,6 +248,16 @@ test("written off: the loss and its tax back; paid after all: taken back again",
   });
 });
 
+test("written off, then canceled: the loss goes with the claim", async () => {
+  await withApp(async (app) => {
+    const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
+    const id = Number((await issue(app, await create(app, { currency: "CHF", date: "2026-10-01", lines })))?.id);
+    await writeOff(app, id);
+    await cancel(app, id); // it never went out: canceled without a credit note
+    assertEquals(await saldo(app), {});
+  });
+});
+
 test("an invoice that went out is canceled by a credit note: booked back in its own period", async () => {
   await withApp(async (app) => {
     const lines = [{ name: "Design", price: 100000, taxRate: 8.1 }];
