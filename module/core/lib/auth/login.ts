@@ -106,9 +106,10 @@ export async function login(ctx: Ctx, id: number | string, via?: string | Record
   // new session id after logout prevents session fixation
   const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
   ctx.sess = session;
-  ctx.sess.data.core.userId(id);
+  const saved = ctx.sess.data.core.userId(id);
   const record = typeof via === "string" ? { [via]: unixTime() } : via ?? {};
   for (const [name, at] of Object.entries(record)) ctx.sess.data.core.via[name](at);
+  await saved; // settles with the writes above: the next request reads the user from the session row
   ctx.app.sessions.setCookieIfNew(ctx); // set the cookie now, independent of the request flow
   await ctx.client.addUsr(id);
   await ctx.client.$set({ usr_id: id });
