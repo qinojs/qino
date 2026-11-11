@@ -17,7 +17,7 @@ export const gemini: Adapter = {
       body: JSON.stringify({ model: call.model.replace(/^models\//, ""), input, response_format: { type: "audio" } }),
     });
     const data = await res.json();
-    const audio = data.steps?.filter((s: any) => s.type === "model_output").flatMap((s: any) => s.content ?? []).find((c: any) => c.type === "audio");
+    const audio = data.steps?.flatMap((s: any) => s.type === "model_output" ? s.content ?? [] : []).find((c: any) => c.type === "audio");
     if (!audio?.data) throw new AiError("No audio in the answer", 502);
     call.usage(input.length, 1);
     return `data:${audio.mime_type ?? "audio/mpeg"};base64,${audio.data}`;

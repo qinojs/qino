@@ -44,7 +44,7 @@ export async function live(call: Call, input: LiveInput): Promise<LiveOutput> {
     }
     if (event.type !== "response.done") return;
     const output: Record<string, any>[] = event.response?.output ?? [];
-    const said = output.filter((item) => item.type === "message").flatMap((item) => item.content ?? [])
+    const said = output.flatMap((item) => item.type === "message" ? item.content ?? [] : [])
       .map((part) => part.transcript ?? part.text ?? "").join("");
     const toolCalls = output.filter((item) => item.type === "function_call")
       .map((item) => ({ id: String(item.call_id), name: String(item.name), args: json(item.arguments || "{}") }));

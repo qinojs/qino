@@ -86,8 +86,7 @@ async function text(call: Call, value: TextInput): Promise<Omit<TextOutput, "mod
     authorization: `Bearer ${account.access_token}`, "content-type": "application/json" }, body: JSON.stringify(body) });
   const answer = await completed(response, value.onText);
   call.usage(answer.usage?.input_tokens, answer.usage?.output_tokens);
-  const text = (answer.output ?? []).filter((item) => item.type === "message")
-    .flatMap((item) => Array.isArray(item.content) ? item.content : [])
+  const text = (answer.output ?? []).flatMap((item) => item.type === "message" && Array.isArray(item.content) ? item.content : [])
     .filter((part) => part?.type === "output_text").map((part) => String(part.text ?? "")).join("");
   const toolCalls = (answer.output ?? []).filter((item) => item.type === "function_call").map((item) => {
     let args: unknown;
