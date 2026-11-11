@@ -55,9 +55,10 @@ export default async function (widget, { node, dialogs, signal }) {
   const row = ([slot, file]) => html.async`<tr itemid="${slot}" draggable>
     <td class="-preview ${file.placeholder ? '-empty' : ''}" title="${t`Click to replace the file`}">${preview(file)}<span class=-hint><u2-ico icon=upload>⤒</u2-ico>${file.placeholder ? t`upload` : t`replace`}</span>
     <td class=-link>${file.placeholder
-      ? t`Placeholder`
-      : html`<a href="${file.url}" target=_blank title="${file.name}">${file.name}</a>`
-    }${slot[0] === '_' ? '' : html`<div class=-slot>(${slot})</div>`}
+      // an empty slot by its name: "background Placeholder"
+      ? html.async`${slot[0] === '_' ? '' : slot + ' '}${t`Placeholder`}`
+      : html`<a href="${file.url}" target=_blank title="${file.name}">${file.name}</a>${slot[0] === '_' ? '' : html`<div class=-slot>(${slot})</div>`}`
+    }
     <td class=-size>${kb(file.size)}
     <td class=-handle u2-draghandle><u2-ico icon=drag_indicator>⠿</u2-ico>
     <td class=-delete><button class=u2-unstyle title="${t`delete`}"><u2-ico icon=delete>✕</u2-ico></button>`;
