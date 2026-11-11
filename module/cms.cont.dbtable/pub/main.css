@@ -50,6 +50,10 @@
 		background:color-mix(in srgb, var(--accent) 6%, transparent);
 		&:is(:hover, :focus-visible, .-drop) { border-style:solid; background:color-mix(in srgb, var(--accent) 16%, transparent); }
 	}
+	/* a file dragged over the page: every tile shows it takes one, the one below the pointer clearly */
+	&.-fileDrag .-tile { outline:2px dashed var(--accent); outline-offset:2px; }
+	.-tile.-drop { outline:2px solid var(--accent); outline-offset:2px;
+		> .-hint { opacity:1; background:color-mix(in srgb, var(--accent) 80%, transparent); } }
 	.-tile.-saving { opacity:.45; cursor:progress; pointer-events:none; }
 	.-remove {
 		position:absolute; top:-.5rem; right:-.5rem; display:flex; padding:.2rem;

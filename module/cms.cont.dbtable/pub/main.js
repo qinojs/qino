@@ -74,6 +74,16 @@ export function init(root) {
     tile.classList.add('-drop');
   });
   root.addEventListener('dragleave', (e) => e.target.closest?.('.-tile')?.classList.remove('-drop'));
+  // while a file is dragged over the page, the tiles show they take one; off as it drops or leaves the window,
+  // and with the first mouse move after it (a cancelled drag of a file from outside tells the page nothing)
+  const dragging = (on) => {
+    root.classList.toggle('-fileDrag', on);
+    if (!on) for (const tile of root.querySelectorAll('.-tile.-drop')) tile.classList.remove('-drop');
+  };
+  document.addEventListener('dragenter', (e) => e.dataTransfer?.types.includes('Files') && dragging(true));
+  document.addEventListener('dragleave', (e) => !e.relatedTarget && dragging(false));
+  document.addEventListener('drop', () => dragging(false));
+  document.addEventListener('mousemove', () => root.classList.contains('-fileDrag') && dragging(false));
   root.addEventListener('drop', async (e) => {
     const tile = tileOf(e);
     if (!tile) return;
