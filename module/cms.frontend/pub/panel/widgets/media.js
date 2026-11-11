@@ -53,7 +53,7 @@ export default async function (widget, { node, dialogs, signal }) {
   widget.badge = real.length;
 
   const row = ([slot, file]) => html.async`<tr itemid="${slot}" draggable>
-    <td class="-preview ${file.placeholder ? '-empty' : ''}" title="${t`Click to replace the file`}">${preview(file)}<span class=-hint><u2-ico icon=upload>⤒</u2-ico>${file.placeholder ? t`upload` : t`replace`}</span>
+    <td class="-preview ${file.placeholder ? '-empty' : ''}" ${file.placeholder ? '' : html.async`title="${t`Drag into a text to insert it`}"`}>${preview(file)}<span class=-hint><u2-ico icon=upload>⤒</u2-ico>${file.placeholder ? t`upload` : t`replace`}</span>
     <td class=-link>${file.placeholder
       // an empty slot by its name: "background" Placeholder
       ? html.async`${slot[0] === '_' ? '' : `"${slot}" `}${t`Placeholder`}`
