@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.slideshow",
+  "description": "Slideshow of the block's images.",
+  "dependencies": ["cms", "cms.image", "u2"],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

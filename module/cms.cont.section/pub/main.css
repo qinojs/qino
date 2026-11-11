@@ -1,3 +1,14 @@
 [qcms-mod="cont.section"] {
   margin-block: 4rem;
+  /* the background image fills the section, behind its content */
+  position: relative;
+  isolation: isolate;
+  > cms-image {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: auto;
+    max-width: none;
+    aspect-ratio: auto;
+  }
 }

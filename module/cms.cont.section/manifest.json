@@ -1,8 +1,9 @@
 {
   "name": "cms.cont.section",
-  "description": "Section limited to the layout width, with an optional title and vertical spacing.",
+  "description": "Section with an optional title and background image; its content is limited to the layout width.",
   "dependencies": [
     "cms",
+    "cms.image",
     "cms.templateParser"
   ],
   "files": [

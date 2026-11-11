@@ -1,0 +1,7 @@
+[qcms-mod="cont.slideshow"] > u2-carousel {
+  aspect-ratio: 2;
+  > cms-image {
+    width: 100%;
+    aspect-ratio: auto;
+  }
+}
