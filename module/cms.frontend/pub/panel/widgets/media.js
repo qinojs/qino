@@ -10,7 +10,14 @@ export const css = `
 .-media td { height:calc(var(--rem) * 3.8); vertical-align:middle; } /* room for the slot line, present or not */
 /* no button around the preview: that breaks dragging the image into a text field */
 .-media .-preview { width:calc(var(--rem) * 5.4); cursor:pointer; }
-.-media .-preview > * { display:block; width:100%; height:calc(var(--rem) * 3.4); object-fit:contain; background:var(--cms-light); }
+.-media .-preview > :not(.-hint) { display:block; width:100%; height:calc(var(--rem) * 3.4); object-fit:contain; background:var(--cms-light); }
+/* over the preview: what a click does; lets the pointer through, so the image can still be dragged */
+.-media .-preview { position:relative; }
+.-media .-hint { position:absolute; left:50%; top:50%; translate:-50% -50%; display:flex; flex-direction:column; align-items:center;
+  padding:.15em .45em .25em; border-radius:.3em; background:#000b; color:#fff; font-size:calc(var(--rem) * .75); line-height:1.1; white-space:nowrap;
+  opacity:0; transition:opacity .15s; pointer-events:none;
+  > u2-ico { --size:calc(var(--rem) * 1.1); } }
+.-media .-preview:hover > .-hint { opacity:1; }
 .-media .-link { white-space:nowrap; }
 .-media .-link > a { display:block; overflow:hidden; text-overflow:ellipsis; }
 .-media .-slot { font-size:calc(var(--rem) * .7); color:#999; font-style:italic; }
@@ -49,7 +56,7 @@ export default async function (widget, { node, dialogs, signal }) {
   widget.badge = real.length;
 
   const row = ([slot, file]) => html.async`<tr itemid="${slot}" draggable>
-    <td class=-preview title="${t`Click to replace the file`}">${preview(file)}
+    <td class=-preview title="${t`Click to replace the file`}">${preview(file)}<span class=-hint><u2-ico icon=upload>⤒</u2-ico>${file.placeholder ? t`upload` : t`replace`}</span>
     <td class=-link>${file.placeholder
       ? t`Placeholder`
       : html`<a href="${file.url}" target=_blank title="${file.name}">${file.name}</a>`
