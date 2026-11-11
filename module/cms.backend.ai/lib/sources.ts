@@ -248,8 +248,8 @@ export async function importBenchmarks(app: App, told = new Map<number, string>(
   // artificial_analysis_coding_index → coding; retired: no model of the last RETIRED_DAYS has it
   const indexName = (name: string) => name.replace(/^artificial_analysis_|^aa_|_index$/g, "");
   const since = new Date(Date.now() - RETIRED_DAYS * 86400_000).toISOString().slice(0, 10);
-  const measured = new Set(data.filter((m) => String(m.release_date ?? "") >= since)
-    .flatMap((m) => Object.entries(m.evaluations ?? {}).filter(([name, value]) => name.endsWith("_index") && typeof value === "number").map(([name]) => indexName(name))));
+  const measured = new Set(data.flatMap((m) => String(m.release_date ?? "") >= since
+    ? Object.entries(m.evaluations ?? {}).filter(([name, value]) => name.endsWith("_index") && typeof value === "number").map(([name]) => indexName(name)) : []));
   const retired = new Set(data.flatMap((m) => Object.keys(m.evaluations ?? {}).filter((name) => name.endsWith("_index")).map(indexName)).filter((name) => !measured.has(name)));
   if (retired.size) await db.exec`DELETE FROM ai_model_score WHERE ${sql.in("metric", retired)}`;
   const arenas = await Promise.all(Object.entries(ARENAS).map(async ([metric, path]) => {

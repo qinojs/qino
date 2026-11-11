@@ -70,8 +70,10 @@ export async function vatReturn(app: App, { from, to }: { from: string; to: stri
     FROM accounting_entry_line l JOIN accounting_entry e ON e.id = l.entry_id
     JOIN accounting_account a ON a.id = l.account_id
     WHERE e.date >= ${from} AND e.date <= ${to} AND a.number = ${input}`;
-  const of = (investment: boolean) => inputs.reduce((total, row) =>
-    total + (!!Number(row.assets) === investment ? Number(row.amount) : 0), 0);
-  const [material, investments] = [of(false), of(true)];
+  let material = 0, investments = 0;
+  for (const row of inputs) {
+    if (Number(row.assets)) investments += Number(row.amount);
+    else material += Number(row.amount);
+  }
   return { method, turnover, deductions, rates, input: material, investments, payable: tax - material - investments };
 }
