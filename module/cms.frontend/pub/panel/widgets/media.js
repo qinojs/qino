@@ -12,7 +12,7 @@ export const css = `
 .-media .-preview { position:relative; width:calc(var(--rem) * 5.4); cursor:pointer; }
 .-media .-preview > :not(.-hint) { display:block; width:100%; height:calc(var(--rem) * 3.4); object-fit:contain; background:var(--cms-light); }
 /* what a click does, over the faded file on hover, always on an empty slot; the pointer passes, so it still drags */
-.-media .-hint { position:absolute; inset:0; display:none; place-content:center; justify-items:center; font-size:.85em; pointer-events:none; }
+.-media .-hint { position:absolute; inset:0; display:none; place-content:center; justify-items:center; font-size:.7em; line-height:1.4; pointer-events:none; }
 .-media .-preview:hover > img { opacity:.25; }
 .-media .-preview:is(:hover, .-empty) > .-hint { display:grid; }
 .-media .-link { white-space:nowrap; }
