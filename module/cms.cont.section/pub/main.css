@@ -1,14 +1,16 @@
 [qcms-mod="cont.section"] {
   margin-block: 4rem;
-  /* the background image fills the section, behind its content */
+  /* the background image fills the section; the content comes later in the DOM, and so lies above it —
+     no stacking context, so a dropdown inside may still overlap the next section */
   position: relative;
-  isolation: isolate;
   > cms-image {
     position: absolute;
     inset: 0;
-    z-index: -1;
     width: auto;
     max-width: none;
     aspect-ratio: auto;
+  }
+  > .u2-width {
+    position: relative;
   }
 }
