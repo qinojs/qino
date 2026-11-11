@@ -20,17 +20,22 @@ export const css = `
   .-tree .-open { padding:0 .2em; cursor:pointer; }
   .-tree .-type { color:#999; font-size:.85em; }
 
-  .-list { display:flex; flex-direction:column; gap:.2em; }
-  .-field { border:1px solid var(--cms-light); }
-  .-field > .-head { display:flex; align-items:center; gap:.3em; padding:.3em;
-    > .-name { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
-    > select { flex:0 1 7em; width:auto; }
-    > button { flex:0 0 auto; padding:0 .2em; --size:calc(var(--rem) * 1.4); }
+  /* the fields as a table: a row each, the flags in columns under upright heads; one grid, the head and
+     each field share its columns (subgrid). Columns: handle, name, type, up to six flags, details. */
+  .-fields { display:grid; grid-template-columns:auto minmax(0,1fr) minmax(4.5em,7em) repeat(7, auto); }
+  :is(.-fields > .-th, .-list, .-field) { display:grid; grid-column:1 / -1; grid-template-columns:subgrid; align-items:center; }
+  .-fields > .-th { align-items:end; font-size:.85em; color:#777;
+    > * { padding:.2em .25em; }
+    > .-flag { writing-mode:vertical-rl; rotate:180deg; justify-self:center; white-space:nowrap; } }
+  .-field { border-top:1px solid var(--cms-light);
+    > * { padding:.25em; }
+    > .-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+    > select { width:100%; }
+    > .-flag { justify-self:center; margin:0 .25em; }
+    > button { padding:0 .2em; --size:calc(var(--rem) * 1.4); }
     > .-handle { cursor:n-resize; }
   }
-  .-flags { display:flex; flex-wrap:wrap; gap:0 .8em; padding:0 .4em .4em;
-    label { display:inline-flex; gap:.2em; margin:0; } }
-  .-more { display:none; padding:.4em .6em .8em; }
+  .-more { grid-column:1 / -1; display:none; padding:.4em .6em .8em; }
   .-field[open] .-more { display:block; }
   .-field[open] .-toggle u2-ico { rotate:180deg; }
   /* only what the chosen type uses */
@@ -84,14 +89,12 @@ export const setup = ({ flags, list = true } = {}) => async function (widget, { 
   const field = (name) => {
     const set = fields[name] ?? {}, title = txt(name + '_title');
     return html.async`<div class=-field itemid=${name} draggable>
-      <div class=-head>
-        <button type=button class="u2-unstyle -handle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag_indicator>⠿</u2-ico></button>
-        <span class=-name title="${pathOf(name)}">${unhee(title.value) || name}</span>
-        <select name=type setting="fields.${name}.type">${option('', set.type, t`automatic`)}${types.map((type) => option(type, set.type))}</select>
-        <button type=button class="u2-unstyle -toggle" aria-expanded=false title="${t`Details`}"><u2-ico icon=expand_more>▾</u2-ico></button>
-      </div>
-      <div class=-flags>${FLAGS.map(([key, label]) =>
-        html.async`<label><input type=checkbox setting="fields.${name}.${key}" ${checked(set[key])}>${label}</label>`)}</div>
+      <button type=button class="u2-unstyle -handle" u2-draghandle title="${t`Reorder`}"><u2-ico icon=drag_indicator>⠿</u2-ico></button>
+      <span class=-name title="${pathOf(name)}">${unhee(title.value) || name}</span>
+      <select name=type setting="fields.${name}.type" aria-label="${t`Type`}">${option('', set.type, t`automatic`)}${types.map((type) => option(type, set.type))}</select>
+      ${FLAGS.map(([key, label]) =>
+        html.async`<input type=checkbox class=-flag setting="fields.${name}.${key}" ${checked(set[key])} title="${label}" aria-label="${label}">`)}
+      <button type=button class="u2-unstyle -toggle" aria-expanded=false title="${t`Details`}"><u2-ico icon=expand_more>▾</u2-ico></button>
       <div class=-more>
         <label>${t`Label`} (${lang}):<input value="${unhee(title.value)}" cmstxt=${title.id} cmslang=${lang}></label>
         <label>${t`Column`}:<input value="${pathOf(name)}" readonly></label>
@@ -115,7 +118,10 @@ export const setup = ({ flags, list = true } = {}) => async function (widget, { 
         <div class=-tree>${columns(settings.table, '')}</div>
       </details>
       <details open><summary>${t`Fields`} (${names.length})</summary>
-        <div class=-list u2-dropzone>${names.map(field)}</div>
+        <div class=-fields>
+          <div class=-th><span></span><span>${t`Field`}</span><span>${t`Type`}</span>${FLAGS.map(([, label]) => html.async`<span class=-flag>${label}</span>`)}<span></span></div>
+          <div class=-list u2-dropzone>${names.map(field)}</div>
+        </div>
       </details>
       ${list ? html.async`<details><summary>${t`List`}</summary>
         <label>${t`Rows per page`}:<input type=number setting=limit value="${settings.limit ?? 20}" min=1></label>
