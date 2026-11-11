@@ -14,12 +14,16 @@ Inline page-editing styles live in cms.frontend/pub/inline/ instead. */
 u2-ico[icon] {
   --size: calc(var(--rem) * 1.5);
 }
+/* The ligature from the attribute; the fallback text inside falls out of the 1em box. The size stays on
+   the element itself, so an em in --size means the surrounding font, as everywhere (font-size:0 made it 0). */
 u2-ico[icon]:not(:has(> svg)) {
-    font-size:0;
+    font-size: var(--size);
+    width: 1em;
+    height: 1em;
+    overflow: hidden;
     &::before {
         content: attr(icon);
         display:block;
-        font-size: var(--size);
     }
 }
 
