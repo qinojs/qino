@@ -65,7 +65,7 @@ export class Currency extends ShopRow {
   change(amount: number): number { return amount * this.factor; }
   unchange(amount: number): number { return amount / this.factor; }
   /** To the step reduced prices land on (5: 0.05 CHF). */
-  round(amount: number): number { return Math.round(amount / (Number(this.rounding) || 1)) * (Number(this.rounding) || 1); }
+  round(amount: number): number { const step = Number(this.rounding) || 1; return Math.round(amount / step) * step; }
   /** "24.50" — as many decimals as the currency has. */
   format(amount: number): string { return fromMinor(Math.round(amount), this.$id).toFixed(iso.decimals(this.$id)); }
   show(amount: number): string { return `${this.$id} ${this.format(amount)}`; }
@@ -112,12 +112,12 @@ export class Product extends ShopRow {
     const currency = q.currency ?? await q.order?.currencyRow() ?? await mainCurrency(app);
     const where = q.country ?? q.order?.country ?? await country(app);
     const { line } = q, variant = q.variant ?? await line?.variant();
-    const base = variant?.price ?? this.price;
+    const base = Number(variant?.price ?? this.price);
     const e = {
       product: this,
       line,
       variant,
-      price: currency ? currency.change(Number(base)) : Number(base),
+      price: currency ? currency.change(base) : base,
       quantity: q.quantity ?? line?.quantity ?? 1,
       order: q.order,
       currency,

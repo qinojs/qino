@@ -54,7 +54,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // A reduced price lands on the currency's step (0.05 CHF).
   on("shop:price-discount", async (e) => {
     const d = await best(app, e);
-    if (d) e.price = e.currency ? e.currency.round(e.price * Number(d.factor)) : e.price * Number(d.factor);
+    if (d) { const price = e.price * Number(d.factor); e.price = e.currency?.round(price) ?? price; }
   });
 
   on("shop:line-description", async (e: { line: Line; description: string }) => {
