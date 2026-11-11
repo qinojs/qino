@@ -72,6 +72,31 @@ test("cms.layout.backend: renders submenu indicators with u2-ico", async () => {
   assertEquals(ctx.res.csp["connect-src"]["https://cdn.jsdelivr.net/npm/@material-icons/svg@1.0.33/"], undefined);
 });
 
+test("cms.layout.backend: hidden pages (visible=0) stay out of the navigation", async () => {
+  // children() as the CMS filters them: only by what the layout asks for
+  const pages = (list: { title: string; visible: boolean }[]) => (filter?: { visible?: boolean }) =>
+    new Map(list.filter((p) => filter?.visible === undefined || p.visible === filter.visible).map((p, i) => [i + 1, {
+      children: () => new Map(),
+      conts: () => [],
+      title: () => ({ string: () => p.title }),
+      url: () => Promise.resolve("/de/backend/" + p.title),
+    }]));
+  const root = {
+    children: pages([{ title: "Shown", visible: true }, { title: "Hidden", visible: false }]),
+    url: () => Promise.resolve("/de/backend"),
+  };
+  const node = {
+    app: { languages: { all: ["de"] }, modules: { get: () => undefined } },
+    cms: { nodeByPath: () => root, link: () => Promise.resolve("") },
+    page: () => ({ in: () => false, path: () => new Map() }),
+    conts: () => [],
+    cont: () => undefined,
+  };
+  const out = String(await cms.node.render(node as any, { ctx: await testContext({ set: { lang: "de" } }) }));
+  assertEquals(out.includes("Shown"), true);
+  assertEquals(out.includes("Hidden"), false);
+});
+
 test("cms.layout.backend: the active branch opens as deep as it goes", async () => {
   /** A page with one child, `depth` levels down. */
   const chain = (depth: number, name = "Level 1"): unknown => ({

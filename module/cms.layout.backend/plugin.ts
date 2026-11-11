@@ -61,7 +61,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
 
   // Nav: get backend root page and its children
   const backendRoot = await node.cms.nodeByPath(["backend"]);
-  const navItems = backendRoot ? [...(await backendRoot.children({ access: 1 })).values()] : [];
+  const navItems = backendRoot ? [...(await backendRoot.children({ access: 1, visible: true })).values()] : [];
 
   /** Nav levels, as deep as the tree goes; only the active branch expands, only level 1 shows the
    *  module icon. */
@@ -69,7 +69,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
     const out = [];
     for (const child of nodes) {
       const active = await page.in(child);
-      const subs = [...(await child.children({ access: 1 })).values()];
+      const subs = [...(await child.children({ access: 1, visible: true })).values()];
       const sub = active && subs.length ? await nav(subs, level + 1) : "";
       const mod = level === 1 ? app.modules.get(String((await child.conts())[0]?.vs?.module ?? "")) : undefined;
       const use = moduleIcon(mod);
