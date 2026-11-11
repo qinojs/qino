@@ -39,8 +39,8 @@ export const factorAt = ({ closed, factors }: Rules, moment: Date): number | nul
 
 /** How many rentals run at once at most within the range. */
 export function busy(rentals: Row[], { begin, end }: Range): number {
-  const edges = rentals.filter((r) => Number(r.begins) < end && Number(r.ends) > begin)
-    .flatMap((r) => [[Math.max(Number(r.begins), begin), 1], [Number(r.ends), -1]])
+  const edges = rentals.flatMap((r) => Number(r.begins) < end && Number(r.ends) > begin
+    ? [[Math.max(Number(r.begins), begin), 1], [Number(r.ends), -1]] : [])
     .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   let now = 0, most = 0;
   for (const [, step] of edges) most = Math.max(most, now += step);

@@ -49,7 +49,7 @@ async function received(esplora: string, to: string, confirmations: number) {
     vout: { scriptpubkey_address?: string; value: number }[];
   };
   for (const tx of txs as Tx[]) {
-    const value = tx.vout.filter((out) => out.scriptpubkey_address === to).reduce((sum, out) => sum + out.value, 0);
+    const value = tx.vout.reduce((sum, out) => sum + (out.scriptpubkey_address === to ? out.value : 0), 0);
     seen += value;
     if (tx.status.confirmed && Number(tip) - Number(tx.status.block_height) + 1 >= confirmations) confirmed += value;
   }
