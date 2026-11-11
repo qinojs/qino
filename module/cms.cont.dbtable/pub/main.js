@@ -46,19 +46,42 @@ export function init(root) {
   root.addEventListener('change', (e) => e.target.dataset.f && !e.target.isContentEditable && save(e.target));
   root.addEventListener('focusout', (e) => e.target.dataset.f && e.target.isContentEditable && save(e.target));
 
-  const upload = (row, field) => new Promise((resolve) => {
+  // a file for a field: the one given (dropped), else one picked; the tile is dimmed meanwhile
+  const send = async (tile, row, field, file) => {
+    const body = new FormData();
+    body.append('file', file);
+    const url = new URL(location.href);
+    url.search = new URLSearchParams({ dbtable_upload: root.getAttribute('qcms-id'), row, field, ...id ? { id } : {} });
+    tile.classList.add('-saving');
+    const res = await fetch(url, { method: 'POST', body, headers: { 'x-csrf-token': globalThis.qino?.csrfToken ?? '' } });
+    tile.classList.remove('-saving');
+    if (!res.ok) (await dialogs()).alert(await res.text());
+    return res.ok;
+  };
+  const upload = (tile, row, field) => new Promise((resolve) => {
     const input = Object.assign(document.createElement('input'), { type: 'file' });
-    input.addEventListener('change', async () => {
-      if (!input.files[0]) return resolve(false);
-      const body = new FormData();
-      body.append('file', input.files[0]);
-      const url = new URL(location.href);
-      url.search = new URLSearchParams({ dbtable_upload: root.getAttribute('qcms-id'), row, field, ...id ? { id } : {} });
-      const res = await fetch(url, { method: 'POST', body, headers: { 'x-csrf-token': globalThis.qino?.csrfToken ?? '' } });
-      if (!res.ok) (await dialogs()).alert(await res.text());
-      resolve(res.ok);
-    });
+    input.addEventListener('change', () => input.files[0] ? send(tile, row, field, input.files[0]).then(resolve) : resolve(false));
     input.click();
+  });
+
+  // a file dropped on a tile goes to its field — not to the CMS, which would add it to the node
+  const tileOf = (e) => e.dataTransfer?.types.includes('Files') && e.target.closest?.('.-tile[data-upload]');
+  root.addEventListener('dragover', (e) => {
+    const tile = tileOf(e);
+    if (!tile) return;
+    e.preventDefault();
+    e.stopPropagation();
+    tile.classList.add('-drop');
+  });
+  root.addEventListener('dragleave', (e) => e.target.closest?.('.-tile')?.classList.remove('-drop'));
+  root.addEventListener('drop', async (e) => {
+    const tile = tileOf(e);
+    if (!tile) return;
+    e.preventDefault();
+    e.stopPropagation();
+    tile.classList.remove('-drop');
+    const file = e.dataTransfer.files[0];
+    if (file && await send(tile, tile.closest('[data-row]').dataset.row, tile.dataset.upload, file)) list();
   });
 
   /* a new row: its fields in a dialog */
@@ -92,7 +115,7 @@ export function init(root) {
       if (file.dataset.clear) {
         if (!await (await dialogs()).confirm(await t`Remove the file?`)) return;
         await call({ do: 'clear', row: fileRow.dataset.row, field: file.dataset.clear });
-      } else if (!await upload(fileRow.dataset.row, file.dataset.upload)) return;
+      } else if (!await upload(file, fileRow.dataset.row, file.dataset.upload)) return;
       return list();
     }
 

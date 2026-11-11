@@ -116,8 +116,8 @@ const types: Record<string, Type> = {
     async edit(f, v, app) {
       const [w, h] = size(f, 72, 48);
       const file = Number(v) ? await app.dbFiles.file(Number(v)) : undefined;
-      const img = file && await file.exists() ? `<img src="${hee(await file.url({ w, h }))}" alt="" style="width:${w}px; height:${h}px; object-fit:contain">` : "";
-      return fileButtons(f, !!img, app, img);
+      const img = file && await file.exists() ? `<img src="${hee(await file.url({ w, h }))}" alt="">` : "";
+      return fileTile(f, app, img, [w, h]);
     },
   },
   file: {
@@ -127,16 +127,25 @@ const types: Record<string, Type> = {
     },
     async edit(f, v, app) {
       const link = await types.file.read(f, v, app);
-      return fileButtons(f, !!link, app, link);
+      return fileTile(f, app, link, [72, 48]);
     },
   },
 };
 
-/** What a file field shows while editable: the file, and buttons to upload, replace or remove it. */
-async function fileButtons(f: Field, has: boolean, app: App, shown: string) {
-  const name = hee(f.name);
-  return `<span class=-file>${shown}<button type=button data-upload="${name}">${has ? await app.t`replace` : await app.t`upload`}</button>` +
-    (has ? `<button type=button data-clear="${name}">${await app.t`remove`}</button>` : "") + "</span>";
+/** An editable file field. A tile uploads on a click or a dropped file: the image's preview (a click replaces
+ *  it), else an empty frame saying so; a file shows its link and a smaller upload button. A trash removes it. */
+async function fileTile(f: Field, app: App, shown: string, [w, h]: number[]) {
+  const name = hee(f.name), image = shown.startsWith("<img");
+  const ico = (icon: string, title: string) => `<u2-ico icon=${icon} title="${hee(title)}">${hee(title)}</u2-ico>`;
+  const [upload, replace, remove] = [await app.t`upload`, await app.t`replace`, await app.t`remove`];
+  if (!shown) {
+    return `<span class=-file><button type=button class="-tile -empty" data-upload="${name}" style="width:${w}px; height:${h}px">` +
+      `${ico("upload", upload)}<span>${hee(upload)}</span></button></span>`;
+  }
+  const tile = image
+    ? `<button type=button class=-tile data-upload="${name}" title="${hee(replace)}" aria-label="${hee(replace)}" style="width:${w}px; height:${h}px">${shown}${ico("upload", replace)}</button>`
+    : `${shown}<button type=button class="-tile -small" data-upload="${name}" title="${hee(replace)}">${ico("upload", replace)}</button>`;
+  return `<span class=-file>${tile}<button type=button class="u2-unstyle -remove" data-clear="${name}">${ico("delete", remove)}</button></span>`;
 }
 
 const digits = (f: Field) => Number(f.column.length.split(",")[1] ?? 2);
