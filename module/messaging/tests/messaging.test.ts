@@ -95,7 +95,7 @@ test("a bare string is a message, and a missing title is its first line", () => 
 
 test("a draft has no deliveries until released; a later due leaves it to the outbox", async () => {
   const testApp = await app();
-  for (const column of ["given_name", "family_name", "organization"]) await testApp.db.exec`ALTER TABLE usr ADD COLUMN ${sql.id(column)} TEXT`;
+  for (const column of ["given_name", "family_name", "organization", "lang"]) await testApp.db.exec`ALTER TABLE usr ADD COLUMN ${sql.id(column)} TEXT`;
   const delivered: number[] = [];
   const channel = {
     name: "sms",

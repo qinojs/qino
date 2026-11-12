@@ -14,7 +14,7 @@ const SECRET = "test-secret";
 async function makeDb() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, given_name TEXT, family_name TEXT, organization TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, given_name TEXT, family_name TEXT, organization TEXT, lang TEXT)`;
   await db.loadTables();
   await db.table("usr").insert({ username: "user@qino.test" });
   return db;

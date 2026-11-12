@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "node:crypto";
 
-import { getCtx } from "./ctx/Ctx.ts";
+import { requestStorage } from "./ctx/Ctx.ts";
 import { sql } from "../deps.ts";
 import { fill, tag } from "../pub/js/tag.js";
 
@@ -99,9 +99,10 @@ export class LangManager {
   clear() { this.#indexes.clear(); }
 
   /** The language of `ns`'s texts: the scope's, else the user's for the namespace (core.lang_ns), else the
-   *  request's. Read once per request and namespace. */
-  #lang(ns: string, ctx: Ctx, lang?: string): string {
+   *  request's — outside a request (jobs, the outbox) the site's default. Read once per request and namespace. */
+  #lang(ns: string, ctx: Ctx | undefined, lang?: string): string {
     if (lang && this.#langs.includes(lang)) return lang;
+    if (!ctx) return this.def;
     if (!ns) return ctx.lang;
     const of = this.#langOf.getOrInsertComputed(ctx, () => ({}));
     if (!(ns in of)) {
@@ -145,13 +146,13 @@ export class LangManager {
   }
 
   async #translate(ns: string, original: string, values: unknown[], scopeLang?: string): Promise<string> {
-    const ctx = getCtx();
+    const ctx = requestStorage.getStore();
     const lang = this.#lang(ns, ctx, scopeLang);
     const index = await this.#index(ns, lang);
     let text = index.get(original);
     if (text === undefined) this.#record(index, ns, original);
     this.onUse?.(ns, original);
-    if (!text) text = ctx.dev && lang !== "en" ? `*${original}*` : original;
+    if (!text) text = ctx?.dev && lang !== "en" ? `*${original}*` : original;
     if (!values.length) return text;
     // most values are plain: awaiting them all would cost a promise per call
     return fill(text, values.some((v) => typeof (v as PromiseLike<unknown>)?.then === "function") ? await Promise.all(values) : values);

@@ -11,7 +11,7 @@ import type { App, Ctx } from "@qino/qino";
 async function makeApp() {
   const db = new Db("sqlite::memory:");
   await db.migrate({ properties: { ...fileDbSchema.properties, ...messagingDbSchema.properties, ...contactDbSchema.properties } });
-  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT)`;
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT, organization TEXT, lang TEXT)`;
   await db.query`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.loadTables();
   const dir = await fs.tempDir();

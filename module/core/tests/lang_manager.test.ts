@@ -242,6 +242,14 @@ test("t.with: the namespace and language of a scope, also across await; t.in win
   assertEquals(await x.run(() => t.with("cms", () => t.with({ lang: "en" }, () => t`A`))), "A cms en"); // nested: merged
 });
 
+test("t outside a request (jobs, the outbox): the scope's language, else the site's default", async () => {
+  await using x = await texts([["", "A", { de: "A de", fr: "A fr" }]], "de, fr, en", "fr");
+  const t = x.lm.t;
+  assertEquals(await t`A`, "A de"); // no request to ask: the default
+  assertEquals(await t.with({ lang: "fr" }, () => t`A`), "A fr"); // a recipient's language
+  assertEquals(await t.with({ lang: "xx" }, () => t`A`), "A de"); // no site language: the default
+});
+
 test("t: the user's language for a namespace (core.lang_ns) holds there only; ctx.lang stays", async () => {
   await using x = await texts([["cms", "A", { de: "A de", en: "A en" }], ["", "A", { de: "A global de" }]], "de, en", "de",
     { settings: { core: { lang_ns: { cms: () => "en", fin: () => "it" } } } });

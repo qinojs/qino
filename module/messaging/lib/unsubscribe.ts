@@ -98,5 +98,7 @@ export const placeholder: Placeholder = async (app, to) => {
   const grpId = Number(to.grpId);
   if (!usrId || !grpId) return;
   const url = await link(app, usrId, grpId);
-  return { text: url, html: html.raw(`<a href="${hee(url)}">${hee(await app.t`Unsubscribe`)}</a>`) };
+  // the recipient's language, not that of whoever's request or job sends it
+  const label = await app.t.with({ lang: String(to.lang ?? "") || undefined }, () => app.t`Unsubscribe`);
+  return { text: url, html: html.raw(`<a href="${hee(url)}">${hee(label)}</a>`) };
 };

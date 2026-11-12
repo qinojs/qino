@@ -19,7 +19,7 @@ export type Rendering = {
 const load = (app: App, batch: number[]) =>
   app.db.query`
     SELECT d.*, m.grp_id, m.title, m.text, m.format, m.template, m.data,
-      u.given_name, u.family_name, u.organization, u.username
+      u.given_name, u.family_name, u.organization, u.username, u.lang
     FROM message_delivery d
     JOIN message m ON m.id = d.message_id
     LEFT JOIN usr u ON u.id = d.usr_id
