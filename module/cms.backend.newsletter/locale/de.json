@@ -91,5 +91,6 @@
   "or put the signup form (Newsletter) on a page.": "oder das Anmeldeformular (Newsletter) auf eine Seite setzen.",
   "Write the first newsletter — with \"New newsletter\" above.": "Den ersten Newsletter schreiben — oben mit «Neuer Newsletter».",
   "Hello {{givenName|there}}": "Hallo {{givenName|zusammen}}",
-  "You receive this newsletter because you subscribed to it.": "Du erhältst diesen Newsletter, weil du ihn abonniert hast."
+  "You receive this newsletter because you subscribed to it.": "Du erhältst diesen Newsletter, weil du ihn abonniert hast.",
+  "Unsubscribe": "Abmelden"
 }

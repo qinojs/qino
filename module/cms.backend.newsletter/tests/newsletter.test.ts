@@ -5,7 +5,7 @@ import { setTransport } from "@qino/qino/messaging.email";
 import { cms } from "@qino/qino/cms";
 
 import { healthChecks } from "../healthChecks.ts";
-import { render, subscribe } from "../render.ts";
+import { preview, render, subscribe } from "../render.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -110,6 +110,11 @@ test("a fresh install brings a list and a template, and the overview says what i
     const frame = String(await app.db.one`SELECT text FROM message_template WHERE name = ${"newsletter"} AND channel = ${"email"}`);
     assertStringIncludes(frame, "{{unsubscribe}}");
     assertStringIncludes(frame, "{{identity.organization.address.formatted}}");
+    assertStringIncludes(frame, "{{identity.brand.logo}}");
+    await app.settings.identity.name("Example Ltd");
+    const shown = await preview(app, { text: "<p>News</p>", template: "newsletter" });
+    assertStringIncludes(shown, "Example Ltd"); // the preview fills in the site's identity
+    assertStringIncludes(shown, "<p>News</p>");
 
     const { out } = await page(app, "");
     assertStringIncludes(out, "<ol class=-start>");
@@ -120,6 +125,30 @@ test("a fresh install brings a list and a template, and the overview says what i
     assertEquals(await checks.notice["newsletters say who sends them"](), undefined);
     await app.db.exec`UPDATE message_template SET text = ${"{{content}}"} WHERE name = ${"newsletter"}`;
     assert(await checks.warning["newsletters carry an unsubscribe link"](), "a template without a way out is flagged");
+  } finally {
+    await app.db.close();
+    await fs.remove(dir, { recursive: true });
+  }
+});
+
+test("the template is written in the site's language: translations are loaded before install()", async () => {
+  const dir = await fs.tempDir() + "/";
+  const boot = async (modules: string[]) => {
+    const app = new App({ db: `sqlite:${dir}qino.sqlite`, dir });
+    const store = app.stores.add(import.meta.resolve("../../store.json"));
+    for (const name of modules) store.add(name);
+    await app.init();
+    return app;
+  };
+  // a German site, which links the newsletter module later
+  const site = await boot(["messaging.email"]);
+  await site.settings.core.langs("de, en");
+  await site.db.close();
+  const app = await boot(["cms.backend.newsletter"]);
+  try {
+    const frame = String(await app.db.one`SELECT text FROM message_template WHERE name = ${"newsletter"}`);
+    assertStringIncludes(frame, "Hallo {{givenName|zusammen}}");
+    assertStringIncludes(frame, "Du erhältst diesen Newsletter");
   } finally {
     await app.db.close();
     await fs.remove(dir, { recursive: true });

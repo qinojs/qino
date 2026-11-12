@@ -1,4 +1,4 @@
-import { addContact, contactKey, contactOwner, getCtx, html, Output, safeEqual, sql, sqlSearch, unixTime } from "@qino/qino";
+import { addContact, contactKey, contactOwner, getCtx, hee, html, modulePlaceholders, Output, placeholderNames, safeEqual, sql, sqlSearch, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 import { record, release, template, templated } from "@qino/qino/messaging";
@@ -321,7 +321,15 @@ async function editor(node: Node, row: Row, notice: unknown) {
 /** The issue in its template, as a subscriber sees it; placeholders show their fallback. */
 export async function preview(app: App, msg: { text?: unknown; template?: unknown }): Promise<string> {
   const frame = msg.template ? await template(app, CHANNEL, String(msg.template)) : undefined;
-  return templated(frame, { text: String(msg.text ?? ""), format: "html" })().html ?? "";
+  const text = String(msg.text ?? "");
+  // the values a mail gets, without a recipient: the site's identity fills in, givenName shows its fallback
+  const made = modulePlaceholders<Row>(app, "messaging");
+  const values = Object.fromEntries(await Promise.all([...placeholderNames(text, frame?.text)].filter((name) => made[name])
+    .map(async (name) => [name, await made[name](app, {}).catch(() => undefined) ?? { text: "" }] as const)));
+  // a recipient's own link would unsubscribe them: the preview shows where it stands, leading nowhere
+  const label = await app.t`Unsubscribe`;
+  values.unsubscribe = { text: label, html: html.raw(`<a href="#">${hee(label)}</a>`) };
+  return templated(frame, { text, format: "html" })(values).html ?? "";
 }
 
 async function previewCard(app: App, row: Row) {

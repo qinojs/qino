@@ -38,7 +38,9 @@ function asset(name: string, height: number, square = false): Record<string, Tem
   const transform = square ? { w: height * 2, h: height * 2 } : { h: height * 2 };
   const url = async (app: App) => {
     const found = await file(app, name).catch(() => undefined);
-    const [path, base] = await Promise.all([found?.url(transform).catch(() => undefined), app.url().catch(() => undefined)]);
+    // mail clients (Gmail, Outlook) show no svg: a vector logo is delivered rasterized
+    const svg = found && String((await found.ensureVs().catch(() => undefined))?.mime ?? "") === "image/svg+xml";
+    const [path, base] = await Promise.all([found?.url(svg ? { ...transform, fmt: "png" } : transform).catch(() => undefined), app.url().catch(() => undefined)]);
     return path && base ? new URL(path, base).href : undefined;
   };
   return {

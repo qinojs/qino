@@ -3,7 +3,7 @@ import { mimeTypes, sql } from "../deps.ts";
 import { grant } from "./crypto.ts";
 import { File } from "./File.ts";
 import { fs } from "./fs.ts";
-import { getCtx } from "./ctx/Ctx.ts";
+import { getCtx, requestStorage } from "./ctx/Ctx.ts";
 import { serveFile } from "./serveFile.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, mimeType, readDataUrl, readUploadFile } from "./fileStream.ts";
@@ -197,9 +197,12 @@ export class DbFile extends File {
     const { grant: mode, ...options } = params;
     const u = `u-${String(vs.md5 ?? "").slice(0, 5)}`;
     const parts = [u, ...Object.entries(options).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];
-    const ctx = getCtx();
-    const url = ctx.req.appUrl + "dbFile/" + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
+    // outside a request (jobs, the outbox) the app's public path stands in; grants need the session
+    const ctx = requestStorage.getStore();
+    const root = ctx ? ctx.req.appUrl : new URL(await this.#manager.app.url()).pathname;
+    const url = root + "dbFile/" + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
     if (!mode) return url;
+    if (!ctx) throw new Error("DbFile grant links need a request");
     if (mode !== "session" && mode !== "permanent") throw new Error(`Unsupported DbFile grant: ${mode}`);
     const resource = grantResource(this.id, parts);
     const query = new URLSearchParams(mode === "session"

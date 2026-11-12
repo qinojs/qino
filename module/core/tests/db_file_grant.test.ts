@@ -76,3 +76,11 @@ test("DbFile grants allow only their session or content version", async () => {
     await fs.remove(dir, { recursive: true });
   }
 });
+
+test("DbFile urls outside a request (jobs, the outbox) use the app's public path; grants still need one", async () => {
+  const vs = { id: 7, name: "logo.svg", mime: "image/svg+xml", md5: "abcdef0123456789", access: 1 };
+  const app = { db: { row: () => Promise.resolve(vs) }, url: () => Promise.resolve("https://qino.test/cms2/") };
+  const file = await new DbFileManager(app as never, "/tmp/").file(vs.id, vs);
+  assertEquals(await file.url({ h: 80 }), "/cms2/dbFile/7/u-abcde/h-80/logo.svg");
+  assertEquals(await file.url({ grant: "session" }).then(() => "signed", (e) => e.message), "DbFile grant links need a request");
+});

@@ -331,13 +331,13 @@ export class ModuleManager {
     const { plugin } = mod;
     try {
       await plugin.init?.(this.#app, { signal: mod.newSignal() });
+      await this.#loadLocales(mod); // before install(): content it creates is in the site's language
       if (!this.#installed.has(mod.name)) {
         await plugin.install?.({ app: this.#app, module: plugin });
         const installed = unixTime();
         await this.#app.db.table("module").ensure({ name: mod.name, installed }); // db first, so memory never claims a failed write
         this.#installed.set(mod.name, installed);
       }
-      await this.#loadLocales(mod);
       if (plugin.api) this.#app.apiTree[mod.name] = plugin.api;
       // Asset URLs carry the newest file time, so after install or update clients load the new files.
       for (const dir of [mod.pubDir, mod.data + "pub"])
