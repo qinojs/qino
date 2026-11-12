@@ -1,0 +1,20 @@
+{
+  "name": "cms.backend.newsletter",
+  "description": "Newsletters: lists, subscribers, issues written in the editor, test and scheduled sending, and what came of it.",
+  "dependencies": [
+    "cms.backend",
+    "messaging",
+    "messaging.email"
+  ],
+  "files": [
+    "README.md",
+    "locale/de.json",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

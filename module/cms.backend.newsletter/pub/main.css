@@ -1,0 +1,11 @@
+[qcms-mod="backend.newsletter"] {
+  & .u2-card > .-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  & .-head > .-back { margin-inline-start: auto; font-weight: normal; }
+  & .-inline { display: flex; gap: .5rem; align-items: center; }
+  & .-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  & fieldset.-actions { margin-block-start: 1rem; }
+  & .-editor { display: block; min-height: 20rem; margin-block: 1rem; }
+  & .-frame { display: block; width: 100%; height: 40rem; border: 0; background: #fff; }
+  & .-stats { display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+  & [name=addresses] { width: 100%; }
+}

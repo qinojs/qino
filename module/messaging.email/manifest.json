@@ -11,6 +11,7 @@
     "dbschema.json",
     "healthChecks.ts",
     "lib/address.ts",
+    "lib/bounce.ts",
     "lib/inbound.ts",
     "lib/settings.ts",
     "lib/spam.ts",

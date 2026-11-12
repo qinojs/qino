@@ -49,6 +49,19 @@ DMARC/SPF/DKIM `fail`, and an `X-Spam-Flag`/`X-Spam-Status`/`X-Spam` saying yes)
 `spamScore`; with ai, a model judges the content. A known sender — the address of a user, or one
 mailed before — is judged too, since an account can be taken over; the model is only told.
 
+### Bounces
+
+A server that cannot deliver sends a status report (RFC 3464, `multipart/report;
+report-type=delivery-status`) to the envelope sender — the system `address`, not `Reply-To`. So
+bounces are only noticed if the mailbox read is that address's; the health check says so.
+
+Each permanent failure (`Action: failed`, `Status: 5.x.x`) puts the server's reason on the contact
+(`usr_contact.error`), if this app ever mailed the address. `5.7.x` is left out: it is a policy
+verdict about the sender, not the mailbox. The delivery itself is marked only if the report carries
+the returned mail's `Message-ID` — guessing which one it was is worse than not knowing. The report
+stays in the journal like any incoming mail. Providers that bounce over webhooks (Mailgun, SES …)
+are not read yet.
+
 ## Settings
 
 | Key | Meaning |
@@ -70,11 +83,7 @@ If the template uses `{{unsubscribe}}`, the mail gets `List-Unsubscribe` and
 
 - **Mail options:** per-message sender, headers, tags and priority. **No cc/bcc**: a copy is
   nobody's delivery and would have no journal row.
-- **Bounces:** parse returned mails, store the reason on the delivery and mark the address. Only
-  worth it if the mailbox keeps the original `Return-Path`; guessing the delivery is worse than
-  not knowing.
-- **Drafts:** save a draft, add recipients later. (Retrying failed deliveries is done by the
-  messaging [outbox](../messaging/#outbox).)
+- **Bounces over webhooks** of API transports (Mailgun, SES, SendGrid, Resend, Plunk).
 - **Custom rendering:** recipient data in subject and body, and templates in code.
 
 Templates themselves already live in messaging and are used by this channel.

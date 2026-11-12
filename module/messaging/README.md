@@ -330,6 +330,11 @@ Both land in the journal, and the type decides whether the outbox retries.
 Releasing is up to the caller: a backend button sets `due` to now, a schedule sets a time, an
 approval rule sets it when satisfied. `messaging` only asks what is due.
 
+A **draft** is an outgoing message without deliveries: `record()` it with its `to` in `data` and no
+recipients. `release(app, id, due?)` resolves the `to` *then* — whoever is in the group at sending
+time — and sends at once, or leaves it to the outbox if `due` is later. A message is released once.
+Name its template explicitly: a stored `template` of `null` means none.
+
 `delivered(app, id, error?, externalId?)` finishes one attempt. On `ChannelError` the delivery is retried
 after one, then four minutes, and given up after three tries; other errors are final. The `outbox`
 cron job takes what is due and runs the same path as `send()` (the diagram above, from

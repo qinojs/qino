@@ -127,6 +127,26 @@ export async function send(
   return dispatch(app, channel, ids, msg, onError);
 }
 
+/**
+ * Send a draft: a recorded outgoing message without deliveries. Its `to` is resolved now; a later
+ * `due` leaves the sending to the outbox. Resolves with the number sent right away.
+ */
+export async function release(app: App, id: number, due: number = unixTime()): Promise<number> {
+  const row = await app.db.row`SELECT channel, data FROM message WHERE id = ${id} AND direction = ${"out"}`;
+  const c = row && channel(app, String(row.channel));
+  if (!c) throw new Error(`messaging: message ${id} is no draft of a linked channel`);
+  const recipients = await c.recipients(app, JSON.parse(String(row.data ?? "null"))?.to ?? {});
+  const time = unixTime();
+  let ids: number[] = [];
+  await app.db.transaction(async () => {
+    if (await app.db.one`SELECT id FROM message_delivery WHERE message_id = ${id} LIMIT 1`) throw new Error(`messaging: message ${id} was released already`);
+    await app.db.table("message").update(id, { time: due }); // the journal's time is when it goes out
+    ids = await deliveries(app, id, recipients.map((r) =>
+      ({ usrId: r.usrId, address: r.address, ...r.addressError ? owed(r.addressError, time) : { due } })));
+  });
+  return due > time ? 0 : dispatch(app, c, ids);
+}
+
 /** The message with a title: the first line of the text if none was given. */
 export function titled<T extends Msg>(message: string | T): T {
   const msg = msgOf(message);
@@ -179,7 +199,7 @@ export async function record(
     time?: number;
     spam?: number;
   },
-  deliveries: { usrId?: number; address?: string; externalId?: string; error?: string; sent?: number; due?: number }[] = [],
+  rows: { usrId?: number; address?: string; externalId?: string; error?: string; sent?: number; due?: number }[] = [],
 ): Promise<{ id: number; ids: number[] }> {
   if (!message.channel) throw new Error("message channel is required");
   const time = message.time ?? unixTime();
@@ -188,7 +208,7 @@ export async function record(
     ? await Promise.all(msg.attachments.map(async (attachment) => app.dbFiles.add(await attachmentFile(attachment))))
     : [];
   let id = 0;
-  const ids: number[] = [];
+  let ids: number[] = [];
   await app.db.transaction(async () => {
     id = Number(await app.db.table("message").insert({
       channel: message.channel,
@@ -205,18 +225,25 @@ export async function record(
     }));
     const attachments = app.db.table("message_attachment");
     for (const [sort, file] of files.entries()) await attachments.insert({ message_id: id, file_id: file.id, sort });
-    const table = app.db.table("message_delivery");
-    for (const delivery of deliveries) {
-      ids.push(Number(await table.insert({
-        message_id: id,
-        usr_id: delivery.usrId ?? null,
-        address: delivery.address ?? null,
-        external_id: delivery.externalId ?? null,
-        due: delivery.due ?? null,
-        sent: delivery.sent ?? null,
-        error: delivery.error ?? null,
-      })));
-    }
+    ids = await deliveries(app, id, rows);
   });
   return { id, ids };
+}
+
+/** One row per recipient; resolves with their ids in the given order. */
+async function deliveries(app: App, id: number, rows: NonNullable<Parameters<typeof record>[2]>) {
+  const table = app.db.table("message_delivery");
+  const ids: number[] = [];
+  for (const delivery of rows) {
+    ids.push(Number(await table.insert({
+      message_id: id,
+      usr_id: delivery.usrId ?? null,
+      address: delivery.address ?? null,
+      external_id: delivery.externalId ?? null,
+      due: delivery.due ?? null,
+      sent: delivery.sent ?? null,
+      error: delivery.error ?? null,
+    })));
+  }
+  return ids;
 }

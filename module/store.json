@@ -55,6 +55,7 @@
     "cms.backend.config.translate.export": {},
     "cms.backend.config.webapp": {},
     "cms.backend.groups": {},
+    "cms.backend.newsletter": {},
     "cms.backend.settings": {},
     "cms.backend.superuser": {},
     "cms.backend.superuser.db": {},

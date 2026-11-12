@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import { assertEquals } from "@std/assert";
 import { journal, userJournal } from "@qino/qino/tests";
-import { Db } from "@qino/qino";
+import { Db, sql } from "@qino/qino";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { msgOf, record, titleOf } from "../mod.ts";
+import { msgOf, record, release, titleOf } from "../mod.ts";
 
 import type { App } from "@qino/qino";
 
@@ -91,4 +91,30 @@ test("a bare string is a message, and a missing title is its first line", () => 
   assertEquals(titleOf({ text: "  Your order shipped.\nIt arrives tomorrow." }), "Your order shipped.");
   assertEquals(titleOf({ text: "a".repeat(40) + " " + "b".repeat(40) }), "a".repeat(40) + "…");
   assertEquals(titleOf({ text: "x".repeat(100) }), "x".repeat(78) + "…");
+});
+
+test("a draft has no deliveries until released; a later due leaves it to the outbox", async () => {
+  const testApp = await app();
+  for (const column of ["given_name", "family_name", "organization"]) await testApp.db.exec`ALTER TABLE usr ADD COLUMN ${sql.id(column)} TEXT`;
+  const delivered: number[] = [];
+  const channel = {
+    name: "sms",
+    recipients: () => Promise.resolve([{ address: "+41790000001", usrId: 1 }, { address: "bad", addressError: "not a number" }]),
+    deliver: (_app: App, rows: { id: unknown }[]) => (delivered.push(...rows.map((row) => Number(row.id))), Promise.resolve(rows.length)),
+  };
+  Object.assign(testApp, { url: () => Promise.resolve("https://qino.test/"), modules: { linked: () => [{ plugin: { messagingChannel: channel } }] } });
+  const draft = async () => (await record(testApp, { channel: "sms", direction: "out", msg: "Hello", data: { to: { grp: 1 } }, time: 1 })).id;
+
+  const now = await draft();
+  assertEquals(await release(testApp, now), 1);
+  assertEquals(delivered, [1], "the undeliverable address is finished, not sent");
+  assertEquals(await testApp.db.col`SELECT error FROM message_delivery ORDER BY id`, [null, "not a number"]);
+  assertEquals(await release(testApp, now).then(() => "sent twice", (e) => e.message), "messaging: message 1 was released already");
+
+  const later = await draft();
+  const due = Math.floor(Date.now() / 1000) + 3600;
+  assertEquals(await release(testApp, later, due), 0);
+  assertEquals(await testApp.db.col`SELECT due FROM message_delivery WHERE message_id = ${later} AND error IS NULL`, [due]);
+  assertEquals(await testApp.db.one`SELECT time FROM message WHERE id = ${later}`, due, "the journal's time is when it goes out");
+  assertEquals(delivered, [1]);
 });
