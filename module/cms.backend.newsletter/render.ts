@@ -1,6 +1,6 @@
 import { addContact, contactKey, contactOwner, getCtx, html, Output, safeEqual, sql, sqlSearch, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { record, release, templated } from "@qino/qino/messaging";
+import { record, release, template, templated } from "@qino/qino/messaging";
 import { send } from "@qino/qino/messaging.email";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -51,7 +51,7 @@ async function overview(node: Node) {
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 45rem">
-    <div class=-head>${t`Issues`}</div>
+    <div class=-head>${t`Newsletters`}</div>
     <table class=u2-table>
       <thead><tr>
         <th>${t`Subject`}
@@ -66,12 +66,12 @@ async function overview(node: Node) {
         <td>${status(app, row)}
         <td>${Number(row.recipients) || html.async`<small title="${t`Would receive it now`}">${Number(row.reachable)}</small>`}
         <td>${share(row.opened, row.reached)}
-        <td>${share(row.clicked, row.reached)}`) : html.async`<tr><td colspan=6>${t`No issues yet.`}`}
+        <td>${share(row.clicked, row.reached)}`) : html.async`<tr><td colspan=6>${t`No newsletters yet.`}`}
     </table>
     ${lists.length ? html.async`<form method=post class=-inline>
       ${csrf(ctx)}
       <select name=grp aria-label="${t`List`}">${lists.map((l) => html`<option value="${l.id}">${l.name}</option>`)}</select>
-      <button name=createIssue>${t`New issue`}</button>
+      <button name=createIssue>${t`New newsletter`}</button>
     </form>` : ""}
   </div>
   <div class=u2-card style="flex:0 1 22rem">
@@ -178,7 +178,7 @@ async function draft(app: App, grpId: number, from?: Row) {
 async function issueView(node: Node, id: number) {
   const app = node.app, t = app.t, ctx = getCtx();
   let [row] = await issueRows(app, id);
-  if (!row) return html.async`<div class=u2-card><div>${t`Issue not found.`}</div></div>`;
+  if (!row) return html.async`<div class=u2-card><div>${t`Newsletter not found.`}</div></div>`;
   const post = posted(ctx);
   const isDraft = !Number(row.recipients);
   let notice: unknown = "";
@@ -195,7 +195,7 @@ async function issueView(node: Node, id: number) {
     if ("send" in post || "schedule" in post) {
       const at = "schedule" in post ? Number(post.at) : unixTime();
       if (!(at > 0)) notice = html.async`<u2-alert open variant=warning>${t`Choose when to send it.`}</u2-alert>`;
-      else if (!str(row.title)) notice = html.async`<u2-alert open variant=warning>${t`The issue needs a subject.`}</u2-alert>`;
+      else if (!str(row.title)) notice = html.async`<u2-alert open variant=warning>${t`The newsletter needs a subject.`}</u2-alert>`;
       else {
         await release(app, id, at);
         [row] = await issueRows(app, id);
@@ -254,7 +254,7 @@ async function editor(node: Node, row: Row, notice: unknown) {
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 32rem">
-    <div class=-head>${t`Issue`} <span class=u2-badge>${t`Draft`}</span> <a href="?" class=-back>${t`Back`}</a></div>
+    <div class=-head>${t`Newsletter`} <span class=u2-badge>${t`Draft`}</span> <a href="?" class=-back>${t`Back`}</a></div>
     <form method=post data-issue>
       ${csrf(ctx)}
       ${notice}
@@ -278,7 +278,7 @@ async function editor(node: Node, row: Row, notice: unknown) {
       </fieldset>
       <fieldset class=-actions>
         <legend>${t`Send to the list`} (${Number(members)})</legend>
-        <button name=send u2-confirm="${t`Send this issue to ${Number(members)} subscribers now?`}">${t`Send now`}</button>
+        <button name=send u2-confirm="${t`Send this newsletter to ${Number(members)} subscribers now?`}">${t`Send now`}</button>
         <input type=datetime-local name=when aria-label="${t`When`}">
         <input type=hidden name=at>
         <button name=schedule>${t`Schedule`}</button>
@@ -291,11 +291,8 @@ async function editor(node: Node, row: Row, notice: unknown) {
 
 /** The issue in its template, as a subscriber sees it; placeholders show their fallback. */
 export async function preview(app: App, msg: { text?: unknown; template?: unknown }): Promise<string> {
-  const frame = msg.template == null || msg.template === ""
-    ? undefined
-    : await app.db.row`SELECT text, format FROM message_template WHERE name = ${String(msg.template)} AND channel = ${CHANNEL}`;
-  const template = frame ? { text: String(frame.text ?? ""), format: (frame.format || undefined) as "md" | "html" | undefined } : undefined;
-  return templated(template, { text: String(msg.text ?? ""), format: "html" })().html ?? "";
+  const frame = msg.template ? await template(app, CHANNEL, String(msg.template)) : undefined;
+  return templated(frame, { text: String(msg.text ?? ""), format: "html" })().html ?? "";
 }
 
 async function previewCard(app: App, row: Row) {

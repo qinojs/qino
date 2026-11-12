@@ -27,10 +27,12 @@ export async function renderer(
   msg: Msg,
   channel: string,
   profile: Profile = "html",
+  loaded?: Msg,
 ): Promise<{ render: (to?: Row) => Promise<{ text: string; html?: string }>; uses: Set<string> }> {
-  const template = msg.template === null ? undefined : await load(app, channel, msg.template);
+  // `loaded`: the caller has it already (`send()` resolved the main one), no second query
+  const frame = loaded ?? (msg.template === null ? undefined : await template(app, channel, msg.template));
   // the template's links are shortened too
-  const [body, chrome] = await Promise.all([rewriteLinks(app, msg), template ? rewriteLinks(app, template) : undefined]);
+  const [body, chrome] = await Promise.all([rewriteLinks(app, msg), frame ? rewriteLinks(app, frame) : undefined]);
   const render = templated(chrome?.msg, body.msg, profile);
   // beacon only for full html: telegram rejects <img> (`can't parse entities`)
   const beacon = profile === "html" ? await shortenOwn(app, PIXEL) : undefined;
@@ -107,10 +109,10 @@ export function saveTemplate(app: App, row: Row): Promise<unknown> {
 }
 
 /** The channel's variant of that name, else its main one; unknown name = none. */
-function load(app: App, channel: string, name?: string) {
+export function template(app: App, channel: string, name?: string): Promise<(Msg & { name: string }) | undefined> {
   return name
-    ? app.db.row<Msg>`SELECT text, format FROM message_template WHERE name = ${name} AND channel = ${channel}`
-    : app.db.row<Msg>`SELECT text, format FROM message_template WHERE channel = ${channel} AND main = ${true}`;
+    ? app.db.row<Msg & { name: string }>`SELECT name, text, format FROM message_template WHERE name = ${name} AND channel = ${channel}`
+    : app.db.row<Msg & { name: string }>`SELECT name, text, format FROM message_template WHERE channel = ${channel} AND main = ${true}`;
 }
 
 /**

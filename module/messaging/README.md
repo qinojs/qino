@@ -234,6 +234,9 @@ send(app, { grp: 3 }, { text: "…", template: "newsletter" })  // this one
 send(app, { grp: 3 }, { text: "…", template: null })          // none
 ```
 
+The journal stores the name of the template used: naming none stores the main one's name, so a
+retry or a scheduled send from the outbox is wrapped the same way. A stored `null` means none.
+
 The template output is cleaned up — trailing spaces removed, at most one blank line in a row — since
 empty placeholders leave gaps, and on SMS every character costs. The message text itself is never
 changed: without a template it goes out as written.
@@ -339,7 +342,7 @@ approval rule sets it when satisfied. `messaging` only asks what is due.
 A **draft** is an outgoing message without deliveries: `record()` it with its `to` in `data` and no
 recipients. `release(app, id, due?)` resolves the `to` *then* — whoever is in the group at sending
 time — and sends at once, or leaves it to the outbox if `due` is later. A message is released once.
-Name its template explicitly: a stored `template` of `null` means none.
+Name its template explicitly: `release()` sends what is stored, and `null` there means none.
 
 `delivered(app, id, error?, externalId?)` finishes one attempt. On `ChannelError` the delivery is retried
 after one, then four minutes, and given up after three tries; other errors are final. The `outbox`

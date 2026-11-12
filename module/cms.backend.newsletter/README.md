@@ -6,7 +6,7 @@ surface — sending, templates, tracking, unsubscribing and bounces are
 
 - **List** — a `grp` of type `newsletter`. [cms.cont.newsletter](../cms.cont.newsletter/) is the
   signup form for one.
-- **Issue** — a mail to a list. A *draft* is the message without deliveries; sending
+- **Issue** — a mail to a list, shown as *Newsletter* in the backend. A *draft* is the message without deliveries; sending
   (`release()`) makes them for whoever is on the list then. Scheduled issues wait in the outbox
   and can be made a draft again until the first one goes out.
 - **Subscriber** — a user in the group; their main email address receives it.

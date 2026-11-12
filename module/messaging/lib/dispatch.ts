@@ -50,7 +50,9 @@ const messageOf = async (app: App, row: Row): Promise<Msg> => ({
  * Send recorded deliveries — the only send path, used by `send()` and the outbox. Rendered per
  * recipient and not stored, so a delayed message is rendered at send time.
  */
-export async function dispatch(app: App, channel: Channel, batch: number[], msg?: Msg, onError?: (message: string) => void): Promise<number> {
+export async function dispatch(
+  app: App, channel: Channel, batch: number[], msg?: Msg, onError?: (message: string) => void, loaded?: Msg,
+): Promise<number> {
   if (!batch.length) return 0;
   // undeliverable addresses are already finished and skipped
   const rows = (await load(app, batch)).filter((row) => row.sent == null);
@@ -58,7 +60,7 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
   msg ??= await messageOf(app, rows[0]);
   const usrOf = (row: Row) => Number(row.usr_id) || undefined;
   const [{ render, uses }, leavable] = await Promise.all([
-    renderer(app, msg, channel.name, channel.profile),
+    renderer(app, msg, channel.name, channel.profile, loaded),
     unsubscribeGroup(app, Number(rows[0].grp_id) || undefined, rows.map(usrOf)),
   ]);
   const group = (row: Row) => leavable(usrOf(row));

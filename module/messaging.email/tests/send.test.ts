@@ -104,6 +104,18 @@ test("what only email understands survives the queue", async () => {
   // the column holds the text, the journal's data the rest — together they are the same mail again
   assertEquals((sent[0].replyRecipients as { address: string }[])[0].address, "person@qino.test");
 
+  // naming no template means the main one — stored by name, so the queue wraps it the same way
+  await app.db.table("message_template").insert({ name: "letter", channel: "email", main: true, text: "Hello\n\n{{content}}" });
+  up = false;
+  await send(app, { usr: 1 }, "Later");
+  assertEquals(await app.db.one`SELECT template FROM message ORDER BY id DESC LIMIT 1`, "letter");
+  up = true;
+  await app.db.exec`UPDATE message_delivery SET due = ${1} WHERE sent IS NULL`;
+  assertEquals(await outbox(app), 1);
+  assertStringIncludes(String((sent[1].content as { text: string }).text), "Hello");
+  await send(app, { usr: 1 }, { text: "Bare", template: null });
+  assertEquals(await app.db.one`SELECT template FROM message ORDER BY id DESC LIMIT 1`, null, "null is none");
+
   await close(app);
 });
 

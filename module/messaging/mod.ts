@@ -3,6 +3,7 @@ import { sql, unixTime } from "@qino/qino";
 import { dispatch } from "./lib/dispatch.ts";
 import { textOf } from "./lib/format.ts";
 import { owed } from "./lib/outbox.ts";
+import { template } from "./lib/template.ts";
 
 import type { App, Row, Sql } from "@qino/qino";
 import type { Profile } from "./lib/format.ts";
@@ -15,7 +16,7 @@ export type { Rendering } from "./lib/dispatch.ts";
 export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
 export { htmlToText } from "./lib/htmlText.ts";
-export { placeholderName, renderer, saveTemplate, templated, templates } from "./lib/template.ts";
+export { placeholderName, renderer, saveTemplate, template, templated, templates } from "./lib/template.ts";
 export { sanitizeHtml } from "./lib/sanitize.ts";
 export type { Computed, Placeholder } from "./lib/template.ts";
 
@@ -118,13 +119,19 @@ export async function send(
   message: string | Msg,
   { onError }: { onError?: (message: string) => void } = {},
 ): Promise<number> {
-  const msg = msgOf(message);
   const time = unixTime();
-  const recipients = await channel.recipients(app, to);
+  const given = msgOf(message);
+  // naming no template means the main one: stored by its name, so a later send (outbox) uses the same;
+  // loaded beside the recipients, and handed on so the renderer does not load it again
+  const [recipients, main] = await Promise.all([
+    channel.recipients(app, to),
+    given.template === undefined ? template(app, channel.name) : undefined,
+  ]);
   if (!recipients.length) return 0;
+  const msg = given.template === undefined ? { ...given, template: main?.name ?? null } : given;
   const { ids } = await record(app, { channel: channel.name, direction: "out", grpId: to.grp, msg, data: { to }, time },
     recipients.map((r) => ({ usrId: r.usrId, address: r.address, ...owed(r.addressError, time) })));
-  return dispatch(app, channel, ids, msg, onError);
+  return dispatch(app, channel, ids, msg, onError, main);
 }
 
 /**
