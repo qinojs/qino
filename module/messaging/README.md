@@ -316,6 +316,12 @@ if (!type) throw new ChannelError("messaging.sms: configure provider.type or cal
 
 Both land in the journal, and the type decides whether the outbox retries.
 
+The mark (`usr_contact.error`) is set by a refusal and stays: a provider taking a message is not the
+recipient receiving it. Only proof of receipt clears it — a tracked hit (click or open) on any
+message to that address, or a confirmed newsletter signup. A delivery taken somewhere but not
+reaching the recipient (an `external_id` with an error, e.g. redirected while debugging) marks
+nothing. Group and everyone sends leave marked addresses out; a user named directly is still tried.
+
 ## Outbox
 
 `message_delivery` itself tracks what still has to be sent — no second table:

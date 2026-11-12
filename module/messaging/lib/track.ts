@@ -1,5 +1,7 @@
 import { keyed, Output, safeEqual, unixTime } from "@qino/qino";
 
+import { channel } from "../mod.ts";
+
 import type { App, Ctx } from "@qino/qino";
 import type { Kind, Link } from "./links.ts";
 
@@ -47,6 +49,16 @@ export async function trackHit(app: App, { link, tag }: any): Promise<void> {
     kind: hit.kind,
     time: unixTime(),
   }).catch(() => {});
+  received(app, hit.deliveryId).catch(() => {});
+}
+
+/** A hit proves the message arrived: the address it went to is no longer marked. */
+async function received(app: App, deliveryId: number) {
+  const row = await app.db.row`SELECT d.address, m.channel FROM message_delivery d
+    JOIN message m ON m.id = d.message_id WHERE d.id = ${deliveryId}`;
+  const type = row?.address && channel(app, String(row.channel))?.contact;
+  if (type) await app.db.exec`UPDATE usr_contact SET error = NULL
+    WHERE type = ${type} AND address = ${String(row.address)} AND error IS NOT NULL`;
 }
 
 /** `<delivery in base36><kind><signature>`. */

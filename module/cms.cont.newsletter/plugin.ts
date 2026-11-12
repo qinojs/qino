@@ -1,4 +1,4 @@
-import { addContact, ApiError, contactKey, contactOwner, html, sql, unixTime } from "@qino/qino";
+import { addContact, ApiError, contactError, contactKey, contactOwner, html, sql, unixTime } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 import { send } from "@qino/qino/messaging.email";
 import { issue, redeem } from "@qino/qino/ticket";
@@ -40,7 +40,7 @@ export const tickets: Record<string, TicketKind> = {
         if (!usrId) {
           usrId = Number(await app.db.table("usr").insert({ active: false, pw: "" }));
           await addContact(app.db, usrId, "email", address);
-        }
+        } else await contactError(app.db, "email", address); // the confirmation link arrived: not bounced
         await app.db.table("usr_grp").ensure({ usr_id: usrId, grp_id: grpId });
       });
     },

@@ -20,5 +20,5 @@ Known ones are left out: someone who unsubscribed was removed from the group and
 back by an import. Add those by hand in the groups backend.
 
 **Bounced** subscribers are those whose address carries an error (`usr_contact.error`, set by a
-bounce or a refused delivery). They are not skipped automatically — a test in debug mode or a
-temporary failure marks addresses too — but shown, and removed from the list with one button.
+bounce or a refused delivery). A send to the list skips them; a click or open in a later mail, or a
+confirmed signup, clears the mark. They are shown, and removed from the list with one button.

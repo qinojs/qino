@@ -81,16 +81,18 @@ export async function dispatch(app: App, channel: Channel, batch: number[], msg?
 }
 
 /**
- * Store the outcomes. All failures are reported, but only real delivery failures mark the contact;
- * our own failures leave it due and don't touch the contact's mark.
+ * Store the outcomes. All failures are reported, but only a refusal marks the contact: our own
+ * failures leave it due, and one taken somewhere (an `external_id`, e.g. redirected while debugging)
+ * says nothing about the address. Success clears nothing — taken is not received; only proof of
+ * receipt does: a tracked hit, a confirmed newsletter signup.
  */
 async function bookkeeping(app: App, channel: Channel, batch: number[], onError?: (message: string) => void) {
   if (!onError && !channel.contact) return;
-  const rows = await app.db.query`SELECT usr_id, address, error, sent FROM message_delivery WHERE ${sql.in("id", batch)}`;
+  const rows = await app.db.query`SELECT usr_id, address, error, sent, external_id FROM message_delivery WHERE ${sql.in("id", batch)}`;
   for (const row of rows) {
     if (row.error) onError?.(String(row.error));
-    if (channel.contact && row.usr_id && row.sent != null) {
-      await contactError(app.db, channel.contact, String(row.address), row.error ? String(row.error) : undefined);
+    if (channel.contact && row.usr_id && row.sent != null && row.error && row.external_id == null) {
+      await contactError(app.db, channel.contact, String(row.address), String(row.error));
     }
   }
 }

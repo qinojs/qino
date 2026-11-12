@@ -71,7 +71,9 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
     // counts as sent (the transport took it), but the journal notes the address wasn't reached
     const failure = result instanceof Error ? result : undefined;
     if (!failure) sent++;
-    await delivered(app, Number(row.id), failure ?? detour, typeof result === "string" ? result : undefined);
+    // a redirected mail was taken, by the debug address: with an id it marks nothing on the contact
+    const taken = typeof result === "string" ? result : detour && !failure ? `debug:${debug!.address}` : undefined;
+    await delivered(app, Number(row.id), failure ?? detour, taken);
   }
   // close the pool after the batch: the server closes idle connections, and reusing one fails silently
   await mailer.closeAllConnections?.().catch(() => {});

@@ -149,7 +149,7 @@ function reached(row: Row, view: View) {
   const all = Number(row.recipient_count) || 0;
   const sent = Number(row.sent_count) || 0;
   const owed = Number(row.owed_count) || 0;
-  if (!all) return html`0`;
+  if (!all) return html`<span class=u2-badge>${view.draft}</span>`; // not sent yet: no deliveries (messaging `release()`)
   return html`<small class=-reached><progress value="${sent}" max="${all}"></progress> ${sent}/${all}${owed
     ? html` <span class=u2-badge title="${view.due}">${owed}</span>`
     : ""}</small>`;
@@ -471,13 +471,13 @@ function cut(text: string, max = 120) {
 /** Everything the row renderers need besides the row: translated labels and channel badges. */
 async function labels(app: App) {
   const t = app.t;
-  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam] =
+  const [recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam, draft] =
     await Promise.all([t`Recipients`, t`Errors`, t`User`, t`Time`, t`Error`, t`anonymous`, t`group`, t`Payload`,
       t`No matching messages`, t`No messages yet.`, t`incoming`, t`outgoing`, t`Template`, t`Attachments`, t`due`,
-      t`Spam`]);
+      t`Spam`, t`Draft`]);
   const known = new Map(channels(app).map((c) => [c.name, c]));
   return {
-    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam,
+    recipients, errors, user, time, error, anonymous, group, payload, noMatch, noMessages, incoming, outgoing, template, attachments, due, spam, draft,
     /** A channel's own label; an unlinked channel keeps the name the journal stored. */
     label(channel: unknown): string {
       const name = String(channel ?? "");

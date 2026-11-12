@@ -12,7 +12,11 @@ export async function contactRecipients(
   to: To,
   direct: Recipient[] = [],
 ): Promise<Recipient[]> {
-  const who = selectors(to, "c.usr_id");
+  // a group or everyone is a mass send: addresses known to bounce are left out; a user named is still tried
+  const who = [
+    ...selectors({ grp: to.grp, all: to.all }, "c.usr_id").map((term) => sql`(${term} AND c.error IS NULL)`),
+    ...selectors({ usr: to.usr }, "c.usr_id"),
+  ];
   if (!who.length && !direct.length) throw new Error("contact recipients need a selection or direct address");
   const preferred = who.length
     ? sql`(${sql.join(who, " OR ")}) AND c.address = (

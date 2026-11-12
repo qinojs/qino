@@ -75,3 +75,18 @@ test("the beacon answers with a transparent gif nobody caches", async () => {
   assertEquals(headers.get("Cache-Control"), "no-store");
   await a.db.close();
 });
+
+test("a hit proves the message arrived: the address is no longer marked", async () => {
+  const a = await app();
+  (a.modules as unknown as Record<string, unknown>).linked = () => [{ plugin: { messagingChannel: { name: "email", contact: "email" } } }];
+  await a.db.exec`CREATE TABLE usr_contact (type TEXT, address TEXT, usr_id INTEGER, error TEXT)`;
+  await a.db.exec`INSERT INTO usr_contact VALUES ('email', 'one@qino.test', 1, '550 no such user'), ('email', 'two@qino.test', 2, '550 no such user')`;
+  await a.db.table("message").insert({ channel: "email", direction: "out", data: "null", time: 1 });
+  await a.db.table("message_delivery").insert({ message_id: 1, address: "one@qino.test", time: 1 });
+  const marker = (await markers(a, [{ url: "u", kind: "load" }])(1))("u").slice(2);
+  await trackHit(a, { link: { code: "c1" }, tag: marker });
+  await new Promise((r) => setTimeout(r, 10)); // in the background, like the hit itself
+
+  assertEquals(await a.db.col`SELECT error FROM usr_contact ORDER BY address`, [null, "550 no such user"]);
+  await a.db.close();
+});

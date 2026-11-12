@@ -49,7 +49,7 @@ async function overview(node: Node) {
   }
   const [lists, issues] = await Promise.all([listRows(app), issueRows(app)]);
 
-  return html.async`<div class=u2-flex>
+  return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 45rem">
     <div class=-head>${t`Issues`}</div>
     <table class=u2-table>
@@ -64,11 +64,11 @@ async function overview(node: Node) {
         <td><a href="?issue=${row.id}">${str(row.title) || t`(no subject)`}</a>
         <td>${row.list}
         <td>${status(app, row)}
-        <td>${Number(row.recipients) || ""}
+        <td>${Number(row.recipients) || html.async`<small title="${t`Would receive it now`}">${Number(row.reachable)}</small>`}
         <td>${share(row.opened, row.reached)}
         <td>${share(row.clicked, row.reached)}`) : html.async`<tr><td colspan=6>${t`No issues yet.`}`}
     </table>
-    ${lists.length ? html.async`<form method=post class="-body -inline">
+    ${lists.length ? html.async`<form method=post class=-inline>
       ${csrf(ctx)}
       <select name=grp aria-label="${t`List`}">${lists.map((l) => html`<option value="${l.id}">${l.name}</option>`)}</select>
       <button name=createIssue>${t`New issue`}</button>
@@ -86,7 +86,7 @@ async function overview(node: Node) {
         <td>${Number(row.members)}
         <td>${Number(row.bounced) || ""}`) : html.async`<tr><td colspan=3>${t`No lists yet.`}`}
     </table>
-    <form method=post class="-body -inline">
+    <form method=post class=-inline>
       ${csrf(ctx)}
       <input name=name required placeholder="${t`Name of the new list`}">
       <button name=createList>${t`Create`}</button>
@@ -94,6 +94,11 @@ async function overview(node: Node) {
   </div>
 </div>`;
 }
+
+/** Members of the list a send would reach now: with an address that has not bounced. */
+const reachable = (grp: Sql | unknown) => sql`(SELECT COUNT(*) FROM usr_grp ug
+  JOIN usr_contact c ON c.usr_id = ug.usr_id AND c.type = ${CHANNEL} AND ${MAIN} AND c.error IS NULL
+  WHERE ug.grp_id = ${grp})`;
 
 const isList = async (app: App, id: number) => !!id && !!await app.db.one`SELECT id FROM grp WHERE id = ${id} AND type = ${TYPE}`;
 
@@ -114,7 +119,7 @@ async function issueRows(app: App, id?: number) {
   const of = (condition: Sql) => sql`(SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND ${condition})`;
   const rows = await app.db.query`
     SELECT m.id, m.title, m.text, m.template, m.time, m.grp_id, g.name AS list,
-      ${of(sql`${true}`)} AS recipients,
+      ${of(sql`${true}`)} AS recipients, ${reachable(sql`m.grp_id`)} AS reachable,
       ${of(sql`d.sent IS NULL AND d.due IS NOT NULL`)} AS pending,
       ${of(sql`d.error IS NOT NULL`)} AS failed,
       ${of(sql`d.sent IS NOT NULL AND d.error IS NULL`)} AS reached,
@@ -173,7 +178,7 @@ async function draft(app: App, grpId: number, from?: Row) {
 async function issueView(node: Node, id: number) {
   const app = node.app, t = app.t, ctx = getCtx();
   let [row] = await issueRows(app, id);
-  if (!row) return html.async`<div class=u2-card><div class=-body>${t`Issue not found.`}</div></div>`;
+  if (!row) return html.async`<div class=u2-card><div>${t`Issue not found.`}</div></div>`;
   const post = posted(ctx);
   const isDraft = !Number(row.recipients);
   let notice: unknown = "";
@@ -239,19 +244,18 @@ async function test(app: App, row: Row, address: string) {
 
 async function editor(node: Node, row: Row, notice: unknown) {
   const app = node.app, t = app.t, db = app.db, ctx = getCtx();
-  const [lists, frames, me, members] = await Promise.all([
+  const [lists, frames, me] = await Promise.all([
     listRows(app),
     db.col<string>`SELECT name FROM message_template WHERE channel = ${CHANNEL} ORDER BY name`,
     db.one<string>`SELECT c.address FROM usr_contact c WHERE c.usr_id = ${ctx.userId ?? 0} AND c.type = ${CHANNEL} AND ${MAIN}`,
-    db.one`SELECT COUNT(*) FROM usr_grp ug JOIN usr_contact c ON c.usr_id = ug.usr_id AND c.type = ${CHANNEL} AND ${MAIN}
-      WHERE ug.grp_id = ${row.grp_id}`,
   ]);
+  const members = row.reachable;
   const selected = (on: boolean) => on ? html.raw(" selected") : "";
 
-  return html.async`<div class=u2-flex>
+  return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 32rem">
     <div class=-head>${t`Issue`} <span class=u2-badge>${t`Draft`}</span> <a href="?" class=-back>${t`Back`}</a></div>
-    <form method=post class=-body data-issue>
+    <form method=post data-issue>
       ${csrf(ctx)}
       ${notice}
       <u2-fields>
@@ -326,10 +330,10 @@ async function report(node: Node, row: Row) {
   const stat = (label: Promise<string>, value: unknown, note: unknown = "") =>
     html.async`<div><b>${value}</b> ${label} ${note}</div>`;
 
-  return html.async`<div class=u2-flex>
+  return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 32rem">
     <div class=-head>${str(row.title) || t`(no subject)`} ${status(app, row)} <a href="?" class=-back>${t`Back`}</a></div>
-    <div class="-body -stats">
+    <div class=-stats>
       ${stat(t`recipients`, Number(row.recipients))}
       ${stat(t`reached`, Number(row.reached))}
       ${stat(t`opened`, Number(row.opened), percent(row.opened, row.reached))}
@@ -337,7 +341,7 @@ async function report(node: Node, row: Row) {
       ${Number(row.failed) ? stat(t`failed`, Number(row.failed)) : ""}
       ${Number(row.pending) ? stat(t`pending`, Number(row.pending)) : ""}
     </div>
-    <form method=post class="-body -actions">
+    <form method=post class=-actions>
       ${csrf(ctx)}
       <button name=duplicate>${t`Duplicate as draft`}</button>
       ${scheduled ? html.async`<button name=cancel u2-confirm="${t`Stop the schedule and make it a draft again?`}">${t`Cancel schedule`}</button>` : ""}
@@ -383,7 +387,7 @@ async function report(node: Node, row: Row) {
 async function listView(node: Node, id: number) {
   const app = node.app, t = app.t, db = app.db, ctx = getCtx();
   const list = await db.row`SELECT id, name FROM grp WHERE id = ${id} AND type = ${TYPE}`;
-  if (!list) return html.async`<div class=u2-card><div class=-body>${t`List not found.`}</div></div>`;
+  if (!list) return html.async`<div class=u2-card><div>${t`List not found.`}</div></div>`;
   const query = ctx.req.query;
   if (query.export) exportCsv(String(list.name), await members(app, id, "", 0));
 
@@ -415,10 +419,10 @@ async function listView(node: Node, id: number) {
   ]);
   const bounced = Number(counts?.bounced);
 
-  return html.async`<div class=u2-flex>
+  return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 40rem">
     <div class=-head>${list.name} <span class=u2-badge>${Number(counts?.members)}</span> <a href="?" class=-back>${t`Back`}</a></div>
-    <div class="-body -actions">
+    <div class=-actions>
       <form method=get class=-inline>
         <input type=hidden name=list value="${id}">
         <input type=search name=q value="${search}" placeholder="${t`Search...`}">
@@ -428,7 +432,7 @@ async function listView(node: Node, id: number) {
         <button name=purge u2-confirm="${t`Remove ${bounced} bounced addresses from this list?`}">${t`Remove bounced`} (${bounced})</button>
       </form>` : ""}
     </div>
-    <form method=post>
+    <form method=post style="padding:0">
       ${csrf(ctx)}
       <table class=u2-table>
         <thead><tr>
@@ -448,7 +452,7 @@ async function listView(node: Node, id: number) {
   <div class=u2-flex style="flex:0 1 24rem; flex-direction:column">
     <div class=u2-card>
       <div class=-head>${t`Add subscribers`}</div>
-      <form method=post class=-body>
+      <form method=post>
         ${csrf(ctx)}
         ${notice}
         <textarea name=addresses rows=8 required placeholder="ada@example.com&#10;Ada Lovelace &lt;ada@example.com&gt;"></textarea>
@@ -458,7 +462,7 @@ async function listView(node: Node, id: number) {
     </div>
     <div class=u2-card>
       <div class=-head>${t`List`}</div>
-      <form method=post class="-body -actions">
+      <form method=post class=-actions>
         ${csrf(ctx)}
         <input name=name value="${list.name}" required aria-label="${t`Name`}">
         <button name=rename>${t`Rename`}</button>

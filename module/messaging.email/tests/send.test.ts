@@ -120,6 +120,19 @@ test("a debug redirect is journaled as a delivery that never reached the recipie
 
   const [journaled] = await journal(app);
   assertEquals(journaled.deliveries.map((d) => [d.address, d.error]), [["one@qino.test", "redirected to debug address dev@qino.test"]]);
+  await new Promise((r) => setTimeout(r, 0));
+  assertEquals((await contacts(app.db, 1, "email"))[0].error, null, "a redirect says nothing about the address");
+
+  // a refusal marks it, and a group send leaves it out from then on
+  settings.debugTo = "";
+  setTransport(app, { send: () => Promise.resolve({ successful: false, errorMessages: ["550 no such user"] }) });
+  assertEquals(await send(app, { usr: 1 }, "Hi"), 0);
+  await app.db.exec`INSERT INTO grp (name) VALUES ('Newsletter')`;
+  await app.db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER)`;
+  await app.db.loadTables();
+  await app.db.table("usr_grp").insert({ usr_id: 1, grp_id: 1 });
+  assertEquals(await send(app, { grp: 1 }, "News"), 0);
+  assertEquals(await app.db.one`SELECT COUNT(*) FROM message WHERE grp_id = ${1}`, 0, "nobody to send to: nothing journaled");
 
   await close(app);
 });

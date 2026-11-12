@@ -217,10 +217,10 @@ test("a failure of ours never marks the number", async () => {
   assertEquals(await send(app, { usr: 1 }, "Hi"), 0);
   assertEquals((await contacts(db, 1, "phone"))[0].error, "unreachable handset");
 
-  // and a delivery that works again clears it
+  // a user named is still tried, but taken is not received: only a proof of receipt clears it
   setProvider(app, { send: () => Promise.resolve() });
   assertEquals(await send(app, { usr: 1 }, "Hi"), 1);
-  assertEquals((await contacts(db, 1, "phone"))[0].error, null);
+  assertEquals((await contacts(db, 1, "phone"))[0].error, "unreachable handset");
 });
 
 test("only a plain refusal from an http provider blames the number", async () => {
