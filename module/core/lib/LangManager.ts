@@ -188,16 +188,16 @@ export class LangManager {
     const entries = Object.entries<string>(typeof json === "string" ? JSON.parse(json) : json).filter(([, text]) => text);
     if (!entries.length) return;
     const db = this.#app.db;
-    const known = new Map<string, boolean>();
-    for (const { hash, text } of await db.query`SELECT s.hash, l.text FROM smalltext s
+    const known = new Map<string, boolean>(); // by original: md5 only for what is missing, it runs on every boot
+    for (const { original, text } of await db.query`SELECT s.original, l.text FROM smalltext s
       LEFT JOIN smalltext_lang l ON l.hash = s.hash AND l.namespace = s.namespace AND l.lang = ${lang} WHERE s.namespace = ${ns}`) {
-      known.set(hash, !!text);
+      known.set(original, !!text);
     }
-    const missing = entries.map(([original, text]) => ({ hash: md5(original), original, text })).filter(({ hash }) => !known.get(hash));
+    const missing = entries.filter(([original]) => !known.get(original)).map(([original, text]) => ({ hash: md5(original), original, text }));
     if (!missing.length) return;
     await db.transaction(async () => {
       for (const { hash, original, text } of missing) {
-        if (!known.has(hash)) await db.table("smalltext").insert({ namespace: ns, hash, original });
+        if (!known.has(original)) await db.table("smalltext").insert({ namespace: ns, hash, original });
         await db.table("smalltext_lang").insert({ hash, namespace: ns, lang, text });
       }
     });
