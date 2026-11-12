@@ -200,6 +200,24 @@ test("t: a new text is added once, in the background, where no namespace in reac
   ]);
 });
 
+test("t: a new text seen in two languages is added once, not once per language", async () => {
+  await using x = await texts([], "de, en", "de");
+  const table = x.db.table.bind(x.db);
+  let inserts = 0;
+  x.db.table = ((name: string) => {
+    const tb = table(name);
+    return name === "smalltext" ? Object.assign(Object.create(tb), { insert: (v: Record<string, unknown>) => (inserts++, tb.insert(v)) }) : tb;
+  }) as typeof x.db.table;
+  await x.run(() => x.lm.t`Known`); // both indexes in memory, as in a running process
+  x.ctx.lang = "en";
+  await x.run(() => x.lm.t`Known`);
+  inserts = 0;
+  await x.run(() => x.lm.t`New`);
+  x.ctx.lang = "de";
+  await x.run(() => x.lm.t`New`);
+  assertEquals(inserts, 1);
+});
+
 test("t: one query per namespace and language, the next lookups from memory", async () => {
   await using x = await texts([["", "A", { de: "a" }]], "de", "de");
   const query = x.db.query.bind(x.db);

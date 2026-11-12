@@ -98,7 +98,7 @@ async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: strin
     ? html.async`<u2-alert open variant=warning>${t`The target is this page itself — visitors would loop.`}</u2-alert>`
     : html.async`<p><a href="${url}">${t`Go to`}: ${title || url}</a>`;
 
-  return html.async`<div class=qgCMS>
+  return html.async`<div class="u2-width qgCMS">
   <h2>${t`Redirect`}</h2>
   <form method=post>
     ${node.cms.formFields(node)}

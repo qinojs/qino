@@ -21,6 +21,7 @@ export class LangManager {
   #langs = ["en"];   // the site's languages by priority, first = default
   #indexes = new Map<string, Promise<Map<string, string>>>();
   #langOf = new WeakMap<Ctx, Record<string, string>>(); // per request: the language of each namespace
+  #recorded = new Set<string>(); // "ns\noriginal" added by #record, so another language's index does not add it again
   #scope = new AsyncLocalStorage<Scope>();
 
   /** Called with each text t`` looks up — the dev module counts them (smalltext.count). */
@@ -134,9 +135,12 @@ export class LangManager {
     });
   }
 
-  /** A text no namespace in reach knows yet, so it can be translated: added to `ns`, once, in the background. */
+  /** A text no namespace in reach knows yet, so it can be translated: added to `ns`, once — also when the
+   *  index of another language meets it later — in the background. */
   #record(index: Map<string, string>, ns: string, original: string) {
     index.set(original, "");
+    if (this.#recorded.has(ns + "\n" + original)) return;
+    this.#recorded.add(ns + "\n" + original);
     this.#app.db.table("smalltext").insert({ namespace: ns, hash: md5(original), original }).catch(() => {});
   }
 
