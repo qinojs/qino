@@ -1,7 +1,7 @@
 /* Advanced node settings: navigation flags, identifier, base node, subpage definition. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 
 const MODELS = ['cms', 'models'];
 

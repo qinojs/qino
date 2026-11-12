@@ -1,6 +1,6 @@
 /* The page tree with its legend. The tree engine itself lives in tree.js; this mounts it. */
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 
 export default async function (widget, { node, dialogs, signal }) {
   const showContents = !!cms.panel.state.has('tree_show_c')?.get({ silent: true });

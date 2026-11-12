@@ -1,7 +1,8 @@
 /* The panel's "more" sidebar: who is logged in, feedback, password, cms settings. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
+import { forget } from '@qino/pub/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 export const css = `
@@ -109,6 +110,7 @@ export default async function (widget, { dialogs, signal }) {
     } catch (err) { await dialogs.alert(err.message); }
   });
 
-  widget.on('change', '.-changelang', (sel) => setting(['core', 'lang_ns', 'cms']).put({ value: sel.value }).then(reload));
+  // the stored texts are in the old language: drop them before the page comes back
+  widget.on('change', '.-changelang', (sel) => setting(['core', 'lang_ns', 'cms']).put({ value: sel.value }).then(forget).then(reload));
   widget.on('change', '.-treeShowC', (inp) => setting(['cms.frontend', 'ui', 'tree_show_c']).put({ value: inp.checked }).then(reload));
 }

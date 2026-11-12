@@ -1,4 +1,4 @@
-import { t } from "@qino/pub/t.js";
+import { t } from "../js/t.js";
 import { settings } from "@qino/pub/settings.js";
 
 const root = cms.panelRoot;

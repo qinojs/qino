@@ -1,7 +1,7 @@
 /* Which users may see or edit this node. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 
 import { levelBadges, partial, row, searchable, table } from './access.js';
 

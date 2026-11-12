@@ -29,6 +29,7 @@
     "pub/js/init.js",
     "pub/js/root.js",
     "pub/js/shortcut.js",
+    "pub/js/t.js",
     "pub/module.svg",
     "pub/panel/contentMenu.js",
     "pub/panel/contextMenu.js",

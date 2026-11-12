@@ -1,7 +1,7 @@
 /* Module picker: the content blocks that can be added here, plus saved templates. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 import { modules as moduleList, shortName } from './modules.js';

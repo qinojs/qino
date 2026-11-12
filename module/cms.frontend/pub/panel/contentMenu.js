@@ -1,6 +1,6 @@
 /* What the panel adds to inline's menus on the page. Inline itself knows nothing about settings. */
 import { dom } from '@qino/pub/c1.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../js/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 import { blockMenu, blockSelector } from '../inline/contextMenu.js';

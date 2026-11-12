@@ -1,6 +1,6 @@
 import { api } from '@qino/pub/api.js';
 import { html } from '@qino/pub/html.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../js/t.js';
 import { shortName } from '../panel/widgets/modules.js';
 
 import { dialog } from './inline.js';

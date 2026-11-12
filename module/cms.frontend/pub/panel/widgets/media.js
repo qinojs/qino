@@ -1,7 +1,7 @@
 /* Files of a node: upload, replace, reorder, delete. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 export const css = `

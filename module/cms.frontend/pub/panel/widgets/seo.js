@@ -1,7 +1,7 @@
 /* SEO widget: title and description of a page. */
 import { api } from '@qino/pub/api.js';
 import { unhee } from '@qino/pub/html.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 
 export const css = `
 .-seo :invalid, .-seo .-invalid.-invalid { border-bottom-color:var(--cms-access-3); }

@@ -2,7 +2,7 @@
 import '@qino/pub/SettingsEditor.mjs';
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 
 export const css = `
 .-files { display:flex; flex-flow:wrap; margin:-.125rem; }

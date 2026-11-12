@@ -1,7 +1,7 @@
 /* The settings sidebar: what this node is, and the accordions that configure it. */
 import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 import { ctx } from '@qino/pub/qino.js';
 
 import { widget as mount } from '../widget.js';

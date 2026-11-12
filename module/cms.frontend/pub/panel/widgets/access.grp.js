@@ -1,7 +1,7 @@
 /* Which groups may see or edit this node, and whether that is inherited from a parent. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../../js/t.js';
 
 import { levelBadges, partial, row, searchable, table } from './access.js';
 

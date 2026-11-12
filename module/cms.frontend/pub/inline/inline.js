@@ -1,7 +1,7 @@
 import { Eventer, dom } from '@qino/pub/c1.js';
 import Placer from '@qino/pub/c1/Placer.mjs';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t } from '../js/t.js';
 
 import { qgfileUpload } from '../../../cms/pub/js/fileHelpers.mjs';
 import { root } from '../js/root.js';

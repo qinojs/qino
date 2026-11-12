@@ -3,7 +3,7 @@
   * and server listeners. */
 import { api } from "@qino/pub/api.js";
 import { hee } from "@qino/pub/html.js";
-import { t } from "@qino/pub/t.js";
+import { t } from "../js/t.js";
 
 import "./contextMenu.js";
 

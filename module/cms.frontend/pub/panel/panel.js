@@ -1,6 +1,6 @@
 import { item } from "@qino/pub/settings.js";
 import { api } from "@qino/pub/api.js";
-import { t } from "@qino/pub/t.js";
+import { t } from "../js/t.js";
 
 import { root } from "../js/root.js";
 import { widget as mountWidget } from "./widget.js";
