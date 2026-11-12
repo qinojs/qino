@@ -360,7 +360,7 @@
       }
     },
     "smalltext": {
-      "description": "Translations of the interface strings (t``), per namespace and language",
+      "description": "The interface strings (t``) per namespace; their translations are in smalltext_lang",
       "additionalProperties": {
         "properties": {
           "hash": {
@@ -381,33 +381,35 @@
             "minimum": 0,
             "maximum": 9999,
             "default": 0
-          },
-          "de": {
-            "type": "string",
-            "default": ""
-          },
-          "fr": {
-            "type": "string",
-            "default": ""
-          },
-          "en": {
-            "type": "string",
-            "default": ""
-          },
-          "it": {
-            "type": "string",
-            "default": ""
-          },
-          "pl": {
-            "type": "string",
-            "default": ""
-          },
-          "zh": {
-            "type": "string",
-            "default": ""
           }
         },
         "required": ["hash", "namespace", "original", "count"]
+      }
+    },
+    "smalltext_lang": {
+      "description": "An interface string in one language, any language",
+      "additionalProperties": {
+        "properties": {
+          "hash": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary"
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 12,
+            "x-index": "primary"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["hash", "namespace", "lang", "text"]
       }
     },
     "text": {

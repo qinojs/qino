@@ -25,8 +25,6 @@ export class Ctx {
   state: Record<string, any> = {};
   lang = "en";
   langUsr = "en";
-  langNsPath: string[] = [];
-  langNs = "";
   dev = false;
 
   res: Res = new Res();

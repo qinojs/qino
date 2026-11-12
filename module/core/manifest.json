@@ -9,6 +9,7 @@
     "docs/db.md",
     "docs/module.md",
     "docs/stores.md",
+    "docs/t.md",
     "docs/transform.md",
     "healthChecks.ts",
     "lib/App.ts",
@@ -124,6 +125,7 @@
     "pub/js/settings.js",
     "pub/js/stepUpDialog.js",
     "pub/js/t.js",
+    "pub/js/tag.js",
     "pub/js/util/transfer.mjs",
     "pub/module.svg",
     "pub/stepup.js"

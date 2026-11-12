@@ -7,6 +7,7 @@ import { registerRows } from "./lib/rows.ts";
 import { pendingLogin } from "./lib/auth/factors.ts";
 import { isLocalHost } from "./lib/fileStream.ts";
 import { cleanLogs } from "./healthChecks.ts";
+import { migrateSmalltext } from "./lib/LangManager.ts";
 
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/DbEvents.ts";
@@ -182,7 +183,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         if (!hostAllowed(`${list} ${own}`, host)) throw new Output("", { status: 421 });
     }, { signal });
 
-    app.languages.setLangs(String(await settings.langs ?? "").split(","));
+    await migrateSmalltext(app.db); // before any locale is imported
+    app.languages.setLangs(String(await settings.langs ?? ""));
 
     const transformTimeout = Number(await settings.transform.timeout ?? "");
     if (transformTimeout) app.fileTransformer.timeout = transformTimeout;

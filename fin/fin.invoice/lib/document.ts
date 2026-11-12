@@ -268,6 +268,6 @@ export async function inLang<T>(app: App, lang: string, fn: () => Promise<T>) {
   const url = new URL(await app.url());
   const ctx = await Ctx.create(app, new Request(url), { appUrl: url.pathname, url });
   ctx.lang = ctx.langUsr = lang;
-  ctx.langNs = "fin"; // the texts recipients read come with the module fin (locale/)
-  return requestStorage.run(ctx, fn).finally(() => ctx.req.cleanup());
+  // the texts recipients read come with the module fin (locale/)
+  return requestStorage.run(ctx, () => app.t.with("fin", fn)).finally(() => ctx.req.cleanup());
 }

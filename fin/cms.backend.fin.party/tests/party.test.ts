@@ -51,7 +51,7 @@ test("the page speaks with the texts of the namespace fin", async () => {
     app.languages.setLangs(["en", "de"]);
     const node = backendNode(app, "/backend/parties");
     const page = String(await inRequest(app, "http://qino.test/backend/parties", () =>
-      app.languages.with({ lang: "de" }, () => cms.node.render(node))));
+      app.t.with({ lang: "de" }, () => cms.node.render(node))));
     assertStringIncludes(page, "Kunden &amp; Lieferanten");
   });
 });

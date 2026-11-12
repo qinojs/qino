@@ -19,7 +19,7 @@ async function init(node: Node) {
     await fields.settings.fields[name]({ type, required: true, ...(autocomplete && { autocomplete }) });
   await fields.settings.field_order("name,email,comment");
   const success = await form.cont("success", "cms.cont.text");
-  for (const lang of app.languages.all) await app.languages.with({ ns: "cms.cont.blog.post", lang }, async () => {
+  for (const lang of app.languages.all) await app.t.with({ ns: "cms.cont.blog.post", lang }, async () => {
     const title = await page.title(lang);
     if (title) await node.title(lang, title);
     await form.text("button_submit", lang, await t`Post comment`);
@@ -64,7 +64,7 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
 }
 
 function render(node: Node, args: { ctx: Ctx }) {
-  return node.app.languages.with({ ns: "cms.cont.blog.post" }, () => renderContent(node, args));
+  return node.app.t.with("cms.cont.blog.post", () => renderContent(node, args));
 }
 
 export const cms = { node: { render, css: ["pub/main.css"] } };

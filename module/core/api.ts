@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 /** Core API endpoints. The api framework is in ./lib/api/mod.ts. */
-import { createHash } from "node:crypto";
 
 import { getCtx } from "./lib/ctx/Ctx.ts";
-import { $item, sql } from "./deps.ts";
+import { $item } from "./deps.ts";
 import { Access, AccessError, ApiError, ConflictError } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { attempt, loginNeeds, logout, pendingLogin, proofPassed, pwHash, pwVerify } from "./lib/auth/mod.ts";
@@ -33,27 +32,17 @@ export const api: ApiTree = {
 
   t: {
     post: {
-      description: "Look up texts in the current language — unknown ones come back unchanged.",
+      description: "Look up texts in the current language, in a namespace (default: the global one) — as t`` on the server; unknown ones come back unchanged.",
       access: Access.PUBLIC,
-      input: s.object({ texts: s.array(s.string()).describe(`At most ${T_WARN}`) }),
-      execute: async ({ texts }: any) => {
+      input: s.object({
+        texts: s.array(s.string()).describe(`At most ${T_WARN}`),
+        ns: s.optional(s.string()).describe("Namespace, e.g. cms; empty or unknown: the global one"),
+      }),
+      execute: ({ texts, ns }: any) => {
         const ctx = getCtx();
-        const { lang, langNs: ns, dev } = ctx;
-        const list = [...new Set<string>(texts)]; // dedupe
-        if (!list.length) return {}; // `IN ()` is invalid SQL
-        if (list.length > T_WARN) ctx.app.fire("suspicious", { ctx, reason: "oversized translation batch" }).catch(() => {});
-        if (list.length > T_MAX) throw new ApiError(422, "too much to translate at once");
-        const hashes = list.map((text) => createHash("md5").update(text).digest("hex"));
-        const rows = await ctx.app.db.indexCol<string>`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND ${sql.in("hash", hashes)}`;
-        // keys come from the caller: a plain object would swallow `__proto__` and inherit `toString`
-        const result: Record<string, string> = Object.create(null);
-        for (let i = 0; i < list.length; i++) {
-          if (dev && !rows.has(hashes[i])) {
-            await ctx.app.db.table("smalltext").insert({ namespace: ns, hash: hashes[i], original: list[i] });
-          }
-          result[list[i]] = rows.get(hashes[i]) || list[i];
-        }
-        return result;
+        if (texts.length > T_WARN) ctx.app.fire("suspicious", { ctx, reason: "oversized translation batch" }).catch(() => {});
+        if (texts.length > T_MAX) throw new ApiError(422, "too much to translate at once");
+        return ctx.app.languages.lookup(texts, ns ?? "", ctx);
       },
     },
   },

@@ -1,3 +1,7 @@
+import { fill, tag } from "../pub/js/tag.js";
+
+import type { T } from "../lib/LangManager.ts";
+
 /** Settings fake shaped like the real item proxy: any path reads, an unset one awaits to undefined. */
 // deno-lint-ignore no-explicit-any
 export function fakeSettings(values: Record<string, any> = {}): any {
@@ -9,6 +13,6 @@ export function fakeSettings(values: Record<string, any> = {}): any {
   });
 }
 
-/** Minimal `app.t`: substitutes the interpolated values, no lookup. */
-export const fakeT = (strings: TemplateStringsArray, ...values: unknown[]): Promise<string> =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
+/** Minimal `app.t`, with t.in and t.with: substitutes the interpolated values, no lookup. */
+export const fakeT: T = tag((_ns, original, values) => Promise.all(values).then((v) => fill(original, v)),
+  { get: () => undefined, run: (_scope, fn) => fn() });

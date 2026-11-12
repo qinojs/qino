@@ -9,6 +9,9 @@ The core boots the app, loads modules, opens the database and serves files.
 - **[Module stores](stores.md)** — optional catalogs of modules: `add()` for one boot,
   `install()` to keep them, local sources vs. JSR.
 
+- **[Translations](t.md)** — `` t`…` ``, `t.in(ns)` and `t.with(ns, fn)`, the same on server and
+  browser; where a text comes from, locale files, the data.
+
 - **[Database access](db.md)** — `` sql`…` `` fragments, `db.query`/`exec` to run them, and
   `db.table()` CRUD helpers. The same code runs on MySQL, SQLite and PostgreSQL.
 

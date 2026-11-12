@@ -107,7 +107,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
 }
 
 function render(node: Node, args: { ctx: Ctx; vars: Record<string, unknown> }) {
-  return node.app.languages.with({ ns: "cms.cont.blog" }, () => renderContent(node, args));
+  return node.app.t.with("cms.cont.blog", () => renderContent(node, args));
 }
 
 async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {

@@ -188,7 +188,7 @@ Without `{ signal }`, a listener keeps running after unlink. Each link gets a **
 
 - **DB tables.** Migration only adds (`patch: true`). Neither `unlink` nor `uninstall` drops a
   table; a module deletes its rows in `uninstall()` if it wants to.
-- **Locales** in `smalltext` (only empty rows are filled).
+- **Locales** in `smalltext` / `smalltext_lang` (only what is missing is filled, see [Translations](t.md)).
 - **`install()` content.** It runs once per app, not per link. Only `uninstall` removes it, via
   the module's `uninstall()` hook.
 

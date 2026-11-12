@@ -94,7 +94,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
     } catch { /* use the same response for invalid addresses */ }
     app.fire("suspicious", { ctx, weight: 1, reason: "newsletter signup requested" }).catch(() => {});
     if (address && !vars.your_name) {
-      app.languages.with({ ns: "cms.cont.newsletter", lang: ctx.lang }, () => request(node, address, grpId))
+      app.t.with({ ns: "cms.cont.newsletter", lang: ctx.lang }, () => request(node, address, grpId))
         .catch((e) => console.error(`[newsletter ${node.id}]`, e));
     }
     return box(html.async`<p>${t`If this address can be subscribed, a confirmation link is on its way.`}</p>`);
@@ -109,7 +109,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
 }
 
 function render(node: Node, args: { ctx: Ctx; vars: Record<string, unknown> }) {
-  return node.app.languages.with({ ns: "cms.cont.newsletter" }, () => renderContent(node, args));
+  return node.app.t.with("cms.cont.newsletter", () => renderContent(node, args));
 }
 
 export const cms = { node: { render, settingsSchema: nodeSettingsSchema, css: ["pub/main.css"] } };

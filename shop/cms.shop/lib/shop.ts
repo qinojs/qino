@@ -18,8 +18,7 @@ export function appOf(db: Db): App {
 export const settingsOf = (app: App): ItemProxy => app.settings["cms.shop"];
 
 /** The shop's texts: every shop module translates in one namespace, cms.shop (its locale/). */
-export const shopT = (app: App) => (strings: TemplateStringsArray, ...values: unknown[]): Promise<string> =>
-  app.languages.with({ ns: "cms.shop" }, () => app.t(strings, ...values));
+export const shopT = (app: App): ReturnType<App["t"]["in"]> => app.t.in("cms.shop");
 
 /** Whether product prices contain tax. */
 export const taxIncluded = async (app: App): Promise<boolean> => await settingsOf(app).taxIncluded !== false;

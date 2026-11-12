@@ -1,6 +1,6 @@
 {
   "name": "dev",
-  "description": "Logs request durations and exposes them through Server-Timing headers.",
+  "description": "Logs request durations and exposes them through Server-Timing headers; counts the use of each translated text.",
   "dependencies": [
     "core"
   ],

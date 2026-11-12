@@ -244,9 +244,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         qino.cms.ui = await settings[name].ui ?? {};
         qino.cms.tourSeen = !!await settings[name].tour_seen;
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
-        app.languages.nsStart("cms");
-        const panelHtml = String(await panel.default?.() ?? "");
-        app.languages.nsStop();
+        const panelHtml = String(await app.t.with("cms", () => panel.default?.()) ?? "");
         html.content += panelHtml;
 
         html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
