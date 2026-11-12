@@ -159,6 +159,9 @@ template's own.
 
 - `<a cms-file=flyer>` — download links, editable in edit mode like images.
 - `cms-if` / `cms-each` — only once a real module needs them.
+- Placeholder parameters, e.g. `{{identity.brand.logo h=56}}`: the size reaches the placeholder,
+  so an image is rasterized to fit (sharp, and right in Outlook). Kept out until the template
+  syntax needs it; a newsletter enlarges the logo with CSS meanwhile.
 
 ## `moduleTemplate(module)`
 

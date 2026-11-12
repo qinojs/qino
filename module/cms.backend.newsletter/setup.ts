@@ -51,6 +51,7 @@ export async function starter(app: App): Promise<string> {
   .content blockquote { margin:0 0 16px; padding:4px 0 4px 16px; border-left:3px solid ${ACCENT}; color:#52525b; }
   .content hr { border:0; border-top:1px solid #e7e5ee; margin:28px 0; }
   .content > :first-child { margin-top:0; }
+  .brand img { height:52px; width:auto; } /* Outlook keeps the placeholder's 40px */
   .foot a { color:#71717a; text-decoration:underline; }
   @media (max-width:620px) {
     .outer { padding:0 !important; }
@@ -65,7 +66,7 @@ export async function starter(app: App): Promise<string> {
 <tr><td align="center" class="outer" style="padding:32px 12px">
   <table role="presentation" class="wrap card" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#ffffff">
     <tr><td style="height:6px;line-height:6px;font-size:0;background:${ACCENT}">&nbsp;</td></tr>
-    <tr><td class="pad" style="padding:32px 44px 4px;font-family:${FONT}">
+    <tr><td class="pad brand" style="padding:32px 44px 4px;font-family:${FONT}">
       {{identity.brand.logo}}
       <div style="margin-top:10px;font-size:15px;font-weight:700;letter-spacing:.02em;color:#18181b">{{identity.name}}</div>
     </td></tr>
