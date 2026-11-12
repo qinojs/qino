@@ -8,6 +8,7 @@
   ],
   "files": [
     "README.md",
+    "healthChecks.ts",
     "locale/de.json",
     "manifest.json",
     "nodeApi.ts",
@@ -15,6 +16,7 @@
     "pub/main.css",
     "pub/main.js",
     "pub/module.svg",
-    "render.ts"
+    "render.ts",
+    "setup.ts"
   ]
 }

@@ -9,7 +9,6 @@
   "Opened": "Geöffnet",
   "Clicked": "Geklickt",
   "(no subject)": "(ohne Betreff)",
-  "No newsletters yet.": "Noch keine Newsletter.",
   "New newsletter": "Neuer Newsletter",
   "Name": "Name",
   "Subscribers": "Abonnenten",
@@ -81,5 +80,16 @@
   "subscribers": "Abonnenten",
   "lists": "Listen",
   "drafts": "Entwürfe",
-  "Would receive it now": "Würden ihn jetzt erhalten"
+  "Would receive it now": "Würden ihn jetzt erhalten",
+  "A list:": "Eine Liste:",
+  "Create a list — on the right.": "Eine Liste anlegen — rechts.",
+  "A template:": "Eine Vorlage:",
+  "adjust it to your liking.": "nach Wunsch anpassen.",
+  "A template — the health check creates one.": "Eine Vorlage — der Health-Check legt eine an.",
+  "{0} subscribers.": "{0} Abonnenten.",
+  "No subscribers yet:": "Noch keine Abonnenten:",
+  "or put the signup form (Newsletter) on a page.": "oder das Anmeldeformular (Newsletter) auf eine Seite setzen.",
+  "Write the first newsletter — with \"New newsletter\" above.": "Den ersten Newsletter schreiben — oben mit «Neuer Newsletter».",
+  "Hello {{givenName|there}}": "Hallo {{givenName|zusammen}}",
+  "You receive this newsletter because you subscribed to it.": "Du erhältst diesen Newsletter, weil du ihn abonniert hast."
 }

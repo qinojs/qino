@@ -4,6 +4,12 @@ Newsletters in the backend: lists, subscribers, issues and what came of them. It
 surface — sending, templates, tracking, unsubscribing and bounces are
 [messaging](../messaging/) and [messaging.email](../messaging.email/).
 
+Installing it brings what a first newsletter needs: a list and the email template `newsletter`
+(mail html filled by [identity](../identity/): logo, name, colour, address, unsubscribe link). Both
+are only created if missing. Until the first newsletter, the overview lists what is left to do.
+Health checks flag a template without `{{unsubscribe}}` or sender address, and scheduled
+newsletters that are overdue.
+
 - **List** — a `grp` of type `newsletter`. [cms.cont.newsletter](../cms.cont.newsletter/) is the
   signup form for one.
 - **Issue** — a mail to a list, shown as *Newsletter* in the backend. A *draft* is the message without deliveries; sending

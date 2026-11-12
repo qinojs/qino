@@ -2,7 +2,9 @@ import { test } from "node:test";
 import { App, fs, requestStorage, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
 import { setTransport } from "@qino/qino/messaging.email";
+import { cms } from "@qino/qino/cms";
 
+import { healthChecks } from "../healthChecks.ts";
 import { render, subscribe } from "../render.ts";
 
 import type { Node } from "@qino/qino/cms";
@@ -27,7 +29,8 @@ async function page(app: App, search: string, fields?: Record<string, string>) {
     ? { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ csrfToken: "test", ...fields }) }
     : {};
   const ctx = await testContext({ url: URL + search, ...init, set: { csrfToken: "test" } });
-  const out = String(await requestStorage.run(ctx, () => render({ app } as Node)));
+  const node = await cms(app).nodeByModule("cms.backend.newsletter");
+  const out = String(await requestStorage.run(ctx, () => render(node as Node)));
   return { out, location: ctx.res.headers.get("Location") };
 }
 
@@ -95,6 +98,29 @@ test("a draft is a message without deliveries; sending makes them for the list a
     assertStringIncludes(report.out, "Sent");
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 50));
+    await app.db.close();
+    await fs.remove(dir, { recursive: true });
+  }
+});
+
+test("a fresh install brings a list and a template, and the overview says what is left", async () => {
+  const { app, dir } = await makeApp();
+  try {
+    assertEquals(await app.db.col`SELECT name FROM grp WHERE type = ${"newsletter"}`, ["Newsletter"]);
+    const frame = String(await app.db.one`SELECT text FROM message_template WHERE name = ${"newsletter"} AND channel = ${"email"}`);
+    assertStringIncludes(frame, "{{unsubscribe}}");
+    assertStringIncludes(frame, "{{identity.organization.address.formatted}}");
+
+    const { out } = await page(app, "");
+    assertStringIncludes(out, "<ol class=-start>");
+    assertStringIncludes(out, "No subscribers yet:");
+
+    const checks = healthChecks(app);
+    assertEquals(await checks.warning["newsletters carry an unsubscribe link"](), undefined);
+    assertEquals(await checks.notice["newsletters say who sends them"](), undefined);
+    await app.db.exec`UPDATE message_template SET text = ${"{{content}}"} WHERE name = ${"newsletter"}`;
+    assert(await checks.warning["newsletters carry an unsubscribe link"](), "a template without a way out is flagged");
+  } finally {
     await app.db.close();
     await fs.remove(dir, { recursive: true });
   }

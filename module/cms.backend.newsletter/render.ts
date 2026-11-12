@@ -1,8 +1,10 @@
 import { addContact, contactKey, contactOwner, getCtx, html, Output, safeEqual, sql, sqlSearch, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+import { backend } from "@qino/qino/cms.backend";
 import { record, release, template, templated } from "@qino/qino/messaging";
 import { send } from "@qino/qino/messaging.email";
 
+import { CHANNEL, TYPE } from "./setup.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, Ctx, HtmlString, Row, Sql } from "@qino/qino";
@@ -11,8 +13,6 @@ import type { Node } from "@qino/qino/cms";
 // A list is a group of type newsletter, an issue is a mail to it: a draft until it has deliveries.
 
 const { name: NS } = manifest;
-export const TYPE = "newsletter";
-const CHANNEL = "email";
 const LIMIT = 500;
 
 /** The address a member receives on: the main one, else the oldest — as messaging picks it. */
@@ -52,7 +52,12 @@ async function overview(node: Node) {
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 45rem">
     <div class=-head>${t`Newsletters`}</div>
-    <table class=u2-table>
+    ${lists.length ? html.async`<form method=post class=-inline>
+      ${csrf(ctx)}
+      <select name=grp aria-label="${t`List`}">${lists.map((l) => html`<option value="${l.id}">${l.name}</option>`)}</select>
+      <button name=createIssue>${t`New newsletter`}</button>
+    </form>` : ""}
+    ${issues.length ? html.async`<table class=u2-table>
       <thead><tr>
         <th>${t`Subject`}
         <th>${t`List`}
@@ -60,22 +65,22 @@ async function overview(node: Node) {
         <th>${t`Recipients`}
         <th>${t`Opened`}
         <th>${t`Clicked`}
-      <tbody>${issues.length ? issues.map((row) => html.async`<tr u2-href>
+      <tbody>${issues.map((row) => html.async`<tr u2-href>
         <td><a href="?issue=${row.id}">${str(row.title) || t`(no subject)`}</a>
         <td>${row.list}
         <td>${status(app, row)}
         <td>${Number(row.recipients) || html.async`<small title="${t`Would receive it now`}">${Number(row.reachable)}</small>`}
         <td>${share(row.opened, row.reached)}
-        <td>${share(row.clicked, row.reached)}`) : html.async`<tr><td colspan=6>${t`No newsletters yet.`}`}
-    </table>
-    ${lists.length ? html.async`<form method=post class=-inline>
-      ${csrf(ctx)}
-      <select name=grp aria-label="${t`List`}">${lists.map((l) => html`<option value="${l.id}">${l.name}</option>`)}</select>
-      <button name=createIssue>${t`New newsletter`}</button>
-    </form>` : ""}
+        <td>${share(row.clicked, row.reached)}`)}
+    </table>` : start(node, lists)}
   </div>
   <div class=u2-card style="flex:0 1 22rem">
     <div class=-head>${t`Lists`}</div>
+    <form method=post class=-inline>
+      ${csrf(ctx)}
+      <input name=name required placeholder="${t`Name of the new list`}">
+      <button name=createList>${t`Create`}</button>
+    </form>
     <table class=u2-table>
       <thead><tr>
         <th>${t`Name`}
@@ -86,11 +91,6 @@ async function overview(node: Node) {
         <td>${Number(row.members)}
         <td>${Number(row.bounced) || ""}`) : html.async`<tr><td colspan=3>${t`No lists yet.`}`}
     </table>
-    <form method=post class=-inline>
-      ${csrf(ctx)}
-      <input name=name required placeholder="${t`Name of the new list`}">
-      <button name=createList>${t`Create`}</button>
-    </form>
   </div>
 </div>`;
 }
@@ -99,6 +99,30 @@ async function overview(node: Node) {
 const reachable = (grp: Sql | unknown) => sql`(SELECT COUNT(*) FROM usr_grp ug
   JOIN usr_contact c ON c.usr_id = ug.usr_id AND c.type = ${CHANNEL} AND ${MAIN} AND c.error IS NULL
   WHERE ug.grp_id = ${grp})`;
+
+/** Before the first newsletter: what is ready and what is still to do, each with its way there. */
+async function start(node: Node, lists: Row[]) {
+  const app = node.app, t = app.t;
+  const [frame, signup, templates] = await Promise.all([
+    draftTemplate(app),
+    node.cms.nodeByModule("cms.cont.newsletter"),
+    backend.toModuleUrl(node, "cms.backend.superuser.messaging.templates"),
+  ]);
+  const members = lists.reduce((sum, l) => sum + Number(l.members), 0);
+  const list = lists[0];
+  const step = (done: unknown, body: unknown) => html.async`<li${done ? html.raw(" class=-done") : ""}>${body}`;
+  const to = (url: string, label: unknown) => url ? html.async`<a href="${url}">${label}</a>` : label;
+  return html.async`<ol class=-start>
+    ${step(list, list ? html.async`${t`A list:`} <a href="?list=${list.id}">${list.name}</a>` : t`Create a list — on the right.`)}
+    ${step(frame, frame
+      ? html.async`${t`A template:`} ${to(templates({ name: frame.name, channel: CHANNEL }), frame.name)} — ${t`adjust it to your liking.`}`
+      : t`A template — the health check creates one.`)}
+    ${step(members, html.async`${members ? t`${members} subscribers.` : t`No subscribers yet:`}
+      ${list ? html.async`<a href="?list=${list.id}">${t`Add subscribers`}</a>` : ""}
+      ${signup ? "" : html.async`${t`or put the signup form (Newsletter) on a page.`}`}`)}
+    ${step(false, t`Write the first newsletter — with "New newsletter" above.`)}
+  </ol>`;
+}
 
 const isList = async (app: App, id: number) => !!id && !!await app.db.one`SELECT id FROM grp WHERE id = ${id} AND type = ${TYPE}`;
 
@@ -157,11 +181,16 @@ function status(app: App, row: Row) {
 const percent = (count: unknown, of: unknown) => Number(of) ? html`<small>${Math.round(100 * Number(count) / Number(of))}%</small>` : "";
 const share = (count: unknown, of: unknown) => Number(of) ? html`${Number(count)} ${percent(count, of)}` : "";
 
-/** A new draft to the list, wrapped in the newsletter template if there is one, else the main one. */
-async function draft(app: App, grpId: number, from?: Row) {
-  const template = from ? from.template : await app.db.one<string>`SELECT name FROM message_template
+/** The template a new draft gets: the newsletter one if there is one, else the main one. */
+export function draftTemplate(app: App): Promise<{ name: string; text: string } | undefined> {
+  return app.db.row<{ name: string; text: string }>`SELECT name, text FROM message_template
     WHERE channel = ${CHANNEL} AND (name = ${TYPE} OR main = ${true})
     ORDER BY CASE WHEN name = ${TYPE} THEN 0 ELSE 1 END LIMIT 1`;
+}
+
+/** A new draft to the list, in the draft template, or a copy of `from`. */
+async function draft(app: App, grpId: number, from?: Row) {
+  const template = from ? from.template : (await draftTemplate(app))?.name;
   const { id } = await record(app, {
     channel: CHANNEL,
     direction: "out",
@@ -253,7 +282,7 @@ async function editor(node: Node, row: Row, notice: unknown) {
   const selected = (on: boolean) => on ? html.raw(" selected") : "";
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
-  <div class=u2-card style="flex:1 1 32rem">
+  <div class=u2-card style="flex:0 1 50rem">
     <div class=-head>${t`Newsletter`} <span class=u2-badge>${t`Draft`}</span> <a href="?" class=-back>${t`Back`}</a></div>
     <form method=post data-issue>
       ${csrf(ctx)}

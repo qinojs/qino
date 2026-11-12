@@ -1,7 +1,8 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
-import { render, TYPE } from "./render.ts";
+import { render } from "./render.ts";
+import { setup, TYPE } from "./setup.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -9,8 +10,11 @@ import type { App, HtmlString } from "@qino/qino";
 
 const { name } = manifest;
 
+export { healthChecks } from "./healthChecks.ts";
+
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Newsletter", de: "Newsletter" });
+  await app.t.with(name, () => setup(app));
 }
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
