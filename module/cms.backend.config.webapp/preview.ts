@@ -107,7 +107,7 @@ export async function preview(node: Node, ctx: Ctx): Promise<HtmlString> {
 <input class=-mode type=radio name=preview id=preview-starts>
 <input class=-mode type=radio name=preview id=preview-loaded>
 <nav class=-modes aria-label="${t`Preview stage`}">
-  <label for=preview-home>${t`Home`}</label>
+  <label for=preview-home>${t`Home screen`}</label>
   <label for=preview-starts>${t`Starts`}</label>
   <label for=preview-loaded>${t`Loaded`}</label>
 </nav>

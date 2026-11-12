@@ -32,7 +32,7 @@ async function table(node: Node) {
     <tr>
       <th data-sort-handler>${t`Module`}
       <th data-sort-handler>${t`Type`}
-      <th data-sort-handler>${t`Check`}
+      <th data-sort-handler>${t`Health check`}
       <th data-sort-handler>${t`Message`}
       <th>${t`Actions`}
       <th data-sort-handler class=-time>${t`Time`}
