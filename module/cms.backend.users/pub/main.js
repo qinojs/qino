@@ -61,7 +61,7 @@ cms.initNode("backend.users", (el) => {
       node.api.post({ delete: itemId(del) }).then((ok) => { if (ok) tr.remove(); });
       return;
     }
-    const loginAs = e.target.closest(".-loginAs");
+    const loginAs = e.target.closest(".-loginAs button");
     if (loginAs) node.api.post({ login_as: itemId(loginAs) }).then((ok) => { if (ok) location.href = globalThis.qino?.appUrl ?? "/"; });
   });
 

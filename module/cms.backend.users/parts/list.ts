@@ -42,7 +42,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
       : vs.username;
 
     const loginAsTd = canLoginAs
-      ? html.raw('<td class=-loginAs><u2-ico icon=switch_account aria-label="Login as user">⇄</u2-ico>')
+      ? html.raw('<td class=-loginAs><button class=u2-unstyle aria-label="Login as user"><u2-ico icon=switch_account>⇄</u2-ico></button>')
       : "";
 
     parts.push(html`
