@@ -508,7 +508,8 @@ export class Node {
         const anchor = address.startsWith("#") ? address : "";
         const target = anchor ? await this.page() : this;
         const path = anchor ? await target.urlSeo(lang) : address;
-        if (!path || await this.edit()) return ctx.req.appUrl + "?cmspid=" + target + "&lang=" + lang + anchor;
+        // "" is an address too: the home page's
+        if ((!path && !(await target.urls()).has(lang)) || await this.edit()) return ctx.req.appUrl + "?cmspid=" + target + "&lang=" + lang + anchor;
         return ctx.req.appUrl + path + anchor;
     }
 
