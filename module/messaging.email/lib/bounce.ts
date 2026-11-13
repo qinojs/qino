@@ -27,13 +27,14 @@ export async function reported(app: App, mail: ParsedMail): Promise<boolean> {
 }
 
 /** The recipients a report says failed permanently. A plain one comes from the null sender every
- *  bounce has; its first permanent SMTP reply is the reason. */
+ *  bounce has; its first refusal (550–554, then a status code or words — not a phone number) is the
+ *  reason. Auto-replies use the null sender too. */
 export function bounces(mail: ParsedMail): Failed[] {
   const type = reportType(mail);
   if (type === "delivery-status") return statuses(String(mail.text ?? ""));
   const sender = mail.headers.get("return-path") as { text?: string } | undefined;
   if (type || sender?.text !== "") return [];
-  const reply = String(mail.text ?? "").match(/\b5\d\d[ -](?:(5\.\d{1,3}\.\d{1,3})\s)?[^\r\n]+/);
+  const reply = String(mail.text ?? "").match(/\b55[0-4][ -](?:(5\.\d{1,3}\.\d{1,3})\s)?[A-Za-z<][^\r\n]*/);
   if (!reply) return [];
   const reason = reply[0].trim().slice(0, 255);
   return [{ reason, status: reply[1] ?? (failure(reason) === "refused" ? "5.7.0" : "5.0.0") }];
@@ -56,10 +57,10 @@ const ours = sql`FROM message_delivery d JOIN message m ON m.id = d.message_id
 
 /** The delivery a report is about: the one whose Message-ID it returns, in an attached copy or its
  *  text — each has its own, and guessing is worse than not knowing. */
-function delivery(app: App, mail: ParsedMail): Promise<Row | undefined> {
+async function delivery(app: App, mail: ParsedMail): Promise<Row | undefined> {
   const part = mail.attachments?.find((a) => a.contentType === "text/rfc822-headers" || a.contentType === "message/rfc822");
   const messageId = `${part?.content.toString() ?? ""}\n${mail.text ?? ""}`.match(/^[\s>]*Message-ID:\s*(<[^>\r\n]+>)/im)?.[1]; // quoted, too
-  return messageId ? app.db.row`SELECT d.id, d.address, d.usr_id, m.grp_id ${ours} AND d.external_id = ${messageId}` : Promise.resolve(undefined);
+  if (messageId) return app.db.row`SELECT d.id, d.address, d.usr_id, m.grp_id ${ours} AND d.external_id = ${messageId}`;
 }
 
 /**
@@ -77,12 +78,15 @@ export async function bounced(app: App, mail: ParsedMail, failed: Failed[]): Pro
   return !!found;
 }
 
-/** A spam complaint: the recipient wants no more of it. They leave the group, as if unsubscribing. */
+/** A spam complaint: the recipient wants no more of it. Sent to a group, they leave it, as if
+ *  unsubscribing; a single mail has nothing to leave. */
 async function complained(app: App, mail: ParsedMail): Promise<boolean> {
   const found = await delivery(app, mail);
   if (!found) return false;
-  track(app, Number(found.id), unsubscribeCode, "click");
-  if (found.usr_id && found.grp_id) await app.db.table("usr_grp").delete({ usr_id: found.usr_id, grp_id: found.grp_id });
+  if (found.usr_id && found.grp_id) {
+    track(app, Number(found.id), unsubscribeCode, "click");
+    await app.db.table("usr_grp").delete({ usr_id: found.usr_id, grp_id: found.grp_id });
+  }
   return true;
 }
 

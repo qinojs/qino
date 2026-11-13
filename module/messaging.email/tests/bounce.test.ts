@@ -128,6 +128,12 @@ Subject: News
   assertEquals(await db.one`SELECT error FROM message_delivery`, "550 5.1.1 Mailbox does not exist");
   assertEquals(await db.one`SELECT error FROM usr_contact`, "550 5.1.1 Mailbox does not exist", "the delivery's address bounced");
 
+  // an auto-reply comes from the null sender too, and a phone number is no refusal
+  await db.exec`UPDATE message_delivery SET error = NULL`;
+  const away = await simpleParser("Return-Path: <>\nSubject: Out of office\n\nBack Monday. Urgent: 071 555 12 34\nMessage-ID: <7@qino.test>\n");
+  assertEquals(await reported(app, away), false);
+  assertEquals(await db.one`SELECT error FROM message_delivery`, null);
+
   const quoting = await simpleParser("From: someone@example.test\nSubject: Re: News\n\n550 5.1.1 Mailbox does not exist\nMessage-ID: <7@qino.test>\n");
   assertEquals(await reported(app, quoting), false, "a person's mail is no bounce, whatever it quotes");
 
