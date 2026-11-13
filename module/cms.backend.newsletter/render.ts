@@ -25,6 +25,12 @@ export function render(node: Node): Promise<HtmlString | string> {
   return node.app.t.with(NS, () => issue ? issueView(node, issue) : list ? listView(node, list) : overview(node));
 }
 
+/** Links to this page, absolute: they hold wherever the node is shown. */
+async function here(node: Node) {
+  const url = await (await node.page()).url();
+  return (params?: Record<string, unknown>) => backend.toUrl(url, params);
+}
+
 const idOf = (value: unknown) => Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : 0;
 
 /** The form fields, if the post is ours. */
@@ -39,13 +45,13 @@ const csrf = (ctx: Ctx) => html`<input type=hidden name=csrfToken value="${ctx.c
 // --- overview -------------------------------------------------------------------------------
 
 async function overview(node: Node) {
-  const app = node.app, t = app.t, ctx = getCtx();
+  const app = node.app, t = app.t, ctx = getCtx(), to = await here(node);
   const post = posted(ctx);
   if (post && "createList" in post && str(post.name)) {
-    return redirect(`?list=${await app.db.table("grp").insert({ name: str(post.name), type: TYPE })}`);
+    return redirect(to({ list: await app.db.table("grp").insert({ name: str(post.name), type: TYPE }) }));
   }
   if (post && "createIssue" in post && await isList(app, Number(post.grp))) {
-    return redirect(`?issue=${await draft(app, Number(post.grp))}`);
+    return redirect(to({ issue: await draft(app, Number(post.grp)) }));
   }
   const [lists, issues] = await Promise.all([listRows(app), issueRows(app)]);
 
@@ -66,7 +72,7 @@ async function overview(node: Node) {
         <th>${t`Opened`}
         <th>${t`Clicked`}
       <tbody>${issues.map((row) => html.async`<tr u2-href>
-        <td><a href="?issue=${row.id}">${str(row.title) || t`(no subject)`}</a>
+        <td><a href="${to({ issue: row.id })}">${str(row.title) || t`(no subject)`}</a>
         <td>${row.list}
         <td>${status(app, row)}
         <td>${Number(row.recipients) || html.async`<small title="${t`Would receive it now`}">${Number(row.reachable)}</small>`}
@@ -87,7 +93,7 @@ async function overview(node: Node) {
         <th>${t`Subscribers`}
         <th>${t`Bounced`}
       <tbody>${lists.length ? lists.map((row) => html`<tr u2-href>
-        <td><a href="?list=${row.id}">${row.name}</a>
+        <td><a href="${to({ list: row.id })}">${row.name}</a>
         <td>${Number(row.members)}
         <td>${Number(row.bounced) || ""}`) : html.async`<tr><td colspan=3>${t`No lists yet.`}`}
     </table>
@@ -103,22 +109,23 @@ const reachable = (grp: Sql | unknown) => sql`(SELECT COUNT(*) FROM usr_grp ug
 /** Before the first newsletter: what is ready and what is still to do, each with its way there. */
 async function start(node: Node, lists: Row[]) {
   const app = node.app, t = app.t;
-  const [frame, signup, templates] = await Promise.all([
+  const [frame, signup, templates, self] = await Promise.all([
     draftTemplate(app),
     node.cms.nodeByModule("cms.cont.newsletter"),
     backend.toModuleUrl(node, "cms.backend.superuser.messaging.templates"),
+    here(node),
   ]);
   const members = lists.reduce((sum, l) => sum + Number(l.members), 0);
   const list = lists[0];
   const step = (done: unknown, body: unknown) => html.async`<li${done ? html.raw(" class=-done") : ""}>${body}`;
   const to = (url: string, label: unknown) => url ? html.async`<a href="${url}">${label}</a>` : label;
   return html.async`<ol class=-start>
-    ${step(list, list ? html.async`${t`A list:`} <a href="?list=${list.id}">${list.name}</a>` : t`Create a list — on the right.`)}
+    ${step(list, list ? html.async`${t`A list:`} <a href="${self({ list: list.id })}">${list.name}</a>` : t`Create a list — on the right.`)}
     ${step(frame, frame
       ? html.async`${t`A template:`} ${to(templates({ name: frame.name, channel: CHANNEL }), frame.name)} — ${t`adjust it to your liking.`}`
       : t`A template — the health check creates one.`)}
     ${step(members, html.async`${members ? t`${members} subscribers.` : t`No subscribers yet:`}
-      ${list ? html.async`<a href="?list=${list.id}">${t`Add subscribers`}</a>` : ""}
+      ${list ? html.async`<a href="${self({ list: list.id })}">${t`Add subscribers`}</a>` : ""}
       ${signup ? "" : html.async`${t`or put the signup form (Newsletter) on a page.`}`}`)}
     ${step(false, t`Write the first newsletter — with "New newsletter" above.`)}
   </ol>`;
@@ -211,7 +218,7 @@ async function draft(app: App, grpId: number, from?: Row) {
 // --- issue ----------------------------------------------------------------------------------
 
 async function issueView(node: Node, id: number) {
-  const app = node.app, t = app.t, ctx = getCtx();
+  const app = node.app, t = app.t, ctx = getCtx(), to = await here(node);
   let [row] = await issueRows(app, id);
   if (!row) return html.async`<div class=u2-card><div>${t`Newsletter not found.`}</div></div>`;
   const post = posted(ctx);
@@ -221,10 +228,10 @@ async function issueView(node: Node, id: number) {
   if (post && isDraft) {
     if ("delete" in post) {
       await app.db.exec`DELETE FROM message WHERE id = ${id}`;
-      return redirect("?");
+      return redirect(to());
     }
     await save(app, id, post);
-    if ("save" in post) return redirect(`?issue=${id}`);
+    if ("save" in post) return redirect(to({ issue: id }));
     [row] = await issueRows(app, id);
     if ("test" in post) notice = await test(app, row, str(post.address));
     if ("send" in post || "schedule" in post) {
@@ -236,16 +243,16 @@ async function issueView(node: Node, id: number) {
         await release(app, id, at);
         [row] = await issueRows(app, id);
         if (!Number(row.recipients)) notice = html.async`<u2-alert open variant=warning>${t`Nobody on this list has an address.`}</u2-alert>`;
-        else return redirect(`?issue=${id}`);
+        else return redirect(to({ issue: id }));
       }
     }
   }
   if (post && !isDraft) {
-    if ("duplicate" in post) return redirect(`?issue=${await draft(app, Number(row.grp_id), row)}`);
+    if ("duplicate" in post) return redirect(to({ issue: await draft(app, Number(row.grp_id), row) }));
     // only while nothing went out: the deliveries go, the message is a draft again
     if ("cancel" in post && !Number(row.reached)) {
       await app.db.exec`DELETE FROM message_delivery WHERE message_id = ${id}`;
-      return redirect(`?issue=${id}`);
+      return redirect(to({ issue: id }));
     }
   }
   return Number(row.recipients) ? report(node, row) : editor(node, row, notice);
@@ -280,17 +287,18 @@ async function test(app: App, row: Row, address: string) {
 
 async function editor(node: Node, row: Row, notice: unknown) {
   const app = node.app, t = app.t, db = app.db, ctx = getCtx();
-  const [lists, frames, me] = await Promise.all([
+  const [lists, frames, me, to] = await Promise.all([
     listRows(app),
     db.col<string>`SELECT name FROM message_template WHERE channel = ${CHANNEL} ORDER BY name`,
     db.one<string>`SELECT c.address FROM usr_contact c WHERE c.usr_id = ${ctx.userId ?? 0} AND c.type = ${CHANNEL} AND ${MAIN}`,
+    here(node),
   ]);
   const members = row.reachable;
   const selected = (on: boolean) => on ? html.raw(" selected") : "";
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:0 1 53rem">
-    <div class=-head>${t`Newsletter`} <span class=u2-badge>${t`Draft`}</span> <a href="?" class=-back>${t`Back`}</a></div>
+    <div class=-head>${t`Newsletter`} <span class=u2-badge>${t`Draft`}</span> <a href="${to()}" class=-back>${t`Back`}</a></div>
     <form method=post data-issue="${row.id}">
       ${csrf(ctx)}
       ${notice}
@@ -350,7 +358,7 @@ async function previewCard(app: App, row: Row) {
 async function report(node: Node, row: Row) {
   const app = node.app, t = app.t, db = app.db, ctx = getCtx();
   const id = Number(row.id);
-  const [deliveries, links] = await Promise.all([
+  const [deliveries, links, to] = await Promise.all([
     db.query`
       SELECT d.address, d.sent, d.due, d.error, u.given_name, u.family_name,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
@@ -362,6 +370,7 @@ async function report(node: Node, row: Row) {
       FROM message_track t JOIN message_delivery d ON d.id = t.delivery_id
       WHERE d.message_id = ${id} AND t.kind = ${"click"}
       GROUP BY t.code ORDER BY clicks DESC`,
+    here(node),
   ]);
   // shorturl knows what a code stands for; without it the code stands for itself
   const urls = new Map(links.length
@@ -373,7 +382,7 @@ async function report(node: Node, row: Row) {
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 32rem">
-    <div class=-head>${str(row.title) || t`(no subject)`} ${status(app, row)} <a href="?" class=-back>${t`Back`}</a></div>
+    <div class=-head>${str(row.title) || t`(no subject)`} ${status(app, row)} <a href="${to()}" class=-back>${t`Back`}</a></div>
     ${app.modules.linked("shorturl") ? "" : html.async`<u2-alert open variant=info>${t`Opens and clicks are only counted with the module shorturl.`}</u2-alert>`}
     <div class=-stats>
       ${stat(t`recipients`, Number(row.recipients))}
@@ -427,7 +436,7 @@ async function report(node: Node, row: Row) {
 // --- list -----------------------------------------------------------------------------------
 
 async function listView(node: Node, id: number) {
-  const app = node.app, t = app.t, db = app.db, ctx = getCtx();
+  const app = node.app, t = app.t, db = app.db, ctx = getCtx(), to = await here(node);
   const list = await db.row`SELECT id, name FROM grp WHERE id = ${id} AND type = ${TYPE}`;
   if (!list) return html.async`<div class=u2-card><div>${t`List not found.`}</div></div>`;
   const query = ctx.req.query;
@@ -447,10 +456,10 @@ async function listView(node: Node, id: number) {
         await db.exec`DELETE FROM usr_grp WHERE grp_id = ${id}`;
         await db.exec`DELETE FROM grp WHERE id = ${id}`;
       });
-      return redirect("?");
+      return redirect(to());
     }
     if ("add" in post) notice = imported(app, await subscribe(app, id, String(post.addresses ?? "")));
-    if ("rename" in post || "remove" in post || "purge" in post) return redirect(`?list=${id}`);
+    if ("rename" in post || "remove" in post || "purge" in post) return redirect(to({ list: id }));
   }
 
   const search = str(query.q);
@@ -463,13 +472,13 @@ async function listView(node: Node, id: number) {
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 40rem">
-    <div class=-head>${list.name} <span class=u2-badge>${Number(counts?.members)}</span> <a href="?" class=-back>${t`Back`}</a></div>
+    <div class=-head>${list.name} <span class=u2-badge>${Number(counts?.members)}</span> <a href="${to()}" class=-back>${t`Back`}</a></div>
     <div class=-actions>
-      <form method=get class=-inline>
+      <form method=get action="${to()}" class=-inline>
         <input type=hidden name=list value="${id}">
         <input type=search name=q value="${search}" placeholder="${t`Search...`}">
       </form>
-      <a href="?list=${id}&amp;export=1" download>${t`Export CSV`}</a>
+      <a href="${to({ list: id, export: 1 })}" download>${t`Export CSV`}</a>
       ${bounced ? html.async`<form method=post class=-inline>${csrf(ctx)}
         <button name=purge u2-confirm="${t`Remove ${bounced} bounced addresses from this list?`}">${t`Remove bounced`} (${bounced})</button>
       </form>` : ""}
