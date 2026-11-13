@@ -58,7 +58,8 @@ bounces are only noticed if the mailbox read is that address's; the health check
 Each permanent failure (`Action: failed`, `Status: 5.x.x`) puts the server's reason on the contact
 (`usr_contact.error`), if this app ever mailed the address. `5.7.x` is left out: it is a policy
 verdict about the sender, not the mailbox. The delivery itself is marked only if the report carries
-the returned mail's `Message-ID` — guessing which one it was is worse than not knowing. The report
+the returned mail's `Message-ID` — guessing which one it was is worse than not knowing. Every mail
+gets its `Message-ID` from here, and the delivery keeps it as `external_id`. The report
 stays in the journal like any incoming mail. Providers that bounce over webhooks (Mailgun, SES …)
 are not read yet.
 

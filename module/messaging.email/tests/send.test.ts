@@ -67,7 +67,10 @@ test("a mail to a user reaches their address and lands in the journal", async ()
   assertEquals(journaled.channel, "email");
   assertEquals(journaled.title, "Invoice");
   assertEquals(journaled.text, "Attached.");
-  assertEquals((await app.db.row`SELECT external_id FROM message_delivery`)?.external_id, "<a@qino.test>", "the transport's id is the far side's name for it");
+  // the mail's own Message-ID, not the transport's receipt id: bounces and replies name it so
+  const messageId = String(sent[0].messageId);
+  assertStringIncludes(messageId, "@qino.test");
+  assertEquals((await app.db.row`SELECT external_id FROM message_delivery`)?.external_id, `<${messageId}>`);
   assertEquals(journaled.deliveries, [{ id: 1, usr_id: 1, address: "one@qino.test", username: "one@qino.test", sent: journaled.deliveries[0].sent, due: null, attempts: 0, error: null }]);
 
   await close(app);

@@ -50,6 +50,7 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
   const debug = config.debugTo ? addressOf(config.debugTo) : null;
   const detour = debug ? `redirected to debug address ${debug.address}` : undefined;
   const from = formatAddress({ address: config.address, name: config.name });
+  const domain = config.address.split("@").pop();
   let sent = 0;
   for (const row of rows) {
     const address = String(row.address);
@@ -59,7 +60,10 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
     const { text, html } = await render(row);
     // only where there is something to leave: the client's one-click way to the same link
     const leaving = uses.has("unsubscribe") && usrId && grpId ? await unsubscribeHeaders(app, usrId, grpId) : undefined;
-    const result = await transmit(mailer, {
+    // our own Message-ID: bounces and replies name the mail by it, a transport's receipt id they don't know
+    const messageId = `${crypto.randomUUID()}@${domain}`;
+    const failure = await transmit(mailer, {
+      messageId,
       from,
       to: formatAddress(debug ?? { address, name: nameOf(row) }),
       replyTo: msg.replyTo || config.replyTo || undefined,
@@ -68,12 +72,10 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
       attachments,
       headers: { ...leaving, ...debug ? { "X-Qino-Original-Recipient": address } : undefined },
     });
-    // counts as sent (the transport took it), but the journal notes the address wasn't reached
-    const failure = result instanceof Error ? result : undefined;
     if (!failure) sent++;
-    // a redirected mail was taken, by the debug address: with an id it marks nothing on the contact
-    const taken = typeof result === "string" ? result : detour && !failure ? `debug:${debug!.address}` : undefined;
-    await delivered(app, Number(row.id), failure ?? detour, taken);
+    // counts as sent (the transport took it), but the journal notes the address wasn't reached; a
+    // redirected mail was taken, by the debug address: with an id it marks nothing on the contact
+    await delivered(app, Number(row.id), failure ?? detour, failure ? undefined : `<${messageId}>`);
   }
   // close the pool after the batch: the server closes idle connections, and reusing one fails silently
   await mailer.closeAllConnections?.().catch(() => {});
@@ -86,17 +88,17 @@ async function attachmentsOf(files?: Attachment[]) {
   return files?.length ? Promise.all(files.map(attachmentFile)) : undefined;
 }
 
-/** Send one mail; resolves with the message id, or the error (not thrown) for the journal.
+/** Send one mail; resolves with the error (not thrown) for the journal, or nothing.
  *  An error without message is a broken connection (a refusal always has a reason; Upyo keeps only
  *  `error.message`), so retry once on a new connection. */
 async function transmit(
   mailer: Awaited<ReturnType<typeof transport>>,
   message: Record<string, unknown>,
   retry = true,
-): Promise<Error | string | undefined> {
+): Promise<Error | undefined> {
   try {
     const receipt = await mailer.send(await createMessage(message));
-    if (receipt?.successful) return receipt.messageId;
+    if (receipt?.successful) return;
     const reason = receipt?.errorMessages?.join("\n").trim();
     if (!reason && retry) {
       await mailer.closeAllConnections?.().catch(() => {});
