@@ -57,13 +57,13 @@ test("html carries an open beacon, plain text and telegram do not", async () => 
   const a = await app();
   const { render: mail } = await renderer(a, { text: "**hi**", format: "md" }, "email");
   const html = (await mail({ deliveryId: 3 })).html ?? "";
-  const beacon = html.match(/<img src="([^"]+)" width="1"/)?.[1] ?? "";
+  const beacon = html.match(/<img src="([^"]+)" width="3"/)?.[1] ?? "";
   assertEquals(/\/3l\S{3}$/.test(beacon), true); // delivery 3, marked as a load like any image
   assertEquals((await mail({ deliveryId: 3 })).text.includes(beacon), false); // no page, no beacon
 
   // inside the document, not after it
   const { render: page } = await renderer(a, { text: "<html><body><p>hi</p></body></html>", format: "html" }, "email");
-  assertEquals(/<img src="[^"]+" width="1" height="1" alt=""><\/body><\/html>$/.test((await page({ deliveryId: 3 })).html ?? ""), true);
+  assertEquals(/<img src="[^"]+" width="3" height="1" alt=""><\/body><\/html>$/.test((await page({ deliveryId: 3 })).html ?? ""), true);
 
   const { render: chat } = await renderer(a, { text: "**hi**", format: "md" }, "telegram", "telegram");
   assertEquals((await chat({ deliveryId: 3 })).html?.includes("<img"), false);
