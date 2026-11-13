@@ -140,7 +140,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   <div class=u2-card style="flex:1 1 40rem; min-width:0">
     <div class=-head>${t`Domains`} <small>${rows.length}</small>
       <button data-prune style="margin-left:auto" u2-confirm="${t`Remove every domain without subscription, alias, hosting or registrar sync?`}">${t`Remove unlinked`}</button></div>
-    <form>
+    <form action="${pageUrl}">${backend.toFields(pageUrl)}
       <input type=search name=search value="${search}" placeholder="${t`Domain`}">
       ${customerSelect(app, users, usr, t`All customers`, "usr")}
       <button>${t`Filter`}</button>

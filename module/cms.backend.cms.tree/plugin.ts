@@ -24,11 +24,12 @@ async function render(node: Node, {ctx}: {ctx: Ctx}) {
   const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);
 
+  const self = await (await node.page()).url();
   // Breadcrumb path to root node
   const pathParts = [];
   for (const child of (await rootNode.path()).values()) {
     const title = String(await child.title(ctx.lang) ?? "").trim();
-    pathParts.push(html`<a href="?rp=${child.id}">${title || "(no text)"}</a> > `);
+    pathParts.push(html`<a href="${backend.toUrl(self, { rp: child.id })}">${title || "(no text)"}</a> > `);
   }
 
   const showContents = ctx.settings.cms.admin.showContents();

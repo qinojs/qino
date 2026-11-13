@@ -19,3 +19,14 @@ app.on("seo:sitemap", ({ base, urls }) => {
   urls.push({ url: { en: base + "en/about", de: base + "de/ueber-uns" }, lastmod: 1726560000, image: base + "img/about.jpg" });
 }, { signal });
 ```
+
+## Structured data
+
+`jsonLd` adds a schema.org JSON-LD block to the document, for what search engines show as a rich
+result — a blog post, a product, an event:
+
+```ts
+import { jsonLd } from "@qino/qino/seo";
+
+jsonLd(ctx, { "@type": "BlogPosting", headline: title, mainEntityOfPage: { "@id": canonical } });
+```

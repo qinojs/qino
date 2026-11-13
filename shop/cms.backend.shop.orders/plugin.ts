@@ -32,6 +32,7 @@ function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string
 /** Placed orders, newest first: search over number, names and addresses, filter by status. */
 async function list(node: Node, url: URL): Promise<HtmlString> {
   const app = node.app, t = shopT(app);
+  const self = await (await node.page()).url();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const search = sqlSearch(q("search"), ["bill", "ship"], { exact: ["id"] });
   const carts = q("status") === "cart", time = sql.id(carts ? "created" : "ordered");
@@ -43,10 +44,10 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
   const page = Math.max(0, Number(q("page")) || 0);
   const orders = await app.db.table("shop_order").all<Order>`WHERE ${sql.join(where, " AND ")} ORDER BY id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
   const more = orders.length > PER_PAGE, names = await labels(app);
-  const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname, { search: q("search"), status: q("status"), from: q("from"), to: q("to"), ...params });
+  const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname + url.search, { search: q("search"), status: q("status"), from: q("from"), to: q("to"), ...params });
   return html.async`<div class=u2-card>
   <div class=-head>${t`Orders`}</div>
-  <form method=get>
+  <form method=get action="${self}">${backend.toFields(self)}
     <input type=search name=search value="${q("search")}" placeholder="${t`Number, name, address`}">
     <select name=status>${option("", t`Any status`, q("status"))}${STATUSES.map((s) => option(s, names[s], q("status")))}${option("cart", t`Open carts`, q("status"))}</select>
     <label>${t`From`} <input type=date name=from value="${q("from")}"></label>

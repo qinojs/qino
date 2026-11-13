@@ -20,6 +20,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 async function renderTree(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;
+  const self = await (await node.page()).url();
   if (ctx.req.query.rp) {
     const root = await node.cms.node(Number(ctx.req.query.rp));
     if (root.exists() && await root.access() > 0) admin.rootPageNode(root.id);
@@ -28,7 +29,7 @@ async function renderTree(node: Node, { ctx }: { ctx: Ctx }) {
   const root = await node.cms.node(Number(admin.rootPageNode()) || 1);
   const path: HtmlString[] = [];
   for (const page of (await root.path()).values())
-    path.push(html`<a href="?rp=${page.id}">${await pageTitle(page, ctx.lang)}</a> > `);
+    path.push(html`<a href="${backend.toUrl(self, { rp: page.id })}">${await pageTitle(page, ctx.lang)}</a> > `);
 
   return html.async`<div class=u2-card style="flex:0 1 auto">
   <div class=-head>${t`SEO`} (${ctx.lang})</div>
@@ -56,6 +57,7 @@ function field(t: App["t"], value: string, min = 0, max = 0) {
 
 async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const admin = ctx.settings.cms.admin;
+  const self = await (await node.page()).url();
   const open = new Set(String(admin.openPageNodes() ?? "").split(",").filter(Boolean));
   if (vars?.toggleOpen != null) {
     const id = String(vars.toggleOpen);
@@ -88,7 +90,7 @@ async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<str
           (await page.files()).has("share") ? html.raw(" data-share") : ""}` : "";
       rows.push(html.async`<tr${edit}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${t`Set as start point`}" href="?rp=${page.id}">${page.id}</a>
+    <a title="${t`Set as start point`}" href="${backend.toUrl(self, { rp: page.id })}">${page.id}</a>
   <td style="padding-left:${level * .9375}rem"><div style="display:flex; align-items:center">${toggle}
     <a href="${page.url()}">${title}</a>${page.vs.searchable ? "" : html.async`
       <small>(${t`not searchable`})</small>`}</div>

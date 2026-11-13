@@ -216,7 +216,7 @@ export async function formOfVars(app: App, vars: Record<string, unknown>): Promi
  * where it sits as plain text beneath, and its number of entries. The name is the block's title, else
  * its page's; contents without a title go by their module.
  */
-export async function formLine(app: App, node: Node, active: boolean): Promise<HtmlString> {
+export async function formLine(app: App, node: Node, active: boolean, self: string): Promise<HtmlString> {
   const count = await app.db.one`
     SELECT count(*) FROM ${sql.id(tableRef("form_entry"))} WHERE node_id = ${node.id}`;
   const path = [...(await node.path()).values()].filter((n) => n.id !== 1 && n.id !== node.id); // no system root
@@ -227,7 +227,7 @@ export async function formLine(app: App, node: Node, active: boolean): Promise<H
   const url = await node.url().catch(() => ""); // the form itself: its page with #cmspid… to scroll to it
   // the whole row picks the form (u2-href takes its first link); ↗ opens it on its page
   return html.async`<tr u2-href>
-      <td><a href="?form=${node.id}"${active ? html.raw(" aria-current=page") : ""}>${name}</a><br><small>${where}</small>
+      <td><a href="${backend.toUrl(self, { form: node.id })}"${active ? html.raw(" aria-current=page") : ""}>${name}</a><br><small>${where}</small>
       <td class=-num>${Number(count)}
       <td>${url ? html.async`<a href="${url}" target=_blank title="${app.t`Show the form on its page`}"><u2-ico inline icon=open_in_new>↗</u2-ico></a>` : ""}`;
 }

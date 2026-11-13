@@ -21,6 +21,7 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // only accept existing nodes the user may read
   const admin = ctx.settings.cms.admin;
+  const self = await (await node.page()).url();
   if (ctx.req.query.rp) {
     const rp = await node.cms.node(Number(ctx.req.query.rp));
     if (rp.exists() && await rp.access() > 0) admin.rootPageNode(rp.id);
@@ -33,7 +34,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const pathParts: HtmlString[] = [];
   for (const child of (await rootNode.path()).values()) {
     const title = String(await child.title(ctx.lang) ?? "").trim();
-    pathParts.push(html`<a href="?rp=${child.id}">${title || "(no text)"}</a> > `);
+    pathParts.push(html`<a href="${backend.toUrl(self, { rp: child.id })}">${title || "(no text)"}</a> > `);
   }
 
   const groups = await accessGroups(app);
@@ -73,6 +74,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
   const app = node.app;
   const db = app.db;
   const admin = ctx.settings.cms.admin;
+  const self = await (await node.page()).url();
   const openStr: string = admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
@@ -131,7 +133,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
       trs.push(html.async`
 <tr${(isCont || inherited) ? html` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage.id}">
   <td style="text-align:right; font-weight:bold">
-    <a title="${app.t`Set as start point`}" href="?rp=${id}">${id}</a>
+    <a title="${app.t`Set as start point`}" href="${backend.toUrl(self, { rp: id })}">${id}</a>
   <td style="padding-left:${level * 15}px; white-space:nowrap">
     <div style="display:flex; align-items:center">${toggleBtn}${titleCell}</div>
   ${publicCell}

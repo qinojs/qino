@@ -93,6 +93,12 @@ export function toUrl(url: string, params: Record<string, unknown> = {}): string
   return u.pathname + u.search;
 }
 
+/** Hidden fields carrying the query of `url` through a GET form: submitting replaces the query, and
+ *  with it the `cmspid` and `lang` a page is addressed by in edit mode. */
+export function toFields(url: string): HtmlString {
+  return html.join([...new URL(url, "http://-").searchParams].map(([name, value]) => html`<input type=hidden name="${name}" value="${value}">`));
+}
+
 /** Link to another backend module's page: `link({ id })` → "/path?id=…". "" if the page is missing
  *  or not accessible (callers then show plain text). */
 export async function toModuleUrl(node: Node, module: string): Promise<(params?: Record<string, unknown>) => string> {

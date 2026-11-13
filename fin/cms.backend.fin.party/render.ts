@@ -72,7 +72,7 @@ async function overview(node: Node, url: URL) {
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Customers & suppliers`}</div>
-    <form>
+    <form action="${pageUrl}">${backend.toFields(pageUrl)}
       <input type=search name=search value="${q("search")}" placeholder="${t`Name, place, id`}">
       <select name=role>${option("", t`All`, role)}${option("customer", t`Customers`, role)}${
     option("supplier", t`Suppliers`, role)}</select>

@@ -132,6 +132,7 @@ async function vat(app: App, from: string, to: string, currency: string): Promis
 async function overview(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
+  const self = await (await node.page()).url();
   const year = await businessYear(app);
   const from = url.searchParams.get("from") || year.from;
   const to = url.searchParams.get("to") || year.to;
@@ -141,7 +142,7 @@ async function overview(node: Node, url: URL) {
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 100%">
     <div class=-head>${t`Period`}</div>
-    <form method=get>
+    <form method=get action="${self}">${backend.toFields(self)}
       <input type=date name=from value="${from}"> – <input type=date name=to value="${to}">
       <button>${t`Show`}</button>
       ${currency ? "" : html.async` ${badge(t`No book currency: nothing is booked.`, "--orange")}`}
@@ -158,7 +159,7 @@ async function overview(node: Node, url: URL) {
   ${app.modules.linked("fin.accounting.ch") ? vat(app, from, to, currency) : ""}
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Journal`}</div>
-    <form method=get>
+    <form method=get action="${self}">${backend.toFields(self)}
       <input type=hidden name=from value="${from}"><input type=hidden name=to value="${to}">
       <input type=search name=search value="${url.searchParams.get("search")}" placeholder="${t`Text, ref, id`}">
       <select name=account>

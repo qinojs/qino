@@ -1,4 +1,5 @@
 import { html, unixTime } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
 import type { HtmlString, Ctx } from "@qino/qino";
@@ -7,6 +8,7 @@ import type { Node } from "@qino/qino/cms";
 export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;
+  const self = await (await node.page()).url();
   const openStr: string = admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
@@ -72,7 +74,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       trs.push(html.async`
 <tr${isCont ? html.raw(' class=-isCont') : ''}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${t`Set as start point`}" href="?rp=${subPage.id}">${subPage.id}</a>
+    <a title="${t`Set as start point`}" href="${backend.toUrl(self, { rp: subPage.id })}">${subPage.id}</a>
   <td style="padding-left:${level * 15}px">
     <div style="display:flex; align-items:center">
       ${toggleBtn}

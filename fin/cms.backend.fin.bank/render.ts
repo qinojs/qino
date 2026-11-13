@@ -1,4 +1,5 @@
 import { getCtx, html, sql, sqlSearch } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
 import { badge, money, option, pager, rowLink } from "@qino/qino/cms.backend.fin";
 import * as u2 from "@qino/qino/u2";
 
@@ -12,6 +13,7 @@ export async function render(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const url = getCtx().req.url.toURL();
+  const self = await (await node.page()).url();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const accounts = await app.db.query`
     SELECT a.id, a.name, a.number, a.currency, a.created,
@@ -48,7 +50,7 @@ export async function render(node: Node): Promise<HtmlString> {
   ${app.modules.linked("fin.bank.ebics") ? ebics(app) : ""}
   <div class=u2-card style="flex:1 1 100%">
     <div class=-head>${t`Lines`}</div>
-    <form method=get>
+    <form method=get action="${self}">${backend.toFields(self)}
       <input type=search name=search value="${q("search")}" placeholder="${t`Party, reference, text, id`}">
       <select name=account>
         ${option("", t`All accounts`, q("account"))}

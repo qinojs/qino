@@ -26,7 +26,7 @@ const plan = (result: { table: string; parts: { mode: string; fields: string[] }
 
 async function renderSearch(db: Db, term: string) {
   const ctx = await testContext({ url: `http://qino.test/?db_search=${encodeURIComponent(term)}`, app: { db, t: fakeT } });
-  return String(await requestStorage.run(ctx, () => render({ app: { db, t: fakeT } } as never)));
+  return String(await requestStorage.run(ctx, () => render({ app: { db, t: fakeT }, page: () => ({ url: () => "/?cmspid=7&lang=en" }) } as never)));
 }
 
 test("cms.backend.superuser.db.search: metadata is wired", () => {
@@ -52,6 +52,7 @@ test("cms.backend.superuser.db.search: renders one table per hit, marked and tim
   assertStringIncludes(out, "<mark>Hello</mark> world");
   assertStringIncludes(out, "prefix: title");
   assert(/[\d.]+ ms/.test(out));
+  assertStringIncludes(out, '<input type=hidden name="cmspid" value="7">', "the search stays on its page");
   assertEquals(out.match(/<table/g)?.length, out.match(/<\/table>/g)?.length);
 
   const empty = await renderSearch(db, "");

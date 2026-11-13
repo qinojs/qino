@@ -1,4 +1,5 @@
 import { getCtx, html } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
 
 import { LIMIT, search, SMALL_ROWS, words } from "./lib/search.ts";
 
@@ -10,6 +11,7 @@ const MAX_CELL = 200; // longer values are shown as a snippet around the first h
 
 export async function render(node: Node): Promise<HtmlString> {
   const app = node.app, t = app.t;
+  const self = await (await node.page()).url();
   const term = (getCtx().req.query.db_search ?? "").trim();
 
   const t0 = performance.now();
@@ -26,7 +28,7 @@ export async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card style="flex-grow:0">
     <div class=-head>${t`Search database`}</div>
     <div>
-      <form>
+      <form action="${self}">${backend.toFields(self)}
         <input type=search name=db_search value="${term}" placeholder="${t`Search all tables`}…" autofocus>
         <button>${t`Search`}</button>
       </form>

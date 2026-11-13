@@ -486,7 +486,7 @@ async function listView(node: Node, id: number) {
   <div class=u2-card style="flex:1 1 40rem">
     <div class=-head>${list.name} <span class=u2-badge>${Number(counts?.members)}</span> <a href="${to()}" class=-back>${t`Back`}</a></div>
     <div class=-actions>
-      <form method=get action="${to()}" class=-inline>
+      <form method=get action="${to()}" class=-inline>${backend.toFields(to())}
         <input type=hidden name=list value="${id}">
         <input type=search name=q value="${search}" placeholder="${t`Search...`}">
       </form>

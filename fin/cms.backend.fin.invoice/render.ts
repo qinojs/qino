@@ -59,11 +59,12 @@ async function usersOf(app: App, rows: Row[]) {
 /** Invoices with their filters, a form for a new draft, and the settings. */
 async function overview(node: Node, url: URL) {
   const t = node.app.t;
+  const self = await (await node.page()).url();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Invoices`}</div>
-    <form method=get>
+    <form method=get action="${self}">${backend.toFields(self)}
       <input type=search name=search value="${q("search")}" placeholder="${t`Number, party, ref`}">
       <select name=direction>
         ${option("", t`Issued and received`, q("direction"))}

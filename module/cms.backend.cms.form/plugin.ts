@@ -30,6 +30,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   const { t } = app;
   vars = { ...ctx.req.query, ...vars }; // ?form=… picks a form, so it can be linked to
   const all = await forms(app);
+  const self = await (await node.page()).url();
   const active = await formOfVars(app, vars);
 
   if (!all.length) {
@@ -44,7 +45,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
         <div class=-head>${t`Forms`}</div>
         <table class=u2-table>
           <tr><th>${t`Form`}<th>${t`Entries`}<th>
-          ${all.map((form) => formLine(app, form, form.id === active?.id))}
+          ${all.map((form) => formLine(app, form, form.id === active?.id, self))}
         </table>
     </div>
 

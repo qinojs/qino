@@ -43,7 +43,10 @@ export async function overview(node: Node): Promise<HtmlString | string> {
     const channel = String(post.channel ?? "");
     if (name && channel) {
       await saveTemplate(app, { name, channel, text: "{{content}}" });
-      return redirect(`?name=${encodeURIComponent(name)}&channel=${encodeURIComponent(channel)}`);
+      const to = ctx.req.url.toURL();
+      to.searchParams.set("name", name);
+      to.searchParams.set("channel", channel);
+      return redirect(to.search);
     }
   }
 

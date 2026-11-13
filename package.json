@@ -97,6 +97,7 @@
     "./sandbox.flow": "./module/sandbox.flow/mod.ts",
     "./score": "./module/score/mod.ts",
     "./security": "./module/security/mod.ts",
+    "./seo": "./module/seo/mod.ts",
     "./shorturl": "./module/shorturl/mod.ts",
     "./social": "./module/social/mod.ts",
     "./social.bluesky": "./module/social.bluesky/mod.ts",

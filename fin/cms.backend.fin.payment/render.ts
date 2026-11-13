@@ -23,12 +23,13 @@ export function render(node: Node): Promise<HtmlString> {
 /** The journal of payments with its filters, the providers, and a form for what happened by hand. */
 async function overview(node: Node, url: URL) {
   const t = node.app.t;
+  const self = await (await node.page()).url();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const providers = await node.app.db.col<string>`SELECT DISTINCT provider FROM payment ORDER BY provider`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payments`}</div>
-    <form method=get>
+    <form method=get action="${self}">${backend.toFields(self)}
       <input type=search name=search value="${q("search")}" placeholder="${t`Id, ref, description, external id`}">
       <select name=direction>
         ${option("", t`In and out`, q("direction"))}

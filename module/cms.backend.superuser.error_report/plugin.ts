@@ -48,6 +48,7 @@ function makeFileHelper(ctx: Ctx) {
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
   const { t, db } = node.app;
+  const self = await (await node.page()).url();
   const ctx = getCtx();
   const get = ctx.req.query;
 
@@ -72,7 +73,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const range  = get.range ?? "30"; // default window keeps the group scan off the full table
 
   const filterForm = html.async`
-  <form>
+  <form action="${self}">${backend.toFields(self)}
     <input type=search name=search value="${get.search}" placeholder="${t`message, /path, IP or id`}"
       title="${t`Words search the message, a path (with /) the file, an IP address or a numeric id match exactly`}">
     <select name=source>

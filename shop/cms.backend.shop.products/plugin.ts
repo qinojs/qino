@@ -54,6 +54,7 @@ async function creatable(app: App): Promise<Node[]> {
 
 async function list(node: Node, url: URL): Promise<HtmlString> {
   const app = node.app, t = shopT(app), lang = app.languages.def;
+  const self = await (await node.page()).url();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const main = await mainCurrency(app), page = Math.max(0, Number(q("page")) || 0);
   // every product's category: for the filter, and only here
@@ -69,14 +70,14 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
     q("category") ? sql`id IN (${inCategory.length ? sql.join(inCategory, ", ") : sql`0`})` : null,
   ].filter((w) => w != null);
   const rows = await app.db.table("shop_product").all<Product>`${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``} ORDER BY id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
-  const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname, { search: q("search"), category: q("category"), ...params });
+  const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname + url.search, { search: q("search"), category: q("category"), ...params });
   const columns = listColumns(app, main?.$id ?? ""), labels = await Promise.all(columns.map((c) => c.label));
   const options = await Promise.all([...named.values()].map(async (c) => [String(c.id), String(await c.title(lang) || c.id)] as const));
   options.sort((a, b) => a[1].localeCompare(b[1]));
   const targets = await creatable(app);
   return html.async`<div class=u2-card data-rows=shop_product data-vars="${JSON.stringify({ list: true })}">
   <div class=-head>${t`Products`}</div>
-  <form method=get>
+  <form method=get action="${self}">${backend.toFields(self)}
     <input type=search name=search value="${q("search")}" placeholder="${t`Title, number`}">
     <select name=category aria-label="${t`Category`}"><option value="">${options.map(([id, name]) => html`<option value="${id}" ${id === q("category") ? html`selected` : ""}>${name}`)}</select>
     <button>${t`Filter`}</button>

@@ -19,6 +19,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;
+  const self = await (await node.page()).url();
   if (ctx.req.query.rp) {
     const root = await node.cms.node(Number(ctx.req.query.rp));
     if (root.exists() && await root.access() > 0) admin.rootPageNode(root.id);
@@ -28,7 +29,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const path: HtmlString[] = [];
   for (const page of (await root.path()).values()) {
     const title = await pageTitle(page, ctx.lang);
-    path.push(html`<a href="?rp=${page.id}">${String(title).trim() || "(no text)"}</a> > `);
+    path.push(html`<a href="${backend.toUrl(self, { rp: page.id })}">${String(title).trim() || "(no text)"}</a> > `);
   }
 
   const langs = node.app.languages.all;
@@ -51,6 +52,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
 async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const admin = ctx.settings.cms.admin;
+  const self = await (await node.page()).url();
   if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
   const type = admin.showContents() ? "*" : "p";
   const open = new Set(String(admin.openPageNodes() ?? "").split(",").filter(Boolean));
@@ -92,7 +94,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
 
       rows.push(html.async`<tr${page.vs.type === "c" ? html.raw(" class=-isCont") : ""}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${node.app.t`Set as start point`}" href="?rp=${page.id}">${page.id}</a>
+    <a title="${node.app.t`Set as start point`}" href="${backend.toUrl(self, { rp: page.id })}">${page.id}</a>
   <td style="padding-left:${level * .9375}rem"><div style="display:flex; align-items:center">${toggle}${title}</div>
   ${urls}`);
       if (isOpen) await addChildren(page, level + 1);

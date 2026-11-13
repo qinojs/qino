@@ -1,12 +1,13 @@
 {
   "name": "seo",
-  "description": "Serves robots.txt and a sitemap.xml collected from linked modules.",
+  "description": "Serves robots.txt and a sitemap.xml collected from linked modules; adds structured data (JSON-LD).",
   "dependencies": [
     "core"
   ],
   "files": [
     "README.md",
     "manifest.json",
+    "mod.ts",
     "plugin.ts",
     "pub/module.svg"
   ]

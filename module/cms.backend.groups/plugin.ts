@@ -36,6 +36,7 @@ async function renderOverview(node: Node) {
   }
 
   const usersUrl = await backend.toModuleUrl(node, "cms.backend.users");
+  const self = await (await node.page()).url();
 
   const rows = await db.query`
     SELECT grp.*, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
@@ -45,7 +46,7 @@ async function renderOverview(node: Node) {
     const membersUrl = usersUrl({ grp_id: vs.id });
     return html`<tr itemid=${vs.id}>
       <td>${vs.id}
-      <td><a href="?id=${vs.id}">${vs.name}</a>
+      <td><a href="${backend.toUrl(self, { id: vs.id })}">${vs.name}</a>
       <td>${vs.type}
       <td style="text-align:right">${
         membersUrl ? html`<a href="${membersUrl}">${Number(vs.members)}</a>` : Number(vs.members)
