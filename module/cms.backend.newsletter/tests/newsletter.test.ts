@@ -108,9 +108,11 @@ test("a draft is a message without deliveries; sending makes them for the list a
     const report = await page(app, `?issue=${id}`);
     assertStringIncludes(report.out, "three@qino.test");
     assertStringIncludes(report.out, "Sent");
-    // an unsubscribe is a click on the mail it came with
+    // an unsubscribe is a click on the mail it came with, and the recipient off the list
     const one = await app.db.one`SELECT id FROM message_delivery WHERE address = ${"one@qino.test"}`;
     await app.db.table("message_track").insert({ delivery_id: one, code: "unsubscribe", kind: "click", time: unixTime() });
+    assertStringIncludes((await page(app, `?issue=${id}`)).out, "<b>0</b> unsubscribed", "only opened: still on the list");
+    await app.db.exec`DELETE FROM usr_grp WHERE usr_id = (SELECT usr_id FROM message_delivery WHERE id = ${one})`;
     const left = (await page(app, `?issue=${id}`)).out;
     assertStringIncludes(left, "<b>1</b> unsubscribed");
     assertStringIncludes(left, "<span class=u2-badge>unsubscribed</span>");

@@ -8,7 +8,7 @@ import type { Placeholder } from "./template.ts";
 // link (a newsletter would need thousands), and old links keep working.
 //
 // A GET only asks; only a POST unsubscribes, since mail clients, scanners and previews fetch links.
-// The link may also name the delivery it came with: the unsubscribe then counts as a click on it.
+// The link may also name the delivery it came with: following it then counts as a click on it.
 
 /** Also the code its clicks are tracked under. */
 export const NAME = "unsubscribe";
@@ -48,15 +48,15 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   const target = await read(app, path.slice(PATH.length + 1));
   if (!target) return page(ctx, await t`This unsubscribe link is not valid.`, false, 404);
 
-  const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
-  if (ctx.req.method !== "POST") {
-    return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
-  }
-  await app.db.table("usr_grp").delete({ usr_id: target.usrId, grp_id: target.grpId }); // leave the group, idempotent
-  // a click on the message it came with; a deleted delivery fails on the missing parent
-  if (target.deliveryId) {
+  const post = ctx.req.method === "POST";
+  // following the link is the click, like any link of the message; one-click comes without a visit.
+  // A deleted delivery fails on the missing parent
+  if (target.deliveryId && (!post || ctx.req.body?.["List-Unsubscribe"] === "One-Click")) {
     app.db.table("message_track").insert({ delivery_id: target.deliveryId, code: NAME, kind: "click", time: unixTime() }).catch(() => {});
   }
+  const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
+  if (!post) return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
+  await app.db.table("usr_grp").delete({ usr_id: target.usrId, grp_id: target.grpId }); // leave the group, idempotent
   return page(ctx, group ? await t`You have been removed from ${group}.` : await t`You have been removed.`);
 }
 

@@ -57,20 +57,29 @@ test("a get asks and drops nobody; the post is what unsubscribes", async () => {
   await a.db.close();
 });
 
-test("a link that names its delivery counts the unsubscribe as a click on it; older links still work", async () => {
+test("following a link that names its delivery is a click on it; one-click too; older links still work", async () => {
   const a = await app();
   const path = (await link(a, 7, 1, 42)).replace("https://qino.test/", "");
+  const clicks = async () => (await new Promise((resolve) => setTimeout(resolve, 0)), await a.db.query`SELECT delivery_id, code, kind FROM message_track`);
   await call(a, path);
-  assertEquals(await a.db.one`SELECT COUNT(*) FROM message_track`, 0, "asking is no click: scanners fetch links");
+  assertEquals(await clicks(), [{ delivery_id: 42, code: "unsubscribe", kind: "click" }], "opening the link is the click");
+  assertEquals(await members(a), 1);
   await call(a, path, "POST");
-  await new Promise((resolve) => setTimeout(resolve, 0)); // the click is written in the background
+  assertEquals((await clicks()).length, 1, "confirming is no second click");
   assertEquals(await members(a), 0);
-  assertEquals(await a.db.query`SELECT delivery_id, code, kind FROM message_track`, [{ delivery_id: 42, code: "unsubscribe", kind: "click" }]);
+
+  // the mail client's button posts without a visit
+  await a.db.table("usr_grp").insert({ usr_id: 7, grp_id: 1 });
+  const ctx = await testContext({ url: "https://qino.test/" + path, method: "POST", app: a,
+    headers: { "content-type": "application/x-www-form-urlencoded" }, body: "List-Unsubscribe=One-Click" });
+  await serveUnsubscribe(ctx as Ctx).catch((e) => { if (!(e instanceof Output)) throw e; });
+  assertEquals((await clicks()).length, 2);
+  assertEquals(await members(a), 0);
 
   await a.db.table("usr_grp").insert({ usr_id: 7, grp_id: 1 });
   await call(a, (await link(a, 7, 1)).replace("https://qino.test/", ""), "POST");
   assertEquals(await members(a), 0, "a link without delivery unsubscribes as before");
-  assertEquals(await a.db.one`SELECT COUNT(*) FROM message_track`, 1);
+  assertEquals((await clicks()).length, 2);
   await a.db.close();
 });
 

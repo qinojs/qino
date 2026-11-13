@@ -144,6 +144,10 @@ function listRows(app: App, id?: number) {
     GROUP BY g.id, g.name ORDER BY g.name`;
 }
 
+/** The delivery's recipient is off the list: with a click on the unsubscribe link, they left.
+ *  Opening the link alone is a click too, and someone removed by hand never clicked it. */
+const left = (grp: Sql | unknown) => sql`NOT EXISTS (SELECT 1 FROM usr_grp ug WHERE ug.usr_id = d.usr_id AND ug.grp_id = ${grp})`;
+
 /** Issues with their delivery counts and, per recipient, whether they opened or clicked. A click
  *  also counts as open: clients block the pixel, not links. */
 async function issueRows(app: App, id?: number) {
@@ -163,8 +167,8 @@ async function issueRows(app: App, id?: number) {
   const hits = new Map((await app.db.query`
     SELECT d.message_id, COUNT(DISTINCT t.delivery_id) AS opened,
       COUNT(DISTINCT CASE WHEN t.kind = ${"click"} THEN t.delivery_id END) AS clicked,
-      COUNT(DISTINCT CASE WHEN t.code = ${unsubscribeCode} THEN t.delivery_id END) AS unsubscribed
-    FROM message_delivery d JOIN message_track t ON t.delivery_id = d.id
+      COUNT(DISTINCT CASE WHEN t.code = ${unsubscribeCode} AND ${left(sql`m.grp_id`)} THEN t.delivery_id END) AS unsubscribed
+    FROM message_delivery d JOIN message m ON m.id = d.message_id JOIN message_track t ON t.delivery_id = d.id
     WHERE ${sql.in("d.message_id", rows.map((row) => row.id))}
     GROUP BY d.message_id`).map((row) => [Number(row.message_id), row]));
   for (const row of rows) {
@@ -365,7 +369,7 @@ async function report(node: Node, row: Row) {
       SELECT d.address, d.sent, d.due, d.error, u.given_name, u.family_name,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks,
-        (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.code = ${unsubscribeCode}) AS unsubscribed
+        (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.code = ${unsubscribeCode} AND ${left(row.grp_id)}) AS unsubscribed
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
       WHERE d.message_id = ${id} ORDER BY d.address`,
     db.query`
