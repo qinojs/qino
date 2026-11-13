@@ -108,6 +108,11 @@ test("a draft is a message without deliveries; sending makes them for the list a
     const report = await page(app, `?issue=${id}`);
     assertStringIncludes(report.out, "three@qino.test");
     assertStringIncludes(report.out, "Sent");
+    // a failure shows its kind; the server's words stay, on hover
+    await app.db.exec`UPDATE message_delivery SET error = ${"550 5.1.1 <two@qino.test>: User unknown"} WHERE address = ${"two@qino.test"}`;
+    const failed = (await page(app, `?issue=${id}`)).out;
+    assertStringIncludes(failed, ">Address does not exist</span>");
+    assertStringIncludes(failed, 'title="550 5.1.1 &lt;two@qino.test&gt;: User unknown"');
     await edit("Late").then(() => assert(false, "a sent issue stays as it went out"), () => {});
     assertEquals(await app.db.one`SELECT title FROM message WHERE id = ${id}`, "Hello");
   } finally {

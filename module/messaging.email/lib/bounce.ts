@@ -48,3 +48,38 @@ export async function bounced(app: App, mail: ParsedMail, failed: { address: str
     if (mailed) await contactError(app.db, "email", address, reason);
   }
 }
+
+/** What went wrong with a delivery, as a kind a list can show and translate. */
+export type Failure = "address" | "domain" | "full" | "disabled" | "size" | "refused" | "later" | "other";
+
+/** By enhanced status code (RFC 3463) first, then by the wording servers commonly use. */
+const KINDS: [Failure, RegExp, RegExp][] = [
+  ["address", /^5\.1\.(1|6|10)$/, /user unknown|unknown (user|recipient)|no such user|does not exist|not found|mailbox unavailable|invalid recipient/i],
+  ["domain", /^5\.(1\.2|4\.4)$/, /domain not found|host not found|no mx|nxdomain|name or service not known/i],
+  ["full", /^[45]\.2\.2$/, /quota|mailbox (is )?full|insufficient storage/i],
+  ["disabled", /^5\.2\.1$/, /disabled|inactive|suspended|deactivated/i],
+  ["size", /^[45]\.3\.4$/, /too (large|big)|size limit/i],
+  ["refused", /^5\.7\.\d+$/, /spam|blocked|blacklist|policy|reputation|spf|dkim|dmarc|not accepted|rejected/i],
+  ["later", /^4\./, /^4\d\d\b/],
+];
+
+/** The kind of a delivery error — the server's reply itself stays on the delivery. */
+export function failure(error: string): Failure {
+  const code = error.match(/\b[245]\.\d{1,3}\.\d{1,3}\b/)?.[0];
+  if (code) for (const [kind, codes] of KINDS) if (codes.test(code)) return kind;
+  return KINDS.find(([, , words]) => words.test(error))?.[0] ?? "other";
+}
+
+/** A delivery error in a few words, in the reader's language. */
+export function failureText(app: App, error: string): Promise<string> {
+  const t = app.t.in("messaging.email");
+  const kind = failure(error);
+  if (kind === "address") return t`Address does not exist`;
+  if (kind === "domain") return t`Domain does not exist`;
+  if (kind === "full") return t`Mailbox full`;
+  if (kind === "disabled") return t`Mailbox disabled`;
+  if (kind === "size") return t`Message too large`;
+  if (kind === "refused") return t`Refused by the receiving server`;
+  if (kind === "later") return t`Not delivered yet`;
+  return t`Not delivered`;
+}

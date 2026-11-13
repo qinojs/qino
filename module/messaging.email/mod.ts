@@ -10,6 +10,7 @@ import { createMessage, transport } from "./lib/transport.ts";
 import type { App, Row } from "@qino/qino";
 import type { Attachment, Channel, Msg, Rendering, To } from "@qino/qino/messaging";
 
+export { failure, failureText } from "./lib/bounce.ts";
 export { receive } from "./lib/inbound.ts";
 export { setTransport } from "./lib/transport.ts";
 

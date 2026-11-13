@@ -2,7 +2,7 @@ import { addContact, contactKey, contactOwner, getCtx, hee, html, modulePlacehol
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 import { record, release, template, templated } from "@qino/qino/messaging";
-import { send } from "@qino/qino/messaging.email";
+import { failureText, send } from "@qino/qino/messaging.email";
 
 import { CHANNEL, TYPE } from "./setup.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -410,7 +410,8 @@ async function report(node: Node, row: Row) {
         <td>${d.opened ? u2.el.time(d.opened, { narrow: true }) : ""}
         <td>${Number(d.clicks) || ""}
         <td>${d.error
-          ? html`<span class=u2-badge style="--color-dark:var(--red)" title="${d.error}">${d.error}</span>`
+          // the kind in a few words; what the server said stays on the delivery, shown on hover
+          ? html.async`<span class=u2-badge style="--color-dark:var(--red)" title="${d.error}">${failureText(app, String(d.error))}</span>`
           : d.sent ? "✓" : html.async`${t`due`} ${u2.el.time(d.due)}`}`)}
     </table>
   </div>

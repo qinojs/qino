@@ -1,0 +1,10 @@
+{
+  "Address does not exist": "Adresse existiert nicht",
+  "Domain does not exist": "Domain existiert nicht",
+  "Mailbox full": "Postfach voll",
+  "Mailbox disabled": "Postfach deaktiviert",
+  "Message too large": "Nachricht zu gross",
+  "Refused by the receiving server": "Vom empfangenden Server abgelehnt",
+  "Not delivered yet": "Noch nicht zugestellt",
+  "Not delivered": "Nicht zugestellt"
+}

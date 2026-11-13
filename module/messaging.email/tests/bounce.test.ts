@@ -3,7 +3,7 @@ import { Db } from "@qino/qino";
 import { assert, assertEquals, contactDbSchema, messagingDbSchema } from "@qino/qino/tests";
 import { simpleParser } from "mailparser";
 
-import { bounced, bounces } from "../lib/bounce.ts";
+import { bounced, bounces, failure } from "../lib/bounce.ts";
 
 import type { App } from "@qino/qino";
 
@@ -78,4 +78,18 @@ test("a bounce marks the delivery it answers and the contact", async () => {
   assertEquals(await db.one`SELECT COUNT(*) FROM message_delivery WHERE error IS NOT NULL`, 1, "a report about a mail never sent changes nothing");
   assertEquals(newer, answered + 1);
   await db.close();
+});
+
+test("a delivery error comes down to its kind, by status code or by wording", () => {
+  const replies: [string, string][] = [
+    ["550-5.1.1 The email account that you tried to reach does not exist. Please try 550-5.1.1 double-checking", "address"],
+    ["550 5.1.1 <a@b.test>: Recipient address rejected: User unknown in virtual mailbox table", "address"],
+    ["550 5.1.10 RESOLVER.ADR.RecipientNotFound; Recipient p@b.test not found by SMTP address lookup", "address"],
+    ["550-Requested action not taken: mailbox unavailable 550 For explanation visit https://postmaster.web.de/en/case?c=r1601", "address"],
+    ["550-5.7.1 Messages with multiple addresses in From: header are 550-5.7.1 not accepted.", "refused"],
+    ["552 5.2.2 Mailbox full", "full"],
+    ["451 Temporary local problem", "later"],
+    ["mail sending failed", "other"],
+  ];
+  for (const [reply, kind] of replies) assertEquals(failure(reply), kind, reply);
 });
