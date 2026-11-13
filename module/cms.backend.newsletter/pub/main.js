@@ -18,10 +18,18 @@ cms.initNode("backend.newsletter", (el) => {
   form.addEventListener("input", (event) => { if (event.target === form.text) refresh(); });
   form.template.addEventListener("change", refresh);
 
+  // only ahead: the picker starts at the next minute, in local time like its value
+  const ahead = () => {
+    const next = new Date(Date.now() + 60000 - new Date().getTimezoneOffset() * 60000);
+    form.when.min = next.toISOString().slice(0, 16);
+  };
+  ahead();
+  form.when.addEventListener("focus", ahead);
+
   // the picker is local time; the server gets the moment
   form.addEventListener("submit", (event) => {
     form.at.value = form.when.value ? String(Math.floor(new Date(form.when.value).getTime() / 1000)) : "";
-    if (event.submitter?.name === "schedule" && !form.at.value) {
+    if (event.submitter?.name === "schedule" && !(Number(form.at.value) > Date.now() / 1000)) {
       event.preventDefault();
       form.when.focus();
     }

@@ -93,5 +93,6 @@
   "Hello {{givenName|there}}": "Hallo {{givenName|zusammen}}",
   "You receive this newsletter because you subscribed to it.": "Du erhältst diesen Newsletter, weil du ihn abonniert hast.",
   "Unsubscribe": "Abmelden",
-  "Opens and clicks are only counted with the module shorturl.": "Öffnungen und Klicks werden nur mit dem Modul shorturl gezählt."
+  "Opens and clicks are only counted with the module shorturl.": "Öffnungen und Klicks werden nur mit dem Modul shorturl gezählt.",
+  "Choose a time in the future.": "Wähle einen Zeitpunkt in der Zukunft."
 }

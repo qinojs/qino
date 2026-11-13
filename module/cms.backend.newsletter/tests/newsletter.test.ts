@@ -80,6 +80,11 @@ test("a draft is a message without deliveries; sending makes them for the list a
     assertEquals(mails.length, 1);
     assertEquals(await app.db.one`SELECT COUNT(*) FROM message_delivery WHERE message_id = ${id}`, 0, "still a draft");
 
+    // only ahead: a time already past schedules nothing
+    const past = await page(app, `?issue=${id}`, { schedule: "1", at: String(unixTime() - 60), grp: String(list), title: "Hello", template: "", text: "<p>News</p>" });
+    assertStringIncludes(past.out, "Choose a time in the future.");
+    assertEquals(await app.db.one`SELECT COUNT(*) FROM message_delivery WHERE message_id = ${id}`, 0);
+
     // scheduled: deliveries wait in the outbox; cancelling makes it a draft again
     const later = unixTime() + 3600;
     await page(app, `?issue=${id}`, { schedule: "1", at: String(later), grp: String(list), title: "Hello", template: "", text: "<p>News</p>" });

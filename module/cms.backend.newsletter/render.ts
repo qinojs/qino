@@ -224,6 +224,7 @@ async function issueView(node: Node, id: number) {
     if ("send" in post || "schedule" in post) {
       const at = "schedule" in post ? Number(post.at) : unixTime();
       if (!(at > 0)) notice = html.async`<u2-alert open variant=warning>${t`Choose when to send it.`}</u2-alert>`;
+      else if ("schedule" in post && at <= unixTime()) notice = html.async`<u2-alert open variant=warning>${t`Choose a time in the future.`}</u2-alert>`;
       else if (!str(row.title)) notice = html.async`<u2-alert open variant=warning>${t`The newsletter needs a subject.`}</u2-alert>`;
       else {
         await release(app, id, at);
