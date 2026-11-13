@@ -50,7 +50,7 @@ export async function renderer(
       const id = Number(to.deliveryId);
       if (!id) return out; // no delivery: links stay short but untracked
       const mark = await marking(id);
-      const html = out.html && mark(beacon ? inBody(out.html, `<img src="${beacon}" width="1" height="1" alt="">`) : out.html);
+      const html = out.html && mark(beacon ? inBody(out.html, `<img src="${beacon}" width="3" height="1" alt="">`) : out.html);
       return { text: mark(out.text), html };
     },
   };
