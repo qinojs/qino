@@ -39,6 +39,19 @@ async function close(app: App) {
   await fs.remove(app.dir, { recursive: true });
 }
 
+test("a sender name with a comma is quoted, or the From header holds two addresses", async () => {
+  const app = await makeApp();
+  const sent: Record<string, unknown>[] = [];
+  setTransport(app, { send: (message) => (sent.push(message as Record<string, unknown>), Promise.resolve({ successful: true, messageId: "<q@qino.test>" })) });
+  (app.settings as Record<string, Record<string, unknown>>)["messaging.email"].name = 'Ada "A", Example';
+
+  await send(app, { usr: 1 }, "Hello");
+  assertEquals(sent[0].sender, { address: "app@qino.test", name: '"Ada \\"A\\", Example"' });
+  assertEquals((sent[0].recipients as unknown[])[0], { address: "one@qino.test", name: "One User" }, "a plain name stays as it is");
+
+  await close(app);
+});
+
 test("a mail to a user reaches their address and lands in the journal", async () => {
   const app = await makeApp();
   const sent: Record<string, unknown>[] = [];

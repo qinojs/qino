@@ -16,7 +16,14 @@ export function addressOf(input: string | { address?: string; email?: string; na
   return { address, name: name || undefined, usrId: typeof input === "object" ? input.usrId : undefined };
 }
 
-/** The `Name <a@b.c>` form a transport expects. */
-export function formatAddress({ address, name }: { address: string; name?: string }): string {
-  return name ? `${name.replace(/"/g, '\\"')} <${address}>` : address;
+/** RFC 5322 specials: an ASCII display name holding one must be a quoted string. */
+const SPECIALS = /[()<>[\]:;@\\,."]/;
+
+/** The mailbox a transport sends to or from. Upyo writes an ASCII name as given, so a name like
+ *  `Ada, Example` is quoted here — unquoted, its comma splits the header into two addresses.
+ *  Non-ASCII names become encoded words, which need no quotes. */
+export function formatAddress({ address, name }: { address: string; name?: string }): { address: string; name?: string } {
+  if (!name) return { address };
+  const quote = /^[\x20-\x7E]*$/.test(name) && SPECIALS.test(name);
+  return { address, name: quote ? `"${name.replace(/[\\"]/g, "\\$&")}"` : name };
 }
