@@ -50,11 +50,14 @@ export async function renderer(
       const id = Number(to.deliveryId);
       if (!id) return out; // no delivery: links stay short but untracked
       const mark = await marking(id);
-      const html = out.html && mark(out.html + (beacon ? `<img src="${beacon}" width="1" height="1" alt="">` : ""));
+      const html = out.html && mark(beacon ? inBody(out.html, `<img src="${beacon}" width="1" height="1" alt="">`) : out.html);
       return { text: mark(out.text), html };
     },
   };
 }
+
+/** Markup at the end of the body: after `</html>` it would stand outside the document. */
+const inBody = (html: string, end: string) => /<\/body>/i.test(html) ? html.replace(/<\/body>/i, end + "$&") : html + end;
 
 /** A placeholder value per recipient, as text and html. */
 export type Computed = Record<string, TemplateValue>;
