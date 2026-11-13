@@ -1,5 +1,6 @@
 [qcms-mod="backend.newsletter"] {
   & .u2-card > .-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  & .u2-card > .-head > * { flex: 0 1 auto; }
   & .-head > .-back { margin-inline-start: auto; font-weight: normal; }
   & .-inline { display: flex; gap: .5rem; align-items: center; }
   & .-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
