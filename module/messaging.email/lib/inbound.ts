@@ -2,7 +2,7 @@ import { contactOwner, sha256hex, unixTime } from "@qino/qino";
 import { record } from "@qino/qino/messaging";
 
 import { addressOf } from "./address.ts";
-import { bounced, bounces } from "./bounce.ts";
+import { reported } from "./bounce.ts";
 import { inbound } from "./settings.ts";
 import { spamOf } from "./spam.ts";
 
@@ -62,10 +62,9 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
             ? await sha256hex(mail.messageId)
             : new Uint8Array(await crypto.subtle.digest("SHA-256", source!.slice())).toHex();
           const fresh = !await taken(app, receipt, mail.messageId);
-          const dead = fresh ? bounces(mail) : [];
           // a report that found its delivery is used up: a signal, no conversation. Any other goes
           // to the journal, judged before the transaction: on SQLite it holds every other query
-          const used = dead.length > 0 && await bounced(app, mail, dead);
+          const used = fresh && await reported(app, mail);
           const write = fresh && !used && await journal(app, mail, config.address);
           await app.db.transaction(async () => {
             if (write) await write();

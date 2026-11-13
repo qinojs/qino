@@ -1,22 +1,47 @@
 import { contactError, sql } from "@qino/qino";
+import { track, unsubscribeCode } from "@qino/qino/messaging";
 
 import { addressOf } from "./address.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Row } from "@qino/qino";
 import type { ParsedMail } from "mailparser";
 
-// Delivery status notifications (RFC 3464): a server reporting that a mail could not be delivered.
-// mailparser keeps the status part in `text`, so the report type decides whether it is one.
+// What a server reports back about a mail of ours: that it could not be delivered (RFC 3464, or
+// plain text from older servers) or that the recipient called it spam (ARF, RFC 5965). Each names
+// our mail by its Message-ID; a report that finds its delivery is used up, any other is a mail.
 
-/** A recipient a status report says failed permanently, with the server's reason. */
-type Failed = { address: string; reason: string; status: string };
+/** A recipient a report says failed permanently, with the server's reason. Plain text names none. */
+type Failed = { address?: string; reason: string; status: string };
 
-/** The recipients a status report says failed permanently. */
-export function bounces(mail: ParsedMail): Failed[] {
+/** `report-type` of a `multipart/report`. mailparser keeps its status part in `text`. */
+function reportType(mail: ParsedMail) {
   const type = mail.headers.get("content-type") as { value?: string; params?: Record<string, string> } | undefined;
-  if (type?.value !== "multipart/report" || type.params?.["report-type"] !== "delivery-status") return [];
-  // per-recipient fields follow the per-message block, each block ends with a blank line
-  return String(mail.text ?? "").split(/\r?\n[ \t]*\r?\n/).flatMap((block) => {
+  return type?.value === "multipart/report" ? type.params?.["report-type"] : undefined;
+}
+
+/** Handle a report about a mail we sent; resolves with whether it found its delivery. */
+export async function reported(app: App, mail: ParsedMail): Promise<boolean> {
+  if (reportType(mail) === "feedback-report") return complained(app, mail);
+  const failed = bounces(mail);
+  return failed.length > 0 && bounced(app, mail, failed);
+}
+
+/** The recipients a report says failed permanently. A plain one comes from the null sender every
+ *  bounce has; its first permanent SMTP reply is the reason. */
+export function bounces(mail: ParsedMail): Failed[] {
+  const type = reportType(mail);
+  if (type === "delivery-status") return statuses(String(mail.text ?? ""));
+  const sender = mail.headers.get("return-path") as { text?: string } | undefined;
+  if (type || sender?.text !== "") return [];
+  const reply = String(mail.text ?? "").match(/\b5\d\d[ -](?:(5\.\d{1,3}\.\d{1,3})\s)?[^\r\n]+/);
+  if (!reply) return [];
+  const reason = reply[0].trim().slice(0, 255);
+  return [{ reason, status: reply[1] ?? (failure(reason) === "refused" ? "5.7.0" : "5.0.0") }];
+}
+
+/** Per-recipient fields follow the per-message block, each block ends with a blank line. */
+function statuses(text: string): Failed[] {
+  return text.split(/\r?\n[ \t]*\r?\n/).flatMap((block) => {
     const field = (name: string) =>
       block.match(new RegExp(`^${name}:[ \\t]*(.*(?:\\r?\\n[ \\t].*)*)`, "im"))?.[1].replace(/\s+/g, " ").trim();
     const address = addressOf(field("Final-Recipient")?.replace(/^rfc822;/i, "") ?? "")?.address;
@@ -26,31 +51,39 @@ export function bounces(mail: ParsedMail): Failed[] {
   });
 }
 
-/** The Message-ID of the returned mail, from its attached headers or copy. */
-function returned(mail: ParsedMail) {
+const ours = sql`FROM message_delivery d JOIN message m ON m.id = d.message_id
+  WHERE m.channel = ${"email"} AND m.direction = ${"out"} AND d.sent IS NOT NULL`;
+
+/** The delivery a report is about: the one whose Message-ID it returns, in an attached copy or its
+ *  text — each has its own, and guessing is worse than not knowing. */
+function delivery(app: App, mail: ParsedMail): Promise<Row | undefined> {
   const part = mail.attachments?.find((a) => a.contentType === "text/rfc822-headers" || a.contentType === "message/rfc822");
-  return part?.content.toString().match(/^Message-ID:\s*(<[^>\r\n]+>)/im)?.[1];
+  const messageId = `${part?.content.toString() ?? ""}\n${mail.text ?? ""}`.match(/^[\s>]*Message-ID:\s*(<[^>\r\n]+>)/im)?.[1]; // quoted, too
+  return messageId ? app.db.row`SELECT d.id, d.address, d.usr_id, m.grp_id ${ours} AND d.external_id = ${messageId}` : Promise.resolve(undefined);
 }
 
 /**
- * Note the failures; resolves with whether the report found its delivery.
- *
- * The delivery is the one whose `Message-ID` the report returns — each has its own, and guessing is
- * worse than not knowing. It gets the server's reason whatever failed, a forward included. The
+ * Note the failures. The delivery gets the server's reason whatever failed, a forward included. The
  * contact is marked only if this app ever mailed the address, and not for `5.7.x`: that is a policy
  * verdict about the sender, not the mailbox.
  */
 export async function bounced(app: App, mail: ParsedMail, failed: Failed[]): Promise<boolean> {
-  const ours = sql`FROM message_delivery d JOIN message m ON m.id = d.message_id
-    WHERE m.channel = ${"email"} AND m.direction = ${"out"} AND d.sent IS NOT NULL`;
-  const messageId = returned(mail);
-  const delivery = messageId && await app.db.one`SELECT d.id ${ours} AND d.external_id = ${messageId}`;
-  if (delivery) await app.db.table("message_delivery").update(Number(delivery), { error: failed[0].reason });
-  for (const { address, reason, status } of failed) {
-    if (status.startsWith("5.7.")) continue;
+  const found = await delivery(app, mail);
+  if (found) await app.db.table("message_delivery").update(Number(found.id), { error: failed[0].reason });
+  for (const { address = found?.address, reason, status } of failed) {
+    if (!address || status.startsWith("5.7.")) continue;
     if (await app.db.one`SELECT d.id ${ours} AND d.address = ${address} LIMIT 1`) await contactError(app.db, "email", address, reason);
   }
-  return !!delivery;
+  return !!found;
+}
+
+/** A spam complaint: the recipient wants no more of it. They leave the group, as if unsubscribing. */
+async function complained(app: App, mail: ParsedMail): Promise<boolean> {
+  const found = await delivery(app, mail);
+  if (!found) return false;
+  track(app, Number(found.id), unsubscribeCode, "click");
+  if (found.usr_id && found.grp_id) await app.db.table("usr_grp").delete({ usr_id: found.usr_id, grp_id: found.grp_id });
+  return true;
 }
 
 /** What went wrong with a delivery, as a kind a list can show and translate. */

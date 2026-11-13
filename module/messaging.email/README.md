@@ -59,8 +59,15 @@ Each permanent failure (`Action: failed`, `Status: 5.x.x`) puts the server's rea
 whose `Message-ID` the report returns — every mail gets its own from here, kept as `external_id`;
 guessing which one it was is worse than not knowing. The contact (`usr_contact.error`) is marked
 too, if this app ever mailed the address, but not for `5.7.x`: that is a policy verdict about the
-sender, not the mailbox. A report that found its delivery is used up and not journaled; one that
-found none stays in the journal like any incoming mail. Providers that bounce over webhooks (Mailgun, SES …)
+sender, not the mailbox. Older servers bounce in plain text: from the null sender (`Return-Path:
+<>`) with our `Message-ID` in the quoted mail, their first `5xx` reply is the reason.
+
+A spam complaint (ARF, `report-type=feedback-report`) takes the recipient off the group, as if they
+had unsubscribed. Providers send them only to who signed up for their feedback loop (Microsoft
+JMRP, Yahoo CFL) — with the system `address`, they arrive here.
+
+A report that found its delivery is used up and not journaled; one that found none stays in the
+journal like any incoming mail. Providers that bounce over webhooks (Mailgun, SES …)
 are not read yet.
 
 ## Settings

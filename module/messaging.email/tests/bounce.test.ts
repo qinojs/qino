@@ -3,7 +3,7 @@ import { Db } from "@qino/qino";
 import { assert, assertEquals, contactDbSchema, messagingDbSchema } from "@qino/qino/tests";
 import { simpleParser } from "mailparser";
 
-import { bounced, bounces, failure } from "../lib/bounce.ts";
+import { bounced, bounces, failure, reported } from "../lib/bounce.ts";
 
 import type { App } from "@qino/qino";
 
@@ -102,4 +102,59 @@ test("a delivery error comes down to its kind, by status code or by wording", ()
     ["mail sending failed", "other"],
   ];
   for (const [reply, kind] of replies) assertEquals(failure(reply), kind, reply);
+});
+
+test("an older server's plain bounce and a spam complaint find their delivery by its Message-ID", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.migrate({ properties: { ...messagingDbSchema.properties, ...contactDbSchema.properties } });
+  await db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER, PRIMARY KEY (usr_id, grp_id))`;
+  await db.loadTables();
+  await db.table("usr_contact").insert({ type: "email", address: "gone@example.test", usr_id: 1, main: true, created: 1 });
+  await db.table("usr_grp").insert({ usr_id: 1, grp_id: 3 });
+  const message = Number(await db.table("message").insert({ channel: "email", direction: "out", grp_id: 3, data: "{}", time: 1 }));
+  const delivery = Number(await db.table("message_delivery").insert({ message_id: message, usr_id: 1, address: "gone@example.test", external_id: "<7@qino.test>", sent: 1 }));
+  const app = { db } as unknown as App;
+
+  const plain = await simpleParser(`Return-Path: <>\nFrom: MAILER-DAEMON@old.example\nSubject: failure notice\n
+Sorry, I wasn't able to deliver your message.
+<gone@example.test>:
+550 5.1.1 Mailbox does not exist
+
+--- Below this line is a copy of the message.
+Message-ID: <7@qino.test>
+Subject: News
+`);
+  assertEquals(await reported(app, plain), true);
+  assertEquals(await db.one`SELECT error FROM message_delivery`, "550 5.1.1 Mailbox does not exist");
+  assertEquals(await db.one`SELECT error FROM usr_contact`, "550 5.1.1 Mailbox does not exist", "the delivery's address bounced");
+
+  const quoting = await simpleParser("From: someone@example.test\nSubject: Re: News\n\n550 5.1.1 Mailbox does not exist\nMessage-ID: <7@qino.test>\n");
+  assertEquals(await reported(app, quoting), false, "a person's mail is no bounce, whatever it quotes");
+
+  const complaint = await simpleParser(`From: staff@feedback.example
+Subject: complaint about message
+Content-Type: multipart/report; report-type=feedback-report; boundary="B"
+
+--B
+Content-Type: text/plain
+
+This is an email abuse report.
+
+--B
+Content-Type: message/feedback-report
+
+Feedback-Type: abuse
+
+--B
+Content-Type: text/rfc822-headers
+
+Message-ID: <7@qino.test>
+
+--B--
+`);
+  assertEquals(await reported(app, complaint), true);
+  await new Promise((resolve) => setTimeout(resolve, 0)); // tracked in the background
+  assertEquals(await db.one`SELECT COUNT(*) FROM usr_grp`, 0, "they leave the list");
+  assertEquals(await db.query`SELECT delivery_id, code, kind FROM message_track`, [{ delivery_id: delivery, code: "unsubscribe", kind: "click" }], "as if unsubscribing");
+  await db.close();
 });
