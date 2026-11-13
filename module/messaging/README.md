@@ -260,6 +260,10 @@ thousand people would need ten thousand rows, and last year's link must still wo
 **A GET only asks; only a POST unsubscribes.** Mail clients, scanners and link previews fetch
 links, and that must not unsubscribe anyone.
 
+**An unsubscribe is a click on the message it came with.** The link also names the delivery, so the
+POST adds a `message_track` click with the code `unsubscribe`. Removed by hand leaves no click; older
+links without the delivery still unsubscribe, credited to nothing.
+
 **Only recipients reached via the group get one.** `{ grp: 3, usr: 7 }` reaches user 7 even if they
 are not in group 3; for them the placeholder stays empty and no header is added.
 `unsubscribeGroup()` checks this once per send.

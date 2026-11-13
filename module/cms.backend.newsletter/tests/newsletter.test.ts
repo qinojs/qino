@@ -108,6 +108,12 @@ test("a draft is a message without deliveries; sending makes them for the list a
     const report = await page(app, `?issue=${id}`);
     assertStringIncludes(report.out, "three@qino.test");
     assertStringIncludes(report.out, "Sent");
+    // an unsubscribe is a click on the mail it came with
+    const one = await app.db.one`SELECT id FROM message_delivery WHERE address = ${"one@qino.test"}`;
+    await app.db.table("message_track").insert({ delivery_id: one, code: "unsubscribe", kind: "click", time: unixTime() });
+    const left = (await page(app, `?issue=${id}`)).out;
+    assertStringIncludes(left, "<b>1</b> unsubscribed");
+    assertStringIncludes(left, "<span class=u2-badge>unsubscribed</span>");
     // a failure shows its kind; the server's words stay, on hover
     await app.db.exec`UPDATE message_delivery SET error = ${"550 5.1.1 <two@qino.test>: User unknown"} WHERE address = ${"two@qino.test"}`;
     const failed = (await page(app, `?issue=${id}`)).out;

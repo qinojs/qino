@@ -47,6 +47,7 @@
   "reached": "zugestellt",
   "opened": "geöffnet",
   "clicked": "geklickt",
+  "unsubscribed": "abgemeldet",
   "failed": "fehlgeschlagen",
   "pending": "ausstehend",
   "Duplicate as draft": "Als Entwurf duplizieren",

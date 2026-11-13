@@ -1,7 +1,7 @@
 import { addContact, contactKey, contactOwner, getCtx, hee, html, modulePlaceholders, Output, placeholderNames, safeEqual, sql, sqlSearch, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
-import { record, release, template, templated } from "@qino/qino/messaging";
+import { record, release, template, templated, unsubscribeCode } from "@qino/qino/messaging";
 import { failureText, send } from "@qino/qino/messaging.email";
 
 import { CHANNEL, TYPE } from "./setup.ts";
@@ -162,7 +162,8 @@ async function issueRows(app: App, id?: number) {
   if (!rows.length) return rows;
   const hits = new Map((await app.db.query`
     SELECT d.message_id, COUNT(DISTINCT t.delivery_id) AS opened,
-      COUNT(DISTINCT CASE WHEN t.kind = ${"click"} THEN t.delivery_id END) AS clicked
+      COUNT(DISTINCT CASE WHEN t.kind = ${"click"} THEN t.delivery_id END) AS clicked,
+      COUNT(DISTINCT CASE WHEN t.code = ${unsubscribeCode} THEN t.delivery_id END) AS unsubscribed
     FROM message_delivery d JOIN message_track t ON t.delivery_id = d.id
     WHERE ${sql.in("d.message_id", rows.map((row) => row.id))}
     GROUP BY d.message_id`).map((row) => [Number(row.message_id), row]));
@@ -170,6 +171,7 @@ async function issueRows(app: App, id?: number) {
     const hit = hits.get(Number(row.id));
     row.opened = hit?.opened ?? 0;
     row.clicked = hit?.clicked ?? 0;
+    row.unsubscribed = hit?.unsubscribed ?? 0;
   }
   return rows;
 }
@@ -362,7 +364,8 @@ async function report(node: Node, row: Row) {
     db.query`
       SELECT d.address, d.sent, d.due, d.error, u.given_name, u.family_name,
         (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
-        (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks
+        (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks,
+        (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.code = ${unsubscribeCode}) AS unsubscribed
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
       WHERE d.message_id = ${id} ORDER BY d.address`,
     db.query`
@@ -373,8 +376,9 @@ async function report(node: Node, row: Row) {
     here(node),
   ]);
   // shorturl knows what a code stands for; without it the code stands for itself
-  const urls = new Map(links.length
-    ? (await db.query`SELECT code, url FROM shorturl WHERE ${sql.in("code", links.map((l) => l.code))}`.catch(() => [])).map((l) => [l.code, l.url])
+  const codes = links.map((l) => l.code).filter((code) => code !== unsubscribeCode); // that one is ours, not short
+  const urls = new Map(codes.length
+    ? (await db.query`SELECT code, url FROM shorturl WHERE ${sql.in("code", codes)}`.catch(() => [])).map((l) => [l.code, l.url])
     : []);
   const scheduled = Number(row.pending) && !Number(row.reached);
   const stat = (label: Promise<string>, value: unknown, note: unknown = "") =>
@@ -389,6 +393,7 @@ async function report(node: Node, row: Row) {
       ${stat(t`reached`, Number(row.reached))}
       ${stat(t`opened`, Number(row.opened), percent(row.opened, row.reached))}
       ${stat(t`clicked`, Number(row.clicked), percent(row.clicked, row.reached))}
+      ${stat(t`unsubscribed`, Number(row.unsubscribed), percent(row.unsubscribed, row.reached))}
       ${Number(row.failed) ? stat(t`failed`, Number(row.failed)) : ""}
       ${Number(row.pending) ? stat(t`pending`, Number(row.pending)) : ""}
     </div>
@@ -412,6 +417,7 @@ async function report(node: Node, row: Row) {
         <td>${d.error
           // the kind in a few words; what the server said stays on the delivery, shown on hover
           ? html.async`<span class=u2-badge style="--color-dark:var(--red)" title="${d.error}">${failureText(app, String(d.error))}</span>`
+          : Number(d.unsubscribed) ? html.async`<span class=u2-badge>${t`unsubscribed`}</span>`
           : d.sent ? "✓" : html.async`${t`due`} ${u2.el.time(d.due)}`}`)}
     </table>
   </div>
@@ -423,8 +429,9 @@ async function report(node: Node, row: Row) {
           <th>${t`Link`}
           <th>${t`Clicks`}
           <th>${t`People`}
-        <tbody>${links.length ? links.map((l) => html`<tr>
-          <td>${urls.has(l.code) ? html`<a href="${urls.get(l.code)}" target=_blank rel=noreferrer>${urls.get(l.code)}</a>` : l.code}
+        <tbody>${links.length ? links.map((l) => html.async`<tr>
+          <td>${l.code === unsubscribeCode ? t`Unsubscribe`
+            : urls.has(l.code) ? html`<a href="${urls.get(l.code)}" target=_blank rel=noreferrer>${urls.get(l.code)}</a>` : l.code}
           <td>${Number(l.clicks)}
           <td>${Number(l.people)}`) : html.async`<tr><td colspan=3>${t`No clicks yet.`}`}
       </table>

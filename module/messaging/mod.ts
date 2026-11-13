@@ -13,7 +13,7 @@ export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verif
 export { contactRecipients } from "./lib/contact.ts";
 export { ChannelError, delivered, run as outbox } from "./lib/outbox.ts";
 export type { Rendering } from "./lib/dispatch.ts";
-export { headers as unsubscribeHeaders } from "./lib/unsubscribe.ts";
+export { headers as unsubscribeHeaders, NAME as unsubscribeCode } from "./lib/unsubscribe.ts";
 export { htmlOf, textOf } from "./lib/format.ts";
 export { htmlToText } from "./lib/htmlText.ts";
 export { placeholderName, renderer, saveTemplate, template, templated, templates } from "./lib/template.ts";

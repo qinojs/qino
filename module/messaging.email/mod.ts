@@ -60,7 +60,7 @@ async function deliver(app: App, rows: Row[], msg: Msg & { replyTo?: string }, {
     // every mail carries a text part: plain readers and spam filters both want one
     const { text, html } = await render(row);
     // only where there is something to leave: the client's one-click way to the same link
-    const leaving = uses.has("unsubscribe") && usrId && grpId ? await unsubscribeHeaders(app, usrId, grpId) : undefined;
+    const leaving = uses.has("unsubscribe") && usrId && grpId ? await unsubscribeHeaders(app, usrId, grpId, Number(row.id)) : undefined;
     // our own Message-ID: bounces and replies name the mail by it, a transport's receipt id they don't know
     const messageId = `${crypto.randomUUID()}@${domain}`;
     const failure = await transmit(mailer, {

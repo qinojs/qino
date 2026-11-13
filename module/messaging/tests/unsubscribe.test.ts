@@ -13,6 +13,7 @@ async function app() {
   const db = new Db("sqlite::memory:");
   await db.exec`CREATE TABLE grp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
   await db.exec`CREATE TABLE usr_grp (usr_id INTEGER, grp_id INTEGER, PRIMARY KEY (usr_id, grp_id))`;
+  await db.exec`CREATE TABLE message_track (id INTEGER PRIMARY KEY AUTOINCREMENT, delivery_id INTEGER, code TEXT, kind TEXT, time INTEGER)`;
   await db.loadTables();
   await db.table("grp").insert({ name: "Newsletter" });
   await db.table("usr_grp").insert({ usr_id: 7, grp_id: 1 });
@@ -53,6 +54,23 @@ test("a get asks and drops nobody; the post is what unsubscribes", async () => {
 
   await call(a, path, "POST"); // following it twice is following it once
   assertEquals(await members(a), 0);
+  await a.db.close();
+});
+
+test("a link that names its delivery counts the unsubscribe as a click on it; older links still work", async () => {
+  const a = await app();
+  const path = (await link(a, 7, 1, 42)).replace("https://qino.test/", "");
+  await call(a, path);
+  assertEquals(await a.db.one`SELECT COUNT(*) FROM message_track`, 0, "asking is no click: scanners fetch links");
+  await call(a, path, "POST");
+  await new Promise((resolve) => setTimeout(resolve, 0)); // the click is written in the background
+  assertEquals(await members(a), 0);
+  assertEquals(await a.db.query`SELECT delivery_id, code, kind FROM message_track`, [{ delivery_id: 42, code: "unsubscribe", kind: "click" }]);
+
+  await a.db.table("usr_grp").insert({ usr_id: 7, grp_id: 1 });
+  await call(a, (await link(a, 7, 1)).replace("https://qino.test/", ""), "POST");
+  assertEquals(await members(a), 0, "a link without delivery unsubscribes as before");
+  assertEquals(await a.db.one`SELECT COUNT(*) FROM message_track`, 1);
   await a.db.close();
 });
 
