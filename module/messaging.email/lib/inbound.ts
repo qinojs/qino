@@ -61,12 +61,14 @@ export async function receive(app: App, { limit = 50, probe }: { limit?: number;
           const receipt = mail.messageId
             ? await sha256hex(mail.messageId)
             : new Uint8Array(await crypto.subtle.digest("SHA-256", source!.slice())).toHex();
-          // Judged before the transaction: on SQLite it holds every other query.
-          const write = !await taken(app, receipt, mail.messageId) && await journal(app, mail, config.address);
-          const dead = write ? bounces(mail) : [];
+          const fresh = !await taken(app, receipt, mail.messageId);
+          const dead = fresh ? bounces(mail) : [];
+          // a report that found its delivery is used up: a signal, no conversation. Any other goes
+          // to the journal, judged before the transaction: on SQLite it holds every other query
+          const used = dead.length > 0 && await bounced(app, mail, dead);
+          const write = fresh && !used && await journal(app, mail, config.address);
           await app.db.transaction(async () => {
             if (write) await write();
-            if (dead.length) await bounced(app, mail, dead);
             await app.db.table("email_receipt").ensure({ id: receipt });
             await inbox.ensure({ id, validity, uid: next, failed: 0 });
           });

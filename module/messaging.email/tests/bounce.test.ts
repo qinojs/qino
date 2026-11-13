@@ -38,13 +38,16 @@ Subject: News
 --B--
 `);
 
-test("only permanent failures about the mailbox count as bounces", async () => {
+test("only permanent failures count as bounces", async () => {
   const mail = await report([
     ["Gone@Example.test", "failed", "5.1.1"],
-    ["blocked@example.test", "failed", "5.7.1"], // policy: says nothing about the mailbox
+    ["blocked@example.test", "failed", "5.7.1"], // policy: not delivered all the same
     ["later@example.test", "delayed", "4.2.2"],
   ]);
-  assertEquals(bounces(mail), [{ address: "gone@example.test", reason: "550 5.1.1 <Gone@Example.test>: Recipient address rejected: User unknown" }]); // the server's words, verbatim
+  assertEquals(bounces(mail), [
+    { address: "gone@example.test", status: "5.1.1", reason: "550 5.1.1 <Gone@Example.test>: Recipient address rejected: User unknown" }, // the server's words, verbatim
+    { address: "blocked@example.test", status: "5.7.1", reason: "550 5.7.1 <blocked@example.test>: Recipient address rejected: User unknown" },
+  ]);
 
   const plain = await simpleParser("From: someone@example.test\nSubject: Re: News\n\nFinal-Recipient: rfc822; gone@example.test\nAction: failed\nStatus: 5.1.1\n");
   assertEquals(bounces(plain), [], "a mail quoting a report is no report");
@@ -63,13 +66,13 @@ test("a bounce marks the delivery it answers and the contact", async () => {
   const app = { db } as unknown as App;
 
   const mail = await report([["gone@example.test", "failed", "5.1.1"]], "<1@qino.test>");
-  await bounced(app, mail, bounces(mail));
+  assertEquals(await bounced(app, mail, bounces(mail)), true, "found its delivery: used up");
   assertEquals(await db.col`SELECT error IS NOT NULL FROM message_delivery ORDER BY id`, [1, 0], "the returned mail's delivery, not the latest");
   assertEquals(await db.one`SELECT error FROM usr_contact`, "550 5.1.1 <gone@example.test>: Recipient address rejected: User unknown");
 
   await db.exec`UPDATE usr_contact SET error = NULL`;
   const unnamed = await report([["gone@example.test", "failed", "5.1.1"]], "<elsewhere@mx.example>");
-  await bounced(app, unnamed, bounces(unnamed));
+  assertEquals(await bounced(app, unnamed, bounces(unnamed)), false, "found none: a mail for the journal");
   assertEquals(await db.col`SELECT error IS NOT NULL FROM message_delivery ORDER BY id`, [1, 0], "no guessing which delivery it was");
   assert(await db.one`SELECT error FROM usr_contact`, "but the address did bounce");
 
@@ -77,6 +80,13 @@ test("a bounce marks the delivery it answers and the contact", async () => {
   await bounced(app, unknown, bounces(unknown));
   assertEquals(await db.one`SELECT COUNT(*) FROM message_delivery WHERE error IS NOT NULL`, 1, "a report about a mail never sent changes nothing");
   assertEquals(newer, answered + 1);
+
+  // policy and forwards: the delivery failed, the mailbox says nothing
+  await db.exec`UPDATE usr_contact SET error = NULL`;
+  const refused = await report([["forward@elsewhere.test", "failed", "5.7.1"]], "<2@qino.test>");
+  assertEquals(await bounced(app, refused, bounces(refused)), true);
+  assertEquals(await db.col`SELECT error IS NOT NULL FROM message_delivery ORDER BY id`, [1, 1]);
+  assertEquals(await db.one`SELECT error FROM usr_contact`, null);
   await db.close();
 });
 

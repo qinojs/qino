@@ -8,8 +8,11 @@ import type { ParsedMail } from "mailparser";
 // Delivery status notifications (RFC 3464): a server reporting that a mail could not be delivered.
 // mailparser keeps the status part in `text`, so the report type decides whether it is one.
 
-/** The recipients a status report says failed permanently, with the server's reason. */
-export function bounces(mail: ParsedMail): { address: string; reason: string }[] {
+/** A recipient a status report says failed permanently, with the server's reason. */
+type Failed = { address: string; reason: string; status: string };
+
+/** The recipients a status report says failed permanently. */
+export function bounces(mail: ParsedMail): Failed[] {
   const type = mail.headers.get("content-type") as { value?: string; params?: Record<string, string> } | undefined;
   if (type?.value !== "multipart/report" || type.params?.["report-type"] !== "delivery-status") return [];
   // per-recipient fields follow the per-message block, each block ends with a blank line
@@ -18,9 +21,8 @@ export function bounces(mail: ParsedMail): { address: string; reason: string }[]
       block.match(new RegExp(`^${name}:[ \\t]*(.*(?:\\r?\\n[ \\t].*)*)`, "im"))?.[1].replace(/\s+/g, " ").trim();
     const address = addressOf(field("Final-Recipient")?.replace(/^rfc822;/i, "") ?? "")?.address;
     const status = field("Status") ?? "";
-    // 5.x.x is permanent; 5.7.x is policy (spam, reputation) and says nothing about the mailbox
-    if (!address || field("Action")?.toLowerCase() !== "failed" || !/^5\.(?!7\.)/.test(status)) return [];
-    return [{ address, reason: (field("Diagnostic-Code")?.replace(/^smtp;\s*/i, "") || status).slice(0, 255) }];
+    if (!address || field("Action")?.toLowerCase() !== "failed" || !/^5\./.test(status)) return []; // 5.x.x: permanent
+    return [{ address, status, reason: (field("Diagnostic-Code")?.replace(/^smtp;\s*/i, "") || status).slice(0, 255) }];
   });
 }
 
@@ -31,22 +33,24 @@ function returned(mail: ParsedMail) {
 }
 
 /**
- * Note each permanent failure on the contact, so the address shows as bounced — if this app ever
- * mailed it. The delivery is marked only if the report names the returned mail: guessing which one
- * it was is worse than not knowing.
+ * Note the failures; resolves with whether the report found its delivery.
+ *
+ * The delivery is the one whose `Message-ID` the report returns — each has its own, and guessing is
+ * worse than not knowing. It gets the server's reason whatever failed, a forward included. The
+ * contact is marked only if this app ever mailed the address, and not for `5.7.x`: that is a policy
+ * verdict about the sender, not the mailbox.
  */
-export async function bounced(app: App, mail: ParsedMail, failed: { address: string; reason: string }[]): Promise<void> {
-  const messageId = returned(mail) ?? "";
-  for (const { address, reason } of failed) {
-    const ours = sql`FROM message_delivery d JOIN message m ON m.id = d.message_id
-      WHERE m.channel = ${"email"} AND m.direction = ${"out"} AND d.address = ${address} AND d.sent IS NOT NULL`;
-    const [answered, mailed] = await Promise.all([
-      messageId && app.db.one`SELECT d.id ${ours} AND d.external_id = ${messageId}`,
-      app.db.one`SELECT d.id ${ours} LIMIT 1`,
-    ]);
-    if (answered) await app.db.table("message_delivery").update(Number(answered), { error: reason });
-    if (mailed) await contactError(app.db, "email", address, reason);
+export async function bounced(app: App, mail: ParsedMail, failed: Failed[]): Promise<boolean> {
+  const ours = sql`FROM message_delivery d JOIN message m ON m.id = d.message_id
+    WHERE m.channel = ${"email"} AND m.direction = ${"out"} AND d.sent IS NOT NULL`;
+  const messageId = returned(mail);
+  const delivery = messageId && await app.db.one`SELECT d.id ${ours} AND d.external_id = ${messageId}`;
+  if (delivery) await app.db.table("message_delivery").update(Number(delivery), { error: failed[0].reason });
+  for (const { address, reason, status } of failed) {
+    if (status.startsWith("5.7.")) continue;
+    if (await app.db.one`SELECT d.id ${ours} AND d.address = ${address} LIMIT 1`) await contactError(app.db, "email", address, reason);
   }
+  return !!delivery;
 }
 
 /** What went wrong with a delivery, as a kind a list can show and translate. */
