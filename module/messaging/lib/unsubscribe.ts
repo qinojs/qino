@@ -1,5 +1,7 @@
-import { hee, html, keyed, safeEqual, sql, unixTime } from "@qino/qino";
+import { hee, html, keyed, safeEqual, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+
+import { track } from "./track.ts";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Placeholder } from "./template.ts";
@@ -49,11 +51,8 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   if (!target) return page(ctx, await t`This unsubscribe link is not valid.`, false, 404);
 
   const post = ctx.req.method === "POST";
-  // following the link is the click, like any link of the message; one-click comes without a visit.
-  // A deleted delivery fails on the missing parent
-  if (target.deliveryId && (!post || ctx.req.body?.["List-Unsubscribe"] === "One-Click")) {
-    app.db.table("message_track").insert({ delivery_id: target.deliveryId, code: NAME, kind: "click", time: unixTime() }).catch(() => {});
-  }
+  // following the link is the click, like any link of the message; one-click comes without a visit
+  if (target.deliveryId && (!post || ctx.req.body?.["List-Unsubscribe"] === "One-Click")) track(app, target.deliveryId, NAME, "click");
   const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
   if (!post) return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
   await app.db.table("usr_grp").delete({ usr_id: target.usrId, grp_id: target.grpId }); // leave the group, idempotent

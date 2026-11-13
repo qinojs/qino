@@ -41,15 +41,14 @@ export function servePixel(ctx: Ctx): void {
 export async function trackHit(app: App, { link, tag }: any): Promise<void> {
   // any module may shorten: an unreadable tag is someone else's, not forged
   const hit = tag && await read(app, String(tag));
-  if (!hit) return;
+  if (hit) track(app, hit.deliveryId, link.code, hit.kind);
+}
+
+/** Note that a delivery's `code` was reached, in the background: it also proves the message arrived. */
+export function track(app: App, deliveryId: number, code: string, kind: Kind): void {
   // deleted delivery: the insert fails on the missing parent
-  app.db.table("message_track").insert({
-    delivery_id: hit.deliveryId,
-    code: link.code,
-    kind: hit.kind,
-    time: unixTime(),
-  }).catch(() => {});
-  received(app, hit.deliveryId).catch(() => {});
+  app.db.table("message_track").insert({ delivery_id: deliveryId, code, kind, time: unixTime() }).catch(() => {});
+  received(app, deliveryId).catch(() => {});
 }
 
 /** A hit proves the message arrived: the address it went to is no longer marked. */
