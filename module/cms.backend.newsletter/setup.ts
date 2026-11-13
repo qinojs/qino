@@ -1,5 +1,7 @@
 import { saveTemplate, template } from "@qino/qino/messaging";
 
+import manifest from "./manifest.json" with { type: "json" };
+
 import type { App } from "@qino/qino";
 
 // What a fresh install brings, so the first newsletter needs no setup: a list and a template.
@@ -7,15 +9,17 @@ import type { App } from "@qino/qino";
 export const TYPE = "newsletter";
 export const CHANNEL = "email";
 
-/** A list, if there is none, and the newsletter template, if it is missing. Never overwrites. */
-export async function setup(app: App): Promise<void> {
-  const t = app.t;
-  if (!await app.db.one`SELECT id FROM grp WHERE type = ${TYPE} LIMIT 1`) {
-    await app.db.table("grp").insert({ name: await t`Newsletter`, type: TYPE });
-  }
-  if (!await template(app, CHANNEL, TYPE)) {
-    await saveTemplate(app, { name: TYPE, channel: CHANNEL, main: false, format: "html", text: await starter(app) });
-  }
+/** A list, if there is none, and the newsletter template, if it is missing. Never overwrites. In the
+ *  site's default language, whatever request (or none) it runs in. */
+export function setup(app: App): Promise<void> {
+  return app.t.with({ ns: manifest.name, lang: app.languages.def }, async () => {
+    if (!await app.db.one`SELECT id FROM grp WHERE type = ${TYPE} LIMIT 1`) {
+      await app.db.table("grp").insert({ name: await app.t`Newsletter`, type: TYPE });
+    }
+    if (!await template(app, CHANNEL, TYPE)) {
+      await saveTemplate(app, { name: TYPE, channel: CHANNEL, main: false, format: "html", text: await starter(app) });
+    }
+  });
 }
 
 /** The brand colour, else a calm violet. */

@@ -14,7 +14,7 @@ export { healthChecks } from "./healthChecks.ts";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Newsletter", de: "Newsletter" });
-  await app.t.with(name, () => setup(app));
+  await setup(app);
 }
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {

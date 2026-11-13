@@ -2,7 +2,8 @@
   "name": "oauth_server",
   "description": "Provides an OAuth authorization server with bearer token authentication.",
   "dependencies": [
-    "core"
+    "core",
+    "u2"
   ],
   "files": [
     "USAGE.md",

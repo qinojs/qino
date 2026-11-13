@@ -1,8 +1,8 @@
 // Helpers mirror u2's own layout: elements under `el`, the framework itself flat.
-import { u2Root } from "@qino/qino";
+import { html, Output, u2Root } from "@qino/qino";
 import * as identity from "@qino/qino/identity";
 
-import type { App, Ctx } from "@qino/qino";
+import type { App, Ctx, HtmlString } from "@qino/qino";
 
 export * as el from "./lib/el.ts";
 
@@ -68,4 +68,30 @@ export async function identityCss(app: App): Promise<string> {
   ].filter(Boolean);
   if (vars.length) out += `html{${vars.join(";")}}`;
   return out;
+}
+
+const PAGE_CSS = "body{display:grid;place-items:center;min-height:100vh;margin:0;padding:1rem;box-sizing:border-box}"
+  + "body>main{width:min(100%,28rem);padding:2rem;border-radius:1rem;box-shadow:0 .2rem 1.5rem #0002}"
+  + "body>main>img{display:block;height:3rem;width:auto;margin-bottom:1.5rem}";
+
+/**
+ * A page of its own for a system view (unsubscribe, sign-in), ending the route. No layout and no
+ * site code — only u2's styles in the site's identity, so a flaw in a layout cannot reach it; no
+ * referrer, so a token in the url stays here.
+ */
+export async function page(ctx: Ctx, title: string, body: HtmlString, { status = 200 }: { status?: number } = {}): Promise<never> {
+  const app = ctx.app;
+  // the look is a nicety: without identity the page still stands
+  const [css, logo] = await Promise.all([
+    identityCss(app).catch(() => ""),
+    identity.file(app, "logo").then((file) => file?.url({ h: 96 })).catch(() => undefined),
+  ]);
+  assets(ctx, ["css/norm/norm.css", "css/base/base.css", "css/classless/variables.css", "css/classless/classless.css"]);
+  ctx.res.html.inlineStyles.add(css + PAGE_CSS);
+  ctx.res.html.title = title;
+  ctx.res.html.meta.robots = "noindex, nofollow";
+  ctx.res.headers.set("Referrer-Policy", "no-referrer");
+  ctx.res.html.content = (await html.async`<main>${logo ? html`<img src="${logo}" alt="">` : ""}<h1>${title}</h1>${body}</main>`).html;
+  ctx.res.status = status;
+  throw new Output();
 }

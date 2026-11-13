@@ -367,6 +367,7 @@ async function report(node: Node, row: Row) {
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:1 1 32rem">
     <div class=-head>${str(row.title) || t`(no subject)`} ${status(app, row)} <a href="?" class=-back>${t`Back`}</a></div>
+    ${app.modules.linked("shorturl") ? "" : html.async`<u2-alert open variant=info>${t`Opens and clicks are only counted with the module shorturl.`}</u2-alert>`}
     <div class=-stats>
       ${stat(t`recipients`, Number(row.recipients))}
       ${stat(t`reached`, Number(row.reached))}

@@ -143,6 +143,10 @@ test("the template is written in the site's language: translations are loaded be
   // a German site, which links the newsletter module later
   const site = await boot(["messaging.email"]);
   await site.settings.core.langs("de, en");
+  // settings are written in the background: wait until it is stored, then close
+  for (let i = 0; i < 50 && !await site.db.one`SELECT id FROM qg_setting WHERE offset = ${"langs"} AND value = ${"de, en"}`; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
   await site.db.close();
   const app = await boot(["cms.backend.newsletter"]);
   try {

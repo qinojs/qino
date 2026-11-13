@@ -2,7 +2,6 @@ import { unixTime } from "@qino/qino";
 
 import { draftTemplate } from "./render.ts";
 import { CHANNEL, setup, TYPE } from "./setup.ts";
-import manifest from "./manifest.json" with { type: "json" };
 
 import type { App } from "@qino/qino";
 
@@ -21,7 +20,7 @@ export function healthChecks(app: App) {
           info: row
             ? `template "${row.name}" has no {{unsubscribe}} — subscribers cannot leave the list`
             : "there is no email template — newsletters go out without an unsubscribe link",
-          ...!row && { solutions: { "create the newsletter template": { solve: () => app.t.with(manifest.name, () => setup(app)).then(() => "created") } } },
+          ...!row && { solutions: { "create the newsletter template": { solve: () => setup(app).then(() => "created") } } },
         };
       },
 
@@ -34,6 +33,11 @@ export function healthChecks(app: App) {
 
     },
     notice: {
+
+      // links are tracked through short codes: without shorturl a newsletter has no statistics
+      "newsletters are tracked": () => Promise.resolve(app.modules.linked("shorturl")
+        ? undefined
+        : { info: "without the module shorturl, opens and clicks of newsletters are not counted" }),
 
       // the sender's identity and postal address belong in a newsletter (UWG Art. 3 o, CAN-SPAM)
       "newsletters say who sends them": async () => {

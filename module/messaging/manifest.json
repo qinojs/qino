@@ -3,12 +3,14 @@
   "description": "Shared journal, channel registry and contact verification for the messaging channels.",
   "dependencies": [
     "core",
-    "cron"
+    "cron",
+    "u2"
   ],
   "files": [
     "README.md",
     "api.ts",
     "dbschema.json",
+    "locale/de.json",
     "lib/contact.ts",
     "lib/dispatch.ts",
     "lib/format.ts",

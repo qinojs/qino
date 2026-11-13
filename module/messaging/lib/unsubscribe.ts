@@ -1,4 +1,5 @@
-import { hee, html, keyed, Output, safeEqual, sql } from "@qino/qino";
+import { hee, html, keyed, safeEqual, sql } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Placeholder } from "./template.ts";
@@ -9,7 +10,8 @@ import type { Placeholder } from "./template.ts";
 // A GET only asks; only a POST unsubscribes, since mail clients, scanners and previews fetch links.
 
 const NAME = "unsubscribe";
-const PATH = "messaging/" + NAME;
+const NS = "messaging";
+const PATH = NS + "/" + NAME;
 const SIG = 8;
 
 /** The link for one recipient, for `{{unsubscribe}}`. */
@@ -41,7 +43,7 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   const path = ctx.req.appPath;
   if (!path.startsWith(PATH + "/")) return; // runs on every request: bail out cheaply
   const app = ctx.app;
-  const t = app.t;
+  const t = app.t.in(NS);
   const target = await read(app, path.slice(PATH.length + 1));
   if (!target) return page(ctx, await t`This unsubscribe link is not valid.`, false, 404);
 
@@ -53,16 +55,10 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
   return page(ctx, group ? await t`You have been removed from ${group}.` : await t`You have been removed.`);
 }
 
-/** A minimal own page, not the site layout. */
+/** A page of its own, apart from any layout: the token is in the url. */
 async function page(ctx: Ctx, said: string, ask = false, status = 200): Promise<never> {
-  const title = await ctx.app.t`Unsubscribe`;
-  ctx.res.html.title = title;
-  ctx.res.html.content = (await html.async`<main>
-  <p>${said}</p>
-  ${ask ? html`<form method=post><button>${title}</button></form>` : ""}
-</main>`).html;
-  ctx.res.status = status;
-  throw new Output(); // end the route; ctx.res holds the page
+  const title = await ctx.app.t.in(NS)`Unsubscribe`;
+  return u2.page(ctx, title, html`<p>${said}</p>${ask ? html`<form method=post><button>${title}</button></form>` : ""}`, { status });
 }
 
 /** Which recipients are actually in the group (`{ grp, usr }` also reaches non-members). One
@@ -99,6 +95,6 @@ export const placeholder: Placeholder = async (app, to) => {
   if (!usrId || !grpId) return;
   const url = await link(app, usrId, grpId);
   // the recipient's language, not that of whoever's request or job sends it
-  const label = await app.t.with({ lang: String(to.lang ?? "") || undefined }, () => app.t`Unsubscribe`);
+  const label = await app.t.with({ ns: NS, lang: String(to.lang ?? "") || undefined }, () => app.t`Unsubscribe`);
   return { text: url, html: html.raw(`<a href="${hee(url)}">${hee(label)}</a>`) };
 };
