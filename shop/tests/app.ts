@@ -1,7 +1,7 @@
 // A real app for the shop tests: cms, fin and the shop modules named.
 import { App, Ctx, fs, requestStorage } from "@qino/qino";
 
-const BASE = ["cms", "browser", "cron", "identity", "locale.country", "locale.currency", "pdf", "score", "security", "user.profile"];
+const BASE = ["cms", "browser", "cron", "identity", "locale.country", "locale.currency", "pdf", "score", "security", "seo", "user.profile"];
 const FIN = ["fin", "fin.payment", "fin.invoice"];
 
 /** Boot an app with the shop core and these shop modules, a product page 10 (CHF 24.50), run `fn`. */

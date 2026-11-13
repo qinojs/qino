@@ -1,5 +1,7 @@
 import { html } from "@qino/qino";
+import { cmsCtx, hasOwnUrl } from "@qino/qino/cms";
 import { cart, country, ensureProduct, mainCurrency, shopT } from "@qino/qino/cms.shop";
+import { jsonLd } from "@qino/qino/seo";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -22,10 +24,16 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const cartId = Number(await node.settings.cart() || 0);
   const action = cartId ? await (await node.cms.node(cartId)).url() : "";
 
-  const rows = [];
+  const rows = [], offers = [];
   for (const variant of variants.length ? variants : [undefined]) {
     const [{ gross }, errors] = await Promise.all([product.prices({ variant, order, currency }), product.errors(variant)]);
     const message = Object.values(errors)[0];
+    // the price as shown, so the structured data says what the page says
+    if (currency && gross >= 0) offers.push({
+      "@type": "Offer", ...(variant && { name: await variant.title(ctx.lang) }),
+      price: currency.format(gross), priceCurrency: currency.id,
+      availability: `https://schema.org/${message ? "OutOfStock" : "InStock"}`,
+    });
     rows.push(html.async`<tr ${variant ? html`data-variant=${variant.id}` : ""}>
       <td class=-title>${variant ? variant.title(ctx.lang) : product.title(ctx.lang)}
       <td class=-price>${currency?.show(gross) ?? gross}
@@ -33,6 +41,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         ? html`<span class=-error>${message}</span>`
         : html.async`<input name=quantity type=number min=0 step=1 value="${variants.length ? 0 : 1}" aria-label="${t`Quantity`}">`}`);
   }
+  // where the product is what the page is about: at its own address if it has one (in a category,
+  // whose list says nothing), else on its page
+  const about = await hasOwnUrl(node) ? node : await node.page();
+  if (offers.length && cmsCtx(ctx).requestedNode?.id === about.id) jsonLd(ctx, {
+    "@type": "Product", name: await product.title(ctx.lang),
+    ...(product.sku && { sku: product.sku }), ...(product.gtin && { gtin: product.gtin }),
+    ...(product.brand && { brand: { "@type": "Brand", name: product.brand } }),
+    offers,
+  });
   return html.async`<div>
   ${node.cms.text(node, "title", { tag: "h2", class: "-title" })}
   ${node.cms.text(node, "main", { class: "-text", if: true })}

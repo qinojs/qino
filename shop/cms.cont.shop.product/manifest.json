@@ -1,9 +1,10 @@
 {
   "name": "cms.cont.shop.product",
-  "description": "A product: its page is the product. Price, variants, add to cart.",
+  "description": "A product: its page is the product. Price, variants, add to cart, structured data.",
   "dependencies": [
     "cms",
-    "cms.shop"
+    "cms.shop",
+    "seo"
   ],
   "files": [
     "manifest.json",
