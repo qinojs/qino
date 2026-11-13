@@ -21,7 +21,7 @@ const SIG = 8;
 /** The link for one recipient, for `{{unsubscribe}}`; with the delivery, the unsubscribe is
  *  credited to that message. */
 export async function link(app: App, usrId: number, grpId: number, deliveryId?: number): Promise<string> {
-  const stem = [usrId, grpId, ...deliveryId ? [deliveryId] : []].map((id) => id.toString(36)).join("-");
+  const stem = [usrId, grpId, deliveryId].filter((id) => id).map((id) => id!.toString(36)).join("-");
   return `${await app.url()}${PATH}/${stem}-${await sign(app, stem)}`;
 }
 
@@ -33,7 +33,7 @@ async function read(app: App, token: string) {
   const stem = token.slice(0, cut);
   const [usrId, grpId, deliveryId] = stem.split("-").map((id) => parseInt(id, 36));
   if (!(usrId > 0) || !(grpId > 0) || !safeEqual(token.slice(cut + 1), await sign(app, stem))) return;
-  return { usrId, grpId, deliveryId: deliveryId > 0 ? deliveryId : undefined };
+  return { usrId, grpId, deliveryId: deliveryId || undefined }; // older links name none
 }
 
 /**
@@ -52,7 +52,8 @@ export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
 
   const post = ctx.req.method === "POST";
   // following the link is the click, like any link of the message; one-click comes without a visit
-  if (target.deliveryId && (!post || ctx.req.body?.["List-Unsubscribe"] === "One-Click")) track(app, target.deliveryId, NAME, "click");
+  const followed = !post || ctx.req.body?.["List-Unsubscribe"] === "One-Click";
+  if (followed && target.deliveryId) track(app, target.deliveryId, NAME, "click");
   const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
   if (!post) return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
   await app.db.table("usr_grp").delete({ usr_id: target.usrId, grp_id: target.grpId }); // leave the group, idempotent
