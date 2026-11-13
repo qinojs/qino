@@ -282,7 +282,7 @@ async function editor(node: Node, row: Row, notice: unknown) {
   const selected = (on: boolean) => on ? html.raw(" selected") : "";
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
-  <div class=u2-card style="flex:0 1 50rem">
+  <div class=u2-card style="flex:0 1 53rem">
     <div class=-head>${t`Newsletter`} <span class=u2-badge>${t`Draft`}</span> <a href="?" class=-back>${t`Back`}</a></div>
     <form method=post data-issue>
       ${csrf(ctx)}
@@ -335,7 +335,7 @@ export async function preview(app: App, msg: { text?: unknown; template?: unknow
 async function previewCard(app: App, row: Row) {
   return html.async`<div class=u2-card style="flex:1 1 28rem">
     <div class=-head>${app.t`Preview`}</div>
-    <iframe sandbox srcdoc="${await preview(app, row)}" class=-frame title="${app.t`Preview`}"></iframe>
+    <iframe sandbox srcdoc="${await preview(app, row)}" class="-frame -body" title="${app.t`Preview`}"></iframe>
   </div>`;
 }
 
