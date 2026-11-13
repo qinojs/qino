@@ -17,7 +17,7 @@ newsletters that are overdue.
   and can be made a draft again until the first one goes out.
 - **Subscriber** — a user in the group; their main email address receives it.
 
-The editor is `<u2-rte>`, so issues are html. The preview shows the issue in its template with
+The editor is `<u2-rte>`, so issues are html. A draft saves itself while it is edited. The preview shows the issue in its template with
 fallback values; a test goes to one address and has no unsubscribe link, since it is not sent to the
 list.
 

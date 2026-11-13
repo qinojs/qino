@@ -5,6 +5,7 @@ import { setTransport } from "@qino/qino/messaging.email";
 import { cms } from "@qino/qino/cms";
 
 import { healthChecks } from "../healthChecks.ts";
+import api from "../nodeApi.ts";
 import { preview, render, subscribe } from "../render.ts";
 
 import type { Node } from "@qino/qino/cms";
@@ -75,6 +76,12 @@ test("a draft is a message without deliveries; sending makes them for the list a
     assertStringIncludes(editor.out, "<u2-rte");
     assertStringIncludes(editor.out, "&lt;p&gt;News&lt;/p&gt;"); // the preview's srcdoc
 
+    // the editor saves as it is typed in, without the form's post
+    const node = await cms(app).nodeByModule("cms.backend.newsletter") as Node;
+    const edit = (title: string) => api(node, { save: { id, grp: String(list), title, template: "", text: "<p>News</p>" } });
+    assertEquals(await edit("Typed"), { saved: true });
+    assertEquals(await app.db.one`SELECT title FROM message WHERE id = ${id}`, "Typed");
+
     // a test goes to one address, outside the list
     await page(app, `?issue=${id}`, { test: "1", grp: String(list), title: "Hello", template: "", text: "<p>News</p>", address: "me@qino.test" });
     assertEquals(mails.length, 1);
@@ -101,6 +108,8 @@ test("a draft is a message without deliveries; sending makes them for the list a
     const report = await page(app, `?issue=${id}`);
     assertStringIncludes(report.out, "three@qino.test");
     assertStringIncludes(report.out, "Sent");
+    await edit("Late").then(() => assert(false, "a sent issue stays as it went out"), () => {});
+    assertEquals(await app.db.one`SELECT title FROM message WHERE id = ${id}`, "Hello");
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 50));
     await app.db.close();

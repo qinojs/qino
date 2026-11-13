@@ -181,6 +181,12 @@ function status(app: App, row: Row) {
 const percent = (count: unknown, of: unknown) => Number(of) ? html`<small>${Math.round(100 * Number(count) / Number(of))}%</small>` : "";
 const share = (count: unknown, of: unknown) => Number(of) ? html`${Number(count)} ${percent(count, of)}` : "";
 
+/** Whether the message is a newsletter draft: nothing went out yet, so it may change. */
+export const isDraft = async (app: App, id: number) => !!await app.db.one`SELECT m.id FROM message m
+  JOIN grp g ON g.id = m.grp_id AND g.type = ${TYPE}
+  WHERE m.id = ${id} AND m.channel = ${CHANNEL} AND m.direction = ${"out"}
+    AND NOT EXISTS (SELECT 1 FROM message_delivery d WHERE d.message_id = m.id)`;
+
 /** The template a new draft gets: the newsletter one if there is one, else the main one. */
 export function draftTemplate(app: App): Promise<{ name: string; text: string } | undefined> {
   return app.db.row<{ name: string; text: string }>`SELECT name, text FROM message_template
@@ -246,7 +252,7 @@ async function issueView(node: Node, id: number) {
 }
 
 /** Store the editor's fields; the list only changes to another list. */
-async function save(app: App, id: number, post: Record<string, unknown>) {
+export async function save(app: App, id: number, post: Record<string, unknown>) {
   const grpId = Number(post.grp);
   const list = await isList(app, grpId) ? { grp_id: grpId, data: JSON.stringify({ to: { grp: grpId } }) } : {};
   await app.db.table("message").update(id, {
@@ -285,7 +291,7 @@ async function editor(node: Node, row: Row, notice: unknown) {
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:0 1 53rem">
     <div class=-head>${t`Newsletter`} <span class=u2-badge>${t`Draft`}</span> <a href="?" class=-back>${t`Back`}</a></div>
-    <form method=post data-issue>
+    <form method=post data-issue="${row.id}">
       ${csrf(ctx)}
       ${notice}
       <u2-fields>

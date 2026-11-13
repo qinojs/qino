@@ -3,8 +3,25 @@ import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 cms.initNode("backend.newsletter", (el) => {
   const form = el.querySelector("form[data-issue]");
   if (!form) return; // only the draft editor previews and schedules
-  const { node } = nodePanel(el);
+  const { node, alert } = nodePanel(el);
   const frame = el.querySelector(".-frame");
+  const id = Number(form.dataset.issue);
+
+  // the draft saves itself as it is edited; the button stays for Enter and pages without script
+  form.save.hidden = true;
+  let pending;
+  const store = async () => {
+    clearTimeout(pending);
+    pending = null;
+    const fields = { id, grp: form.grp.value, title: form.title.value, text: form.text.value, template: form.template.value };
+    await node.api.post({ save: fields }).catch((e) => alert(e?.message || String(e)));
+  };
+  const later = () => { clearTimeout(pending); pending = setTimeout(store, 800); };
+  form.addEventListener("input", (event) => { if (event.target.closest("u2-fields, u2-rte")) later(); });
+  form.addEventListener("change", (event) => { if (event.target.closest("u2-fields")) later(); });
+  // leaving with unsaved typing: save at once
+  document.addEventListener("visibilitychange", () => { if (document.hidden && pending) store(); });
+  form.addEventListener("submit", () => clearTimeout(pending)); // the post carries the fields itself
 
   // the server knows the template; it renders, the page only shows
   let timer;
