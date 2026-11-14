@@ -4,12 +4,12 @@ import { add, list, remove, update } from "@qino/qino/cms.event";
 import { book, bookings, cancel, slots } from "./mod.ts";
 import { lock, readable } from "./access.ts";
 
-import type { Period, Schedule } from "@qino/qino/calendar";
+import type { Period, Range } from "@qino/qino/calendar";
 import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, input: {
   slots?: Period; book?: Parameters<typeof book>[1]; cancel?: number; bookings?: boolean;
-  offers?: boolean; save?: Schedule & { id?: number }; remove?: number;
+  offers?: boolean; save?: Range & { id?: number; timeZone?: string }; remove?: number;
 }) {
   await readable(node);
   if (input.slots) return slots(node, input.slots);
@@ -18,7 +18,7 @@ export default async function (node: Node, input: {
   if (input.bookings) return bookings(node);
   if (await node.access() < 2) throw new AccessError();
   if (input.offers) return (await list(node)).map((event) => {
-    const zone = event.timeZone || String(node.settings.time_zone() ?? "UTC");
+    const zone = String(node.settings.time_zone() ?? "UTC");
     const local = (value: string) => Temporal.Instant.from(value).toZonedDateTimeISO(zone).toPlainDateTime().toString({ smallestUnit: "minute" });
     return { ...event, localStart: local(event.start), localEnd: local(event.end), timeZone: zone };
   });
@@ -41,7 +41,7 @@ export default async function (node: Node, input: {
   if (input.remove) return node.db.transaction(async () => {
     await lock(node);
     if (await node.db.one`SELECT id FROM cms_booking WHERE node_id = ${node.id} AND event_id = ${Number(input.remove)} LIMIT 1`)
-      throw new ApiError(409, "An offer with bookings cannot be deleted; exclude future dates instead");
+      throw new ApiError(409, "An offer with bookings cannot be deleted; keep the existing block instead");
     await remove(node, Number(input.remove));
     return { ok: true };
   });

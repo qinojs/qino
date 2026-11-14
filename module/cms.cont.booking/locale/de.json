@@ -21,22 +21,11 @@
   "New appointment": "Neuer Termin",
   "Start (required)": "Beginn (Pflichtfeld)",
   "End (required)": "Ende (Pflichtfeld)",
-  "Recurrence and exceptions": "Wiederholung und Ausnahmen",
-  "Recurrence rule (RRULE)": "Wiederholungsregel (RRULE)",
-  "Additional starts (ISO dates, one per line)": "Zusätzliche Termine (ISO-Daten, eines pro Zeile)",
-  "Excluded starts (ISO dates, one per line)": "Ausgelassene Termine (ISO-Daten, eines pro Zeile)",
   "Save appointment": "Termin speichern",
   "Delete appointment": "Termin löschen",
   "Display time zone": "Zeitzone der Anzeige",
   "Slot duration in minutes (0: whole appointment)": "Termindauer in Minuten (0: gesamter Termin)",
   "Bookable days ahead": "Buchbar für die nächsten Tage",
   "Delete this appointment?": "Diesen Termin löschen?",
-  "Cancel this appointment?": "Diesen Termin stornieren?",
-  "Does not repeat": "Keine Wiederholung",
-  "Daily": "Täglich",
-  "Weekly": "Wöchentlich",
-  "Monthly": "Monatlich",
-  "Yearly": "Jährlich",
-  "Custom": "Benutzerdefiniert",
-  "Repeat": "Wiederholung"
+  "Cancel this appointment?": "Diesen Termin stornieren?"
 }

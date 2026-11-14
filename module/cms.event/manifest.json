@@ -2,5 +2,5 @@
   "name": "cms.event",
   "description": "CMS node events and their dates, available as a calendar source.",
   "dependencies": ["cms", "calendar"],
-  "files": ["README.md", "calendar.ts", "dbschema.json", "manifest.json", "mod.ts", "plugin.ts", "pub/module.svg", "schedule.ts"]
+  "files": ["README.md", "calendar.ts", "dbschema.json", "manifest.json", "mod.ts", "plugin.ts", "pub/module.svg", "range.ts"]
 }

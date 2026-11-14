@@ -7,7 +7,9 @@
           "id": {
             "type": "integer",
             "x-index": "primary",
-            "x-autoincrement": true
+            "x-autoincrement": true,
+            "minimum": 1,
+            "maximum": 9007199254740991
           },
           "node_id": {
             "type": "integer",
@@ -18,7 +20,9 @@
           "event_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "cms_event"
+            "x-qg-parent": "cms_event",
+            "minimum": 1,
+            "maximum": 9007199254740991
           },
           "start": {
             "type": "string",

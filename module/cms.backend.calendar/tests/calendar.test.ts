@@ -1,9 +1,9 @@
 import { test } from "node:test";
-import { App, fs, requestStorage } from "@qino/qino";
+import { App, fs, requestStorage, sql } from "@qino/qino";
 import { entries } from "@qino/qino/calendar";
 import { add } from "@qino/qino/cms.event";
 import { cms as tree } from "@qino/qino/cms";
-import { assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes, assertThrows, testContext } from "@qino/qino/tests";
 
 import { backendDashboardWidget, cms, install } from "../plugin.ts";
 
@@ -26,7 +26,7 @@ test("backend calendar reads CMS events through calendar, with node access and b
       await add(visible, { start: "2027-07-14", end: "2027-07-15" });
       await add(privateNode, { start: "2027-07-12T09:00+02:00", end: "2027-07-12T11:00+02:00" });
       await add(visible, { start: "2027-07-20T09:00+02:00", end: "2027-07-20T11:00+02:00" });
-      await add(visible, { start: "2027-07-21 09:00:00.000000001+02:00", end: "2027-07-21 09:00:00.000000003+02:00" });
+      await add(visible, { start: "2027-07-21 09:00:00.001+02:00", end: "2027-07-21 09:00:00.003+02:00" });
       const period = { start: "2027-07-12", end: "2027-07-15", timeZone: "Europe/Zurich" };
       const result = await entries(ctx, period);
       assertEquals(result.length, 3);
@@ -35,8 +35,17 @@ test("backend calendar reads CMS events through calendar, with node access and b
       assertEquals([result[0].start, result[0].end], ["2027-07-12T07:00:00.000000000Z", "2027-07-12T09:00:00.000000000Z"]);
       assertEquals([result[2].start, result[2].end], ["2027-07-14", "2027-07-15"]);
       assertEquals(result.every((item) => Boolean(item.url)), true);
-      const precise = await entries(ctx, { start: "2027-07-21T07:00:00.000000002Z", end: "2027-07-21T07:00:00.000000004Z", timeZone: "UTC" });
-      assertEquals(precise.map((item) => item.start), ["2027-07-21T07:00:00.000000001Z"]);
+      const stored = await app.db.row`SELECT ${sql.id("start")} AS value FROM cms_event WHERE node_id = ${visible.id} AND all_day = ${false} ORDER BY id LIMIT 1`;
+      assertEquals(Number(stored!.value), Temporal.Instant.from("2027-07-12T07:00Z").epochMilliseconds);
+      const wholeDay = await app.db.row`SELECT ${sql.id("start")} AS value FROM cms_event WHERE node_id = ${visible.id} AND all_day = ${true}`;
+      assertEquals(Number(wholeDay!.value), Temporal.Instant.from("2027-07-14T00:00Z").epochMilliseconds);
+      assertThrows(() => add(visible, { start: "2027-07-21T09:00:00.000000001Z", end: "2027-07-21T10:00Z" }), RangeError);
+      const precise = await entries(ctx, { start: "2027-07-21T07:00:00.002000001Z", end: "2027-07-21T07:00:00.004Z", timeZone: "UTC" });
+      assertEquals(precise.map((item) => item.start), ["2027-07-21T07:00:00.001000000Z"]);
+      await add(visible, { start: "1969-12-31T23:59:59.999Z", end: "1970-01-01T00:00Z" });
+      const beforeEpoch = await entries(ctx, { start: "1969-12-31T23:59:59.999999999Z", end: "1970-01-01T00:00:00.000000001Z", timeZone: "UTC" });
+      assertEquals(beforeEpoch.length, 1);
+      assertEquals(await entries(ctx, { start: "1970-01-01T00:00Z", end: "1970-01-01T00:00:00.000000001Z", timeZone: "UTC" }), []);
 
       await install({ app });
       const backend = (await tree(app).nodeByModule("cms.backend.calendar"))!;
@@ -70,15 +79,13 @@ test("backend calendar reads CMS events through calendar, with node access and b
       await requestStorage.run(returning, async () => assertEquals(await cms.node.api(backend, period), []));
       assertEquals(ctx.settings["cms.backend.calendar"].sources(), undefined);
 
-      await add(visible, {
-        start: "2027-08-01T09:00+02:00", end: "2027-08-01T11:00+02:00", timeZone: "Europe/Zurich",
-        rrule: "FREQ=WEEKLY;COUNT=3", exdate: ["2027-08-08T09:00+02:00"], rdate: ["2027-08-09T09:00+02:00"],
-      });
-      // A malformed definition on an unreadable node must not leak through a source error either.
-      await app.db.table("cms_event").insert({ node_id: privateNode.id, start: "2027-08-01", end: "2027-08-02", rrule: "INVALID" });
-      const recurring = await entries(ctx, { start: "2027-08-01", end: "2027-09-01", timeZone: "Europe/Zurich" });
-      assertEquals(recurring.map((item) => item.start.slice(0, 10)), ["2027-08-01", "2027-08-09", "2027-08-15"]);
-      assertEquals(new Set(recurring.map((item) => item.id)).size, 3);
+      for (const date of ["2027-08-01", "2027-08-09", "2027-08-15"]) {
+        await add(visible, { start: `${date}T09:00+02:00`, end: `${date}T11:00+02:00` });
+        await add(privateNode, { start: `${date}T09:00+02:00`, end: `${date}T11:00+02:00` });
+      }
+      const blocks = await entries(ctx, { start: "2027-08-01", end: "2027-09-01", timeZone: "Europe/Zurich" });
+      assertEquals(blocks.map((item) => item.start.slice(0, 10)), ["2027-08-01", "2027-08-09", "2027-08-15"]);
+      assertEquals(new Set(blocks.map((item) => item.id)).size, 3);
     });
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));

@@ -1,13 +1,15 @@
 {
   "properties": {
     "cms_event": {
-      "description": "Calendar events attached to CMS nodes; several events may refer to the same node.",
+      "description": "Calendar event blocks attached to CMS nodes. A node can have multiple cms_event records, each representing one fixed block with its own start and exclusive end.",
       "additionalProperties": {
         "properties": {
           "id": {
             "type": "integer",
             "x-index": "primary",
-            "x-autoincrement": true
+            "x-autoincrement": true,
+            "minimum": 1,
+            "maximum": 9007199254740991
           },
           "node_id": {
             "type": "integer",
@@ -17,47 +19,31 @@
             "x-qg-on-parent-copy": "cascade"
           },
           "start": {
-            "type": "string",
-            "maxLength": 40,
+            "type": "integer",
+            "minimum": -8640000000000000,
+            "maximum": 8640000000000000,
             "x-index": true,
-            "description": "ISO date for an all-day event, otherwise an RFC 3339 UTC timestamp."
+            "description": "Inclusive start in epoch milliseconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
           "end": {
-            "type": "string",
-            "maxLength": 40,
+            "type": "integer",
+            "minimum": -8640000000000000,
+            "maximum": 8640000000000000,
             "x-index": true,
-            "description": "Exclusive end, in the same form as start."
+            "description": "Exclusive end in epoch milliseconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
-          "rrule": {
-            "type": "string",
-            "maxLength": 2048,
-            "description": "RFC 5545 recurrence rule; empty for a fixed event."
-          },
-          "time_zone": {
-            "type": "string",
-            "maxLength": 100,
-            "description": "IANA time zone preserving the local start time of recurring timed events."
-          },
-          "rdate": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Additional recurrence starts, in the same date type as start."
-          },
-          "exdate": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Excluded recurrence starts, in the same date type as start."
+          "all_day": {
+            "type": "boolean",
+            "default": false,
+            "description": "True for whole calendar days; derived from date-only boundaries when a block is written."
           }
         },
         "required": [
           "id",
           "node_id",
           "start",
-          "end"
+          "end",
+          "all_day"
         ]
       }
     }

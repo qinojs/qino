@@ -36,7 +36,8 @@ test("appointment booking isolates instances, enforces node rights, and serializ
       for (const node of [first, second, hidden]) {
         await node.title("en", `Booking ${node.id}`);
         node.settings.duration(30);
-        ids.push(Number(await add(node, { start, end, timeZone: "UTC", rrule: "FREQ=DAILY;COUNT=2" })));
+        ids.push(Number(await add(node, { start, end })));
+        await add(node, { start: Temporal.Instant.from(start).add({ hours: 24 }).toString(), end: Temporal.Instant.from(end).add({ hours: 24 }).toString() });
       }
       await app.db.flush();
       return ids;

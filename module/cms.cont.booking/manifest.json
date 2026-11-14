@@ -1,6 +1,6 @@
 {
   "name": "cms.cont.booking",
-  "description": "Appointment booking per CMS node, with fixed appointments or recurring availability.",
+  "description": "Appointment booking per CMS node, with fixed appointments or availability windows.",
   "dependencies": [
     "cms.event",
     "calendar",

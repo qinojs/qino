@@ -1,14 +1,13 @@
 # Appointment booking
 
 Each `cms.cont.booking` content node owns its offers and bookings. Offers use `cms.event`;
-recurring offers use the shared `calendar.occurrences()` implementation with RFC 5545 rules.
+each offer is a concrete event block, without a recurrence rule.
 Every new instance starts empty. Add appointments in its CMS settings panel.
 
 With `duration: 0`, an offer is booked as a whole. A positive duration (minutes) splits offers
-into consecutive slots. Repeating availability is an ordinary recurring offer, for example
-Monday 09:00–11:00 with `FREQ=WEEKLY;BYDAY=MO` and `duration: 30`.
-The instance's `time_zone` controls date selection and display; offers retain their own IANA
-time zone for recurrence. `horizon_days` limits how far ahead visitors can book (default 60).
+into consecutive slots. For example, a concrete
+09:00–11:00 window with `duration: 30` provides four slots. Further days use further blocks.
+The instance's `time_zone` controls date selection and display; local input is converted to explicit instants when an offer is saved. `horizon_days` limits how far ahead visitors can book (default 60).
 
 Visitors choose a slot and supply name and email. Booking and cancellation work without JS,
 through the CMS's CSRF-protected POST forms. No email or payment is triggered. Guest bookings
@@ -20,7 +19,7 @@ Availability is always recomputed on the server. A transaction locks the instanc
 checks overlapping bookings before inserting; simultaneous requests cannot both reserve the
 same time. Offers of different instances never block one another. Cancellation frees the slot.
 Editing an offer does not move existing bookings. Offers with any booking history cannot be
-deleted; use exclusions to stop future occurrences.
+deleted; their existing bookings keep their recorded time.
 
 The calendar row is created atomically on the first write. MySQL booking tables must use InnoDB;
 the original CMS `page` table may still use MyISAM without weakening booking serialization.

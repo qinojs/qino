@@ -3,7 +3,6 @@ import "@qino/qino";
 import type { App, Ctx } from "@qino/qino";
 
 export { occurrences } from "./recurrence.ts";
-export type { Schedule } from "./recurrence.ts";
 
 /** A half-open interval: dates for all-day entries, offset timestamps for timed entries. */
 export type Range = { start: string; end: string };

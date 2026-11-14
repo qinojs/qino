@@ -1,8 +1,7 @@
-import { sql } from "@qino/qino";
-import { occurrences } from "@qino/qino/calendar";
+import { overlaps } from "@qino/qino/calendar";
 import { cms } from "@qino/qino/cms";
 
-import { schedule, within } from "./schedule.ts";
+import { decode, select } from "./range.ts";
 
 import type { Entry, Source } from "@qino/qino/calendar";
 
@@ -11,10 +10,7 @@ export const calendar: Source = {
   color: "blue",
   async query(ctx, period) {
     const { app } = ctx, tree = cms(app);
-    const rows = await app.db.query`
-      SELECT * FROM cms_event
-      WHERE ${within(period)}
-      ORDER BY ${sql.id("start")}, id`;
+    const rows = await app.db.query`${select(period)}`;
     const nodes = new Map<number, { title: string; url: string } | null>();
     const result: Entry[] = [];
     for (const row of rows) {
@@ -26,10 +22,8 @@ export const calendar: Source = {
       }
       const node = nodes.get(id);
       if (!node) continue;
-      const definition = schedule(row), recurring = row.rrule || definition.rdate?.length;
-      for (const item of occurrences(definition, period)) {
-        result.push({ id: recurring ? `${row.id}:${item.recurrenceId}` : String(row.id), ...node, start: item.start, end: item.end });
-      }
+      const item = { id: String(row.id), ...node, ...decode(row) };
+      if (overlaps(item, period, { timeZone: period.timeZone })) result.push(item);
     }
     return result;
   },
