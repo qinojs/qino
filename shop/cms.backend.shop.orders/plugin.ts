@@ -15,6 +15,9 @@ const PER_PAGE = 100;
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Orders", de: "Bestellungen" });
 }
+export async function uninstall({ app }: { app: App }): Promise<void> {
+  await backend.uninstall(app, name);
+}
 
 const option = (value: string, label: unknown, current: string) =>
   html.async`<option value="${value}" ${value === current ? html`selected` : ""}>${label}`;
@@ -82,7 +85,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app, t = shopT(app);
   const order = await app.db.table("shop_order").get<Order>(id);
   if (!order) return html.async`<div class=u2-card><div>${t`Not found.`}</div></div>`;
-  const invoice = await app.db.row`SELECT id, number, status FROM invoice WHERE ref = ${refOf(id)} ORDER BY id DESC`.catch(() => undefined);
+  const invoice = await app.db.row`SELECT id, number, status FROM invoice WHERE ref = ${refOf(id)} ORDER BY id DESC`;
   return html.async`<div class=u2-flex data-order="${id}">
   <div class=u2-card>
     <div class=-head>${t`Order`} ${id} · ${(await labels(app))[order.status] ?? order.status}</div>

@@ -30,6 +30,11 @@ test("a table of rows: added, changed by its other columns only, removed, none b
       assertEquals((await saveRows(node, [rates], { table: rates.table, id: "nope:a:1", values: { price: "1" } }))?.ok, false);
       assertEquals((await saveRows(node, [rates], { table: rates.table, remove: id }))?.ok, true);
       assertEquals(await db.one`SELECT COUNT(*) FROM shop_shipping_rate`, 0);
+      // sorted by what no column holds; searched once there is much to read
+      for (let weight = 1; weight <= 21; weight++) await db.table("shop_shipping_rate").insert({ country: "CH", method: "a", weight, price: 1 });
+      const out = String(await renderRows(node, { ...rates, sort: (a, b) => Number(b.weight) - Number(a.weight) }));
+      assert(out.indexOf('data-id="CH:a:21"') < out.indexOf('data-id="CH:a:1"'));
+      assert(out.includes("class=-search"));
     });
   });
 });

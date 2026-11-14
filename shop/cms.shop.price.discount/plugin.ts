@@ -1,3 +1,4 @@
+import { unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { grpsOf, listen, shopT } from "@qino/qino/cms.shop";
 
@@ -60,7 +61,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   on("shop:line-description", async (e: { line: Line; description: string }) => {
     const [order, product] = await Promise.all([e.line.order(), e.line.product()]);
     if (!order || !product) return;
-    const d = await best(app, { product, quantity: e.line.quantity, order, time: Date.now() / 1000 });
+    const d = await best(app, { product, quantity: e.line.quantity, order, time: unixTime() });
     if (!d) return;
     const off = Math.round((1 - Number(d.factor)) * 1000) / 10;
     e.description += `${e.description ? "\n" : ""}${await t`including`} ${off}% ${d.title || await t`discount`}`;

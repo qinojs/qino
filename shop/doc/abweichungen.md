@@ -22,8 +22,6 @@ schreiben.
 1. ~~**Fehler im Warenkorb ohne „Lösung“-Knöpfe.**~~ Erledigt: `shop:line-check` kann `solutions`
    anbieten (`line.solutions()`, `line.solve()`, API `cart/lines/:id/solve`). Das Lager bietet
    „Stückzahl anpassen“ an, Lascaux' Kurse „Warteliste“ und „Personen reduzieren“.
-2. **Versand- und Zahlungsart wird automatisch gewählt, wenn es nur eine gibt.** In PHP war das
-   eine Einstellung (`auto_select_*`), bei Lascaux aus.
 3. **Kundentyp privat/Firma** liegt im Browser (sessionStorage), nicht auf dem Server. Firmen
    ausserhalb CH/LI sehen kein Kaufformular, wie in PHP, aber nur im Browser durchgesetzt.
 

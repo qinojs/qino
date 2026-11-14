@@ -14,8 +14,8 @@ export type Column = {
   label: unknown;
   /** money: minor units shown as major ones. date: unix time, a day in UTC. page: a page's id. */
   type?: "text" | "number" | "money" | "date" | "checkbox" | "select" | "page";
-  /** select: value → what it reads. */
-  options?: [string, string][];
+  /** select: value → what it reads; a function where that depends on the row. */
+  options?: [string, string][] | ((row?: Row) => [string, string][]);
   /** money: the row's currency. */
   currency?: (row: Row) => string;
   /** date: holds through this day — stored as the moment after it. */
@@ -34,6 +34,8 @@ export type Rows = {
   where?: Record<string, unknown>;
   /** Column names; a leading "-" sorts downwards. */
   order?: string[];
+  /** Sorts the rows by what no column holds (a name in the reader's language). */
+  sort?: (a: Row, b: Row) => number;
   /** Rows are changed, not added or removed. */
   fixed?: boolean;
   /** A row that cannot be removed. */
@@ -46,6 +48,7 @@ export type Rows = {
 
 const DAY = 86400;
 const LIMIT = 500; // a page stays a page, whatever a shop has
+const SEARCH = 20; // rows from which a table is searched rather than read
 
 /** What a cell holds, as an input shows it. */
 function shown(column: Column, row: Row): string {
@@ -71,10 +74,12 @@ export function input(column: Column, row?: Row): HtmlString {
   const off = row && column.locked?.(row) ? html`disabled` : "";
   if (column.type === "checkbox") return html`<input type=checkbox name="${name}" ${off} ${column.reload ? html`data-reload` : ""} ${row && Number(row[name]) ? html`checked` : ""} aria-label="${column.label}">`;
   if (column.type === "select") {
-    return html`<select name="${name}" aria-label="${column.label}">${column.options!.map(([v, label]) => html`<option value="${v}" ${v === value ? html`selected` : ""}>${label}`)}</select>`;
+    const options = typeof column.options === "function" ? column.options(row) : column.options!;
+    return html`<select name="${name}" aria-label="${column.label}">${options.map(([v, label]) => html`<option value="${v}" ${v === value ? html`selected` : ""}>${label}`)}</select>`;
   }
   const type = { number: "number", money: "number", date: "date", page: "qgcms-page" }[String(column.type)] ?? "text";
-  const step = column.type === "number" || column.type === "money" ? html`step=any` : "";
+  // a number is short: room for a rate or an amount, not a line of text
+  const step = column.type === "number" || column.type === "money" ? html`step=any style="width:7rem"` : "";
   return html`<input type=${type} ${step} ${off} name="${name}" value="${value}" aria-label="${column.label}">`;
 }
 
@@ -88,6 +93,7 @@ export async function renderRows(node: Node, spec: Rows): Promise<HtmlString> {
   const where = spec.where && table.valuesToFragment(spec.where);
   const filter = where?.parts.length ? sql`WHERE ${where}` : sql``;
   const rows = await node.app.db.query`SELECT * FROM ${sql.id(table)} ${filter} ${order} LIMIT ${LIMIT}`;
+  if (spec.sort) rows.sort(spec.sort);
   const total = rows.length < LIMIT ? rows.length : Number(await node.app.db.one`SELECT COUNT(*) FROM ${sql.id(table)} ${filter}`);
   const cell = (c: Column, row: Row) =>
     c.show ? c.show(row) : c.name! in (table.entryIdValues(row) ?? {}) ? shown(c, row) : input(c, row);
@@ -106,9 +112,10 @@ export async function renderRows(node: Node, spec: Rows): Promise<HtmlString> {
       ${columns.map((c) => html`<td>${c.show ? "" : input(c)}`)}
       <td><button type=button class=-create>${t`Add`}</button>`}
   </table></div>`;
-  return html.async`<div class=u2-card data-rows="${spec.table}" data-vars="${JSON.stringify(spec.vars ?? {})}">
+  return html.async`<div class=u2-card style="flex:0 1 auto" data-rows="${spec.table}" data-vars="${JSON.stringify(spec.vars ?? {})}">
   <div class=-head>${spec.title}</div>
   ${total > rows.length ? html.async`<div>${rows.length} / ${total}</div>` : ""}
+  ${rows.length > SEARCH ? html.async`<div><input type=search class=-search placeholder="${t`Search`}" aria-label="${t`Search`}"></div>` : ""}
   ${body}
 </div>`;
 }

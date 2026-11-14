@@ -66,9 +66,13 @@ export async function productTaxRate(app: App, productId: unknown, country: stri
   return rates.get(`${productId}|${country}`);
 }
 
+/** The currencies the shop prices in, the main one first. */
+export const currencies = (app: App): Promise<string[]> =>
+  cached(app, "shop_currency", () => app.db.col<string>`SELECT id FROM shop_currency WHERE active = ${true} ORDER BY main DESC, id`);
+
 /** The shop's main currency: the one marked, else the first active one. */
 export async function mainCurrency(app: App): Promise<Currency | undefined> {
-  const id = await cached(app, "shop_currency", () => app.db.one<string>`SELECT id FROM shop_currency WHERE active = ${true} ORDER BY main DESC, id LIMIT 1`);
+  const [id] = await currencies(app);
   return id ? currency(app, id) : undefined;
 }
 

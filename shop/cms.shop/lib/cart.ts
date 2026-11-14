@@ -56,7 +56,7 @@ export async function cart(ctx: Ctx, create = true): Promise<Order | undefined> 
 }
 
 /** On login the guest cart becomes the user's; older open carts of the user are released. */
-export async function adopt(app: App, e: { oldSession: Record<string, any>; usrId: number }): Promise<void> {
+export async function adopt(app: App, e: { oldSession: Record<string, { cart?: unknown } | undefined>; usrId: number }): Promise<void> {
   const id = e.oldSession["cms.shop"]?.cart;
   if (!id) return;
   const order = await app.db.table("shop_order").get<Order>(id);

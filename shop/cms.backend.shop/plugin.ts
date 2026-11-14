@@ -67,7 +67,7 @@ function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
   <div class=u2-card>
     <div class=-head>${t`Now`}</div>
-    ${figures(node.app)}
+    ${figures(app)}
   </div>
   ${card(node, "cms.backend.shop.orders", t`Newest orders`, (url) => newestOrders(app, url))}
   ${card(node, "cms.backend.shop.products", t`Sold most`, (url) => bestsellers(app, url))}

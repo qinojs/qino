@@ -61,6 +61,12 @@ document.addEventListener("change", async (e) => {
   if (res?.grossText) shown.textContent = res.grossText;
 });
 
+// [shop-choose=shipping|payment]: the method picked in it is the cart's
+document.addEventListener("change", (e) => {
+  const form = e.target.closest?.("[shop-choose]");
+  if (form && e.target.name === "method") choose(form.getAttribute("shop-choose"), e.target.value);
+});
+
 // A form names the product (product), optionally the variant and the amount; every other field
 // is the line's data. Several amounts at once: inputs named quantity inside elements carrying
 // data-variant.

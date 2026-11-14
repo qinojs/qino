@@ -64,10 +64,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!valid(coupon) || (Number(coupon!.once) && await used(order, order.coupon))) return;
     const off = await discount(app, order, coupon!, extras);
     if (!off) return;
-    let rate = 0;
-    for (const line of await order.lines()) rate = Math.max(rate, await line.taxRate());
     const price = (await order.currencyRow())?.round(off) ?? off;
-    extras.push({ key: "coupon", name: `${await t`Coupon`} "${coupon!.title}"`, price: -price, taxRate: rate, sort: 5 });
+    extras.push({ key: "coupon", name: `${await t`Coupon`} "${coupon!.title}"`, price: -price, taxRate: await order.taxRate(), sort: 5 });
   });
 
   // an amount is used up by what it paid, unless it stays as it is

@@ -20,6 +20,8 @@ export const shippingProvider: ShippingProvider = {
     return [{ name: "", label: "" }]; // what the customer reads: cms.shop's labels
   },
 
+  all: () => [{ name: "", label: "" }],
+
   async cost(app: App, order: Order) {
     let cost = 0;
     for (const line of await order.lines()) cost += Number(await rateOf(app, line.product_id, Number(line.quantity)) ?? 0);

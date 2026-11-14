@@ -27,3 +27,13 @@ document.addEventListener("click", async (e) => {
   const res = await send(row, remove ? { remove: row.dataset.id } : { values: values(row) });
   if (res) cms.reloadNode(Number(cms.el.nid(row)), JSON.parse(row.closest("[data-rows]").dataset.vars));
 });
+
+// a long table narrows to what is typed above it: the texts and typed values of a row, not its choices
+const textOf = (tr) => [...tr.cells].filter((td) => !td.querySelector("select"))
+  .map((td) => td.textContent + [...td.querySelectorAll("input:not([type=checkbox])")].map((i) => i.value).join(" ")).join(" ").toLowerCase();
+document.addEventListener("input", (e) => {
+  const search = e.target.closest?.("[data-rows] .-search");
+  if (!search) return;
+  const term = search.value.trim().toLowerCase();
+  for (const tr of search.closest("[data-rows]").querySelectorAll("tbody tr")) tr.hidden = !!term && !textOf(tr).includes(term);
+});

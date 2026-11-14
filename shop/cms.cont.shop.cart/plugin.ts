@@ -29,7 +29,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const line of lines) {
     const errors = Object.values(await line.errors()), solutions = Object.entries(await line.solutions());
     rows.push(html.async`<tr data-line="${line.id}">
-      <td class=-title>${line.name}<div class=-description>${(await line.describe()).split("\n").map((d) => html`<div>${d}</div>`)}</div>
+      <td class=-title>${line.name}<div class=-description>${(await line.describe()).split("\n").filter(Boolean).map((d) => html`<div>${d}</div>`)}</div>
         ${errors.length ? html`<div class=-errors>${errors.map((e) => html`<div>${e}</div>`)}${solutions.map(([id, s]) => html`<button type=button class=-solve data-solution="${id}">${s.label}</button>`)}</div>` : ""}
       <td class=-quantity>${editable ? html.async`<input type=number min=0 step=1 value="${line.quantity}" aria-label="${t`Quantity`}">` : line.quantity}
       <td class=-price>${money(line.price)}

@@ -17,7 +17,7 @@ document.addEventListener("submit", async (e) => {
   button.disabled = true;
   const res = await order(done);
   const errors = Object.values(res.errors ?? {}).filter(Boolean);
-  if (errors.length) alert("Es sind Fehler aufgetreten: \n\n" + errors.join("\n"));
+  if (errors.length) alert(`${form.dataset.errors}:\n\n${errors.join("\n")}`);
   // the order stands, only the payment did not start: ask, then try again, else on to the end
   let started = res;
   while (started.paymentFailed && confirm(form.dataset.paymentFailed)) started = await pay(res.order, done);

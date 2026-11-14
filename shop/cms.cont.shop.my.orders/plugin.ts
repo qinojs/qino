@@ -12,8 +12,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const t = shopT(node.app);
   if (!ctx.userId) return html`<div hidden></div>`;
   const url = ctx.req.url.toURL(), id = url.searchParams.get("shop_order");
+  // the page may be called by ?cmspid=: links keep its query
+  const link = (order = "") => {
+    order ? url.searchParams.set("shop_order", order) : url.searchParams.delete("shop_order");
+    return url.pathname + url.search;
+  };
   const order = id ? await node.app.db.table("shop_order").get<Order>(id) : undefined;
-  if (order && order.status !== "cart" && String(order.usr_id) === String(ctx.userId)) return detail(node, ctx, order, url);
+  if (order && order.status !== "cart" && String(order.usr_id) === String(ctx.userId)) return detail(node, order, link());
   const orders = await node.app.db.table("shop_order").all<Order>`WHERE usr_id = ${ctx.userId} AND status <> ${"cart"} ORDER BY ordered DESC`;
   if (!orders.length) return html.async`<div>${t`You have not ordered anything yet`}</div>`;
   return html.async`<div>
@@ -25,7 +30,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <th>${t`Payment`}
       <th>${t`Total`}
     <tbody>${orders.map(async (o) => html.async`<tr>
-      <td><a href="${`${url.pathname}?shop_order=${o.$id}`}">${o.$id}</a>
+      <td><a href="${link(o.$id)}">${o.$id}</a>
       <td>${date(o.ordered, ctx.lang)}
       <td>${o.label(o.shipping)}
       <td>${o.label(o.payment)}
@@ -34,10 +39,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-async function detail(node: Node, ctx: Ctx, order: Order, url: URL): Promise<HtmlString> {
+async function detail(node: Node, order: Order, back: string): Promise<HtmlString> {
   const t = shopT(node.app);
   return html.async`<div>
-  <a class=-back href="${url.pathname}">${t`Back`}</a>
+  <a class=-back href="${back}">${t`Back`}</a>
   <h2>${t`Order`} ${order.$id}</h2>
   ${orderTable(order)}
   <p>${t`Delivery`}: ${order.label(order.shipping)}<br>${t`Payment`}: ${order.label(order.payment)}</p>

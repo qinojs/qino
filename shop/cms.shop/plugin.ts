@@ -101,10 +101,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   on("shop:extras", async ({ order, extras }: { order: Order; extras: Extra[] }) => {
     const method = await order.activeShipping();
     if (!method) return;
-    let rate = 0;
-    for (const line of await order.lines()) rate = Math.max(rate, await line.taxRate());
     const label = (await order.shippings()).find((m) => m.name === method)?.label ?? method;
-    extras.push({ key: "shipping", name: `${await t`Shipping`} ${label}`, price: await order.shippingCost(method), taxRate: rate, sort: 2 });
+    extras.push({ key: "shipping", name: `${await t`Shipping`} ${label}`, price: await order.shippingCost(method), taxRate: await order.taxRate(), sort: 2 });
   });
 
   on("shop:order-check", async ({ order, errors }: { order: Order; errors: Record<string, string> }) => {

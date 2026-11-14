@@ -1,11 +1,11 @@
 import type { Node } from "@qino/qino/cms";
 import type { Product } from "./lib/rows.ts";
 
-export { Currency, idOf, Line, Order, Product, refOf, Variant } from "./lib/rows.ts";
+export { Currency, idOf, Line, Order, Product, refOf, shippingMethods, Variant } from "./lib/rows.ts";
 export { cart } from "./lib/cart.ts";
 export { stepUrl } from "./lib/steps.ts";
-export { orderTable } from "./lib/view.ts";
-export { appOf, countries, country, currency, currencyFor, grpsOf, listen, listOf, mainCurrency, sellsTo, settingsOf, shopT, taxIncluded, taxRate } from "./lib/shop.ts";
+export { methodStep, orderTable } from "./lib/view.ts";
+export { appOf, countries, country, currencies, currency, currencyFor, grpsOf, listen, listOf, mainCurrency, sellsTo, settingsOf, shopT, taxIncluded, taxRate } from "./lib/shop.ts";
 export type { Errors, Extra, Method, Party, PriceQuery, ShippingProvider, Solution, Status } from "./lib/rows.ts";
 
 /** The product row of a page that renders as one, created on first sight. */

@@ -261,6 +261,11 @@ export class Line extends ShopRow {
     return true;
   }
 
+  /** Its total with tax — what thresholds compare against. */
+  async gross(): Promise<number> {
+    return (await this.order())?.tax_included ? this.total() : this.total() * ((await this.taxRate()) / 100 + 1);
+  }
+
   /** quantity × price, rounded as fin rounds it. */
   total(): number { return totals([{ name: "", quantity: Number(this.quantity), price: Number(this.price) }], false).amounts[0]; }
 }
@@ -442,19 +447,22 @@ export class Order extends ShopRow {
   /** The goods alone, with tax — what thresholds compare against. */
   async goods(): Promise<number> {
     let sum = 0;
-    for (const line of await this.lines()) {
-      sum += this.tax_included ? line.total() : line.total() * ((await line.taxRate()) / 100 + 1);
-    }
+    for (const line of await this.lines()) sum += await line.gross();
     return sum;
+  }
+
+  /** The highest VAT rate of the goods: what delivery and a voucher carry. */
+  async taxRate(): Promise<number> {
+    let rate = 0;
+    for (const line of await this.lines()) rate = Math.max(rate, await line.taxRate());
+    return rate;
   }
 
   /** Delivery methods that fit this order, as `provider.method`. */
   shippings(): Promise<Method[]> { return this.#shippings ??= this.#offerShippings(); }
   async #offerShippings(): Promise<Method[]> {
     const offered: Method[] = [];
-    for (const p of shippingProviders(this.$app)) {
-      for (const m of await p.methods(this.$app, this)) offered.push({ name: m.name ? `${p.name}.${m.name}` : p.name, label: m.label });
-    }
+    for (const p of shippingProviders(this.$app)) offered.push(...named(p, await p.methods(this.$app, this)));
     const e = { order: this, methods: await this.#labelled(pick(offered, await listOf(settingsOf(this.$app).shippings))) };
     await this.$app.fire("shop:shippings", e);
     return e.methods;
@@ -598,16 +606,29 @@ const active = (chosen: string, methods: Method[]) =>
 
 /**
  * A way to deliver, declared by a module as `export const shippingProvider` — as fin.payment finds
- * its payment providers. `cost` is in minor units of the main currency.
+ * its payment providers. `methods` are those that fit an order, `all` every one there is. `cost` is
+ * in minor units of the main currency.
  */
 export type ShippingProvider = {
   name: string;
   methods(app: App, order: Order): Method[] | Promise<Method[]>;
+  all(app: App): Method[] | Promise<Method[]>;
   cost(app: App, order: Order, method: string): number | Promise<number>;
 };
 
 const shippingProviders = (app: App): ShippingProvider[] =>
   app.modules.linked().filter((mod) => mod.plugin.shippingProvider).map((mod) => mod.plugin.shippingProvider as ShippingProvider);
+
+/** A provider's methods as the shop names them: `provider.method`, or just `provider`. */
+const named = (p: ShippingProvider, methods: Method[]): Method[] =>
+  methods.map((m) => ({ name: m.name ? `${p.name}.${m.name}` : p.name, label: m.label }));
+
+/** Every delivery method there is, whatever the order — what a shop chooses from. */
+export async function shippingMethods(app: App): Promise<Method[]> {
+  const all: Method[] = [];
+  for (const p of shippingProviders(app)) all.push(...named(p, await p.all(app)));
+  return all;
+}
 
 export function registerRows(app: App): void {
   const db = app.db;

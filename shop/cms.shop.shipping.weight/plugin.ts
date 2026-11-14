@@ -13,6 +13,11 @@ export const shippingProvider: ShippingProvider = {
     return names.map((name) => ({ name, label: name })); // what the customer reads: cms.shop's labels
   },
 
+  async all(app: App) {
+    const names = await app.db.col<string>`SELECT DISTINCT method FROM shop_shipping_rate ORDER BY method`;
+    return names.map((name) => ({ name, label: name }));
+  },
+
   async cost(app: App, order: Order, method: string) {
     const weight = await order.weight();
     if (!weight) return 0;

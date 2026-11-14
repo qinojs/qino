@@ -24,7 +24,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     for (const line of await order.lines()) {
       const node = await (await line.product())?.node();
       if (node && (await Promise.all(exclude.map((id) => node.in(id)))).some(Boolean)) continue;
-      goods += order.tax_included ? line.total() : line.total() * ((await line.taxRate()) / 100 + 1);
+      goods += await line.gross();
     }
     if (!goods || goods >= minimum) return;
     const price = order.tax_included ? surcharge : surcharge / ((await taxRate(app, order.country)) / 100 + 1);

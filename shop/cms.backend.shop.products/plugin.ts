@@ -9,7 +9,7 @@ import manifest from "./manifest.json" with { type: "json" };
 import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Column, Rows } from "@qino/qino/cms.backend.shop";
-import type { Product } from "@qino/qino/cms.shop";
+import type { Product, Variant } from "@qino/qino/cms.shop";
 
 const { name } = manifest;
 const PER_PAGE = 100;
@@ -137,7 +137,11 @@ async function tables(app: App, id: number): Promise<Rows[]> {
     ],
   }, {
     table: "shop_variant", title: t`Variants`, where: { product_id: id }, order: ["sort", "id"], vars,
-    columns: [{ name: "sort", label: t`Position`, type: "number" }, { name: "price", label: t`Price`, type: "money", currency: inMain }, ...measures],
+    columns: [
+      // its name is a text of the product's page, written there
+      { label: t`Title`, show: async (row) => (await app.db.table("shop_variant").get<Variant>(row.id))?.title() },
+      { name: "sort", label: t`Position`, type: "number" }, { name: "price", label: t`Price`, type: "money", currency: inMain }, ...measures,
+    ],
   }, {
     table: "shop_product_tax", title: t`VAT of its own`, where: { product_id: id }, order: ["country"], vars,
     columns: [{ name: "country", label: t`Country` }, { name: "rate", label: t`VAT %`, type: "number" }],
@@ -233,7 +237,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
     const main = (await mainCurrency(app))?.$id ?? "";
     return saveRows(node, [{ table: "shop_product", title: "", fixed: true, columns: listColumns(app, main) }], vars);
   }
-  return saveRows(node, await tables(node.app, Number(vars.product)), vars);
+  return saveRows(node, await tables(app, Number(vars.product)), vars);
 }
 
 export const cms = { node: { render, api, js: ["../cms.backend.shop/pub/rows.js", "pub/main.js"] } };

@@ -25,8 +25,9 @@ test("a customer sees their own orders only; a new cart starts from their addres
       await order.add(product);
       assertEquals((await order.place()).ok, true);
       const node = await cmsOf(app).node(10);
-      assert(String(await cms.node.render(node, { ctx })).includes(`shop_order=${order.$id}`));
-    }, await at(app, "http://shop.test/"));
+      // called by ?cmspid=, the links keep it
+      assert(String(await cms.node.render(node, { ctx })).includes(`?cmspid=10&amp;shop_order=${order.$id}`));
+    }, await at(app, "http://shop.test/?cmspid=10"));
     const id = await app.db.one`SELECT id FROM shop_order WHERE status = 'ordered'`;
     await asVisitor(app, async (ctx) => { // someone else asks for it by number: the list, empty
       await ctx.authenticate(other, "test");

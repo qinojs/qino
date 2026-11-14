@@ -63,13 +63,15 @@ A shop module changes nothing in cms.shop, it adds:
 | A way out of an error | `solutions` in `shop:line-check` | stock, rent |
 | What a buying form asks | `shop:product-fields` | options |
 
-Helpers for them: `listen`, `listOf` (a list setting), `grpsOf` (core's groups), `orderTable` (an order as html).
+Helpers for them: `listen`, `listOf` (a list setting), `grpsOf` (core's groups), `orderTable` (an order as html),
+`methodStep` (a checkout step that chooses a method).
 
 ## Delivery and payment
 
 Payment methods are fin.payment's providers (`saferpay.twint`, `qrbill`); `payments` lists the
 ones offered, in order (empty: all). Delivery works the same way: a module declares
-`export const shippingProvider` (`name`, `methods`, `cost` in minor units of the main currency) —
+`export const shippingProvider` (`name`, `methods` that fit an order, `all` there are, `cost` in
+minor units of the main currency) —
 [shipping.weight](../cms.shop.shipping.weight/), [shipping.pickup](../cms.shop.shipping.pickup/),
 or a site's own. `shippings` lists the methods offered.
 
