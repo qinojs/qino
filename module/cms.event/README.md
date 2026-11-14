@@ -20,7 +20,8 @@ calendar days use UTC-midnight numeric storage coordinates and are decoded back 
 their actual bounds in a viewer's time zone still follow calendar-day semantics, including DST.
 
 `list(node)` reads the node's blocks. `query(node, period)` reads only overlapping blocks and
-returns their `eventId`, `start` and `end`. Both require a readable node. Trusted writes use
+returns their `eventId`, `start` and `end`. Listing definitions also allows node editors to inspect
+offline events, matching the CMS API's editor access; public queries still require a readable node. Trusted writes use
 `add`, `update(node, id, range)` and `remove(node, id)`; their caller authorizes changes.
 Updates and deletions are scoped to the owning node.
 

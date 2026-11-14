@@ -305,7 +305,7 @@ async function editor(node: Node, row: Row) {
     <div>
       <template data-line>${lineRow(app, "__i__", {}, shared)}</template>
       <button type=button data-add-line>${t`Add line`}</button>
-      <u2-fields>${t`Notes`} ${inlineEditor(html`<textarea name=text rows=3>${row.text}</textarea>`)}</u2-fields>
+      <label>${t`Notes`} ${inlineEditor(html`<textarea name=text rows=3>${row.text}</textarea>`)}</label>
     </div>
     <div>
       <button type=button data-action=issue data-id="${id}"

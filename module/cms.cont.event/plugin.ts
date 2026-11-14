@@ -2,6 +2,7 @@ import { html } from "@qino/qino";
 import { list } from "@qino/qino/cms.event";
 
 import api from "./nodeApi.ts";
+import { formatDates } from "./dates.ts";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -12,8 +13,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const settings = node.settings;
   const blocks = await list(node);
   const location = await node.cms.text(node, "location", { if: true });
-  const dates = new Intl.DateTimeFormat(ctx.lang, { dateStyle: "long", timeZone: "UTC" });
-  const times = new Intl.DateTimeFormat(ctx.lang, { dateStyle: "long", timeStyle: "short", timeZone });
   const address = [settings.address_street(), [settings.address_postal_code(), settings.address_locality()].filter(Boolean).join(" "), settings.address_country()].filter(Boolean);
   const price = settings.price();
   const currency = String(settings.currency() ?? "");
@@ -29,13 +28,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ].filter(Boolean);
   return html.async`<article>
     ${node.cms.text(node, "title", { tag: "h2" })}
-    ${blocks.length ? html.async`<ul>${blocks.map((block) => {
-      const allDay = !/[Tt ]/.test(block.start);
-      const end = allDay ? Temporal.PlainDate.from(block.end).subtract({ days: 1 }).toString() : block.end;
-      const instant = (value: string) => allDay ? Temporal.PlainDate.from(value).toZonedDateTime("UTC").epochMilliseconds
-        : Temporal.Instant.from(value).epochMilliseconds;
-      return html`<li><time datetime="${block.start}">${(allDay ? dates : times).formatRange(instant(block.start), instant(end))}</time></li>`;
-    })}</ul>` : ""}
+    ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, timeZone).map((date) => html`<li>${date}</li>`)}</ul>` : ""}
     ${facts.length ? html.async`<dl>${facts}</dl>` : ""}
     ${node.cms.text(node, "main")}
     ${link ? html.async`<p><a href="${link}">${t`External event page`}</a></p>` : ""}
@@ -45,7 +38,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 export const cms = { node: {
   render, api, widget: "pub/widget.js",
   settingsSchema: { properties: {
-    time_zone: { type: "string", default: "UTC", description: "IANA time zone for event display and local time input." },
+    time_zone: { type: "string", description: "IANA time zone for event display and local time input; initially taken from the editor’s browser." },
     address_street: { type: "string", description: "Venue street address." },
     address_postal_code: { type: "string", description: "Venue postal code." },
     address_locality: { type: "string", description: "Venue city or locality." },

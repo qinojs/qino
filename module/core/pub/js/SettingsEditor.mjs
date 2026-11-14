@@ -166,7 +166,9 @@ function ensureSettingsEditorCss(root = document) {
   ul { list-style:none; padding:0; margin:0; }
   ul ul { padding-left:20px; }
   .-row {
-    border-bottom:1px solid #f4f4f4; display:flex; align-items:center;
+    border-bottom:1px solid #f4f4f4;
+    display:flex;
+    align-items:baseline;;
     &:hover { background:#f4f4f4; }
     > * { padding:5px; }
     > .-name { flex:1 0 auto; }
@@ -176,10 +178,15 @@ function ensureSettingsEditorCss(root = document) {
   textarea { height:120px; }
   .-rem { text-align:center; color:transparent; }
   .-toggle > a, .-rem > a {
-    display:block; color:transparent; width:1.8em; height:1.8em;
-    background-repeat:no-repeat; background-position:50%;
+    display:block;
+    color:transparent;
+    width:1.5em;
+    height:1.5em;
+    background-repeat:no-repeat;
+    background-position:50%;
   }
   .-rem > a { background-image:${svgUrl(remImgData)}; cursor:pointer; }
+  .-toggle { align-self:center; }
   .-toggle > .-minus { background-image:${svgUrl(closeImgData)}; cursor:pointer; background-size:95%; }
   .-toggle > .-plus { background-image:${svgUrl(openImgData)}; cursor:pointer; background-size:95%; }
 }

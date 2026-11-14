@@ -56,6 +56,9 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       await assertRejects(() => api(event, { save: { start: "2027-07-12", end: "2027-07-12T12:00Z" } }), RangeError);
       await assertRejects(() => api(other, { save: { id: saved.id, start: "2027-07-14", end: "2027-07-15" } }));
       await api(other, { remove: saved.id });
+      const first = await api(other, { save: { start: "2028-07-10T09:00", end: "2028-07-10T11:00", timeZone: "Europe/Zurich" } }) as { start: string };
+      assertEquals(first.start, "2028-07-10T07:00:00Z");
+      assertEquals(other.settings.time_zone(), "Europe/Zurich");
       assertEquals((await list(event)).length, 2);
     });
     await requestStorage.run(viewer, async () => {

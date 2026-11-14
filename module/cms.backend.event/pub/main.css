@@ -1,0 +1,60 @@
+.cms-event-detail {
+    inline-size: 100%;
+    min-inline-size: 0;
+    container-type: inline-size;
+}
+.cms-event-detail > .u2-grid, .cms-event-detail .-event-columns {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+}
+@container (min-width: 65rem) {
+    .cms-event-detail > .u2-grid, .cms-event-detail .-event-columns {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+}
+.cms-event-detail :is(.u2-card, form, fieldset, qcms-widget, section) {
+    min-inline-size: 0;
+}
+.cms-event-detail label {
+    display: grid;
+    min-inline-size: 0;
+}
+.cms-event-detail qcms-widget {
+    display: block;
+}
+.cms-event-detail [role=status]:empty {
+    display: none;
+}
+.cms-event-detail :is(input:not([type=checkbox]):not([type=hidden]), select, textarea, u2-rte) {
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+}
+.cms-events :is(td, th), .cms-event-detail :is(td, th) {
+    text-align: start;
+    vertical-align: top;
+}
+.cms-events time {
+    white-space: nowrap;
+}
+
+.cms-event-detail label.-check {
+    display: flex;
+    align-items: center;
+}
+
+.cms-event-detail [data-date-table] input:not([type=checkbox]) {
+    inline-size: 16rem;
+}
+.cms-events [role=status]:empty {
+    display: none;
+}
+
+
+.cms-event-detail [data-event-info] {
+    display: block;
+}
+.cms-event-detail [data-date-table] input[type=date] {
+    inline-size: 11rem;
+}

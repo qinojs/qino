@@ -52,28 +52,29 @@ export async function document(
 <meta charset="utf-8">
 <title>${invoice.number}</title>
 <style>
-  @page { size: A4; margin: 2cm 2cm 2.5cm }
+  @page { size: A4; margin: 20mm 20mm 25mm }
   /* a payment slip (QR bill: 210 × 105 mm) sits on a page of its own, at the bottom, without margins */
   @page slip { margin: 0 }
   .slip { page: slip; break-before: page; padding-top: 192mm }
   .slip svg { display: block; width: 210mm; height: 105mm }
   body { font-family: system-ui, sans-serif; font-size: 10pt; line-height: 1.4 }
   header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 3em }
+  header img { max-height: 4em }
   address { font-style: normal; white-space: pre-line }
   .to { margin-bottom: 3em }
-  /* fixed columns: a table continued on the next page keeps its widths */
-  table { width: 100%; border-collapse: collapse; table-layout: fixed }
+  table { width: 100%; border-collapse: collapse }
   .pos { width: 2.5em }
-  .quantity { width: 5.5em }
-  .price { width: 8em }
+  .quantity { width: 4em }
+  .price { width: 4em }
   .rate { width: 4em }
-  .amount { width: 8.5em }
-  th, td { text-align: start; padding: .3em .4em; vertical-align: top }
-  thead th { border-bottom: 1px solid }
+  .amount { width: 4em }
+  /* a long word (a URL) wraps instead of widening the table, which would shrink the whole print */
+  th, td { text-align: start; padding: .3em .5em; vertical-align: top; overflow-wrap: anywhere }
+  thead th { border-bottom: .05mm solid }
   .n { text-align: end; white-space: nowrap }
   /* the amounts' currency is in the column head and beside Total */
   tbody .currency, tfoot td .currency { display: none }
-  tfoot th, tfoot td { border-top: 1px solid }
+  tfoot th, tfoot td { border-top: .05mm solid }
   /* the head repeats on every page, the totals only once at the end; a line is not split */
   tfoot { display: table-row-group }
   tr { break-inside: avoid }
@@ -90,14 +91,14 @@ export async function document(
       box-sizing: border-box; width: 210mm; min-height: 297mm; margin: 0 auto 1rem;
       background: #fff; box-shadow: 0 0 1em #000a;
     }
-    main { padding: 2cm 2cm 2.5cm }
+    main { padding: 20mm 20mm 25mm }
   }
   ${html.raw(css)}
 </style>
 <main>
 <header>
   <address>${addressBlock(sender, abroad)}${vat(sender)}</address>
-  ${logo ? html`<img src="${logo}" alt="" style="max-height: 4em">` : ""}
+  ${logo ? html`<img src="${logo}" alt="">` : ""}
 </header>
 <address class=to>${addressBlock(party, abroad)}${vat(party)}</address>
 <h1>${titleOf(app, invoice, listed)}${invoice.number ? ` ${invoice.number}` : ""}${

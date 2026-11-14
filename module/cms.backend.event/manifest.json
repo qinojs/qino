@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.event",
   "description": "Manage CMS events and their categories with search, pagination and CMS editing links.",
-  "dependencies": ["cms.backend", "cms.cont.event.category", "cms.cont.flexible"],
-  "files": ["README.md", "locale/de.json", "manifest.json", "nodeApi.ts", "plugin.ts", "render.ts", "pub/main.js", "pub/module.svg"]
+  "dependencies": ["cms.backend", "cms.cont.event", "cms.cont.event.category", "cms.cont.flexible", "cms.frontend"],
+  "files": ["README.md", "detail.ts", "locale/de.json", "manifest.json", "nodeApi.ts", "plugin.ts", "render.ts", "pub/main.css", "pub/main.js", "pub/module.svg"]
 }

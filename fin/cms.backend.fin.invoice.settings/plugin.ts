@@ -19,7 +19,7 @@ export const uninstall = ({ app }: { app: App }): Promise<void> => backend.unins
 function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:0 1 auto">
+  <div class=u2-card style="flex:0 1 40rem">
     <div class=-head>${t`Settings`}</div>
     <settings-editor source="/api/core/settings/fin.invoice"></settings-editor>
   </div>

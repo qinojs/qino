@@ -61,6 +61,18 @@ test("event management uses CMS categories, checks both permission levels and pa
       return event;
     });
     const period = { start: "2027-07-01", end: "2027-08-01", timeZone: "UTC" };
+    const detailContext = await context(editorId, `http://qino.test/?event=${event.id}`);
+    await requestStorage.run(detailContext, async () => {
+      const html = String(await render(panel, { ctx: detailContext }));
+      assertStringIncludes(html, "data-event-texts");
+      assertStringIncludes(html, `data-event-widget="${event.id}"`);
+      await api(panel, { texts: { id: event.id, lang: app.languages.def, title: "Pottery", location: "Workshop hall", main: "<p>Learn pottery</p>" } });
+      assertEquals((await event.showText("main", app.languages.def)).plain(), "Learn pottery");
+      await assertRejects(() => api(panel, { texts: { id: event.id, lang: "invalid", title: "Wrong", location: "", main: "" } }));
+      await event.set("online_end", 1);
+      assertEquals((await app.modules.get("cms.cont.event")!.plugin.cms.node.api(event, { blocks: true })).length, 1);
+      await event.set("online_end", 0);
+    });
     await requestStorage.run(await context(), async () => {
       assertEquals(await entries((await context()), period), []);
       const rendered = String(await categoryPlugin.node.render(category, { ctx: await context() }));
@@ -69,7 +81,9 @@ test("event management uses CMS categories, checks both permission levels and pa
     await requestStorage.run(await context(editorId), () => api(panel, { visibility: { id: event.id, inherit: true } }));
     await requestStorage.run(await context(), async () => {
       assertEquals((await entries(await context(), period)).length, 1);
-      assertStringIncludes(String(await categoryPlugin.node.render(category, { ctx: await context() })), "Pottery");
+      const html = String(await categoryPlugin.node.render(category, { ctx: await context() }));
+      assertStringIncludes(html, "Pottery");
+      assertStringIncludes(html, 'datetime="2027-07-12"');
     });
     await requestStorage.run(await context(readerId), async () => {
       await assertRejects(() => api(panel, { visibility: { id: event.id, inherit: false } }), AccessError);
@@ -77,6 +91,11 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertStringIncludes(rendered, "Pottery");
       assertEquals(rendered.includes("Private category"), false);
       assertEquals(rendered.includes("data-event-visibility"), false);
+      const ctx = await context(readerId, `http://qino.test/?event=${event.id}`);
+      const detail = String(await render(panel, { ctx }));
+      assertEquals(detail.includes("data-event-widget"), false);
+      assertStringIncludes(detail, "disabled");
+      await assertRejects(() => api(panel, { texts: { id: event.id, lang: app.languages.def, title: "Denied", location: "", main: "" } }), AccessError);
     });
     await requestStorage.run(await context(editorId), async () => {
       await assertRejects(() => api(panel, { create: { parent: hidden.id, title: "Denied" } }), AccessError);
@@ -101,6 +120,11 @@ test("event management uses CMS categories, checks both permission levels and pa
       const html = String(await render(panel, { ctx: admin }));
       assertEquals(html.split("<th scope=row>").length - 1, 50);
       assertStringIncludes(html, "page=2");
+      assertStringIncludes(html, 'datetime="2027-07-12"');
+      assertStringIncludes(html, `event=${event.id}`);
+      assertStringIncludes(html, "<tr u2-href>");
+      assertEquals(html.includes("name=schedule"), false);
+      assertEquals(html.includes("view=categories"), false);
       const publicList = String(await categoryPlugin.node.render(category, { ctx: admin }));
       assertEquals(publicList.split("<li>").length - 1, 20);
       assertStringIncludes(publicList, `cms_event_${category.id}_page=2`);

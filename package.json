@@ -45,6 +45,7 @@
     "./cms.backend.system": "./module/cms.backend.system/mod.ts",
     "./cms.cont.cd.fullcalendar": "./cms-legacy/cms.cont.cd.fullcalendar/mod.ts",
     "./cms.cont.booking": "./module/cms.cont.booking/mod.ts",
+    "./cms.cont.event": "./module/cms.cont.event/mod.ts",
     "./cms.cont.dbtable": "./module/cms.cont.dbtable/mod.ts",
     "./cms.cont.form": "./module/cms.cont.form/mod.ts",
     "./cms.cont.form.fields": "./module/cms.cont.form.fields/mod.ts",

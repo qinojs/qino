@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 export default async function (node: Node, input: {
   blocks?: boolean; save?: Range & { id?: number; timeZone?: string }; remove?: number; details?: Record<string, unknown>;
 }) {
-  if (node.vs.module !== "cms.cont.event" || !await node.isReadable() || await node.access() < 2) throw new AccessError();
+  if (node.vs.module !== "cms.cont.event" || await node.access() < 2) throw new AccessError();
   const timeZone = String(node.settings.time_zone() ?? "UTC");
   if (input.details) {
     const values: Record<string, string | number | null> = {};
@@ -54,10 +54,14 @@ export default async function (node: Node, input: {
     const zone = range.timeZone || timeZone;
     const instant = (value: string) => !/[Tt ]/.test(value) || /(?:Z|[+-]\d\d:\d\d|\])$/i.test(value) ? value
       : Temporal.PlainDateTime.from(value).toZonedDateTime(zone, { disambiguation: "reject" }).toInstant().toString();
+    new Intl.DateTimeFormat(undefined, { timeZone: zone });
     const values = { start: instant(range.start), end: instant(range.end) };
-    if (!range.id) return { id: Number(await add(node, values)) };
-    if (!await update(node, Number(range.id), values)) throw new ApiError(404, "Event block not found");
-    return { id: Number(range.id) };
+    const id = range.id ? Number(range.id) : Number(await add(node, values));
+    if (range.id && !await update(node, id, values)) throw new ApiError(404, "Event block not found");
+    if (!node.settings.time_zone() && range.timeZone) {
+      await node.settings[$item].patch({ time_zone: zone });
+    }
+    return { id, ...values };
   }
   if (input.remove) {
     await remove(node, Number(input.remove));

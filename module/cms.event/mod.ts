@@ -25,7 +25,7 @@ export async function remove(node: Node, id: number) {
 
 /** Event definitions are visible only to readers of their owning node. */
 export async function list(node: Node) {
-  if (!await node.isReadable()) return [];
+  if (await node.access() < 2 && !await node.isReadable()) return [];
   const rows = await node.db.query`SELECT id, ${sql.id("start")}, ${sql.id("end")}, all_day FROM cms_event WHERE node_id = ${node.id} ORDER BY ${sql.id("start")}, id`;
   return rows.map((row) => ({ id: Number(row.id), ...decode(row) }));
 }

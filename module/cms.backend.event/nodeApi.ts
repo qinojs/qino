@@ -7,6 +7,7 @@ export default async function (node: Node, input: {
   create?: { parent: number; title: string; category?: boolean };
   move?: { event: number; category: number };
   visibility?: { id: number; inherit: boolean };
+  texts?: { id: number; lang: string; title: string; location: string; main: string };
 }) {
   if (!getCtx().userId || !await node.isReadable() || await node.access() < 2) throw new AccessError();
   const target = async (id: number, module?: string) => {
@@ -15,6 +16,18 @@ export default async function (node: Node, input: {
     if (module && item.vs.module !== module) throw new ApiError(400, "Invalid event target");
     return item;
   };
+  if (input.texts) {
+    const values = input.texts, event = await target(values.id, "cms.cont.event");
+    if (!node.app.languages.all.includes(values.lang)) throw new ApiError(400, "Unknown content language");
+    if ([values.title, values.location, values.main].some((value) => typeof value !== "string") || !values.title.trim())
+      throw new ApiError(400, "A title and valid content are required");
+    await node.db.transaction(async () => {
+      await event.title(values.lang, values.title);
+      await event.text("location", values.lang, values.location);
+      await event.text("main", values.lang, values.main);
+    });
+    return { ok: true };
+  }
   if (input.create) {
     const { parent: id, category } = input.create;
     const title = typeof input.create.title === "string" ? input.create.title.trim() : "";

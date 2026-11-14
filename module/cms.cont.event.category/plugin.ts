@@ -1,4 +1,5 @@
-import { html } from "@qino/qino";
+import { html, sql } from "@qino/qino";
+import { overview, formatDates } from "@qino/qino/cms.cont.event";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -12,13 +13,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const param = `cms_event_${node.id}_page`;
   const asked = Number(ctx.req.query[param]);
   const page = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
-  const rows = await node.db.query`SELECT * FROM page WHERE basis = ${node.id} AND module = ${"cms.cont.event"}
-    ORDER BY sort, id LIMIT ${PER_PAGE + 1} OFFSET ${(page - 1) * PER_PAGE}`;
+  const rows = await overview(node.db, sql`SELECT * FROM page WHERE basis = ${node.id} AND module = ${"cms.cont.event"}
+    ORDER BY sort, id LIMIT ${PER_PAGE + 1} OFFSET ${(page - 1) * PER_PAGE}`, sql`p.sort, p.id`);
   const events = [];
-  for (const row of rows.slice(0, PER_PAGE)) {
+  for (const { row, blocks, count } of rows.slice(0, PER_PAGE)) {
     const event = await node.cms.node(Number(row.id), row);
     if (!await event.isReadable()) continue;
-    events.push(html.async`<li><a href="${event.url()}">${event.showTitle()}</a></li>`);
+    events.push(html.async`<li><article>
+      <h3><a href="${event.url()}">${event.showTitle()}</a></h3>
+      ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, String(event.settings.time_zone() ?? "UTC")).map((date) => html`<li>${date}</li>`)}</ul>` : html.async`<p>${t`No date yet`}</p>`}
+      ${event.settings.address_locality() ? html`<p>${event.settings.address_locality()}</p>` : ""}
+      ${count > blocks.length ? html.async`<p><a href="${event.url()}">${t`All dates`} (${count})</a></p>` : ""}
+    </article></li>`);
   }
   const link = (page: number) => {
     const url = new URL(ctx.req.url.href);

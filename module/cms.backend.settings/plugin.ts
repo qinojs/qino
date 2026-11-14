@@ -9,7 +9,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 function render(_node: unknown, { ctx }: { ctx: Ctx }) {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/SettingsEditor.mjs");
-  return html`<div class=u2-card>
+  return html`<div class=u2-card style="flex:0 1 40rem">
   <div class=-head>Settings</div>
   <div>
     <settings-editor source="/api/core/settings"></settings-editor>
