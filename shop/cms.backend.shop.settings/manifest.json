@@ -2,5 +2,5 @@
   "name": "cms.backend.shop.settings",
   "description": "The shop's currencies and countries: what it sells in, where it delivers, what tax applies.",
   "dependencies": ["cms.backend.shop", "fin.payment", "locale.country"],
-  "files": ["manifest.json", "plugin.ts", "pub/module.svg"]
+  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
 }

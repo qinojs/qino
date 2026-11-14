@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { hee, html } from "@qino/qino";
 import { listen, shopT } from "@qino/qino/cms.shop";
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -29,7 +29,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   on("shop:price-final", async (e) => { e.price += inCurrency(await surcharge(app, e.product.$id, e.data, true), e.currency) / (e.quantity || 1); });
 
   on("shop:line-description", (e: { line: Line; description: string }) => {
-    const parts = Object.entries(picked(e.line.dataOf()) ?? {}).map(([name, value]) => `${name}: ${value}`);
+    const parts = Object.entries(picked(e.line.dataOf()) ?? {}).map(([name, value]) => hee(`${name}: ${value}`));
     if (parts.length) e.description = [e.description, ...parts].filter(Boolean).join("\n");
   });
 

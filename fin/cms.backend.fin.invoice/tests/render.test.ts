@@ -86,7 +86,6 @@ test("a new invoice opens in the editor, saves as one types, is issued, asked fo
 
     const overview = String(await as(base, () => render(node)));
     assertStringIncludes(overview, "Kunde &amp; Co");
-    assertStringIncludes(overview, "/api/core/settings/fin.invoice");
     assert(!String(await as(`${base}?overdue=1`, () => render(node))).includes("Kunde &amp; Co"));
   });
 });

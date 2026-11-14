@@ -1,4 +1,4 @@
-import { getCtx, html, sql, sqlSearch } from "@qino/qino";
+import { getCtx, html, inlinePolicy, sanitizeHtml, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
   badge, direction, field, inputAmount, money, option, pager, refLink, rowLink, sources, status,
@@ -56,7 +56,7 @@ async function usersOf(app: App, rows: Row[]) {
   return new Map(users.map((u) => [Number(u.id), userLabel(u)]));
 }
 
-/** Invoices with their filters, a form for a new draft, and the settings. */
+/** Invoices with their filters, and a form for a new draft. */
 async function overview(node: Node, url: URL) {
   const t = node.app.t;
   const self = await (await node.page()).url();
@@ -83,10 +83,6 @@ async function overview(node: Node, url: URL) {
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`New invoice`}</div>
     ${newForm(node.app)}
-  </div>
-  <div class=u2-card style="flex:0 1 auto">
-    <div class=-head>${t`Settings`}</div>
-    <settings-editor source="/api/core/settings/fin.invoice"></settings-editor>
   </div>
 </div>`;
 }
@@ -198,13 +194,17 @@ const categories = (app: App): Record<string, unknown> => ({
   O: app.t`Not subject to tax`,
 });
 
+/** A text with inline markup — a description, the notes: the editor offers what output keeps. */
+const inlineEditor = (textarea: HtmlString | Promise<HtmlString>) =>
+  html.async`<u2-rte style="--u2-rte-elements:${inlinePolicy.elements.join(" ")}">${textarea}</u2-rte>`;
+
 /** One editable line; `i` keeps the fields of a line together. */
 const lineRow = (app: App, i: string | number, line: Row, { currency, rate, taxed, accounts }: Shared) =>
   html.async`<tr draggable=false>
   <td><button type=button class=u2-unstyle u2-draghandle title="${app.t`Reorder`}">
     <u2-ico icon=drag_indicator>⠿</u2-ico></button>
   <td class=-item><input name="name${i}" value="${line.name}">
-    <textarea name="description${i}" rows=1 placeholder="${app.t`Description`}">${line.description}</textarea>
+    ${inlineEditor(html.async`<textarea name="description${i}" rows=1 placeholder="${app.t`Description`}">${line.description}</textarea>`)}
     ${accounts ? html.async`<select name="account${i}" class=-account title="${app.t`Account`}">
       <option value="">${app.t`Default account`} ${accounts.fallback}
       ${accounts.list.map((a) => html`<option value="${a.number}"${
@@ -305,7 +305,7 @@ async function editor(node: Node, row: Row) {
     <div>
       <template data-line>${lineRow(app, "__i__", {}, shared)}</template>
       <button type=button data-add-line>${t`Add line`}</button>
-      <u2-fields>${t`Notes`} <textarea name=text rows=3>${row.text}</textarea></u2-fields>
+      <u2-fields>${t`Notes`} ${inlineEditor(html`<textarea name=text rows=3>${row.text}</textarea>`)}</u2-fields>
     </div>
     <div>
       <button type=button data-action=issue data-id="${id}"
@@ -472,7 +472,7 @@ async function detail(node: Node, id: number) {
         <th>${t`Tax`}
         <th>${t`Amount`}
       <tbody>${items.map((line) => html`<tr>
-        <td>${line.name}${line.description ? html`<br><small>${line.description}</small>` : ""}
+        <td>${line.name}${line.description ? html`<br><small style="white-space:pre-line">${html.raw(sanitizeHtml(line.description, inlinePolicy))}</small>` : ""}
         <td style="text-align:end">${Number(line.quantity)} ${line.unit}
         <td style="text-align:end">${money(line.price, row.currency)}
         <td style="text-align:end">${Number(line.tax_rate)} %

@@ -1,4 +1,3 @@
-import "@qino/m/core/pub/js/SettingsEditor.mjs";
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
 import { t } from "@qino/pub/t.js";
 
@@ -87,6 +86,7 @@ cms.initNode("backend.fin.invoice", (el) => {
     // dynamic: the drag attributes pull a cdn dependency that `deno check --all` cannot follow
     import("@qino/u2/attr/dropzone/dropzone.js");
     import("@qino/u2/attr/draghandle/draghandle.js");
+    import("@qino/u2/js/rte/highlight.js"); // <mark> in descriptions and notes
     // a line moved: the order of the fields is the order of the lines
     lines.addEventListener("u2-dropzone-drop", (e) => e.detail?.add && soon());
 

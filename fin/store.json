@@ -7,6 +7,7 @@
     "cms.backend.fin.hosting": {},
     "cms.backend.fin.invoice": {},
     "cms.backend.fin.invoice.inbox": {},
+    "cms.backend.fin.invoice.settings": {},
     "cms.backend.fin.party": {},
     "cms.backend.fin.payment": {},
     "cms.backend.fin.subscription": {},

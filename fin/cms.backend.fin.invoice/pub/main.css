@@ -6,8 +6,12 @@
   [data-lines] .-item { width: 100% }
   [data-lines] td:not(.-item) { width: 1px; white-space: nowrap }
   [data-lines] .-item input { width: 100%; min-width: 12rem }
-  [data-lines] .-item :is(textarea, select) { display: block; width: 100% }
+  [data-lines] .-item select { display: block; width: 100% }
+  /* descriptions and notes are text with emphasis: no blocks, Enter breaks the line */
+  u2-rte { --u2-rte-block: none; --u2-rte-enter: break; --u2-rte-toolbar: bold italic strike highlight }
+  u2-rte > [data-u2-rte-editor] { white-space: pre-line }
+  [data-lines] u2-rte > [data-u2-rte-editor] { min-block-size: 0 }
   /* a line's description and account show while the line is edited, or once they are set */
-  [data-lines] tr:not(:focus-within) textarea:placeholder-shown { display: none }
+  [data-lines] tr:not(:focus-within) u2-rte:has(textarea:placeholder-shown) { display: none }
   [data-lines] tr:not(:focus-within) .-account:has(option[value=""]:checked) { display: none }
 }

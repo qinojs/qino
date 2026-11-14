@@ -1,4 +1,4 @@
-import { unixTime } from "@qino/qino";
+import { hee, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { grpsOf, listen, shopT } from "@qino/qino/cms.shop";
 
@@ -64,6 +64,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const d = await best(app, { product, quantity: e.line.quantity, order, time: unixTime() });
     if (!d) return;
     const off = Math.round((1 - Number(d.factor)) * 1000) / 10;
-    e.description += `${e.description ? "\n" : ""}${await t`including`} ${off}% ${d.title || await t`discount`}`;
+    e.description += `${e.description ? "\n" : ""}${await t`including`} ${off}% ${hee(d.title || await t`discount`)}`;
   });
 }

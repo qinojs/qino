@@ -15,7 +15,7 @@ export const calendar: Source = {
     const all = ctx.user?.superuser || access > 1;
     const url = access ? await page!.url() : "";
     const rows = await ctx.app.db.query`
-      SELECT r.*, l.order_id FROM shop_rental r
+      SELECT r.id, r.product_id, r.begins, r.ends, l.order_id FROM shop_rental r
       LEFT JOIN shop_order_line l ON l.id = r.line_id
       WHERE r.begins < ${Temporal.Instant.from(period.end).epochMilliseconds / 1000}
         AND r.ends > ${Temporal.Instant.from(period.start).epochMilliseconds / 1000}

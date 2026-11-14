@@ -27,9 +27,7 @@ export async function slots(node: Node, period: Period) {
   if (from.until(until).total("hours") > 366 * 24) throw new ApiError(400, "Booking query exceeds one year");
   const range = { start: from.toString({ fractionalSecondDigits: 9 }), end: until.toString({ fractionalSecondDigits: 9 }), timeZone: period.timeZone };
   const offers = await query(node, range);
-  const booked = await node.db.query`SELECT ${sql.id("start")}, ${sql.id("end")} FROM cms_booking
-    WHERE node_id = ${node.id} AND cancelled = ${false} AND ${sql.id("start")} < ${range.end} AND ${sql.id("end")} > ${range.start}`;
-  const result = new Map<string, { eventId: number; start: string; end: string }>();
+  const result = new Map<string, { eventId: number; start: Temporal.Instant; end: Temporal.Instant }>();
   let count = 0;
   for (const offer of offers) {
     if (!/[Tt ]/.test(offer.start)) continue;
@@ -44,14 +42,27 @@ export async function slots(node: Node, period: Period) {
       if (++count > 10_000) throw new ApiError(400, "Too many booking slots");
       const last = duration ? start.add({ minutes: duration }) : end;
       if (Temporal.Instant.compare(last, end) > 0 || Temporal.Instant.compare(start, until) >= 0) break;
-      const slot = { eventId: offer.eventId, start: start.toString({ fractionalSecondDigits: 9 }), end: last.toString({ fractionalSecondDigits: 9 }) };
-      if (Temporal.Instant.compare(start, from) >= 0 && !booked.some((item) => overlaps(slot, { start: String(item.start), end: String(item.end) })))
-        result.set(`${slot.start}/${slot.end}`, slot);
+      if (Temporal.Instant.compare(start, from) >= 0)
+        result.set(`${start.epochNanoseconds}/${last.epochNanoseconds}`, { eventId: offer.eventId, start, end: last });
       if (!duration) break;
       start = last;
     }
   }
-  return [...result.values()].sort((a, b) => a.start.localeCompare(b.start));
+  const candidates = [...result.values()].sort((a, b) => Temporal.Instant.compare(a.start, b.start));
+  if (!candidates.length) return [];
+  const end = candidates.reduce((last, slot) => Temporal.Instant.compare(slot.end, last) > 0 ? slot.end : last, candidates[0].end);
+  // Check complete slots, including the part beyond the requested window.
+  const booked = (await node.db.query`SELECT ${sql.id("start")}, ${sql.id("end")} FROM cms_booking
+    WHERE node_id = ${node.id} AND cancelled = ${false}
+      AND ${sql.id("start")} < ${end.toString({ fractionalSecondDigits: 9 })}
+      AND ${sql.id("end")} > ${candidates[0].start.toString({ fractionalSecondDigits: 9 })}`)
+    .map((row) => ({ start: Temporal.Instant.from(String(row.start)), end: Temporal.Instant.from(String(row.end)) }))
+    .sort((a, b) => Temporal.Instant.compare(a.start, b.start));
+  let cursor = 0;
+  return candidates.filter((slot) => {
+    while (cursor < booked.length && Temporal.Instant.compare(booked[cursor].end, slot.start) <= 0) cursor++;
+    return cursor === booked.length || Temporal.Instant.compare(booked[cursor].start, slot.end) >= 0;
+  }).map((slot) => ({ eventId: slot.eventId, start: slot.start.toString({ fractionalSecondDigits: 9 }), end: slot.end.toString({ fractionalSecondDigits: 9 }) }));
 }
 
 export async function book(node: Node, input: { eventId: number; start: string; name: string; email: string; timeZone: string }) {
@@ -68,10 +79,7 @@ export async function book(node: Node, input: { eventId: number; start: string; 
     const available = await slots(node, { start: first.toString(), end: first.add({ nanoseconds: 1 }).toString(), timeZone: input.timeZone });
     const slot = available.find((item) => item.eventId === Number(input.eventId) && Temporal.Instant.from(item.start).equals(first));
     if (!slot) throw new ApiError(409, "This appointment is no longer available");
-    // The tiny lookup window may not contain a booking that starts later inside this slot.
-    const conflict = await node.db.one`SELECT id FROM cms_booking WHERE node_id = ${node.id} AND cancelled = ${false}
-      AND ${sql.id("start")} < ${slot.end} AND ${sql.id("end")} > ${slot.start} LIMIT 1`;
-    if (conflict) throw new ApiError(409, "This appointment is no longer available");
+    // slots() checks the complete appointment while the calendar lock is held.
     const token = crypto.randomUUID();
     const id = await node.db.table("cms_booking").insert({
       node_id: node.id, event_id: slot.eventId, start: slot.start, end: slot.end,
@@ -85,7 +93,7 @@ export async function book(node: Node, input: { eventId: number; start: string; 
 }
 
 /** Only editors, the signed-in owner, or the guest's server-side session can see booking details. */
-export async function bookings(node: Node) {
+export async function bookings(node: Node, id?: number) {
   await readable(node);
   const ctx = getCtx(), editor = await node.access() >= 2;
   const saved = ctx.sess.data[NAME][String(node.id)]() as Record<string, string> | undefined;
@@ -93,6 +101,7 @@ export async function bookings(node: Node) {
   if (!editor && !ctx.userId && !ids.length) return [];
   const rows = await node.db.query`SELECT id, ${sql.id("start")}, ${sql.id("end")}, name, email, usr_id, token FROM cms_booking
     WHERE node_id = ${node.id} AND cancelled = ${false}
+      ${id === undefined ? sql`` : sql`AND id = ${id}`}
       AND ${editor ? sql`${true}` : sql`(usr_id = ${ctx.userId || null} OR ${sql.in("id", ids)})`}
     ORDER BY ${sql.id("start")}, id`;
   return rows.filter((row) => editor || ctx.userId && Number(row.usr_id) === ctx.userId || safeEqual(saved?.[String(row.id)], row.token))
@@ -101,7 +110,7 @@ export async function bookings(node: Node) {
 
 export async function cancel(node: Node, id: number) {
   await readable(node);
-  if (!(await bookings(node)).some((row) => Number(row.id) === id)) throw new AccessError();
+  if (!(await bookings(node, id)).length) throw new AccessError();
   await node.db.transaction(async () => {
     await lock(node);
     await node.db.exec`UPDATE cms_booking SET cancelled = ${true} WHERE id = ${id} AND node_id = ${node.id}`;

@@ -1,20 +1,12 @@
-// @ts-types="@types/sanitize-html"
-import sanitize from "sanitize-html";
+import { sanitizeHtml as clean } from "@qino/qino";
 
-import type { App } from "@qino/qino";
+import type { App, HtmlPolicy } from "@qino/qino";
 
 const DIM = /^\d+(?:\.\d+)?(?:px|%|r?em|vw|vh)$/;
 
-/** Allowlist for CMS rich HTML, in the terms of the web Sanitizer API. Additions: `protocols` per
- *  element and attribute, and `styles` (an optional css-property allowlist). Raw editor HTML is
- *  stored; every non-edit output passes through here — this is the security boundary. */
-export type Policy = {
-  elements: string[];
-  attributes: Record<string, string[]>;
-  protocols: Record<string, Record<string, string[]>>;
-  /** Allowed inline css properties per element. Missing element = all. */
-  styles?: Record<string, Record<string, RegExp[]>>;
-};
+/** Allowlist for CMS rich HTML. Raw editor HTML is stored; every non-edit output passes through
+ *  `sanitizeHtml` — this is the security boundary. */
+export type Policy = HtmlPolicy;
 
 export const policy: Policy = {
   elements: [
@@ -82,51 +74,7 @@ async function refresh(app: App) {
 }
 
 /** Sanitize stored rich-HTML for output. Idempotent. */
-export function sanitizeHtml(html: string, use: Policy = policy): string {
-  if (!html) return html;
-  const seen = cached(use);
-  const hit = seen.get(html);
-  if (hit !== undefined) {
-    seen.delete(html); // re-insert: map order = eviction order
-    seen.set(html, hit);
-    return hit;
-  }
-  const clean = sanitize(html, options(use));
-  if (seen.size >= LIMIT) seen.delete(seen.keys().next().value!);
-  seen.set(html, clean);
-  return clean;
-}
-
-// Same text + same policy = same result, so cache per text instead of parsing per request.
-const LIMIT = 500;
-const results = new WeakMap<Policy, Map<string, string>>();
-
-function cached(use: Policy) {
-  return results.getOrInsertComputed(use, () => new Map());
-}
-
-// Converted once per policy, not per text.
-const translated = new WeakMap<Policy, sanitize.IOptions>();
-
-function options(use: Policy) {
-  return translated.getOrInsertComputed(use, () => build(use));
-}
-
-/** The policy for sanitize-html. It has schemes per element, not per attribute, so they are merged. */
-function build(use: Policy): sanitize.IOptions {
-  const byTag: Record<string, string[]> = {};
-  for (const [element, rules] of Object.entries(use.protocols)) {
-    if (element === "*") continue;
-    byTag[element] = [...new Set(Object.values(rules).flat())];
-  }
-  return {
-    allowedTags: use.elements,
-    allowedAttributes: use.attributes,
-    allowedSchemes: [...new Set(Object.values(use.protocols["*"] ?? {}).flat())],
-    allowedSchemesByTag: byTag,
-    ...(use.styles ? { allowedStyles: use.styles } : {}),
-  };
-}
+export const sanitizeHtml = (html: string, use: Policy = policy): string => clean(html, use);
 
 /** The same policy in the editor's syntax (`class title, a(href target)`), so the editor only
  *  offers what output keeps. */

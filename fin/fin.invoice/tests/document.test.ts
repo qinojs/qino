@@ -15,10 +15,10 @@ const invoice = {
   party: { name: "Kunde & Co", address: { streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern" } },
   lines: [
     { name: "Design <draft>", quantity: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
-    { name: "Book", description: "Second edition\nhardcover", price: 3990, taxRate: 2.6 },
+    { name: "Book", description: "Second <b>edition</b><script>x</script>\nhardcover", price: 3990, taxRate: 2.6 },
     { name: "Power", quantity: 100, unit: "kWh", price: 23.45, taxRate: 8.1 },
   ],
-  text: "Thank you.\nPayable within 30 days.",
+  text: "Thank <mark>you</mark>.<img src=x>\nPayable within 30 days.",
   date: "2026-10-07",
 };
 
@@ -30,14 +30,14 @@ test("the document shows sender, recipient, lines and tax per rate, escaped", as
       "Atelier Muster\nHauptgasse 1\n3280 Murten\nVAT ID CHE-123.456.789 MWST", // no country: not abroad
       "Kunde &amp; Co\nSeeweg 2\n3000 Bern",
       "Design &lt;draft&gt;",
-      "<div class=description>Second edition\nhardcover</div>",
+      "<div class=description>Second <b>edition</b>\nhardcover</div>", // inline HTML, sanitized
       "2026-1",
       '<span class=currency>CHF </span>120.00', // a unit price in the currency's decimals …
       '<span class=currency>CHF </span>0.2345', // … and finer where it is
       'Unit price <span class=currency>CHF</span>', // the lines' currency is in their head
       "8.1 %",
       "2.6 %",
-      "Thank you.\nPayable within 30 days.",
+      "Thank <mark>you</mark>.\nPayable within 30 days.", // the notes too
     ]) assertStringIncludes(doc, part);
   });
 });

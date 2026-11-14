@@ -20,17 +20,17 @@
           },
           "start": {
             "type": "integer",
-            "minimum": -8640000000000000,
-            "maximum": 8640000000000000,
+            "minimum": -8640000000000,
+            "maximum": 8640000000000,
             "x-index": true,
-            "description": "Inclusive start in epoch milliseconds. Whole calendar days use UTC midnight coordinates with all_day set."
+            "description": "Inclusive start in epoch seconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
           "end": {
             "type": "integer",
-            "minimum": -8640000000000000,
-            "maximum": 8640000000000000,
+            "minimum": -8640000000000,
+            "maximum": 8640000000000,
             "x-index": true,
-            "description": "Exclusive end in epoch milliseconds. Whole calendar days use UTC midnight coordinates with all_day set."
+            "description": "Exclusive end in epoch seconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
           "all_day": {
             "type": "boolean",

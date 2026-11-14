@@ -43,7 +43,7 @@ it is `ordered`, and `paid` once fin says the payments with its ref cover the to
 | `shop:price-initial` → `-additions` → `-discount` → `-final` | `{ product, line, variant, price, quantity, order, currency, country, usrId, data, time }` | a unit price in four passes |
 | `shop:product-check`, `shop:line-check`, `shop:order-check` | `{ …, errors }` | what blocks; a line's check may add `solutions` (id → `{ label, solve }`), buttons next to the error |
 | `shop:product-fields` | `{ product, order, currency, fields }` | what a buying form asks besides the amount (`product.fields()`) |
-| `shop:line-quantity`, `shop:line-weight`, `shop:line-description` | `{ line, … }` | stock, packaging, texts |
+| `shop:line-quantity`, `shop:line-weight`, `shop:line-description` | `{ line, … }` | stock, packaging, texts (the description is inline HTML: escape plain values with `hee`) |
 | `shop:extras` | `{ order, extras }` | lines the shop adds itself; same key replaces |
 | `shop:shippings`, `shop:payments` | `{ order, methods }` | take out what does not fit this order |
 | `shop:cart`, `shop:place`, `shop:pay` | | a new cart, the last word before placing, what a payment settles |
@@ -64,7 +64,7 @@ A shop module changes nothing in cms.shop, it adds:
 | What a buying form asks | `shop:product-fields` | options |
 
 Helpers for them: `listen`, `listOf` (a list setting), `grpsOf` (core's groups), `orderTable` (an order as html),
-`methodStep` (a checkout step that chooses a method).
+`methodStep` (a checkout step that chooses a method), `descriptionHtml` (a line's description, sanitized for output).
 
 ## Delivery and payment
 

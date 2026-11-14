@@ -1,0 +1,10 @@
+{
+  "Events": "Veranstaltungen", "Categories": "Kategorien", "Event management": "Veranstaltungsverwaltung",
+  "Title": "Titel", "Category": "Kategorie", "All categories": "Alle Kategorien", "Filter": "Filtern",
+  "Content list": "Inhaltsliste", "Add category": "Kategorie anlegen", "Add event": "Veranstaltung anlegen",
+  "Add a category to a content page first.": "Zuerst eine Kategorie auf einer Inhaltsseite anlegen.",
+  "Blocks": "Blöcke", "Visibility": "Freigabe", "Actions": "Aktionen", "Unassigned": "Nicht zugeordnet",
+  "Move": "Verschieben", "Private": "Privat", "Inherited / shared": "Geerbt / freigegeben", "Edit": "Bearbeiten",
+  "Make private": "Privat setzen", "Inherit category access": "Kategoriefreigabe erben",
+  "No entries found.": "Keine Einträge gefunden.", "Result pages": "Ergebnisseiten", "Previous": "Zurück", "Next": "Weiter"
+}

@@ -1,4 +1,4 @@
-import { sql, unixTime } from "@qino/qino";
+import { hee, sql, unixTime } from "@qino/qino";
 import { addDays, addMonths, partyOf, today } from "@qino/qino/fin";
 import { create as invoice, issue, send as sendInvoice } from "@qino/qino/fin.invoice";
 
@@ -224,10 +224,10 @@ export async function bill(
         lines: periods.map((p) => ({
           name: String(p.label),
           // the period first, after the detail; below it what it includes
-          description: [
+          description: hee([
             [p.detail, `${of(String(p.period_start))} – ${of(String(p.period_end))}`].filter(Boolean).join(", "),
             p.text,
-          ].filter(Boolean).join("\n"),
+          ].filter(Boolean).join("\n")), // a line's description is inline HTML
           price: Number(p.amount),
           taxRate: p.rate == null ? undefined : Number(p.rate),
         })),

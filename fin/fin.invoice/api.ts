@@ -11,7 +11,7 @@ import type { ApiTree, Ctx, Params, Row } from "@qino/qino";
 
 const LINE = s.object({
   name: s.string(),
-  description: s.optional(s.string()),
+  description: s.optional(s.string()).describe("Inline HTML (b, i, s, mark, a); newlines break."),
   quantity: s.optional(s.number()),
   unit: s.optional(s.string()),
   price: s.number().describe("Per unit, in minor units, finer if need be: 23.45 is 0.2345 CHF"),
@@ -28,7 +28,7 @@ const VALUES = {
   party: s.optional(s.record().describe("The other side as printed, shaped like identity.organization")),
   usrId: s.optional(s.number().describe("The user it is for, or from")),
   ref: s.optional(s.string().describe("What it is for: <module>:<id>")),
-  text: s.optional(s.string()),
+  text: s.optional(s.string().describe("Notes below the lines: inline HTML (b, i, s, mark, a); newlines break.")),
   date: s.optional(s.string().describe("YYYY-MM-DD")),
   due: s.optional(s.string().describe("YYYY-MM-DD")),
   term: s.optional(s.number().describe("Days to pay")),

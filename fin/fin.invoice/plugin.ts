@@ -36,6 +36,7 @@ export const settingsSchema = {
       type: "string",
       description: "Payment an issued invoice asks for, e.g. qrbill — its slip then goes with the invoice",
     },
+    css: { type: "string", "x-multiline": true, description: "CSS added to the invoice document (its PDF)" },
   },
 };
 

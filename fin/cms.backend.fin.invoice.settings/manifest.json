@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.fin.invoice.settings",
+  "description": "How invoices are numbered, when they are due, and the CSS of their document.",
+  "dependencies": ["cms.backend.fin", "cms.backend.fin.invoice", "fin.invoice"],
+  "files": ["manifest.json", "plugin.ts", "pub/main.js", "pub/module.svg"]
+}

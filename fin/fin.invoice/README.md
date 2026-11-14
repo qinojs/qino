@@ -16,7 +16,8 @@ const id = await create(app, {
     address: { streetAddress: "Hauptgasse 1", postalCode: "3280", addressLocality: "Murten" },
   },
   lines: [
-    // prices in minor units, tax rates in percent
+    // prices in minor units, tax rates in percent; a description (and the notes, `text`) is inline HTML (b, i, s, mark, a) and
+    // sanitized on output — escape plain text with `hee`
     { name: "Design", description: "Logo and colours", quantity: 2.5, unit: "h", price: 12000, taxRate: 8.1 },
     { name: "Hosting", price: 9900, taxRate: 8.1 },
   ],
@@ -136,6 +137,9 @@ namespace `fin` ([fin/locale](../fin/locale/)). A draft says so in its heading. 
 [pdf](../../module/pdf/) and keeps that as the invoice's file — the document as sent; printing
 again replaces it until it went out (`sent`): from then on it stays as it was (OR 958f, GeBüV). A site with its own layout passes its HTML: `print(app, id, { html })`. Only the
 invoice's user may download the file, everyone else needs a signed link.
+
+`fin.invoice.css` is CSS added to the document after its own, so a site restyles the PDF without
+replacing it; the backend page `cms.backend.fin.invoice.settings` edits it.
 
 With `fin.invoice.method` set (e.g. `qrbill`), issuing an outgoing invoice asks for its payment
 by that method at once, so its slip — the QR bill — is part of the invoice from the start; a

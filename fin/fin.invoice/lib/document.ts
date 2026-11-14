@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any -- party and organization are plain data of any shape
-import { Ctx, fs, html, requestStorage } from "@qino/qino";
+import { Ctx, fs, html, inlinePolicy, requestStorage, sanitizeHtml } from "@qino/qino";
 import { fromMinor } from "@qino/qino/fin";
 import { file } from "@qino/qino/identity";
 import { currency as currencies } from "@qino/qino/locale.currency";
@@ -37,6 +37,10 @@ export async function document(
     const perLine = sum.rates.length > 1;
     const span = perLine ? 5 : 4;
     const logo = await logoUrl(app);
+    const brand = app.settings.identity.brand;
+    const accent = await brand.accentColor || await brand.primaryColor;
+    // the site's own CSS comes last, so it wins; it must not close the style element
+    const css = String(await app.settings["fin.invoice"].css ?? "").replaceAll("</", "<\\/");
     // the country only counts across a border, as on any letter
     const country = (o: Record<string, any>) => String(o.address?.addressCountry ?? "").toUpperCase();
     const abroad = !!country(party) && country(party) !== country(sender);
@@ -76,6 +80,8 @@ export async function document(
   .total { font-weight: bold }
   .text { margin-top: 2em; white-space: pre-line }
   .description { font-size: .9em; white-space: pre-line }
+  /* highlighted in the brand's color, where it has one */
+  ${accent ? html`mark { background: color-mix(in srgb, ${accent} 25%, transparent); color: inherit }` : ""}
   /* on screen: the sheets as they come out of the printer */
   @media screen {
     html { background: #ccc }
@@ -86,6 +92,7 @@ export async function document(
     }
     main { padding: 2cm 2cm 2.5cm }
   }
+  ${html.raw(css)}
 </style>
 <main>
 <header>
@@ -126,7 +133,7 @@ ${lines.length || !listed.length ? html.async`<table>
     <th class="n amount">${t`Amount`} <span class=currency>${invoice.currency}</span>
   <tbody>${lines.map((line, i) => html`<tr>
     <td class=pos>${i + 1}
-    <td>${line.name}${line.description ? html`<div class=description>${line.description}</div>` : ""}
+    <td>${line.name}${line.description ? html`<div class=description>${html.raw(sanitizeHtml(line.description, inlinePolicy))}</div>` : ""}
     <td class="n quantity">${new Intl.NumberFormat(locale).format(Number(line.quantity))} ${line.unit}
     <td class="n price">${money(Number(line.price))}
     ${perLine ? html`<td class="n rate">${Number(line.tax_rate)} %` : ""}
@@ -143,7 +150,7 @@ ${lines.length || !listed.length ? html.async`<table>
       <td class=n>${money(sum.total)}
 </table>` : ""}
 ${listed.length ? html.async`<p class=total>${t`Amount due`}: ${money(due)}</p>` : ""}
-${invoice.text ? html`<div class=text>${invoice.text}</div>` : ""}
+${invoice.text ? html`<div class=text>${html.raw(sanitizeHtml(String(invoice.text), inlinePolicy))}</div>` : ""}
 </main>
 ${slips().then((list) => list.map((slip) => html`<div class=slip>${html.raw(slip)}</div>`))}
 `);

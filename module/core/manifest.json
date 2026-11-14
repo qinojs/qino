@@ -61,6 +61,7 @@
     "lib/fs.ts",
     "lib/hono.ts",
     "lib/rows.ts",
+    "lib/sanitize.ts",
     "lib/serveFile.ts",
     "lib/sheet/csv.ts",
     "lib/sheet/xlsx.ts",

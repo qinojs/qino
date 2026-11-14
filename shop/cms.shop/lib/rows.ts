@@ -1,6 +1,6 @@
 // Row classes of the shop. Columns are data, methods are verbs: `price` is a column, so the
 // calculation is `prices()`. Amounts are minor units (fin's rule): 2450 is CHF 24.50.
-import { ConflictError, DbRow, sql, unixTime } from "@qino/qino";
+import { ConflictError, DbRow, hee, sql, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { fromMinor } from "@qino/qino/fin";
 import { totals } from "@qino/qino/fin.invoice";
@@ -198,12 +198,13 @@ export class Line extends ShopRow {
     return await (await this.product())?.taxRate(order.country) ?? 0;
   }
 
-  /** What the customer reads below the name: the variant, a discount … Frozen once placed. */
+  /** What the customer reads below the name: the variant, a discount … Inline HTML, a line per
+   *  row; output goes through `descriptionHtml`. Frozen once placed. */
   async describe(): Promise<string> {
     const order = await this.order();
     if (order?.status !== "cart") return String(this.description ?? "");
     const variant = await this.variant();
-    const e = { line: this, description: variant ? await variant.title(order.lang) : "" };
+    const e = { line: this, description: variant ? hee(await variant.title(order.lang)) : "" };
     await this.$app.fire("shop:line-description", e);
     return e.description;
   }

@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { html, inlinePolicy, sanitizeHtml } from "@qino/qino";
 
 import { cart } from "./cart.ts";
 import { shopT } from "./shop.ts";
@@ -6,6 +6,10 @@ import { shopT } from "./shop.ts";
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Order } from "./rows.ts";
+
+/** A line's description for output: its inline HTML sanitized, a line per row. */
+export const descriptionHtml = (text: string): HtmlString =>
+  html.raw(sanitizeHtml(String(text ?? ""), inlinePolicy).replaceAll("\n", "<br>"));
 
 /** An order as a table: its lines, what the shop added, tax and total. For the backend and the customer. */
 export async function orderTable(order: Order): Promise<HtmlString> {
@@ -19,7 +23,7 @@ export async function orderTable(order: Order): Promise<HtmlString> {
     <th>${t`Price`}
     <th>${t`Total`}
   <tbody>${(await order.lines()).map(async (l) => html.async`<tr>
-    <td>${l.name}${(await l.describe()).split("\n").filter(Boolean).map((d) => html`<div class=-description>${d}</div>`)}
+    <td>${l.name}<div class=-description>${descriptionHtml(await l.describe())}</div>
     <td>${Number(l.quantity)}
     <td>${money(Number(l.price))}
     <td>${money(l.total())}`)}

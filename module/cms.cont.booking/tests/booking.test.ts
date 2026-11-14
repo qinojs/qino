@@ -97,6 +97,27 @@ test("appointment booking isolates instances, enforces node rights, and serializ
       assertStringIncludes(rendered, "Guest &lt;b&gt;one&lt;/b&gt;");
       assertStringIncludes(rendered, "csrfToken");
     });
+    const day = tomorrow.add({ days: 4 });
+    await requestStorage.run(admin, async () => {
+      first.settings.duration(0);
+      await app.db.flush();
+      await add(first, { start: `${day}T09:00Z`, end: `${day}T11:00Z` });
+      const eventId = Number(await add(first, { start: `${day}T10:00Z`, end: `${day}T10:30Z` }));
+      await requestStorage.run(guest, () => book(first, { ...input, eventId, start: `${day}T10:00Z` }));
+    });
+    assertEquals(await requestStorage.run(guest, () => slots(first, {
+      start: `${day}T09:00Z`, end: `${day}T10:00Z`, timeZone: "UTC",
+    })), []);
+    await requestStorage.run(admin, async () => {
+      const range = { start: `${day}T12:00:30Z`, end: `${day}T13:00:45Z`, timeZone: "UTC" };
+      const saved = await api(first, { save: range }) as { id: number };
+      const offers = await api(first, { offers: true }) as { id: number; localStart: string; localEnd: string; timeZone: string }[];
+      const offer = offers.find((item) => item.id === saved.id)!;
+      await api(first, { save: { id: saved.id, start: offer.localStart, end: offer.localEnd, timeZone: offer.timeZone } });
+      const event = (await list(first)).find((item) => item.id === saved.id)!;
+      assertEquals(Temporal.Instant.from(event.start).equals(range.start), true);
+      assertEquals(Temporal.Instant.from(event.end).equals(range.end), true);
+    });
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();

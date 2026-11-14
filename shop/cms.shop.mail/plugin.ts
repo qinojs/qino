@@ -1,5 +1,5 @@
 import { App, hee, s } from "@qino/qino";
-import { listen, shopT } from "@qino/qino/cms.shop";
+import { descriptionHtml, listen, shopT } from "@qino/qino/cms.shop";
 import { send } from "@qino/qino/messaging.email";
 
 import type { EventDecls } from "@qino/qino";
@@ -28,7 +28,7 @@ async function body(app: App, order: Order): Promise<string> {
   const money = (v: number) => hee(currency?.show(v) ?? v);
   const rows = [];
   for (const l of await order.lines()) {
-    rows.push(`<tr><td>${Number(l.quantity)}<td>${hee(l.name)}${l.description ? `<br><small>${hee(l.description).replaceAll("\n", "<br>")}</small>` : ""}<td align=right>${money(l.total())}`);
+    rows.push(`<tr><td>${Number(l.quantity)}<td>${hee(l.name)}${l.description ? `<br><small>${descriptionHtml(l.description)}</small>` : ""}<td align=right>${money(l.total())}`);
   }
   for (const x of await order.extras()) rows.push(`<tr><td><td>${hee(x.name)}<td align=right>${money(x.price)}`);
   const { tax, total } = await order.totals();

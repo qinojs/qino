@@ -12,7 +12,7 @@ Each entry names the code, what it costs, what bounds it, and what makes it grow
 | [CMS.ts:25](../module/cms/lib/CMS.ts#L25) — node identity map | nothing: every node ever touched, per app, for the process lifetime |
 | [LangManager.ts:13](../module/core/lib/LangManager.ts#L13) — `smalltext` index | full table per `lang × namespace`, never evicted |
 | [ReqBody.ts:52](../module/core/lib/ctx/ReqBody.ts#L52) — body parsing | `core.uploadMaxFileSize`, default 100 MB, **per concurrent request** |
-| [sanitize.ts:99](../module/cms/lib/sanitize.ts#L99) — sanitized-HTML cache | 500 entries per policy, but entry size is the text size |
+| [sanitize.ts:39](../module/core/lib/sanitize.ts#L39) — sanitized-HTML cache | 500 entries per policy, but entry size is the text size |
 | [limit.ts](../module/core/lib/transform/limit.ts) — external process cap | `navigator.hardwareConcurrency` decoders at their peak |
 | [DbFileManager.ts:53](../module/core/lib/DbFileManager.ts#L53), [DbTextManager.ts:21](../module/core/lib/DbTextManager.ts#L21) | nothing: one object per file/text id, per app |
 | [geocode.ts:39](../module/cms.cont.map.openstreet/lib/geocode.ts#L39) — miss cache | nothing: one entry per distinct address string |
@@ -81,7 +81,7 @@ operator-triggered.
 |---|---|
 | [login.ts:133](../module/core/lib/auth/login.ts#L133) — bcrypt cost 10 | ~50-100 ms of **blocking** JS per hash; `bcryptjs` is pure JS, no thread pool |
 | [transform/](../module/core/lib/transform/) — magick, ffmpeg, tesseract, pandoc | subprocesses; the only real CPU consumers, capped by [limit.ts](../module/core/lib/transform/limit.ts) |
-| [sanitize.ts](../module/cms/lib/sanitize.ts) — `sanitize-html` | a full HTML parse per text, on every render path; cached |
+| [sanitize.ts](../module/core/lib/sanitize.ts) — `sanitize-html` | a full HTML parse per text, on every render path; cached |
 | [LangManager.ts:103](../module/core/lib/LangManager.ts#L103) — md5 per `t\`\`` call | cheap alone, once per translatable string per render |
 | [init.ts:69](../module/core/lib/ctx/init.ts#L69) — logging | md5 of url and referer, plus the JSON stringify of the body, per request |
 | [Node.bough()](../module/cms/lib/Node.ts#L316) | recursive: one children-query per node in the subtree |

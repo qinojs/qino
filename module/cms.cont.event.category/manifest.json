@@ -1,0 +1,6 @@
+{
+  "name": "cms.cont.event.category",
+  "description": "A CMS event category whose child events have their own URLs.",
+  "dependencies": ["cms.cont.event"],
+  "files": ["README.md", "locale/de.json", "manifest.json", "plugin.ts", "pub/module.svg"]
+}

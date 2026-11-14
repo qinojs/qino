@@ -63,7 +63,8 @@ schreiben.
 13. **Offene Warenkörbe** werden nicht migriert, sie hingen an den alten Sessions.
 14. **Zahlungen alter Bestellungen** werden nicht als fin.payment angelegt, nur der Status (`paid`).
     Die alte Rechnungsnummer (accounting1) steht in `shop_order.data`.
-15. **Positionsbeschreibungen sind Klartext** (eine Zeile pro Teil) statt HTML-Divs.
+15. **Positionsbeschreibungen sind Inline-HTML** (eine Zeile pro Teil, `b`, `i`, `s`, `mark`, `a`) statt HTML-Divs;
+    jede Ausgabe – Warenkorb, Mail, Rechnung – läuft durch den Sanitizer.
 16. **Adressen** sind JSON in fin-Form (schema.org-Namen) statt 20 `bill_*`/`ship_*`-Spalten.
 17. **Beträge in Minor Units** (Rappen), wie fin.
 18. **Die Fracht-Methode heisst `freight`** statt `freight.cd`.

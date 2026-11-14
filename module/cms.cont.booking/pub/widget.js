@@ -18,9 +18,9 @@ export default async function (widget, { node, signal }) {
     return html.async`<form data-offer="${item.id || ""}" aria-label="${item.id ? t`Edit appointment` : t`Add appointment`}">
       <fieldset><legend>${item.id ? t`Appointment` : t`New appointment`}</legend>
         <label for="${id}-start">${t`Start (required)`}</label>
-        <input id="${id}-start" name=start type=datetime-local value="${item.localStart || ""}" required>
+        <input id="${id}-start" name=start type=datetime-local step=1 value="${item.localStart || ""}" required>
         <label for="${id}-end">${t`End (required)`}</label>
-        <input id="${id}-end" name=end type=datetime-local value="${item.localEnd || ""}" required>
+        <input id="${id}-end" name=end type=datetime-local step=1 value="${item.localEnd || ""}" required>
         <label for="${id}-zone">${t`Time zone`}</label>
         <input id="${id}-zone" name=timeZone value="${item.timeZone || settings.time_zone || "UTC"}" required>
         <button type=submit>${t`Save appointment`}</button>
@@ -44,6 +44,8 @@ export default async function (widget, { node, signal }) {
     </details>
   </div>`;
   bindSettings(widget, ref);
+  const initial = new WeakMap();
+  for (const form of widget.querySelectorAll("form[data-offer]")) initial.set(form, Object.fromEntries(new FormData(form)));
   const status = widget.querySelector("[role=status]");
   const change = async (input) => {
     try {
@@ -55,6 +57,11 @@ export default async function (widget, { node, signal }) {
   widget.on("submit", "form[data-offer]", async (form, event) => {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(form));
+    const original = offers.find((item) => item.id === Number(form.dataset.offer));
+    // Preserve the original instant when an unchanged wall time occurs twice during a clock change.
+    if (original && values.timeZone === initial.get(form).timeZone) {
+      for (const key of ["start", "end"]) if (values[key] === initial.get(form)[key]) values[key] = original[key];
+    }
     form.inert = true;
     await change({ save: { ...values, id: Number(form.dataset.offer) || undefined } });
     form.inert = false;

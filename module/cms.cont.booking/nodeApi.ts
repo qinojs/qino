@@ -19,7 +19,7 @@ export default async function (node: Node, input: {
   if (await node.access() < 2) throw new AccessError();
   if (input.offers) return (await list(node)).map((event) => {
     const zone = String(node.settings.time_zone() ?? "UTC");
-    const local = (value: string) => Temporal.Instant.from(value).toZonedDateTimeISO(zone).toPlainDateTime().toString({ smallestUnit: "minute" });
+    const local = (value: string) => Temporal.Instant.from(value).toZonedDateTimeISO(zone).toPlainDateTime().toString({ smallestUnit: "second" });
     return { ...event, localStart: local(event.start), localEnd: local(event.end), timeZone: zone };
   });
   if (input.save) {

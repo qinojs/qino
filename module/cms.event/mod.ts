@@ -40,10 +40,10 @@ export async function query(node: Node, period: Period) {
 function values(range: Range) {
   overlaps(range, range);
   const value = (date: string) => {
-    if (!/[Tt ]/.test(date)) return Temporal.PlainDate.from(date).toZonedDateTime("UTC").epochMilliseconds;
+    if (!/[Tt ]/.test(date)) return Temporal.PlainDate.from(date).toZonedDateTime("UTC").epochMilliseconds / 1000;
     const instant = date.includes("[") ? Temporal.ZonedDateTime.from(date).toInstant() : Temporal.Instant.from(date);
-    if (instant.epochNanoseconds % 1_000_000n) throw new RangeError("CMS event blocks use millisecond precision");
-    return instant.epochMilliseconds;
+    if (instant.epochNanoseconds % 1_000_000_000n) throw new RangeError("CMS event blocks use second precision");
+    return instant.epochMilliseconds / 1000;
   };
   return { start: value(range.start), end: value(range.end), all_day: !/[Tt ]/.test(range.start) };
 }

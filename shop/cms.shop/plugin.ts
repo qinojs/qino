@@ -42,7 +42,7 @@ Object.assign(App.events, {
   "shop:order-check": { description: "What blocks an order from being placed.", data: s.object({ order: row, errors }) },
   "shop:line-quantity": { description: "The amount of a line as it may be — stock, packaging units.", data: s.object({ line: row, quantity: s.number() }) },
   "shop:line-weight": { description: "The weight of one unit of a line, in grams.", data: s.object({ line: row, weight: s.number() }) },
-  "shop:line-description": { description: "What the customer reads below a line's name.", data: s.object({ line: row, description: s.string() }) },
+  "shop:line-description": { description: "What the customer reads below a line's name: inline HTML, a line per row.", data: s.object({ line: row, description: s.string() }) },
   "shop:extras": { description: "Lines the shop adds itself: shipping, surcharges, vouchers. Same key replaces.", data: s.object({ order: row, extras: s.array(s.any()) }) },
   "shop:shippings": { description: "Delivery methods for this order; remove what does not fit.", data: s.object({ order: row, methods: s.array(s.any()) }) },
   "shop:payments": { description: "Payment methods for this order; remove what does not fit.", data: s.object({ order: row, methods: s.array(s.any()) }) },

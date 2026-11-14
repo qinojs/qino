@@ -11,9 +11,9 @@ await add(node, { start: "2027-07-12", end: "2027-07-13" });
 await add(node, { start: "2027-07-14T09:00+02:00", end: "2027-07-14T11:00+02:00" });
 ```
 
-Database boundaries are signed BIGINT epoch milliseconds, not strings. The API keeps ISO dates
+Database boundaries are signed BIGINT epoch seconds, not strings. The API keeps ISO dates
 for whole calendar days and RFC 3339 UTC timestamps for timed entries. Writes with finer than
-millisecond precision are rejected rather than rounded. IDs use BIGINT as well.
+second precision are rejected rather than rounded. IDs use BIGINT as well.
 
 `all_day` is derived and stored when writing, so SQL does not inspect boundary formats. Whole
 calendar days use UTC-midnight numeric storage coordinates and are decoded back to dates;

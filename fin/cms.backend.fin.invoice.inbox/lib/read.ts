@@ -1,6 +1,6 @@
 // Reading received invoices. Lives in this backend page for now; once something else needs it — the
 // mail inbox, an API — it moves into a module of its own (fin.invoice.read).
-import { fs, s } from "@qino/qino";
+import { fs, hee, s } from "@qino/qino";
 import { structured } from "@qino/qino/ai";
 import { parseAmount } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
@@ -95,13 +95,13 @@ export function valuesOf(read: Read, main = "") {
     party: { name: s.name, address, ...s.vatID ? { vatID: s.vatID } : {}, ...iban },
     lines: (read.lines ?? []).map((line) => ({
       name: String(line.name),
-      description: line.description || undefined,
+      description: line.description ? hee(line.description) : undefined, // read as text, stored as inline HTML
       quantity: Number(line.quantity) || 1,
       unit: line.unit || undefined,
       price: parseAmount(line.unitPrice, currency, { fine: true }),
       taxRate: Number(line.taxRate) || 0,
     })),
-    text: read.reference ? `Reference: ${read.reference}` : undefined,
+    text: read.reference ? hee(`Reference: ${read.reference}`) : undefined,
     // kept to compare: what the model read as total, in minor units
     data: { read: { total: Math.round(Number(read.total) * unit), reference: read.reference || null } },
   };
