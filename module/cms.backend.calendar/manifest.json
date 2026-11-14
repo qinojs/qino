@@ -1,0 +1,6 @@
+{
+  "name": "cms.backend.calendar",
+  "description": "Shows entries from all linked calendar sources in a shared calendar.",
+  "dependencies": ["cms.backend", "calendar"],
+  "files": ["README.md", "locale/de.json", "manifest.json", "plugin.ts", "pub/dashboard.js", "pub/main.css", "pub/main.js", "pub/module.svg", "pub/sources.js"]
+}

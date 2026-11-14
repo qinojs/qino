@@ -2,6 +2,7 @@
   "name": "fin.subscription",
   "description": "Subscriptions: what a user is billed for again and again — hosting, a domain — billed in advance, one invoice per customer.",
   "dependencies": [
+    "calendar",
     "cron",
     "fin",
     "fin.invoice"
@@ -9,6 +10,7 @@
   "files": [
     "README.md",
     "api.ts",
+    "calendar.ts",
     "dbschema.json",
     "manifest.json",
     "mod.ts",

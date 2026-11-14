@@ -43,6 +43,14 @@ last one billed. Throwing a draft away takes its periods with it, and they are b
 `update()` changes plan, name, price, tax, period and end from the next period; the start only
 while nothing was billed.
 
+## Calendar
+
+Calendar integration lives in `calendar.ts`: period starts (initial start and renewals) are generated only within the requested
+period, anchored to the original start day and stopped at the subscription's exclusive end date.
+Reading the calendar does not bill or modify a subscription. Users see their own subscriptions;
+superusers and users allowed to manage the subscription backend can see all, with editor links
+when that backend is available in the current CMS context.
+
 ## Decisions that may change
 
 - **One price per subscription.** Several items per subscription (as Stripe has) only once needed.

@@ -7,6 +7,7 @@ import type { App } from "@qino/qino";
 import type { Line, Order, Solution } from "@qino/qino/cms.shop";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+export { calendar } from "./calendar.ts";
 
 import type { Range } from "./mod.ts";
 

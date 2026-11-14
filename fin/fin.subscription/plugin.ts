@@ -7,6 +7,7 @@ import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 export { api } from "./api.ts";
+export { calendar } from "./calendar.ts";
 
 Object.assign(App.events, {
   "subscription:save": {

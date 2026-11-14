@@ -1,0 +1,13 @@
+.cms-calendar-sources:modal {
+  overscroll-behavior: contain;
+}
+.cms-calendar-sources::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+:is(.cms-calendar-sources, .cms-calendar-dashboard) .-source-icon {
+  inline-size: 1em;
+  block-size: 1em;
+  vertical-align: middle;
+  fill: currentColor;
+}

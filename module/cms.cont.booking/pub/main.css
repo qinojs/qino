@@ -1,0 +1,7 @@
+[qcms-mod="cont.booking"] input[name=your_name] {
+  display: none;
+}
+
+[qcms-mod="cont.booking"] form label {
+  display: block;
+}

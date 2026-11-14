@@ -1,0 +1,91 @@
+{
+  "properties": {
+    "cms_booking": {
+      "description": "Appointments booked at one CMS content instance.",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "node_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "event_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "cms_event"
+          },
+          "start": {
+            "type": "string",
+            "maxLength": 40,
+            "x-index": true
+          },
+          "end": {
+            "type": "string",
+            "maxLength": 40,
+            "x-index": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "token": {
+            "type": "string",
+            "maxLength": 36,
+            "x-index": "unique"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "id",
+          "node_id",
+          "event_id",
+          "start",
+          "end",
+          "name",
+          "email",
+          "token",
+          "created",
+          "cancelled"
+        ]
+      }
+    },
+    "cms_booking_calendar": {
+      "description": "One transactional row per booking instance, used to serialize availability changes and reservations.",
+      "additionalProperties": {
+        "properties": {
+          "node_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade"
+          }
+        },
+        "required": [
+          "node_id"
+        ]
+      }
+    }
+  }
+}

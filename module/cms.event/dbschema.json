@@ -1,0 +1,65 @@
+{
+  "properties": {
+    "cms_event": {
+      "description": "Calendar events attached to CMS nodes; several events may refer to the same node.",
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "node_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade",
+            "x-qg-on-parent-copy": "cascade"
+          },
+          "start": {
+            "type": "string",
+            "maxLength": 40,
+            "x-index": true,
+            "description": "ISO date for an all-day event, otherwise an RFC 3339 UTC timestamp."
+          },
+          "end": {
+            "type": "string",
+            "maxLength": 40,
+            "x-index": true,
+            "description": "Exclusive end, in the same form as start."
+          },
+          "rrule": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "RFC 5545 recurrence rule; empty for a fixed event."
+          },
+          "time_zone": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "IANA time zone preserving the local start time of recurring timed events."
+          },
+          "rdate": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Additional recurrence starts, in the same date type as start."
+          },
+          "exdate": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Excluded recurrence starts, in the same date type as start."
+          }
+        },
+        "required": [
+          "id",
+          "node_id",
+          "start",
+          "end"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "cms.cont.booking",
+  "description": "Appointment booking per CMS node, with fixed appointments or recurring availability.",
+  "dependencies": [
+    "cms.event",
+    "calendar",
+    "u2"
+  ],
+  "files": [
+    "README.md",
+    "access.ts",
+    "calendar.ts",
+    "dbschema.json",
+    "locale/de.json",
+    "manifest.json",
+    "mod.ts",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg",
+    "pub/widget.js"
+  ]
+}

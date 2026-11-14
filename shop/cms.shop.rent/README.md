@@ -13,3 +13,8 @@ How times are chosen is the site's: a calendar, a form. `pub/selector.js` reads 
 `rent_capacity` says how many can be rented for the same time (default 1): the same time twice in a
 line is two of them, and the lines before it in the same order count too. `free(app, product, range)` tells how many are still free; `cms.cont.shop.rent`
 is a block that books a week of times on a product's page.
+
+`calendar.ts` exposes occupied `shop_rental` intervals as a calendar source. Guests receive none;
+users see their own reservations, and users allowed to manage orders (or superusers) see all.
+Entries link to the order editor when available, otherwise to the product. Calendar reads never
+create bookings or change availability.
