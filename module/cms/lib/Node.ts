@@ -666,7 +666,8 @@ export class Node {
 
         page.#clearTreeCache();
 
-        (await this.parent())?.#clearTreeCache();
+        const parent = await this.parent();
+        if (parent) parent.#clearTreeCache();
         
         return page;
     }
@@ -693,7 +694,7 @@ export class Node {
 
         this.#clearTreeCache();
 
-        oldParent?.#clearTreeCache();
+        if (oldParent) oldParent.#clearTreeCache();
 
         await page.urlsGen();
         return true;
