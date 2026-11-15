@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, getCtx, s, sha256b64url, sql, unixTime } from "@qino/qino";
+import { Access, s, sha256b64url, sql, unixTime } from "@qino/qino";
 
 import { publicKey } from "./mod.ts";
 
-import type { ApiTree } from "@qino/qino";
+import type { ApiTree, Ctx } from "@qino/qino";
 
 export { messagingChannel } from "./mod.ts";
 
@@ -23,7 +23,7 @@ export const api: ApiTree = {
     get: {
       description: "VAPID public key for pushManager.subscribe()",
       access: Access.PUBLIC,
-      execute: async () => ({ publicKey: (await publicKey(getCtx().app)).publicKey }),
+      execute: async (_: unknown, ctx: Ctx) => ({ publicKey: (await publicKey(ctx.app)).publicKey }),
     },
   },
 
@@ -32,8 +32,8 @@ export const api: ApiTree = {
       description: "Read the channels this browser is subscribed to",
       access: Access.PUBLIC,
       input: s.object({ endpoint: s.string() }),
-      execute: async ({ endpoint }: any) => {
-        const db = getCtx().app.db;
+      execute: async ({ endpoint }: any, ctx: Ctx) => {
+        const db = ctx.app.db;
         const rows = await db.query`SELECT c.name FROM webpush_subscription_channel sc
           JOIN webpush_channel c ON c.id = sc.channel_id
           JOIN webpush_subscription s ON s.id = sc.sub_id
@@ -46,8 +46,7 @@ export const api: ApiTree = {
       description: "Store this browser's push subscription and its channels",
       access: Access.PUBLIC,
       input: s.object({ endpoint: s.string(), p256dh: s.string(), auth: s.string(), channels: s.optional(s.array(s.string())) }),
-      execute: async ({ endpoint, p256dh, auth, channels }: any) => {
-        const ctx = getCtx();
+      execute: async ({ endpoint, p256dh, auth, channels }: any, ctx: Ctx) => {
         const db = ctx.app.db;
         const table = db.table("webpush_subscription");
         // endpoints are too long to index; their hash is the subscription's identity
@@ -73,8 +72,8 @@ export const api: ApiTree = {
       description: "Forget this browser's push subscription",
       access: Access.PUBLIC,
       input: s.object({ endpoint: s.string() }),
-      execute: async ({ endpoint }: any) => {
-        await getCtx().app.db.exec`DELETE FROM webpush_subscription WHERE endpoint_hash = ${await sha256b64url(endpoint)}`;
+      execute: async ({ endpoint }: any, ctx: Ctx) => {
+        await ctx.app.db.exec`DELETE FROM webpush_subscription WHERE endpoint_hash = ${await sha256b64url(endpoint)}`;
         return { ok: true };
       },
     },

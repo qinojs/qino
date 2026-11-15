@@ -1,4 +1,4 @@
-import { contactKey, getCtx, hee, html } from "@qino/qino";
+import { contactKey, hee, html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 import { sortedNames } from "./mod.ts";
@@ -146,7 +146,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     "el/alert/alert.js", "el/alert/alert.css",
   ]);
   const path = [...(await node.path()).values()].reverse();
-  const open: Map<number, Form> | undefined = getCtx().state["cms.cont.form"];
+  const open: Map<number, Form> | undefined = ctx.state["cms.cont.form"];
   const form = open?.size ? path.map((n) => open.get(n.id)).find(Boolean) : undefined;
 
   const edit = await node.edit();

@@ -1,6 +1,6 @@
-import { Access, getCtx, s } from "@qino/qino";
+import { Access, s } from "@qino/qino";
 
-import type { ApiTree, Params } from "@qino/qino";
+import type { ApiTree, Params, Ctx } from "@qino/qino";
 
 /** Self-service only: users see and revoke their own grants. Clients are managed in the backend. */
 export const api: ApiTree = {
@@ -8,8 +8,7 @@ export const api: ApiTree = {
     get: {
       description: "List the clients that currently hold tokens for the signed-in user",
       access: Access.USER,
-      execute: () => {
-        const ctx = getCtx();
+      execute: (_: unknown, ctx: Ctx) => {
         return ctx.app.db.query`SELECT t.client_id, c.name, MIN(t.created) AS since, MAX(t.expires) AS until
           FROM oauth_token t LEFT JOIN oauth_client c ON c.id = t.client_id
           WHERE t.usr_id = ${ctx.userId} AND t.kind <> ${"code"}
@@ -23,8 +22,7 @@ export const api: ApiTree = {
       delete: {
         description: "Revoke every token the signed-in user granted to a client",
         access: Access.USER,
-        execute: async ({ clientId }: Params) => {
-          const ctx = getCtx();
+        execute: async ({ clientId }: Params, ctx: Ctx) => {
           await ctx.app.db.exec`DELETE FROM oauth_token WHERE usr_id = ${ctx.userId} AND client_id = ${String(clientId)}`;
           return { ok: true };
         },

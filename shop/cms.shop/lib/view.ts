@@ -51,8 +51,8 @@ export function methodStep(what: "shipping" | "payment", title: Record<string, s
     const methods = order ? await (ships ? order.shippings() : order.payments()) : [];
     if (!order || !methods.length) return html`<form></form>`;
     const [active, currency] = await Promise.all([ships ? order.activeShipping() : order.activePayment(), order.currencyRow()]);
-    const edit = await node.settings.editable() !== false;
-    const heading = String(await node.settings.heading() ?? "2");
+    const edit = await node.settings.editable !== false;
+    const heading = String(await node.settings.heading ?? "2");
     const items = methods.filter((m) => edit || m.name === active).map((m) => html.async`<label>
         ${edit ? html`<span><input required type=radio name=method value="${m.name}" ${m.name === active ? html`checked` : ""}></span>` : ""}
         <span><span>${m.label}</span>

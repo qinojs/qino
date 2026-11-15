@@ -11,18 +11,24 @@ export const calendar: Source = {
   async query(ctx, period) {
     const { app } = ctx, tree = cms(app);
     const rows = await app.db.query`${select(period)}`;
-    const nodes = new Map<number, { title: string; url: string } | null>();
+    // editors open an event in the backend, where it is edited, if they may open that page
+    const backend = await (await tree.nodeByModule("cms.backend.event"))?.page();
+    const edit = backend && await backend.access() ? new URL(await backend.url(), ctx.req.url.href) : undefined;
+    const events = new Map<number, { title: string; url: string; editUrl?: string } | null>();
     const result: Entry[] = [];
     for (const row of rows) {
       const id = Number(row.event_id);
-      if (!nodes.has(id)) {
+      if (!events.has(id)) {
         const node = await tree.node(id);
-        nodes.set(id, node.exists() && await node.isReadable()
-          ? { title: (await node.showTitle()).plain(), url: await node.url() } : null);
+        if (edit) edit.searchParams.set("id", String(id));
+        events.set(id, node.exists() && await node.isReadable() ? {
+          title: (await node.showTitle()).plain(), url: await node.url(),
+          ...(edit && await node.access() >= 2 && { editUrl: edit.pathname + edit.search }),
+        } : null);
       }
-      const node = nodes.get(id);
-      if (!node) continue;
-      const item = { id: String(row.id), ...node, ...decodeRow(row) };
+      const event = events.get(id);
+      if (!event) continue;
+      const item = { id: String(row.id), ...event, ...decodeRow(row) };
       if (overlaps(item, period, { timeZone: period.timeZone })) result.push(item);
     }
     return result;

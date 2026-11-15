@@ -1,8 +1,8 @@
-import { Access, getCtx, s, sql, unixTime } from "@qino/qino";
+import { Access, s, sql, unixTime } from "@qino/qino";
 import { toMinor } from "@qino/qino/fin";
 import { cart, listen, mainCurrency, shopT } from "@qino/qino/cms.shop";
 
-import type { ApiTree, App, Row } from "@qino/qino";
+import type { ApiTree, App, Row, Ctx } from "@qino/qino";
 import type { Extra, Order } from "@qino/qino/cms.shop";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
@@ -87,8 +87,8 @@ export const api: ApiTree = {
       description: "Put a coupon on the visitor's cart; an empty code takes it off",
       access: Access.PUBLIC,
       input: s.object({ code: s.string() }),
-      execute: async ({ code }: { code: string }) => {
-        const ctx = getCtx(), order = await cart(ctx);
+      execute: async ({ code }: { code: string }, ctx: Ctx) => {
+        const order = await cart(ctx);
         if (order?.status !== "cart") return { ok: false };
         const value = code.trim();
         if (value && !valid(await couponOf(ctx.app, value))) {

@@ -5,7 +5,7 @@ import { Access, getCtx, s } from "@qino/qino";
 import { cart } from "./lib/cart.ts";
 import { mainCurrency, sellsTo } from "./lib/shop.ts";
 
-import type { ApiTree } from "@qino/qino";
+import type { ApiTree, Ctx } from "@qino/qino";
 import type { Order, Party, Product } from "./lib/rows.ts";
 
 const line = s.object({
@@ -164,9 +164,9 @@ export const api: ApiTree = {
         description: "Where the order goes — tax, currency and what may be sold follow from it",
         access: Access.PUBLIC,
         input: s.object({ value: s.string() }),
-        execute: async ({ value }: { value: string }) => {
+        execute: async ({ value }: { value: string }, ctx: Ctx) => {
           const country = value.toUpperCase();
-          if (!await sellsTo(getCtx().app, country)) return { error: "not available" };
+          if (!await sellsTo(ctx.app, country)) return { error: "not available" };
           const order = await open();
           await order.setCountry(country);
           return { cart: await summary(order) };
@@ -223,12 +223,12 @@ export const api: ApiTree = {
         description: "Place the order unless something blocks it, then start the payment",
         access: Access.PUBLIC,
         input: s.object({ return: s.string() }),
-        execute: async ({ return: back }: { return: string }) => {
-          const order = await cart(getCtx(), false);
+        execute: async ({ return: back }: { return: string }, ctx: Ctx) => {
+          const order = await cart(ctx, false);
           if (order?.status !== "cart") return { ok: false, errors: { "has lines": "" }, redirect: "" };
           const placed = await order.place();
           if (!placed.ok) return { ...placed, order: order.$id };
-          getCtx().sess.data["cms.shop"].placed(order.$id); // a guest may still pay for it, see order/:id/pay
+          ctx.sess.data["cms.shop"].placed(order.$id); // a guest may still pay for it, see order/:id/pay
           if (placed.redirect || !order.total || !order.payment) return { ...placed, order: order.$id };
           return { ...placed, ...await startPayment(order, back), order: order.$id };
         },
@@ -258,10 +258,10 @@ export const api: ApiTree = {
       description: "What a product costs right now, for the amount, the variant and the data given",
       access: Access.PUBLIC,
       input: line,
-      execute: async ({ product, variant, quantity = 1, data = null }: { product: string; variant?: string; quantity?: number; data?: unknown }) => {
+      execute: async ({ product, variant, quantity = 1, data = null }: { product: string; variant?: string; quantity?: number; data?: unknown }, ctx: Ctx) => {
         const sold = await sellable(product, variant);
         if (!sold) return { error: "not available" };
-        const app = getCtx().app, order = await cart(getCtx(), false);
+        const app = ctx.app, order = await cart(ctx, false);
         const row = await order?.currencyRow() ?? await mainCurrency(app);
         const prices = await sold.product.prices({ variant: sold.variant, quantity, order, currency: row, data });
         return { ...prices, currency: row?.$id ?? "", grossText: row?.format(prices.gross) ?? "", netText: row?.format(prices.net) ?? "" };

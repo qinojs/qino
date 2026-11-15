@@ -4,7 +4,7 @@ import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node) {
-  const raw = await node.settings.elements();
+  const raw = await node.settings.elements;
   const elements = raw && typeof raw === "object" ? raw as Record<string, Record<string, unknown>> : {};
   const rows = [];
   for (const [id, field] of Object.entries(elements)) {

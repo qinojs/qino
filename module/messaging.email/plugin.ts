@@ -1,10 +1,10 @@
-import { Access, contacts, getCtx, removeContact, s, setMainContact } from "@qino/qino";
+import { Access, contacts, removeContact, s, setMainContact } from "@qino/qino";
 import { pendingContacts } from "@qino/qino/messaging";
 
 import { close } from "./lib/transport.ts";
 import { addEmail, receive, verifyEmail } from "./mod.ts";
 
-import type { ApiTree, App, Params } from "@qino/qino";
+import type { ApiTree, App, Params, Ctx } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 export { messagingChannel } from "./mod.ts";
@@ -32,8 +32,7 @@ export const api: ApiTree = {
     get: {
       description: "The signed-in user's verified email addresses and the ones still being verified",
       access: Access.USER,
-      execute: async () => {
-        const ctx = getCtx();
+      execute: async (_: unknown, ctx: Ctx) => {
         const [emails, pending] = await Promise.all([
           contacts(ctx.app.db, ctx.userId, "email"),
           pendingContacts(ctx.app, "email", ctx.userId),
@@ -45,8 +44,7 @@ export const api: ApiTree = {
       description: "Claim an email address and send a verification code",
       access: Access.USER,
       input: s.object({ address: s.string() }),
-      execute: ({ address }: Params) => {
-        const ctx = getCtx();
+      execute: ({ address }: Params, ctx: Ctx) => {
         return addEmail(ctx.app, ctx.userId, String(address));
       },
     },
@@ -55,8 +53,7 @@ export const api: ApiTree = {
         description: "Confirm a claimed address with its six-digit code",
         access: Access.USER,
         input: s.object({ address: s.string(), code: s.string() }),
-        execute: ({ address, code }: Params) => {
-          const ctx = getCtx();
+        execute: ({ address, code }: Params, ctx: Ctx) => {
           return verifyEmail(ctx.app, ctx.userId, String(address), String(code));
         },
       },
@@ -70,8 +67,7 @@ export const api: ApiTree = {
       delete: {
         description: "Delete one of the signed-in user's email addresses",
         access: Access.USER,
-        execute: async ({ address }: Params) => {
-          const ctx = getCtx();
+        execute: async ({ address }: Params, ctx: Ctx) => {
           await removeContact(ctx.app.db, ctx.userId, "email", String(address));
           return { ok: true };
         },
@@ -80,8 +76,7 @@ export const api: ApiTree = {
         put: {
           description: "Make this the signed-in user's preferred email address",
           access: Access.USER,
-          execute: ({ address }: Params) => {
-            const ctx = getCtx();
+          execute: ({ address }: Params, ctx: Ctx) => {
             return setMainContact(ctx.app.db, ctx.userId, "email", String(address));
           },
         },

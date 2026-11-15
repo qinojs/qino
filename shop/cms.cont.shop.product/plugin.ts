@@ -23,7 +23,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const currency = await order?.currencyRow() ?? await mainCurrency(app);
   const where = order?.country ?? await country(app);
   const variants = await product.variants();
-  const cartId = Number(await node.settings.cart() || 0);
+  const cartId = Number(await node.settings.cart || 0);
   const action = cartId ? await (await node.cms.node(cartId)).url() : "";
 
   const rows = [], offers = [];

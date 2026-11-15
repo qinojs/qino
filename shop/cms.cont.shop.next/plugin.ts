@@ -20,8 +20,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const checks = await listOf(settings.check());
   const all = order ? await order.errors() : { "has lines": await t`Your shopping cart is empty` };
   const errors = checks.map((c) => all[c]).filter(Boolean);
-  const [back, next] = await Promise.all([stepUrl(node, await settings.back(), "back"), stepUrl(node, await settings.next(), "next")]);
-  const hide = errors.length && await settings.hideInactive();
+  const [back, next] = await Promise.all([stepUrl(node, await settings.back, "back"), stepUrl(node, await settings.next, "next")]);
+  const hide = errors.length && await settings.hideInactive;
   // buttons, as the PHP module had them: next shows the first thing missing instead of going on
   return html.async`<div data-errors="${JSON.stringify(errors)}">
   ${back ? html.async`<button type=button class=-back data-href="${back}">${node.cms.text(node, "back", { tag: "span", initial: { de: "Zurück", en: "Back" } })}</button>` : ""}

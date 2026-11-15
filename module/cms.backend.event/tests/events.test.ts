@@ -126,6 +126,12 @@ test("event management uses CMS categories, checks both permission levels and pa
       await assertRejects(() => api(panel, { event: { id: course.id, get: true } }));
       await add(course, { start: "2027-07-20", end: "2027-07-21" }); // a date makes it one
       assertEquals(await backendEdit(course), "Edit event in the backend");
+      // in the calendar an editor opens it in the backend, a visitor sees no edit link
+      const july = { start: "2027-07-20", end: "2027-07-21", timeZone: "UTC" };
+      const own = (await entries(admin, july)).find((item) => item.title === "Course as content");
+      assertStringIncludes(own?.editUrl ?? "", `id=${course.id}`);
+      const guest = await context();
+      assertEquals(await requestStorage.run(guest, async () => (await entries(guest, july)).some((item) => item.editUrl)), false);
       await api(panel, { event: { id: course.id, set: { address_locality: "Basel" } } });
       assertEquals((await get(course))?.address_locality, "Basel");
       assertStringIncludes(String(await render(panel, { ctx: admin })), "Course as content");

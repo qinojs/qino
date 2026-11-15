@@ -1,9 +1,9 @@
-import { Access, contacts, getCtx, removeContact, s, setMainContact } from "@qino/qino";
+import { Access, contacts, removeContact, s, setMainContact } from "@qino/qino";
 import { pendingContacts } from "@qino/qino/messaging";
 
 import { addPhone, verifyPhone } from "./mod.ts";
 
-import type { ApiTree, Params } from "@qino/qino";
+import type { ApiTree, Params, Ctx } from "@qino/qino";
 
 export { messagingChannel } from "./mod.ts";
 
@@ -40,8 +40,7 @@ export const api: ApiTree = {
     get: {
       description: "The signed-in user's verified numbers and the ones still being verified",
       access: Access.USER,
-      execute: async () => {
-        const ctx = getCtx();
+      execute: async (_: unknown, ctx: Ctx) => {
         const [phones, pending] = await Promise.all([
           contacts(ctx.app.db, ctx.userId, "phone"),
           pendingContacts(ctx.app, "phone", ctx.userId),
@@ -53,8 +52,7 @@ export const api: ApiTree = {
       description: "Claim an international phone number and send a verification code",
       access: Access.USER,
       input: s.object({ number: s.string() }),
-      execute: ({ number }: Params) => {
-        const ctx = getCtx();
+      execute: ({ number }: Params, ctx: Ctx) => {
         return addPhone(ctx.app, ctx.userId, String(number));
       },
     },
@@ -63,8 +61,7 @@ export const api: ApiTree = {
         description: "Confirm a claimed number with its six-digit SMS code",
         access: Access.USER,
         input: s.object({ number: s.string(), code: s.string() }),
-        execute: ({ number, code }: Params) => {
-          const ctx = getCtx();
+        execute: ({ number, code }: Params, ctx: Ctx) => {
           return verifyPhone(ctx.app, ctx.userId, String(number), String(code));
         },
       },
@@ -78,8 +75,7 @@ export const api: ApiTree = {
       delete: {
         description: "Delete one of the signed-in user's phone numbers",
         access: Access.USER,
-        execute: async ({ number }: Params) => {
-          const ctx = getCtx();
+        execute: async ({ number }: Params, ctx: Ctx) => {
           await removeContact(ctx.app.db, ctx.userId, "phone", String(number));
           return { ok: true };
         },
@@ -88,8 +84,7 @@ export const api: ApiTree = {
         put: {
           description: "Make this phone the signed-in user's preferred SMS number",
           access: Access.USER,
-          execute: ({ number }: Params) => {
-            const ctx = getCtx();
+          execute: ({ number }: Params, ctx: Ctx) => {
             return setMainContact(ctx.app.db, ctx.userId, "phone", String(number));
           },
         },

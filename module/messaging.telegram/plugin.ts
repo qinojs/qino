@@ -1,9 +1,9 @@
-import { Access, App, getCtx, s } from "@qino/qino";
+import { Access, App, s } from "@qino/qino";
 
 import { webhook } from "./lib/webhook.ts";
 import { linkUrl, userChats } from "./mod.ts";
 
-import type { ApiTree, EventDecls } from "@qino/qino";
+import type { ApiTree, EventDecls, Ctx } from "@qino/qino";
 
 export { messagingChannel } from "./mod.ts";
 
@@ -33,8 +33,7 @@ export const api: ApiTree = {
     get: {
       description: "Deep link that connects the signed-in user's Telegram, plus the chats already linked",
       access: Access.USER,
-      execute: async () => {
-        const ctx = getCtx();
+      execute: async (_: unknown, ctx: Ctx) => {
         const [url, chats] = await Promise.all([linkUrl(ctx.app, ctx.userId), userChats(ctx.app, ctx.userId)]);
         return { url, chats };
       },
@@ -43,8 +42,7 @@ export const api: ApiTree = {
     delete: {
       description: "Disconnect Telegram for the signed-in user",
       access: Access.USER,
-      execute: async () => {
-        const ctx = getCtx();
+      execute: async (_: unknown, ctx: Ctx) => {
         await ctx.app.db.exec`DELETE FROM telegram_chat WHERE usr_id = ${ctx.userId}`;
         return { ok: true };
       },

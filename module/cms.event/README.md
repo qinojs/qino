@@ -30,7 +30,9 @@ still follow calendar-day semantics, including DST.
 `dateId`. `add`, `update(node, id, range)` and `remove(node, id)` write them, scoped to the event.
 Reads and writes are trusted server APIs: whoever shows or changes an event has checked the node.
 Only the calendar source checks for itself: it bounds the dates in SQL before resolving nodes and
-their rights; unreadable nodes expose no entries, titles or URLs.
+their rights; unreadable nodes expose no entries, titles or URLs. Editors of an event get the backend page
+of `cms.backend.event` as its `editUrl` (`?id=`), where they may open it; the backend calendar
+links that one.
 
 `overview(db, query, order, { from })` joins a trusted paginated selection of event nodes to their
 row, at most three date previews, a total count and the period they span, in one query (`from`:

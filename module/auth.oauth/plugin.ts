@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { createHmac } from "node:crypto";
-import { Access, addContact, ApiError, b64url, contactOwner, getCtx, identified, Output, Redirect, s, safeEqual, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Access, addContact, ApiError, b64url, contactOwner, identified, Output, Redirect, s, safeEqual, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
 import { links, unlink } from "./mod.ts";
@@ -21,8 +21,7 @@ export const api: ApiTree = {
   get: {
     description: "The providers the current user signs in through",
     access: Access.USER,
-    execute: async () => {
-      const ctx = getCtx();
+    execute: async (_: unknown, ctx: Ctx) => {
       const rows = await links(ctx.app, ctx.userId);
       return rows.map((r) => ({ provider: r.provider, sub: r.sub, created: r.created, lastUsed: r.last_used }));
     },
@@ -33,8 +32,8 @@ export const api: ApiTree = {
       description: "Ask to connect a provider to this account — the round trip that follows needs it",
       access: Access.USER,
       requireStepUp: true,
-      execute: () => {
-        getCtx().sess.data.oauth.proved(unixTime());
+      execute: (_: unknown, ctx: Ctx) => {
+        ctx.sess.data.oauth.proved(unixTime());
         return { ok: true };
       },
     },
@@ -48,8 +47,7 @@ export const api: ApiTree = {
         description: "Disconnect one provider account",
         access: Access.USER,
         requireStepUp: true,
-        execute: async ({ provider, sub }: Params) => {
-          const ctx = getCtx();
+        execute: async ({ provider, sub }: Params, ctx: Ctx) => {
           if (!await unlink(ctx.app, ctx.userId, String(provider), String(sub))) throw new ApiError(404, "Not found");
           return { ok: true };
         },

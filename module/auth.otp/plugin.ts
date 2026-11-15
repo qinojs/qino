@@ -1,9 +1,9 @@
-import { Access, getCtx, requestStorage, s } from "@qino/qino";
+import { Access, requestStorage, s } from "@qino/qino";
 import { channels } from "@qino/qino/messaging";
 
 import { send, verify } from "./mod.ts";
 
-import type { ApiTree, App, Params } from "@qino/qino";
+import type { ApiTree, App, Params, Ctx } from "@qino/qino";
 import type { Factor } from "@qino/qino/auth";
 
 /**
@@ -31,8 +31,8 @@ export const api: ApiTree = {
     post: {
       description: "Send a one-time code over this channel",
       access: Access.IDENTIFIED, // also to a login under way
-      execute: async ({ channel }: Params) => {
-        await send(getCtx(), String(channel));
+      execute: async ({ channel }: Params, ctx: Ctx) => {
+        await send(ctx, String(channel));
         return { ok: true };
       },
     },
@@ -41,7 +41,7 @@ export const api: ApiTree = {
         description: "Prove the current user is present with the code that was sent",
         access: Access.IDENTIFIED,
         input: s.object({ code: s.string() }),
-        execute: async ({ channel, code }: Params) => ({ ok: await verify(getCtx(), String(channel), String(code)) }),
+        execute: async ({ channel, code }: Params, ctx: Ctx) => ({ ok: await verify(ctx, String(channel), String(code)) }),
       },
     },
   },

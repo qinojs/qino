@@ -62,7 +62,7 @@ test("starter.cms: builds a site once, fills gaps on repair, and leaves it to th
   const card = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login")!;
   const form = (await card.conts()).find((c) => c.vs.module === "cms.cont.login.password")!;
   const homeId = Number(await app.db.one`SELECT redirect FROM page_redirect WHERE request = ''`);
-  assertEquals(Number(await form.settings.redirect()), homeId, "signed in, the login page leads home");
+  assertEquals(Number(await form.settings.redirect), homeId, "signed in, the login page leads home");
   const contact = await html(app, "/en/contact");
   assert(contact.body.includes('name="email"') && contact.body.includes("<textarea"), "contact form has its fields");
   assertEquals((await html(app, "/en/no-such-page")).status, 404);

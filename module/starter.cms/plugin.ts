@@ -35,7 +35,7 @@ async function build(app: App) {
   // signed in, the login page has nothing more to offer: on to the site, where editing starts
   const card = (await (await login.cont("main")).conts()).find((c) => c.vs.module === "cms.cont.login");
   const form = await card?.cont("password", "cms.cont.login.password");
-  if (form && !await form.settings.redirect()) await form.settings.redirect(home.id);
+  if (form && !await form.settings.redirect) await form.settings.redirect(home.id);
 
   await page(root, "contact", TITLES.contact, { access: 1, visible: true, searchable: true }, contactForm);
   // what visitors look for at the bottom, not in the menu: the footer lists it

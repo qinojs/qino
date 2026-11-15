@@ -20,8 +20,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const currency = await order!.currencyRow();
   const money = (v: number) => currency?.show(v) ?? v;
   const { total } = await order!.totals();
-  const mode = String(await node.settings.mode() ?? "short");
-  const page = Number(await node.settings.cart() || 0);
+  const mode = String(await node.settings.mode ?? "short");
+  const page = Number(await node.settings.cart || 0);
   const url = page ? await (await node.cms.node(page)).url() : "";
 
   const body = mode === "lines"

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, hostAllowed, identified, unixTime, b64url, unb64url, randB64, Access, AccessError, Output, s } from "@qino/qino";
+import { hostAllowed, identified, unixTime, b64url, unb64url, randB64, Access, AccessError, Output, s } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 
@@ -131,8 +131,7 @@ export const api: ApiTree = {
         description: "Request WebAuthn registration challenge",
         access: Access.USER,
         requireStepUp: true,
-        execute: async () => {
-          const ctx = getCtx();
+        execute: async (_: unknown, ctx: Ctx) => {
           const db  = ctx.app.db;
           const rpId = await getRpId(ctx.app);
           const challenge = randB64(32);
@@ -170,8 +169,7 @@ export const api: ApiTree = {
           attestationObject: s.string(),
           name:              s.optional(s.string()),
         }),
-        execute: async ({ token, credentialId, clientDataJSON, attestationObject, name }: any) => {
-          const ctx    = getCtx();
+        execute: async ({ token, credentialId, clientDataJSON, attestationObject, name }: any, ctx: Ctx) => {
           const db     = ctx.app.db;
           const stored = await consumeChallenge(db, token, "register");
           if (!stored)                      return { ok: false, error: "challenge_expired" };
@@ -229,8 +227,7 @@ export const api: ApiTree = {
       post: {
         description: "Request WebAuthn login challenge",
         access: Access.PUBLIC,
-        execute: async () => {
-          const ctx = getCtx();
+        execute: async (_: unknown, ctx: Ctx) => {
           const rpId = await getRpId(ctx.app);
           const challenge = randB64(32);
           const token = await storeChallenge(ctx.app.db, challenge, 0, "login");
@@ -247,8 +244,7 @@ export const api: ApiTree = {
         description: "Verify WebAuthn login and create session",
         access: Access.PUBLIC,
         input: assertionInput,
-        execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
-          const ctx = getCtx();
+        execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any, ctx: Ctx) => {
           const db = ctx.app.db;
           const stored = await consumeChallenge(db, token, "login");
           if (!stored) return { ok: false, error: "challenge_expired" };
@@ -276,8 +272,7 @@ export const api: ApiTree = {
       post: {
         description: "Step-up challenge — confirm the identity the request has established",
         access: Access.IDENTIFIED, // also the second factor of a login under way
-        execute: async () => {
-          const ctx = getCtx();
+        execute: async (_: unknown, ctx: Ctx) => {
           const db  = ctx.app.db;
           const usrId = identified(ctx);
           const rpId = await getRpId(ctx.app);
@@ -302,8 +297,7 @@ export const api: ApiTree = {
         description: "Verify a confirmation — a fresh proof in the session, or the factor a login was missing",
         access: Access.IDENTIFIED,
         input: assertionInput,
-        execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
-          const ctx    = getCtx();
+        execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any, ctx: Ctx) => {
           const db     = ctx.app.db;
           const usrId  = identified(ctx);
           const stored = await consumeChallenge(db, token, "confirm");
@@ -326,8 +320,7 @@ export const api: ApiTree = {
     get: {
       description: "List own WebAuthn credentials",
       access: Access.USER,
-      execute: async () => {
-        const ctx  = getCtx();
+      execute: async (_: unknown, ctx: Ctx) => {
         const rows = await ctx.app.db.query`SELECT id, credential_id, name, aaguid, created, last_used FROM webauthn_credential WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
         return rows.map((r) => ({ id: r.id, credentialId: r.credential_id, name: r.name, aaguid: r.aaguid, created: r.created, lastUsed: r.last_used }));
       },
@@ -341,8 +334,7 @@ export const api: ApiTree = {
         description: "Delete WebAuthn credential (own or as superuser)",
         access: Access.USER,
         requireStepUp: true,
-        execute: async ({ credId }: any) => {
-          const ctx  = getCtx();
+        execute: async ({ credId }: any, ctx: Ctx) => {
           const cred = await ctx.app.db.row`SELECT usr_id FROM webauthn_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
           if (Number(cred.usr_id) !== ctx.userId && !ctx.user?.superuser) throw new AccessError();
