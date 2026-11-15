@@ -1,27 +1,31 @@
-import { html, safeEqual } from "@qino/qino";
+import { getCtx, html, requireStepUp } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx } from "@qino/qino";
+import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
-export const cms         = { node: { render } };
+export const cms         = { node: { js: ["pub/main.js"], render, api } };
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.takeOver(app, "cms.backend.superuser.auth.webauthn", name);
   await backend.install(app, name, { en: "WebAuthn", de: "WebAuthn" });
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const db  = node.app.db;
+/** Removing someone's passkey weakens their account, so it asks for a fresh proof (step-up). */
+async function api(node: Node, vars: Record<string, unknown>) {
+  const id = Number(vars.delete);
+  if (!id) return null;
+  await requireStepUp(getCtx());
+  await node.app.db.table("webauthn_credential").delete(id);
+  return { ok: true };
+}
 
-  if (safeEqual(ctx.req.body?.csrfToken, ctx.csrfToken) && "delete_cred" in ctx.req.body) {
-    const id = Number(ctx.req.body.delete_cred);
-    if (id) await db.table("webauthn_credential").delete(id);
-  }
+async function render(node: Node) {
+  const db  = node.app.db;
 
   const rows = await db.query`
     SELECT wac.id, wac.name, wac.aaguid, wac.sign_count, wac.created, wac.last_used, wac.credential_id,
@@ -42,9 +46,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       <td>${r.sign_count ?? "0"}
       <td>${fmt(r.created)}
       <td>${fmt(r.last_used)}
-      <td><form method=post style="display:inline">
-        <input type=hidden name=csrfToken value="${ctx.csrfToken}">
-        <input type=hidden name=delete_cred value="${r.id}">
+      <td><form data-delete=${r.id} style="display:inline">
         <button class=u2-unstyle u2-confirm="${`Really delete ${r.name ?? r.id}?`}"><u2-ico icon=delete>✕</u2-ico></button>
       </form>`;
   });

@@ -1,4 +1,4 @@
-import { errMsg, html, safeEqual } from "@qino/qino";
+import { errMsg, getCtx, html, requireStepUp, safeEqual } from "@qino/qino";
 import { drop, stored } from "@qino/qino/auth";
 import { confirm, enrol, verify } from "@qino/qino/auth.totp";
 import { backend } from "@qino/qino/cms.backend";
@@ -11,7 +11,7 @@ import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
-export const cms = { node: { render } };
+export const cms = { node: { js: ["pub/main.js"], render, api } };
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.takeOver(app, "cms.backend.superuser.auth.totp", name);
@@ -31,14 +31,19 @@ async function act(ctx: Ctx) {
     if ("test" in body) {
       return { note: await verify(ctx, String(body.code ?? "")) ? "Correct — a fresh proof is now in your session." : "Correct, but it counted for nothing here." };
     }
-    if ("forget" in body) {
-      await drop(ctx.app, Number(body.usr_id), "totp", Number(body.forget));
-      return { note: "Removed." };
-    }
   } catch (e) {
     return { note: errMsg(e) };
   }
   return { note: "" };
+}
+
+/** Removing someone's authenticator app weakens their account, so it asks for a fresh proof (step-up). */
+async function api(node: Node, vars: Record<string, unknown>) {
+  const id = Number(vars.forget);
+  if (!id) return null;
+  await requireStepUp(getCtx());
+  await drop(node.app, Number(vars.usr_id), "totp", id);
+  return { ok: true };
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
@@ -54,10 +59,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <td>${r.label || "—"}
     <td>${u2.el.time(r.created)}
     <td>${u2.el.time(r.last_used)}
-    <td><form method=post>
-      <input type=hidden name=csrfToken value="${ctx.csrfToken}">
-      <input type=hidden name=usr_id value="${r.usr_id}">
-      <button class=u2-unstyle name=forget value="${r.id}" u2-confirm="Remove this authenticator app?"><u2-ico icon=delete>✕</u2-ico></button>
+    <td><form data-forget=${r.id} data-usr=${r.usr_id}>
+      <button class=u2-unstyle u2-confirm="Remove this authenticator app?"><u2-ico icon=delete>✕</u2-ico></button>
     </form>`);
 
   const setup = started

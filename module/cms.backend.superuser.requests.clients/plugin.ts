@@ -55,7 +55,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const { t } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
   const [rows, badges] = await Promise.all([
-    latest(node.app, LIMIT, { returning: !!f.returning }),
+    latest(node.app, LIMIT, { returning: !!f.returning, exclude: f.not_me ? Number(ctx.clientId) : 0 }),
     ipBadges(node.app),
   ]);
   const u = ctx.req.url.toURL();
@@ -66,6 +66,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const info = uaInfo(row.user_agent ?? "");
     if (f.no_bots && info.bot) continue;
     if (f.users && !row.users) continue;
+    // "not me": my client is excluded in SQL, other clients go by their last request's IP and user
+    if (f.not_me && (row.ip === ctx.req.clientIp || (ctx.userId && Number(row.usr_id) === ctx.userId))) continue;
     const own = String(row.client_id) === String(ctx.clientId);
     trs.push(html`<tr u2-href>
     <td><a href="${href(row.client_id)}" style="color:${uniqueColor(row.client_id)}">${row.client_id}</a>${own ? html` <small class=u2-badge>${await t`me`}</small>` : ""}
@@ -103,6 +105,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
                 <label><input type=checkbox name=no_bots value=1> ${t`hide bots`}</label>
                 <label><input type=checkbox name=returning value=1 checked> ${t`more than 1 request`}</label>
                 <label><input type=checkbox name=users value=1> ${t`with logged-in users`}</label>
+                <label><input type=checkbox name=not_me value=1> ${t`not me`}</label>
             </form>
         </div>
         <div style="overflow:auto; padding:0">

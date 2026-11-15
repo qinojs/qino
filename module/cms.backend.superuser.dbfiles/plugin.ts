@@ -83,7 +83,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     changed:sql`f.log_id_ch DESC`,
     biggest:sql`f.size DESC`
   };
-  const orderBy = orderSql[order] ?? sql.join([sql`f.size = ${0} DESC`, ...children.map((_: DbField, i: number) => sql.id("r" + i))], ",");
+  const orderBy = orderSql[order] ?? sql.join([...children.map((_: DbField, i: number) => sql.id("r" + i)), sql`f.id DESC`], ",");
 
   // one indexed search per input type (no OR across joins, that would scan everything):
   // number → id, 32-hex → md5, contains @ → creator/editor email, else → name and text (both
@@ -104,7 +104,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     FROM file f
       LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
       LEFT JOIN log log_e ON log_e.id=f.log_id_ch LEFT JOIN sess sess_e ON sess_e.id=log_e.sess_id LEFT JOIN usr ue ON ue.id=sess_e.usr_id
-    WHERE ${true}${cond}
+    WHERE f.size > ${0}${cond}
     ORDER BY ${orderBy} LIMIT 1000`;
 
   const relHeaders = children.map((dbFile) => 
@@ -132,7 +132,6 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   }
 
   return html.async`
-<caption>${t`Total`}: ${rows.length}</caption>
 <thead><tr style="vertical-align:bottom">
   <th>${t`File`}
   <th>${t`ID`}
@@ -144,7 +143,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <th style="writing-mode:sideways-lr">${t`Used`}
   <th style="writing-mode:sideways-lr">${t`Public`}
   <th>
-<tbody>${trs}`;
+<tbody>${trs}
+<tfoot><tr><td colspan="${9 + children.length}">${t`Total`}: ${rows.length}`;
 }
 
 async function runAction(node: Node, doName: string) {

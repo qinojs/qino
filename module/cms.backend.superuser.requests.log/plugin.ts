@@ -41,18 +41,24 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const f = (vars.filter ?? {}) as Record<string, string>;
 
   const where = [sql`${true}`];
-  if (f.id)            where.push(sql`log.id = ${Number(f.id)}`);
-  if (f.not_my_client) where.push(sql`log.client_id != ${ctx.clientId}`);
+  // "not me": hide everything from my client, my IP or my user (rows without them stay visible)
+  if (f.not_me) {
+    where.push(sql`(log.client_id IS NULL OR log.client_id != ${ctx.clientId})`);
+    where.push(sql`(ip.ip IS NULL OR ip.ip != ${ctx.req.clientIp})`);
+    where.push(sql`(usr.id IS NULL OR usr.id != ${ctx.userId})`);
+  }
   if (f.loggedin === "yes") where.push(sql.raw("usr.id IS NOT NULL"));
   if (f.loggedin === "no")  where.push(sql.raw("usr.id IS NULL"));
-  if (f.from)          where.push(sql`log.time >= ${backend.toUnix(f.from)}`);
   if (f.to)            where.push(sql`log.time <= ${backend.toUnix(f.to)}`);
   // One indexed search per input type (no OR across joins, that would scan the whole log):
-  // "user:x" → usr, number → id/client, ip → log_ip.ip (prefix), else → url (fulltext on log_url).
+  // "id:n" → log.id, "user:x" → usr, number → id/client/sess, ip → log_ip.ip (prefix), else → url (fulltext on log_url).
   if (f.search) {
     const s = f.search.trim();
+    const id = s.match(/^id:\s*(\d+)$/i)?.[1];
     const user = s.match(/^user:(.+)/i)?.[1].trim();
-    if (user) {
+    if (id) {
+      where.push(sql`log.id = ${Number(id)}`);
+    } else if (user) {
       // usr is small; sess.usr_id and log.sess_id are indexed, so the log itself is still a seek.
       const u = sqlSearch(user, ["given_name", "family_name", "username", "organization"], { exact: ["id"] });
       where.push(sql`log.sess_id IN (SELECT id FROM sess WHERE usr_id IN (SELECT id FROM usr WHERE ${u.where}))`);
@@ -143,19 +149,14 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
   const t0 = performance.now();
   let msg = "";
 
-  if (doName === "clean_data") {
-    // blank stored POST bodies, keep the request rows
-    const r = await db.exec`UPDATE log SET post = '' WHERE post != ''${before ? sql` AND time < ${before}` : sql``}`;
-    msg = `${r.affectedRows} ${await t`entries processed`}`;
-  } else if (doName === "clean_items") {
+  if (doName === "clean_items") {
     const cond = [sql`${true}`];
     if (before) cond.push(sql`time < ${before}`);
-    if (data.check_if_used) {
-      const refs = logRefColumns(db);
-      if (refs.length) {
-        const union = sql.join(refs.map((r) => sql`SELECT ${sql.id(r.col)} AS id FROM ${sql.id(r.table)} WHERE ${sql.id(r.col)} IS NOT NULL`), " UNION ");
-        cond.push(sql`log.id NOT IN (${union})`);
-      }
+    // referenced entries are always kept
+    const refs = logRefColumns(db);
+    if (refs.length) {
+      const union = sql.join(refs.map((r) => sql`SELECT ${sql.id(r.col)} AS id FROM ${sql.id(r.table)} WHERE ${sql.id(r.col)} IS NOT NULL`), " UNION ");
+      cond.push(sql`log.id NOT IN (${union})`);
     }
     const inner = sql`SELECT id FROM log WHERE ${sql.join(cond, " AND ")} ORDER BY id DESC${limit ? sql` LIMIT ${limit}` : sql``}`;
     const r = await db.exec`DELETE FROM log WHERE id IN (SELECT id FROM (${inner}) x)`;
@@ -202,12 +203,10 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
         <div class=-head>${t`Filter`}</div>
         <div>
             <form data-filter class=u2-flex style="gap:.5em 1em; align-items:end">
-                <label>${t`Search`}<br><input name=search value="${initSearch}" placeholder="${t`URL, IP, ID, user:name`}"></label>
-                <label>ID<br><input type=number name=id></label>
+                <label>${t`Search`}<br><input name=search value="${initSearch}" placeholder="${t`URL, IP, ID, id:n, user:name`}"></label>
                 <label>${t`Logged in`}<br><select name=loggedin><option value=""><option value=yes>${t`yes`}<option value=no>${t`no`}</select></label>
-                <label>${t`from`}<br><input type=datetime-local name=from></label>
                 <label>${t`to`}<br><input type=datetime-local name=to></label>
-                <label><input type=checkbox name=not_my_client value=1> ${t`not my client`}</label>
+                <label><input type=checkbox name=not_me value=1> ${t`not me`}</label>
             </form>
         </div>
     </div>
@@ -221,16 +220,9 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
                 ${stats.mb == null ? "" : html.async`<tr><td>${t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
             </table>
             <hr>
-            <form data-tool=clean_data>
-                <b>${t`Delete POST data`}</b><br>
-                <select name=before>${ageOptions(3)}</select><br>
-                <button style="width:100%">${t`Delete POST data`}</button>
-            </form>
-            <hr>
             <form data-tool=clean_items>
                 <b>${t`Delete entries`}</b><br>
-                <select name=before>${ageOptions(3)}</select><br>
-                <label><input type=checkbox name=check_if_used value=1 checked> ${t`keep if referenced`}</label><br>
+                <select name=before>${ageOptions(4)}</select><br>
                 <button style="width:100%">${t`Delete entries`}</button>
             </form>
             <hr>

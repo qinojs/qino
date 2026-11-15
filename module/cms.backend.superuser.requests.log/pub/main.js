@@ -6,9 +6,13 @@ cms.initNode("backend.superuser.requests.log", (el) => {
   const reloadList = () => {
     const filter = Object.fromEntries(new FormData(filterForm));
     // datetime-local is in the browser's TZ → convert to UTC unix seconds here
-    for (const k of ["from", "to"]) if (filter[k]) filter[k] = String(Math.floor(new Date(filter[k]).getTime() / 1000));
+    if (filter.to) filter.to = String(Math.floor(new Date(filter.to).getTime() / 1000));
     cms.reloadPart(nid, "list", { filter });
   };
+  // "to" can't lie in the future: cap it at now (local time, as datetime-local expects)
+  const to = filterForm?.elements.to;
+  const capTo = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); to.max = d.toISOString().slice(0, 16); };
+  if (to) { capTo(); to.addEventListener("focus", capTo); }
   let timer;
   filterForm?.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(reloadList, 250); });
 
