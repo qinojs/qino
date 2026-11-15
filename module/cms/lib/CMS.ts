@@ -140,15 +140,13 @@ export class CMS extends Emitter<CmsEvents> {
     const tags = parts.filter((part): part is string => typeof part === "string");
     filter = Object.assign({}, ...parts.filter((part) => part && typeof part === "object"));
     filter.type ??= "p";
+    const modules = filter.module && (Array.isArray(filter.module) ? filter.module : [filter.module]);
     const ret = new Map<number, Node>();
     for (const [id, c] of pages) {
       const vs = c.vs;
       if (filter.type && filter.type !== "*" && vs.type !== filter.type) continue;
       if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
-      if (filter.module) {
-        const modules = Array.isArray(filter.module) ? filter.module : [filter.module];
-        if (!modules.includes(vs.module)) continue;
-      }
+      if (modules && !modules.includes(vs.module)) continue;
       if (filter.access !== undefined && (await c.access()) < filter.access) continue;
       if (tags.includes("navi")) {
         const titleObj = await c.title();

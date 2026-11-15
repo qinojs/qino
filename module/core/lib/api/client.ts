@@ -12,10 +12,10 @@ export function apiClient(tree: ApiTree) {
     return new Proxy(function () {} as unknown as ApiProxy, {
       get(_t, prop: string | symbol) {
         if (typeof prop !== "string" || prop === "then") return;
-        const catchall = Object.keys(node).find(isCatchall);
+        const c = branch(node[prop]);
         if (VERB_SET.has(prop) && (
-          typeof branch(node[prop])?.execute === "function" ||
-          typeof branch(branch(node[catchall ?? ""])?.[prop])?.execute === "function"
+          typeof c?.execute === "function" ||
+          typeof branch(branch(node[Object.keys(node).find(isCatchall) ?? ""])?.[prop])?.execute === "function"
         )) {
           return (body?: unknown, query?: unknown) =>
             invoke(tree, prop, "/" + pathSoFar.join("/"), {
@@ -23,7 +23,6 @@ export function apiClient(tree: ApiTree) {
               query: asParams(query),
             });
         }
-        const c = branch(node[prop]);
         if (!c) return;
         return buildProxy(c, [...pathSoFar, prop]);
       },

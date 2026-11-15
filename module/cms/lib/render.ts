@@ -29,27 +29,28 @@ export async function render(ctx: Ctx): Promise<void> {
     page = await cm.nodeByPath(["system", "not-found"]) ?? await cm.node(0);
   }
 
-  cmsCtx(ctx).mainNode = page;
-  cmsCtx(ctx).requestedNode = page;
+  const state = cmsCtx(ctx);
+  state.mainNode = page;
+  state.requestedNode = page;
 
   const access = await page.access();
 
   if (!access) {
     ctx.res.status = 401;
-    cmsCtx(ctx).mainNode = await cm.nodeByPath(["system", "no-access"]) ?? await cm.node(0);
+    state.mainNode = await cm.nodeByPath(["system", "no-access"]) ?? await cm.node(0);
   }
-  if (!(await cmsCtx(ctx).mainNode.isReadable())) {
+  if (!(await state.mainNode.isReadable())) {
     ctx.res.status = 401;
     // a site without a page of its own for being offline shows the one for missing access
-    cmsCtx(ctx).mainNode = await cm.nodeByPath(["system", "offline"]) ??
+    state.mainNode = await cm.nodeByPath(["system", "offline"]) ??
       await cm.nodeByPath(["system", "no-access"]) ?? await cm.node(0);
   }
 
   // a content with an address of its own: its page renders around it, and it speaks for the page
-  const requested = cmsCtx(ctx).mainNode;
+  const requested = state.mainNode;
   const own = await hasOwnUrl(requested);
-  if (own) cmsCtx(ctx).mainNode = await requested.page();
-  const mainNode = cmsCtx(ctx).mainNode;
+  if (own) state.mainNode = await requested.page();
+  const mainNode = state.mainNode;
   const pageObj = await mainNode.page();
   const speaker = own ? requested : pageObj;
   const plain = async (name: string) => (await speaker.showText(name)).plain();

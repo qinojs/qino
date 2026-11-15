@@ -45,10 +45,10 @@ const NULL_BODY = new Set([204, 205, 304]);
 const REV = /^[md]\.\w+\//; // the asset revision segment of a static url
 
 /** Set on every response unless it already carries them. */
-const RESPONSE_HEADERS: Record<string, string> = {
+const RESPONSE_HEADERS = Object.entries({
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Content-Type-Options": "nosniff",
-};
+});
 
 export const urlOf = (ctx: Ctx): string => ctx.req.url.origin + ctx.req.appUrl;
 
@@ -215,7 +215,7 @@ export class App extends Emitter<AppEvents> {
 
     /** Every response passes here. Adds default headers; headers already set are kept. */
     async #finish(res: Response, meta: Omit<AppEvents["response-ready"], "res">) {
-        for (const [name, value] of Object.entries(RESPONSE_HEADERS))
+        for (const [name, value] of RESPONSE_HEADERS)
             if (!res.headers.has(name)) res.headers.set(name, value);
         await this.fire("response-ready", { ...meta, res });
 // console.log('done');

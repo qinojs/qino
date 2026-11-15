@@ -12,6 +12,7 @@ import type { CMS } from "./CMS.ts";
 import type { XmlNode } from "./parseXml.ts";
 
 const TAG = /<[^>]*>/g;
+const isAbsolute = (file: string) => file.startsWith("http://") || file.startsWith("https://") || file.startsWith("/");
 
 /** Plain text of CMS html: tags removed, the entities an editor writes decoded, trimmed. */
 const plainOf = (html: string) => (/[<&]/.test(html) ? unhee(html.replace(TAG, "")) : html).trim();
@@ -173,7 +174,6 @@ export class Node {
         }
         const mod = this.module;
         const nodeExports = mod?.plugin.cms?.node;
-        const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
         for (const file of nodeExports?.css ?? []) ctx.res.html.styles.add(isAbsolute(file) ? file : mod!.modUrl + file);
         for (const file of nodeExports?.js ?? [])  ctx.res.html.scripts.add(isAbsolute(file) ? file : mod!.modUrl + file);
         // App-specific css of this module
@@ -208,8 +208,9 @@ export class Node {
     async htmlRaw(vars: Record<string, any> = {}): Promise<string | undefined> {
         if (!this.#is) { console.warn("Page does not exist!"); return; }
         return this.#renderGuarded(async () => {
-            if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
-            let render = this.module.plugin.cms?.node?.render;
+            const mod = this.module;
+            if (!mod) throw new Error(`Module "${this.vs.module}" is not imported`);
+            let render = mod.plugin.cms?.node?.render;
             if (!render) {
                 render = (await this.cms.fire("node:render-fallback", { node: this, render: null })).render ?? undefined;
             }
