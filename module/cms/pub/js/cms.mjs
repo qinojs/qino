@@ -20,7 +20,7 @@ cms.initNode = function(module, fn) {
 
 cms.el = {
   root(el)   { return el.closest('[qcms-id]'); },
-  nid(el)    { return el.closest('[qcms-id]')?.getAttribute('qcms-id') ?? null; },
+  nid(el)    { return cms.el.root(el)?.getAttribute('qcms-id') ?? null; },
   module(el) { return el.closest('[qcms-mod]')?.getAttribute('qcms-mod') ?? null; },
 };
 
@@ -75,7 +75,7 @@ function syncTxt(el) {
 // composedPath()[0] (read before debounce) finds the target inside the qino-cms shadow root too
 const saveTxtDebounced = debounce(saveTxt, 1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
-document.body.addEventListener('input', e => (syncTxt(e.composedPath()[0]), saveTxtDebounced(e.composedPath()[0])));
+document.body.addEventListener('input', e => { const el = e.composedPath()[0]; syncTxt(el); saveTxtDebounced(el); });
 
 cms.reloadNode = (nid, vars) =>
   api.cms.node(nid).html.post({ vars }).then(html =>

@@ -55,8 +55,9 @@ const clean = (value: unknown) => String(value ?? "").replace(/[^\w .,#()%-]/g, 
 /** The identity brand as u2's variables, for `res.html.inlineStyles`: u2 derives its palette from them. */
 export async function identityCss(app: App): Promise<string> {
   const brand = app.settings.identity.brand;
-  const [color, accent, bg, fontFamily] = await Promise.all([brand.primaryColor, brand.accentColor, brand.backgroundColor, brand.fontFamily]);
-  const font = await identity.file(app, "font");
+  const [color, accent, bg, fontFamily, font] = await Promise.all([
+    brand.primaryColor, brand.accentColor, brand.backgroundColor, brand.fontFamily, identity.file(app, "font"),
+  ]);
   const family = clean(fontFamily) || clean(font?.name.replace(/\.\w+$/, ""));
 
   let out = font && family ? `@font-face{font-family:"${family}";src:url("${await font.url()}");font-display:swap}` : "";

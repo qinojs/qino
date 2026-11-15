@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 import { unixTime } from "./util.ts";
 
@@ -24,6 +24,9 @@ export const sha256b64 = async (str: string): Promise<string> => (await digest(s
 
 /** SHA-256 as base64url (43 chars), safe in columns and URLs. Used for PKCE. */
 export const sha256b64url = async (str: string): Promise<string> => b64url(await digest(str));
+
+/** MD5 as hex (32 chars): a short key for long values, not a security hash. */
+export const md5 = (str: string): string => createHash("md5").update(str).digest("hex");
 
 /** SHA-256 as hex (64 chars), e.g. a content hash in a column. */
 export const sha256hex = async (str: string): Promise<string> => (await digest(str)).toHex();

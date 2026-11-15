@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash } from "node:crypto";
 
+import { md5 } from "./crypto.ts";
 import { requestStorage } from "./ctx/Ctx.ts";
 import { sql } from "../deps.ts";
 import { fill, tag } from "../pub/js/tag.js";
@@ -12,8 +12,6 @@ import type { Db } from "./db/Db.ts";
 type Scope = { ns?: string; lang?: string };
 /** t`…`, t.in(ns)`…`, t.with(ns or { ns, lang }, fn) — as in the browser (core/pub/js/t.js). */
 export type T = ReturnType<typeof tag<Promise<string>>>;
-
-export const md5 = (text: string): string => createHash("md5").update(text).digest("hex");
 
 export class LangManager {
 

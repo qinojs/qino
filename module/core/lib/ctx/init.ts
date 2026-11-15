@@ -1,6 +1,4 @@
-import { createHash } from "node:crypto";
-
-import { uid } from "../crypto.ts";
+import { md5, uid } from "../crypto.ts";
 import { header, cookiePrefix, unixTime } from "../util.ts";
 import { loginFromRequest, logout } from "../auth/login.ts";
 
@@ -62,7 +60,6 @@ export function redactQuery(href: string): string {
   } catch { return href; }
 }
 
-const md5 = (s: string) => createHash("md5").update(s).digest("hex");
 const EMPTY_URL = md5(""); // most requests have no referer
 
 function initLog(ctx: Ctx) {

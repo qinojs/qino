@@ -64,8 +64,7 @@ async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestD
 
 // Compare host:port, not scheme — behind a TLS proxy the app sees http, the Origin says https.
 export function isTrustedOrigin(req: Req): boolean {
-  const target = req.url.host;
-  return (hostOf(req.header("origin")) || hostOf(req.header("referer"))) === target;
+  return (hostOf(req.header("origin")) || hostOf(req.header("referer"))) === req.url.host;
 }
 
 function hostOf(value?: string) {

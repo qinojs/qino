@@ -72,6 +72,7 @@ export class Module {
   #plugin: Plugin;
   #manifest: Manifest;
   #source: string;
+  #dir: string | undefined;
   #abort = new AbortController();
 
   constructor(app: App, name: string, plugin: Plugin, manifest: Manifest, source: string) {
@@ -80,6 +81,7 @@ export class Module {
     this.#plugin = plugin;
     this.#manifest = manifest;
     this.#source = source;
+    this.#dir = source.startsWith("file:") ? fileURLToPath(source).replace(/\/[^/]+$/, "/") : undefined;
   }
   get name(): string { return this.#name; }
   get plugin(): Plugin { return this.#plugin; }
@@ -90,7 +92,7 @@ export class Module {
   /** Resolved file:/https: URL of the plugin file. */
   get source(): string { return this.#source; }
   /** Directory the module lives in; undefined for remote modules. */
-  get dir(): string | undefined { return this.#source.startsWith("file:") ? fileURLToPath(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
+  get dir(): string | undefined { return this.#dir; }
   /** Directory of the served files. A remote module serves the files mirrored on import, in a
    *  subfolder of its cache so they don't mix with its own cache files. */
   get pubDir(): string { return (this.dir ?? this.cache + "remote/") + "pub"; }
