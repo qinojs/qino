@@ -1,6 +1,7 @@
 {
   "modules": {
     "migrate_from_php": {},
-    "migrate_shp3": {}
+    "migrate_shp3": {},
+    "migrate_event2": {}
   }
 }

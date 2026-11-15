@@ -88,6 +88,11 @@ test("backend calendar reads CMS events through calendar, with node access and b
         await add(visible, { start: `${date}T09:00+02:00`, end: `${date}T11:00+02:00` });
         await add(privateNode, { start: `${date}T09:00+02:00`, end: `${date}T11:00+02:00` });
       }
+      // no end given: a moment, found in the period its start is in
+      await add(visible, { start: "2027-09-10T19:00+02:00", end: "2027-09-10T19:00+02:00" });
+      const moment = { start: "2027-09-10T17:00Z", end: "2027-09-10T18:00Z", timeZone: "UTC" };
+      assertEquals((await entries(ctx, moment)).map((item) => item.end), ["2027-09-10T17:00:00Z"]);
+      assertEquals(await entries(ctx, { ...moment, start: "2027-09-10T16:00Z", end: "2027-09-10T17:00Z" }), []);
       const blocks = await entries(ctx, { start: "2027-08-01", end: "2027-09-01", timeZone: "Europe/Zurich" });
       assertEquals(blocks.map((item) => item.start.slice(0, 10)), ["2027-08-01", "2027-08-09", "2027-08-15"]);
       assertEquals(new Set(blocks.map((item) => item.id)).size, 3);

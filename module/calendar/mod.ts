@@ -2,6 +2,7 @@ import "@qino/qino";
 
 import type { App, Ctx } from "@qino/qino";
 
+export { ics } from "./ics.ts";
 export { occurrences } from "./recurrence.ts";
 
 /** A half-open interval: dates for all-day entries, offset timestamps for timed entries. */
@@ -55,12 +56,12 @@ export function instant(value: string, timeZone?: string): Temporal.Instant {
   return Temporal.PlainDate.from(value).toZonedDateTime(timeZone).toInstant();
 }
 
-/** Throws unless both bounds are dates or both timestamps, and the start precedes the end. */
+/** Throws unless both bounds are dates or both timestamps, in order. A timestamp may end where it starts: a moment, no end given (RFC 5545). */
 export function validateRange(range: Range): void {
   const dates = isDate(range.start);
   if (dates !== isDate(range.end)) throw new RangeError("calendar: start and end must both be dates or both timestamps");
   const order = dates ? Temporal.PlainDate.compare(range.start, range.end) : Temporal.Instant.compare(instant(range.start), instant(range.end));
-  if (order >= 0) throw new RangeError("calendar: start must precede end");
+  if (order > 0 || dates && !order) throw new RangeError("calendar: start must precede end");
 }
 
 /** Exact bounds of a valid range; dates begin with their first moment in the time zone. */
@@ -76,8 +77,12 @@ export function overlaps(a: Range, b: Range, { timeZone }: { timeZone?: string }
     validateRange(b);
     return Temporal.PlainDate.compare(a.start, b.end) < 0 && Temporal.PlainDate.compare(b.start, a.end) < 0;
   }
-  const [startA, endA] = instants(a, timeZone), [startB, endB] = instants(b, timeZone);
-  // a date its time zone skips entirely is empty there
+  // a moment takes part with its first nanosecond; a date its time zone skips entirely is empty there
+  const bounds = (range: Range) => {
+    const [start, end] = instants(range, timeZone);
+    return [start, !isDate(range.start) && start.equals(end) ? end.add({ nanoseconds: 1 }) : end];
+  };
+  const [startA, endA] = bounds(a), [startB, endB] = bounds(b);
   return Temporal.Instant.compare(startA, endA) < 0 && Temporal.Instant.compare(startB, endB) < 0
     && Temporal.Instant.compare(startA, endB) < 0 && Temporal.Instant.compare(startB, endA) < 0;
 }

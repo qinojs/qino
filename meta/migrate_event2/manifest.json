@@ -1,0 +1,10 @@
+{
+  "name": "migrate_event2",
+  "description": "Once: the events of the PHP CMS (event2) into cms.event — dates, details, pages.",
+  "files": ["README.md", "manifest.json", "plugin.ts"],
+  "dependencies": [
+    "core",
+    "cms",
+    "cms.event"
+  ]
+}

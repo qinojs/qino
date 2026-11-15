@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { AccessError, App, fs, requestStorage } from "@qino/qino";
+import { AccessError, App, fs, Output, requestStorage } from "@qino/qino";
 import { cms as tree } from "@qino/qino/cms";
 import { entries } from "@qino/qino/calendar";
 import { add } from "@qino/qino/cms.event";
@@ -84,6 +84,15 @@ test("event management uses CMS categories, checks both permission levels and pa
       const html = String(await categoryPlugin.node.render(category, { ctx: await context() }));
       assertStringIncludes(html, "Pottery");
       assertStringIncludes(html, 'datetime="2027-07-12"');
+      assertStringIncludes(html, `?cms_event_ics=${category.id}`);
+    });
+    // the category as a feed: its readable events, upcoming dates only
+    const feed = await context(0, `http://qino.test/?cms_event_ics=${category.id}`);
+    await requestStorage.run(feed, async () => {
+      const out = await categoryPlugin.node.render(category, { ctx: feed }).then(() => undefined, (e: Output) => e);
+      assertEquals(out instanceof Output, true);
+      assertStringIncludes(String(out?.body), "SUMMARY:Pottery\r\n");
+      assertStringIncludes(String(out?.body), "DTSTART;VALUE=DATE:20270712\r\n");
     });
     await requestStorage.run(await context(readerId), async () => {
       const rendered = String(await render(panel, { ctx: await context(readerId) }));
@@ -115,7 +124,12 @@ test("event management uses CMS categories, checks both permission levels and pa
       await api(panel, { move: { event: event.id, category: next.id } });
       assertEquals(Number(event.vs.basis), next.id);
       const title = category.vs.title_id;
-      for (let i = 0; i < 51; i++) await app.db.table("page").insert({ basis: category.id, module: "cms.cont.event", type: "c", title_id: title, access: 1, online_start: 0, online_end: 0, sort: i });
+      for (let i = 0; i < 51; i++) {
+        const id = await app.db.table("page").insert({ basis: category.id, module: "cms.cont.event", type: "c", title_id: title, access: 1, online_start: 0, online_end: 0, sort: i });
+        if (i % 2) await add(await tree(app).node(Number(id)), { start: `2027-08-${String(i % 28 + 1).padStart(2, "0")}`, end: "2027-09-01" });
+      }
+      // a past event is no longer listed publicly
+      await add(await tree(app).node(Number(await app.db.one`SELECT id FROM page WHERE basis = ${category.id} AND sort = ${0}`)), { start: "2020-01-01", end: "2020-01-02" });
       const html = String(await render(panel, { ctx: admin }));
       assertEquals(html.split("<th scope=row>").length - 1, 50);
       assertStringIncludes(html, "page=2");
@@ -126,8 +140,12 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertEquals(html.includes("name=schedule"), false);
       assertEquals(html.includes("view=categories"), false);
       const publicList = String(await categoryPlugin.node.render(category, { ctx: admin }));
-      assertEquals(publicList.split("<li>").length - 1, 20);
+      assertEquals(publicList.split("<li><article>").length - 1, 20);
       assertStringIncludes(publicList, `cms_event_${category.id}_page=2`);
+      // the next date first
+      const dates = [...publicList.matchAll(/<time datetime="([^"]+)"/g)].map((m) => m[1]);
+      assertEquals(dates, [...dates].sort());
+      assertEquals(dates.includes("2020-01-01"), false);
     });
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));

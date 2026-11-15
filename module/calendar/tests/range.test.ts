@@ -64,6 +64,14 @@ test("calendar rejects ambiguous, invalid and empty ranges instead of guessing",
     { start: timed.start, end: day.end },
     { start: "2027-07-10T09:00", end: "2027-07-10T11:00" },
     { start: timed.end, end: timed.start },
-    { start: timed.start, end: timed.start },
   ]) assertThrows(() => overlaps(range, day, zurich), RangeError);
+});
+
+test("calendar takes a timestamp without an end as a moment at its start", () => {
+  const moment = { start: "2027-07-10T19:00Z", end: "2027-07-10T19:00Z" };
+  assertEquals(overlaps(moment, { start: "2027-07-10T19:00Z", end: "2027-07-10T20:00Z" }), true);
+  assertEquals(overlaps(moment, { start: "2027-07-10T18:00Z", end: "2027-07-10T19:00Z" }), false);
+  assertEquals(overlaps(moment, moment), true);
+  assertEquals(overlaps(moment, { start: "2027-07-10", end: "2027-07-11" }, zurich), true);
+  assertEquals(overlaps(moment, { start: "2027-07-11", end: "2027-07-12" }, zurich), false);
 });

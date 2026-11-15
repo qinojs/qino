@@ -13,7 +13,9 @@ overlaps(
 ```
 
 `Range` has an inclusive `start` and exclusive `end`. Adjacent bookings do not overlap.
-Both boundaries must be dates (`YYYY-MM-DD`) or both timestamps, and the end must follow the start.
+Both boundaries must be dates (`YYYY-MM-DD`) or both timestamps, and the end must follow the start —
+except a timestamp may end where it starts: a moment, for an entry whose end is not given (a VEVENT
+without DTEND, RFC 5545). It overlaps a period that contains its start.
 An all-day entry for July 12 ends on July 13. Dates are compared as calendar dates.
 
 Timed entries use ISO timestamps with UTC/offsets, or Temporal strings with an IANA time zone
@@ -51,6 +53,13 @@ The result adds the source module's name as `source` and keeps only overlapping 
 unique within a source. Source failures propagate so an unavailable source is not shown as an
 empty calendar. This abstraction has no dependency on the CMS, backend or a particular source.
 
+## iCalendar
+
+`ics(entries, { host })` writes entries as an iCalendar object (RFC 5545) for a download, a feed or
+a mail attachment. Whole days become `VALUE=DATE` with the exclusive end the standard asks for, timed
+entries UTC timestamps, a moment a `DTSTART` alone. Entries may carry a `description` and a
+`location`; `host` makes their `id` a globally unique `UID`.
+
 ## Recurrence
 
 `occurrences(schedule, period)` expands fixed or repeating nonempty intervals. `schedule` contains
@@ -71,5 +80,4 @@ before the query. Local starts retain their wall time across DST. A timed `end` 
 initial exact duration (RFC 5545 DTEND); all-day durations remain calendar days. Missing month
 days and nonexistent generated local times follow RRULE semantics, not subscription billing rules.
 Every result has a `recurrenceId` identifying its original start. Moving an occurrence while
-retaining that identity is not yet implemented. Points and open-ended entries remain subsequent
-work; they are not inferred from missing boundaries.
+retaining that identity is not yet implemented.

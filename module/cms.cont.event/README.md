@@ -17,6 +17,12 @@ always scoped to the owning node. This module has no additional database table.
 `formatDates(blocks, lang, timeZone)` supplies the shared range display for event details and
 overviews.
 
+Standard outputs, without a setting: the detail page links its dates as an iCalendar download
+(`?cms_event_ics=<node id>`, RFC 5545) and, where the event is what the page is about, adds one
+schema.org `Event` per date (place, address, offer, performers, language) for search engines.
+`entries(node, ctx)` gives the blocks as calendar entries with title, place and description;
+`answer(ctx, node, events)` sends the iCalendar file for a node — the category uses both for its feed.
+
 ## Event details
 
 The settings panel also manages venue street, postal code, locality and country code, an
@@ -29,4 +35,4 @@ unknown language tag, a link that is not HTTP(S).
 
 Compared with PHP event2, this keeps the useful descriptive fields. Participant registration,
 capacity, waitlists, deadlines, confirmation emails and participant exports need a separate
-registration workflow. Tags, recurrence generation and iCalendar export are not included.
+registration workflow. Tags and recurrence generation are not included.

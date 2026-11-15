@@ -1,7 +1,7 @@
 import { test } from "node:test";
-import { AccessError, App, fs, requestStorage } from "@qino/qino";
+import { AccessError, App, fs, Output, requestStorage } from "@qino/qino";
 import { entries } from "@qino/qino/calendar";
-import { cms as tree } from "@qino/qino/cms";
+import { cms as tree, cmsCtx } from "@qino/qino/cms";
 import { list } from "@qino/qino/cms.event";
 import { assertEquals, assertRejects, assertStringIncludes, testContext } from "@qino/qino/tests";
 
@@ -77,6 +77,24 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       assertStringIncludes(rendered, "12. Juli 2027");
       assertEquals(rendered.includes("Ganztägig"), false);
       assertEquals(rendered.includes('datetime="2027-07-13"'), false);
+      assertStringIncludes(rendered, `?cms_event_ics=${event.id}`);
+      // schema.org Event per date, only where the event is what the page is about
+      assertEquals(viewer.res.html.head.includes('"@type":"Event"'), false);
+      cmsCtx(viewer).requestedNode = event;
+      await cms.node.render(event, { ctx: viewer });
+      const data = [...viewer.res.html.head.matchAll(/<script type=application\/ld\+json>(.*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
+      assertEquals(data.map((d) => [d.startDate, d.endDate]), [["2027-07-10T09:00:30+02:00", "2027-07-10T11:00:45+02:00"], ["2027-07-12", "2027-07-12"]]);
+      assertEquals(data[0].location.address.postalCode, "01234");
+      assertEquals(data[0].offers, { "@type": "Offer", price: "12.5", priceCurrency: "CHF", url: data[0].url });
+    });
+    const download = await testContext({ app, url: `http://qino.test/?cms_event_ics=${event.id}`, set: { app } });
+    await requestStorage.run(download, async () => {
+      const out = await cms.node.render(event, { ctx: download }).then(() => undefined, (e: Output) => e);
+      assertEquals(out instanceof Output, true);
+      const body = String(out?.body);
+      assertStringIncludes(body, "DTSTART:20270710T070030Z\r\nDTEND:20270710T090045Z\r\n");
+      assertStringIncludes(body, "DTSTART;VALUE=DATE:20270712\r\nDTEND;VALUE=DATE:20270713\r\n");
+      assertStringIncludes(body, "LOCATION:Hall & garden\\, Main Street 1\\, 01234 Town\\, CH\r\n");
     });
     await requestStorage.run(admin, async () => {
       const blocks = await list(event);

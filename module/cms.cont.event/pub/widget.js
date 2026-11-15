@@ -21,13 +21,13 @@ export default async function (widget, { node, signal, cards = false, onChange =
   ]);
   const prefix = `event-${node.id}`;
   const zone = settings.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-  // all-day ends show the last included day; the row without a block adds one
+  // all-day ends show the last included day, a moment no end; the row without a block adds one
   const row = (item = {}) => {
     const type = item.allDay ? "date" : "datetime-local";
     return html.async`<tr data-block="${item.id ?? ""}">
       <td><input type=checkbox name=allDay ${item.allDay ? html`checked` : ""} aria-label="${t`All day`}">
       <td><input name=start type="${type}" step=1 value="${item.localStart ?? ""}" required aria-label="${t`Start`}">
-      <td><input name=end type="${type}" step=1 value="${item.allDay ? shiftDate(item.localEnd, -1) : item.localEnd ?? ""}" required aria-label="${t`End`}">
+      <td><input name=end type="${type}" step=1 value="${item.allDay ? shiftDate(item.localEnd, -1) : item.localEnd === item.localStart ? "" : item.localEnd ?? ""}" aria-label="${t`End`}">
       <td>${item.id ? html.async`<button type=button class=u2-unstyle data-remove aria-label="${t`Delete block`}" title="${t`Delete block`}"><u2-ico icon=delete>✕</u2-ico></button>` : ""}
     </tr>`;
   };
@@ -97,8 +97,9 @@ export default async function (widget, { node, signal, cards = false, onChange =
     }
     end.min = start.value;
     if (!start.checkValidity() || !end.checkValidity()) return;
+    // no end: the day itself, or the moment it starts
     const item = blocks.find((block) => block.id === Number(tr.dataset.block));
-    const local = { allDay: allDay.checked, localStart: start.value, localEnd: allDay.checked ? shiftDate(end.value, 1) : end.value };
+    const local = { allDay: allDay.checked, localStart: start.value, localEnd: allDay.checked ? shiftDate(end.value || start.value, 1) : end.value || start.value };
     // an unchanged wall time keeps its exact instant: during a clock change it occurs twice
     const same = (key) => item?.allDay === local.allDay && Date.parse(item[key]) === Date.parse(local[key]);
     const save = {

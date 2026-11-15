@@ -27,7 +27,7 @@ new SelectorObserver({ on: async (el) => {
     if (!el.isConnected) return;
     const write = el.dataset.write === "true" && vs.myaccess >= 2, admin = write && vs.myaccess >= 3;
     const controls = (field, label) => html.async`<u2-buttongroup style="flex-wrap:wrap" role=group aria-label="${label}">
-      <button type=button data-mode=unlimited aria-pressed="${vs[field] === 0}" ${!write || vs[field] === 0 ? html`disabled` : ""}>${field === "onlineStart" ? t`Immediately` : t`Unlimited`}</button>
+      <button type=button data-mode=unlimited aria-pressed="${vs[field] === 0}" ${!write || vs[field] === 0 ? html`disabled` : ""}>${t`Unlimited`}</button>
       <button type=button data-mode=inherit aria-pressed="${vs[field] === null}" ${!write || vs[field] === null ? html`disabled` : ""}>${t`Inherit`}</button>
       <button type=button data-mode=date ${vs[field] ? html`hidden` : ""} ${!write ? html`disabled` : ""}>${t`Date`}</button>
       <input id="${prefix}-${field}" type=datetime-local step=1 data-date="${field}" value="${vs[field] ? local(vs[field]) : ""}" aria-label="${label}" required ${!vs[field] ? html`hidden` : ""} ${!write ? html`disabled` : ""}>
@@ -69,7 +69,7 @@ new SelectorObserver({ on: async (el) => {
       const grants = el.querySelector("[data-grants]");
       grants.hidden = inherited;
       if (inherited) return;
-      const rows = await html.async`<table class="u2-table -NoSideGaps" style="padding:0">
+      const rows = await html.async`<table class="u2-table" style="padding:0">
         <thead><tr>
           <th scope=col>${t`Group`}</th>
           ${levels.map((label, level) => html.async`<th scope=col style="text-align:center" title="${label}">${level ? label : "—"}</th>`)}

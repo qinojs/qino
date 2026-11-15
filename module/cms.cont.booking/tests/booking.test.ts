@@ -48,7 +48,6 @@ test("appointment booking isolates instances, enforces node rights, and serializ
       await assertRejects(() => slots(hidden, period), AccessError);
       await assertRejects(() => api(first, { offers: true }), AccessError);
       await assertRejects(() => api(first, { save: { start, end } }), AccessError);
-      assertEquals(await list(hidden), []);
     });
     const input = { eventId: offers[0], start, name: "Guest <b>one</b>", email: "guest@example.test", timeZone: "UTC" };
     const reserved = await requestStorage.run(guest, () => book(first, input));

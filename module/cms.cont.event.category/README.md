@@ -2,8 +2,10 @@
 
 Like shop categories, an event category is a normal CMS content node. Its direct
 `cms.cont.event` children have individual URLs, titles and permissions. The category lists
-readable children in CMS order, twenty candidates per page, with date previews and locality;
-opening a child renders that event. Dates use the event's time zone and the same range formatting
+the readable children with a date still ahead, the next one first, twenty candidates per page,
+with up to three upcoming dates and the locality; past and undated events stay in the backend.
+Opening a child renders that event; `?cms_event_ics=<category id>` gives the upcoming dates of all
+its events as one iCalendar file to subscribe to. Dates use the event's time zone and the same range formatting
 as the detail page. The node selection and its bounded date previews use one SQL query.
 No category table or separate category ID is needed: membership is the CMS parent (`basis`).
 

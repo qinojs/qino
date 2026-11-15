@@ -6,7 +6,7 @@ import { decodeRow, encode, select } from "./range.ts";
 import type { Node } from "@qino/qino/cms";
 import type { Period, Range } from "@qino/qino/calendar";
 
-export { overview } from "./range.ts";
+export { ahead, overview } from "./range.ts";
 
 /** Add an event to a CMS node. All-day dates stay dates; timed boundaries are stored in UTC. */
 export function add(node: Node, range: Range) {
@@ -25,15 +25,14 @@ export async function remove(node: Node, id: number) {
   await node.db.table("cms_event").deleteWhere({ id, node_id: node.id });
 }
 
-/** Event definitions are visible only to readers of their owning node. */
+/** The node's blocks, in order. Like the writes a trusted read: who shows them has checked the node. */
 export async function list(node: Node) {
-  if (await node.access() < 2 && !await node.isReadable()) return [];
   const rows = await node.db.query`SELECT id, ${sql.id("start")}, ${sql.id("end")}, all_day FROM cms_event WHERE node_id = ${node.id} ORDER BY ${sql.id("start")}, id`;
   return rows.map((row) => ({ id: Number(row.id), ...decodeRow(row) }));
 }
 
+/** The node's blocks that overlap the period. */
 export async function query(node: Node, period: Period) {
-  if (!await node.isReadable()) return [];
   const rows = await node.db.query`${select(period, node.id)}`;
   return rows.map((row) => ({ ...decodeRow(row), eventId: Number(row.id) }))
     .filter((item) => overlaps(item, period, { timeZone: period.timeZone }));

@@ -19,11 +19,11 @@ second precision are rejected rather than rounded. IDs use BIGINT as well.
 calendar days use UTC-midnight numeric storage coordinates and are decoded back to dates;
 their actual bounds in a viewer's time zone still follow calendar-day semantics, including DST.
 
-`list(node)` reads the node's blocks. `query(node, period)` reads only overlapping blocks and
-returns their `eventId`, `start` and `end`. Listing definitions also allows node editors to inspect
-offline events, matching the CMS API's editor access; public queries still require a readable node. Trusted writes use
-`add`, `update(node, id, range)` and `remove(node, id)`; their caller authorizes changes.
-Updates and deletions are scoped to the owning node.
+`list(node)` reads the node's blocks, `query(node, period)` only the overlapping ones, with their
+`eventId`. A block may end where it starts: a moment, for an event whose end is not given (as a
+VEVENT without DTEND in RFC 5545). Reads and writes (`add`, `update(node, id, range)`,
+`remove(node, id)`) are trusted server APIs: whoever shows or changes blocks has checked the node.
+Updates and deletions are scoped to the owning node. Only the calendar source checks for itself.
 
 `overview(db, query, order)` joins a trusted paginated node selection to at most three block
 previews per node, a total block count and an encompassing period, in one query. Its SQL ordering
