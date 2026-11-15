@@ -192,11 +192,10 @@ function itemGetIn(e: any) {
   if (e.value == null && schema?.default !== undefined) e.value = schema.default;
   if (e.value == null || typeof e.value === 'object' || !schema?.type) return;
 
-  const num = Number(e.value);
-  if ((schema.type === 'integer' || schema.type === 'number') && !Number.isNaN(num))
-    e.value = num;
-  else if (schema.type === 'boolean')
-    e.value = typeof e.value === 'string' ? !['false', '0', ''].includes(e.value) : !!e.value;
+  if (schema.type === 'integer' || schema.type === 'number') {
+    const num = Number(e.value);
+    if (!Number.isNaN(num)) e.value = num;
+  } else if (schema.type === 'boolean') e.value = isOn(e.value);
 }
 
 /** Enable schema-driven defaults on an item.js Item (attach listener for getIn events). */
