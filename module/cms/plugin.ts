@@ -77,9 +77,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     app.on("route", async ({ ctx }) => {
         const settings = ctx.settings;
+        const query = ctx.req.query;
 
         // Edit mode
-        const editmode = ctx.req.query.cms_editmode;
+        const editmode = query.cms_editmode;
         if (editmode !== undefined) settings.cms.editmode(editmode);
 
         cmsCtx(ctx).editmode = Number(settings.cms.editmode()) || 0;
@@ -87,10 +88,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // File upload
         const cmsPageFile = await ctx.req.files.cmsPageFile;
         if (cmsPageFile) {
-            const cmspid = Number(ctx.req.query.cmspid ?? "0");
+            const cmspid = Number(query.cmspid ?? "0");
             const page = await cms(app).node(cmspid);
             if (isTrustedOrigin(ctx.req) && await page.access() > 1) {
-                const replace = ctx.req.query.replace;
+                const replace = query.replace;
                 const dbFile = await (replace ? page.file(replace) : page.addFile());
                 await dbFile.replaceFromUpload(cmsPageFile);
                 throw new Output({ id: String(dbFile), url: await dbFile.url() });
@@ -98,7 +99,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         }
 
         // Page files as ZIP
-        const zipPid = ctx.req.query.cms_nodeFilesZip;
+        const zipPid = query.cms_nodeFilesZip;
         if (zipPid) {
             const page = await cms(app).node(Number(zipPid));
             if (!(await page.isReadable())) { ctx.res.status = 403; return; }
