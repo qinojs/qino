@@ -6,7 +6,9 @@ event modules; it runs in its `install()`, as long as no `event2` date has a blo
 - Every `event2` row makes its node an event (a `cms_event` row with address, price, currency,
   language, external link and the performers' names), whatever module shows it: a shop product
   can be a course. What a standard does not take (a malformed link, an unknown language) is left
-  out. The default zone of `cms.event` becomes `Europe/Paris`, the zone PHP read and wrote dates in.
+  out. A row without a real date and without any detail is left out: PHP made one for every
+  product its course category showed (`makeIfNot`). The default zone of `cms.event` becomes
+  `Europe/Paris`, the zone PHP read and wrote dates in.
 - Every `event2_dates` row becomes a `cms_event_date`. All-day dates end on their last day in PHP,
   here after it. Midnight to midnight was a way to enter days without a time: they become dates
   as well. An end before the start is none (a moment). The placeholder PHP made for an event

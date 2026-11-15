@@ -54,6 +54,9 @@ function details(event: Row, people: Row[]) {
   };
 }
 
+/** PHP made a date of "now" for an event without one: the same second twice, and hardly a full minute. */
+const placeholder = (date: Row, zone: string) => date.start_date === date.end_date && local(date.start_date, zone).second !== 0;
+
 export async function install({ app }: { app: App }): Promise<void> {
   const db = app.db, tree = cms(app);
   if (!(await db.columns("event2_dates").catch(() => [])).length) return; // no event2 here
@@ -86,24 +89,30 @@ export async function install({ app }: { app: App }): Promise<void> {
     }
     if (waiting.length) report.push(`left without a qino module: ${waiting.join(", ")}`);
 
-    // events: an event2 row made its page one, whatever module shows it (a product can be a course)
-    let events = 0;
+    // events: an event2 row made its page one, whatever module shows it (a product can be a course) —
+    // unless it has nothing: PHP made one for every product its course category showed (makeIfNot)
+    const dated = new Set((await db.query`SELECT * FROM event2_dates`).filter((date) => !placeholder(date, zone)).map((date) => Number(date.page_id)));
+    let events = 0, traces = 0;
     for (const event of await db.query`SELECT * FROM event2`) {
       const node = await tree.node(Number(event.id));
       if (!node.exists()) continue;
       const people = await db.query`SELECT u.* FROM event2_performer p JOIN usr u ON u.id = p.usr_id WHERE p.event_id = ${event.id} ORDER BY p.sort`;
-      await set(node, details(event, people));
+      const values = details(event, people);
+      // the currency PHP gave every row by default says nothing on its own
+      const { currency: _, ...said } = values;
+      if (!dated.has(node.id) && !Object.values(said).some((v) => v != null && v !== "")) { traces++; continue; }
+      await set(node, values);
       events++;
     }
     report.push(`${events} events`);
+    if (traces) report.push(`${traces} empty event2 rows left out`);
 
     // dates: of every event; one without an event2 row becomes one with its first date
     let dates = 0, empty = 0, lost = 0;
     for (const date of await db.query`SELECT * FROM event2_dates ORDER BY page_id, start_date, id`) {
       const node = await tree.node(Number(date.page_id));
       if (!node.exists()) { lost++; continue; }
-      // PHP made a date of "now" for an event without one: the same second twice, and hardly a full minute
-      if (date.start_date === date.end_date && local(date.start_date, zone).second) { empty++; continue; }
+      if (placeholder(date, zone)) { empty++; continue; }
       await add(node, range(date, zone));
       dates++;
     }
