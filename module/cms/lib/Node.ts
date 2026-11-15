@@ -96,7 +96,7 @@ export class Node {
         }
         if (typeof data === "string") data = { [data]: value };
 
-        if (!Object.entries(data).some(([n, v]) => this.vs[n] !== v)) return;
+        if (!Object.keys(data).some(n => this.vs[n] !== data[n])) return;
 
         this.vs = { ...this.vs, ...data };
         await this.db.table("page").update(this.id, data);

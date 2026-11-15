@@ -36,10 +36,10 @@ export async function serveFile(req: Request, path: string, headers: Headers = n
   };
 
   headers.set("Accept-Ranges", "bytes");
-  const ifRange = req.headers.get("If-Range"); // stale validator: send the whole file
-  const m = size && (!ifRange || ifRange === etag || ifRange === modified)
-    && req.headers.get("Range")?.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
+  const m = size && req.headers.get("Range")?.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
   if (!m || (!m[1] && !m[2])) return send(200);
+  const ifRange = req.headers.get("If-Range"); // stale validator: send the whole file
+  if (ifRange && ifRange !== etag && ifRange !== modified) return send(200);
   const start = m[1] ? Number(m[1]) : Math.max(size - Number(m[2]), 0); // `-n` = last n bytes
   const end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
   if (start > end) {
