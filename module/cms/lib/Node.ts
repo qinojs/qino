@@ -12,7 +12,7 @@ import type { CMS } from "./CMS.ts";
 import type { XmlNode } from "./parseXml.ts";
 
 const TAG = /<[^>]*>/g;
-const isAbsolute = (file: string) => file.startsWith("http://") || file.startsWith("https://") || file.startsWith("/");
+const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
 
 /** Plain text of CMS html: tags removed, the entities an editor writes decoded, trimmed. */
 const plainOf = (html: string) => (/[<&]/.test(html) ? unhee(html.replace(TAG, "")) : html).trim();
