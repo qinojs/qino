@@ -31,8 +31,7 @@ async function entries(node: Node, ctx: Ctx): Promise<(Entry & { location: strin
   const title = (await node.showTitle()).plain(), description = (await node.showText("main")).plain();
   const location = [venue.name, venue.street, venue.locality, venue.country].filter(Boolean).join(", ") || String(event.online_url ?? "");
   const status = icalStatus(event.status);
-  return (await list(node)).map(({ name, price: _, ...date }) =>
-    ({ ...date, id: `cms.event-${date.id}`, title: titled(title, { name }), url, location, description, ...(status && { status }) }));
+  return (await list(node)).map(({ name, price: _, ...date }) => ({ ...date, id: `cms.event-${date.id}`, title: titled(title, { name }), url, location, description, status }));
 }
 
 /** Who holds the site's events: its organization, else its name, with its public contact address. */

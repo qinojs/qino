@@ -49,7 +49,6 @@ async function structured(node: Node, ctx: Ctx, event: Row, dates: Awaited<Retur
   const description = (await node.showText("main")).plain().slice(0, 500);
   // dates stay dates; times keep the offset of the event's zone
   const time = (value: string) => isDate(value) ? value : instant(value).toZonedDateTimeISO(zone).toString({ timeZoneName: "never", smallestUnit: "second" });
-  const performer = String(event.performer ?? "");
   const physical = venue.name || venue.locality ? { "@type": "Place", name: venue.name || venue.locality, address: {
     "@type": "PostalAddress", streetAddress: venue.street, addressLocality: event.address_locality ?? "",
     postalCode: event.address_postal_code ?? "", addressCountry: venue.country,
@@ -65,7 +64,7 @@ async function structured(node: Node, ctx: Ctx, event: Row, dates: Awaited<Retur
       eventAttendanceMode: `https://schema.org/${mode}EventAttendanceMode`,
       ...((physical || online) && { location: physical && online ? [physical, online] : physical ?? online }),
       ...(price != null && event.currency && { offers: { "@type": "Offer", price: String(price), priceCurrency: event.currency, url } }),
-      ...(performer && { performer: performer.split(/\s*,\s*/).map((p) => ({ "@type": "Person", name: p })) }),
+      ...(event.performer && { performer: String(event.performer).split(/\s*,\s*/).map((name) => ({ "@type": "Person", name })) }),
       ...(holder.name && { organizer: { "@type": "Organization", name: holder.name, url: new URL(ctx.req.appUrl, ctx.req.url.href).href } }),
       ...(event.language && { inLanguage: event.language }),
     });

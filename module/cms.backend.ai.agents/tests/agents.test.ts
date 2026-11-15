@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { App, fs, runAs, unixTime } from "@qino/qino";
+import { App, fs, getCtx, runAs, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { hit } from "@qino/qino/score";
 import { Agent } from "@qino/qino/ai.agent";
@@ -39,7 +39,7 @@ test("cms.backend.ai.agents: agents, their sessions and memories, and a session'
     const node = { app, page: () => ({ url: () => Promise.resolve("/agents") }) } as unknown as Node;
     const as = <T>(fn: () => Promise<T>) => runAs(app, 7, "test", fn).then(String);
 
-    const home = await as(() => cms.node.render(node));
+    const home = await as(() => cms.node.render(node, { ctx: getCtx() }));
     for (const part of ["New agent", "data-agent=", "name=system", "name=tools", "<fieldset><legend>Tools", "<fieldset><legend>Model choice", "<div class=u2-table>", "data-prefer"]) {
       assertStringIncludes(home, part);
     }

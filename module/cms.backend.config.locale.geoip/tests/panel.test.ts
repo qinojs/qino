@@ -39,7 +39,7 @@ test("backend.locale.geoip: the panel shows source, state and the own address", 
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
-    const html = String(await panel.node.render({ app } as unknown as Node));
+    const html = String(await panel.node.render({ app } as unknown as Node, { ctx }));
     assertEquals(html.includes("[object Promise]"), false);
     assertStringIncludes(html, "<option value=dbip selected>DB-IP Lite");
     assertStringIncludes(html, "db-ip.com");
@@ -57,6 +57,6 @@ test("backend.locale.geoip: the panel shows source, state and the own address", 
   assertEquals(await call(app, { ip: "127.0.0.1" }), { country: null });
   assertEquals(await call(app, { ip: "1.0.0.1" }, 1), false); // read access only
   await requestStorage.run(ctx, async () => {
-    assertStringIncludes(String(await panel.node.render({ app } as unknown as Node)), "Loaded: 0k IPv4, 0k IPv6 ranges");
+    assertStringIncludes(String(await panel.node.render({ app } as unknown as Node, { ctx })), "Loaded: 0k IPv4, 0k IPv6 ranges");
   });
 });

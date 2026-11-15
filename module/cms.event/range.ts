@@ -33,7 +33,7 @@ export function encode(date: EventDate) {
   return { start, end, all_day: false, ...own };
 }
 
-export function decode(seconds: unknown, allDay: unknown) {
+function decode(seconds: unknown, allDay: unknown) {
   const time = Temporal.Instant.fromEpochMilliseconds(Number(seconds) * 1000);
   return allDay === true || Number(allDay) === 1 ? time.toZonedDateTimeISO("UTC").toPlainDate().toString() : time.toString();
 }

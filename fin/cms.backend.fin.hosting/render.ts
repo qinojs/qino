@@ -1,18 +1,18 @@
-import { getCtx, html } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, rowLink } from "@qino/qino/cms.backend.fin";
 import { nameOf } from "@qino/qino/fin";
 import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, overbilled, registrars, running, sources, sourceTypes, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Kind } from "@qino/qino/fin.hosting";
 
 const selected = (yes: boolean) => yes ? html.raw(" selected") : "";
 
-export function render(node: Node): Promise<HtmlString> {
-  const url = getCtx().req.url.toURL();
+export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const url = ctx.req.url.toURL();
   const name = url.searchParams.get("id");
   return name ? detail(node, name) : overview(node, url);
 }

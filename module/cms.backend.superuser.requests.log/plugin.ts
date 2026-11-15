@@ -171,7 +171,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
-  if (ctx.req.query.id) return renderDetail(node, Number(ctx.req.query.id));
+  if (ctx.req.query.id) return renderDetail(node, ctx, Number(ctx.req.query.id));
   const { t } = node.app;
 
   const message = vars.do ? await runTool(node, String(vars.do), (vars.data ?? {}) as Record<string, unknown>) : "";
@@ -246,9 +246,8 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 }
 
 // ── detail ──────────────────────────────────────────────────────────────────
-async function renderDetail(node: Node, id: number) {
+async function renderDetail(node: Node, ctx: Ctx, id: number) {
   const { t, db } = node.app;
-  const ctx = getCtx();
   if (!id) return html`<div>${await t`Not found`}</div>`;
 
   const log = await db.row`

@@ -1,4 +1,4 @@
-import { html, getCtx, sql, sqlSearch } from "@qino/qino";
+import { html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 import { editorUrl } from "@qino/qino/fileEditor";
@@ -46,10 +46,9 @@ function makeFileHelper(ctx: Ctx) {
   return { editorLink, fileDisplay };
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }) {
   const { t, db } = node.app;
   const self = await (await node.page()).url();
-  const ctx = getCtx();
   const get = ctx.req.query;
 
   if (vars.delete) {
@@ -61,7 +60,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     await db.exec`DELETE FROM m_error_report WHERE ${filterWhere(db, vars.deleteMatching)}`;
   }
 
-  if (get.id) return renderDetail(node, Number(get.id));
+  if (get.id) return renderDetail(node, ctx, Number(get.id));
   if (get.show === "entries") return renderEntryList(node, ctx, get);
 
   const [sources, prios] = await Promise.all([
@@ -296,9 +295,8 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number) {
+async function renderDetail(node: Node, ctx: Ctx, id: number) {
   const { t, db } = node.app;
-  const ctx = getCtx();
   const get = ctx.req.query;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 

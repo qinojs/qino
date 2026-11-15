@@ -28,31 +28,31 @@ export async function set(node: Node, values: Record<string, unknown> = {}): Pro
 /** What the event's status may be: empty while it takes place as planned (schema.org EventStatusType). */
 const STATUSES = ["", "cancelled", "postponed", "rescheduled"];
 
+const fail = (message: string): never => { throw new ApiError(400, message); };
+const text = (v: unknown, key: string) => typeof v === "string" ? v.trim() : fail(`Invalid event field: ${key}`);
+const code = (v: string, pattern: RegExp, what: string) => !v || pattern.test(v) ? v : fail(`Invalid ${what}`);
+const link = (v: string) => {
+  const url = v ? URL.parse(v) : undefined;
+  return !v ? "" : url && ["http:", "https:"].includes(url.protocol) ? url.href : fail("Links must use HTTP or HTTPS");
+};
+
 /** Normalizers of the details that follow a standard; they throw on what is none. Empty is unset. */
 const CHECKS: Record<string, (value: string) => string> = {
   time_zone: (v) => v && new Intl.DateTimeFormat("en", { timeZone: v }).resolvedOptions().timeZone,
   currency: (v) => code(v.toUpperCase(), /^[A-Z]{3}$/, "currency (ISO 4217)"),
   address_country: (v) => code(v.toUpperCase(), /^[A-Z]{2}$/, "country (ISO 3166-1)"),
   language: (v) => { try { return v && new Intl.Locale(v).toString(); } catch { throw new ApiError(400, "Invalid language (BCP 47)"); } },
-  external_link: (v) => link(v),
-  online_url: (v) => link(v),
+  external_link: link,
+  online_url: link,
   status: (v) => STATUSES.includes(v) ? v : fail(`Invalid event status, one of: ${STATUSES.filter(Boolean).join(", ")}`),
 };
 
-const fail = (message: string): never => { throw new ApiError(400, message); };
-const text = (v: unknown, key: string) => typeof v === "string" ? v.trim() : fail(`Invalid event field: ${key}`);
 
 /** The status as iCalendar has it (RFC 5545): a cancelled event is off, a postponed one tentative. */
 export const icalStatus = (status: unknown) => status === "cancelled" ? "CANCELLED" as const : status === "postponed" ? "TENTATIVE" as const : undefined;
 
 /** A date's own name follows the event's title: "Course – Module 1". */
 export const titled = (title: string, date: { name?: string }) => date.name ? `${title} – ${date.name}` : title;
-
-const link = (v: string) => {
-  const url = v ? URL.parse(v) : undefined;
-  return !v ? "" : url && ["http:", "https:"].includes(url.protocol) ? url.href : fail("Links must use HTTP or HTTPS");
-};
-const code = (v: string, pattern: RegExp, what: string) => !v || pattern.test(v) ? v : fail(`Invalid ${what}`);
 
 /** The IANA zone an event's dates are entered and shown in: its own, else the site's. */
 export async function zoneOf(app: App, event?: Row): Promise<string> {

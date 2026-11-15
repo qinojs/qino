@@ -1,4 +1,4 @@
-import { getCtx, html } from "@qino/qino";
+import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { candidates } from "@qino/qino/ai";
 import { backend } from "@qino/qino/cms.backend";
@@ -6,7 +6,7 @@ import { allowMarkdown } from "@qino/qino/cms.backend.ai";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // A chat with an agent, all through the api of ai.agent: what a page in the browser can do, it does.
@@ -28,7 +28,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Chat", de: "Chat" });
 }
 
-async function render(node: Node) {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const { db, t } = node.app;
   const url = await (await node.page()).url();
   allowMarkdown(); // answers render as markdown
@@ -38,7 +38,7 @@ async function render(node: Node) {
       (SELECT first.message FROM ai_session_message first
         WHERE first.session_id = s.id AND first.message LIKE ${'{"role":"user"%'} ORDER BY first.id LIMIT 1) AS first_message
     FROM ai_session s LEFT JOIN ai_session_message m ON m.session_id = s.id
-    WHERE s.usr_id = ${getCtx().userId} GROUP BY s.id, s.agent_id, s.time
+    WHERE s.usr_id = ${ctx.userId} GROUP BY s.id, s.agent_id, s.time
     ORDER BY COALESCE(MAX(m.time), s.time) DESC, s.id DESC`;
   return html.async`<div class=u2-flex>
     <div class="u2-card -agents" style="flex:0 1 30rem;">

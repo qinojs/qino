@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { App, fs, runAs } from "@qino/qino";
+import { App, fs, getCtx, runAs } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 import { assert, assertStringIncludes } from "@qino/qino/tests";
 
@@ -17,7 +17,7 @@ test("cms.backend.cms.module: modules nodes name but nothing renders are listed 
     await app.db.table("page").insert({ id: 901, basis: 0, type: "c", module: "cms.cont.gone2" });
     const node = { app, cms: cmsOf(app) } as unknown as Node;
     Object.defineProperty(app, "t", { value: (s: TemplateStringsArray, ...v: unknown[]) => Promise.resolve(String.raw(s, ...v)) });
-    const render = (vars = {}) => runAs(app, 7, "test", () => cms.node.render(node, { vars })).then(String);
+    const render = (vars = {}) => runAs(app, 7, "test", () => cms.node.render(node, { ctx: getCtx(), vars })).then(String);
 
     const overview = await render();
     assertStringIncludes(overview, "cms.cont.gone2</a> <small>missing</small>");

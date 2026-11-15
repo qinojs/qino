@@ -7,13 +7,14 @@ import api from "../nodeApi.ts";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import { render } from "../render.ts";
 import { backendRowWidget, cms } from "../plugin.ts";
+import type { Ctx } from "@qino/qino";
 
 type Answer = { ok: boolean; message?: string; url?: string };
 
 test("customers and suppliers follow from the invoices; a new one keeps its address here", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.payment.credit"], async (app) => {
     const node = backendNode(app, "/backend/parties");
-    const as = (url: string, run: () => Promise<unknown>) => inRequest(app, url, run);
+    const as = (url: string, run: (ctx: Ctx) => Promise<unknown>) => inRequest(app, url, run);
     const base = "http://qino.test/backend/parties";
 
     const made = await as(base, () => api(node, { create: { organization: "Druck AG" } })) as Answer;
@@ -24,25 +25,25 @@ test("customers and suppliers follow from the invoices; a new one keeps its addr
     };
     await as(base, () => api(node, { save: { organization: "Druck AG", ...address, id: String(id) } }));
     assertEquals((await app.db.row`SELECT address_country FROM usr WHERE id = ${id}`)?.address_country, "CH");
-    assertEquals(String(await as(base, () => render(node))).includes("Druck AG"), false); // no invoice yet
+    assertEquals(String(await as(base, (ctx) => render(node, { ctx }))).includes("Druck AG"), false); // no invoice yet
 
     const lines = [{ name: "Print", price: 10000 }];
     await issue(app, await create(app, { direction: "in", number: "R-1", currency: "CHF", lines, usrId: id }));
-    let page = String(await as(base, () => render(node)));
+    let page = String(await as(base, (ctx) => render(node, { ctx })));
     assertStringIncludes(page, "Druck AG");
     assertStringIncludes(page, "supplier");
-    assert(!String(await as(`${base}?role=customer`, () => render(node))).includes("Druck AG"));
+    assert(!String(await as(`${base}?role=customer`, (ctx) => render(node, { ctx }))).includes("Druck AG"));
 
     await issue(app, await create(app, { currency: "CHF", lines, usrId: id })); // it buys too
-    assertStringIncludes(String(await as(`${base}?role=customer`, () => render(node))), "Druck AG");
+    assertStringIncludes(String(await as(`${base}?role=customer`, (ctx) => render(node, { ctx }))), "Druck AG");
     await as(base, () => api(node, { credit: { id: String(id), amount: "5", currency: "CHF", text: "Start" } }));
-    assertStringIncludes(String(await as(base, () => render(node))), "5.00</span>"); // credit in the list
-    page = String(await as(`${base}?id=${id}`, () => render(node)));
+    assertStringIncludes(String(await as(base, (ctx) => render(node, { ctx }))), "5.00</span>"); // credit in the list
+    page = String(await as(`${base}?id=${id}`, (ctx) => render(node, { ctx })));
     const parts = ['value="Seeweg 2"', `data-save="${id}"`, `data-credit="${id}"`]; // its invoices: a card of fin.invoice
     for (const part of parts) assertStringIncludes(page, part);
     const goodwill = { id: String(id), amount: "12.50", currency: "chf", text: "Goodwill" };
     await as(base, () => api(node, { credit: goodwill }));
-    assertStringIncludes(String(await as(`${base}?id=${id}`, () => render(node))), "Goodwill");
+    assertStringIncludes(String(await as(`${base}?id=${id}`, (ctx) => render(node, { ctx }))), "Goodwill");
   });
 });
 
@@ -50,8 +51,8 @@ test("the page speaks with the texts of the namespace fin", async () => {
   await withFinApp(["fin.payment", "fin.invoice"], async (app) => {
     app.languages.setLangs(["en", "de"]);
     const node = backendNode(app, "/backend/parties");
-    const page = String(await inRequest(app, "http://qino.test/backend/parties", () =>
-      app.t.with({ lang: "de" }, () => cms.node.render(node))));
+    const page = String(await inRequest(app, "http://qino.test/backend/parties", (ctx) =>
+      app.t.with({ lang: "de" }, () => cms.node.render(node, { ctx }))));
     assertStringIncludes(page, "Kunden &amp; Lieferanten");
   });
 });
@@ -68,7 +69,7 @@ test("the list shows current parties; former ones on request or when searched fo
       const id = Number((await issue(app, await create(app, { currency: "CHF", date, lines, usrId })))?.id);
       if (usrId !== open) await app.db.exec`UPDATE invoice SET status = 'paid', paid = total WHERE id = ${id}`;
     }
-    const list = (query = "") => inRequest(app, base + query, () => render(node)).then(String);
+    const list = (query = "") => inRequest(app, base + query, (ctx) => render(node, { ctx })).then(String);
     const page = await list();
     assert(page.includes("Offen AG") && page.includes("Neu AG") && !page.includes("Alt AG"));
     assertStringIncludes(page, `<td><a href="/backend/parties?id=${recent}">${recent}</a>`);

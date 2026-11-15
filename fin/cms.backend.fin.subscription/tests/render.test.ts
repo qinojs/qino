@@ -5,6 +5,7 @@ import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import api from "../nodeApi.ts";
 import { render } from "../render.ts";
 import { backendDashboardWidget, backendRowWidget } from "../plugin.ts";
+import type { Ctx } from "@qino/qino";
 
 type Answer = { ok: boolean; message?: string };
 
@@ -12,7 +13,7 @@ test("subscriptions are added, billed from the run, canceled, and deleted only u
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const node = backendNode(app, "/backend/subscriptions");
     const base = "http://qino.test/backend/subscriptions";
-    const as = (run: () => Promise<unknown>) => inRequest(app, base, run);
+    const as = (run: (ctx: Ctx) => Promise<unknown>) => inRequest(app, base, run);
     const usr = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster", organization: "Muster AG",
     }));
@@ -26,7 +27,7 @@ test("subscriptions are added, billed from the run, canceled, and deleted only u
     assertStringIncludes(card, "Hosting example.ch</a>");
     assertStringIncludes(card, "?id=");
     assertEquals(String(await as(() => backendRowWidget.usr(app, usr + 1, backendPage))), ""); // someone without any
-    let page = String(await as(() => render(node)));
+    let page = String(await as((ctx) => render(node, { ctx })));
     assertStringIncludes(page, "Hosting example.ch");
     assertStringIncludes(page, "data-action=bill");
 
@@ -38,7 +39,7 @@ test("subscriptions are added, billed from the run, canceled, and deleted only u
     await as(() => api(node, { cancel: String(hosting) }));
     assertEquals((await as(() => api(node, { remove: String(typo) })) as Answer).ok, true); // never billed
     assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM subscription`), 1);
-    page = String(await as(() => render(node)));
+    page = String(await as((ctx) => render(node, { ctx })));
     assertStringIncludes(page, "Nothing to bill");
   });
 });
@@ -46,7 +47,7 @@ test("subscriptions are added, billed from the run, canceled, and deleted only u
 test("a subscription is changed on its page: start and period only until billed", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const node = backendNode(app, "/backend/subscriptions");
-    const as = (run: () => Promise<unknown>) => inRequest(app, "http://qino.test/backend/subscriptions", run);
+    const as = (run: (ctx: Ctx) => Promise<unknown>) => inRequest(app, "http://qino.test/backend/subscriptions", run);
     const usr = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster",
     }));
@@ -55,7 +56,7 @@ test("a subscription is changed on its page: start and period only until billed"
     await as(() => api(node, { subscribe: hosting }));
     const id = Number(await app.db.one`SELECT id FROM subscription`);
     const page = async () =>
-      String(await inRequest(app, `http://qino.test/?id=${id}`, () => render(node)));
+      String(await inRequest(app, `http://qino.test/?id=${id}`, (ctx) => render(node, { ctx })));
     assertStringIncludes(await page(), 'value="240"');
     assertStringIncludes(await page(), "data-action=cancel"); // runs on: may be canceled here
     await app.db.exec`UPDATE subscription SET ref = ${"fin.hosting:example.ch/domain"} WHERE id = ${id}`;
@@ -87,7 +88,7 @@ test("a subscription is changed on its page: start and period only until billed"
 test("plans are kept in the catalog and chosen for a subscription", async () => {
   await withFinApp(["fin.payment", "fin.invoice", "fin.subscription"], async (app) => {
     const node = backendNode(app, "/backend/subscriptions");
-    const as = (run: () => Promise<unknown>) => inRequest(app, "http://qino.test/backend/subscriptions", run);
+    const as = (run: (ctx: Ctx) => Promise<unknown>) => inRequest(app, "http://qino.test/backend/subscriptions", run);
     const usr = Number(await app.db.table("usr").insert({
       active: 1, pw: "", superuser: 0, given_name: "Anna", family_name: "Muster",
     }));
@@ -97,7 +98,7 @@ test("plans are kept in the catalog and chosen for a subscription", async () => 
     await as(() => api(node, { subscribe: { usrId: String(usr), planId: String(planId), name: "example.ch", start } }));
     const s = await app.db.row`SELECT * FROM subscription`;
     assertEquals([s?.plan_id, s?.name, s?.price], [planId, "example.ch", null]); // the price is the plan's
-    const page = String(await as(() => render(node)));
+    const page = String(await as((ctx) => render(node, { ctx })));
     for (const part of ["Hosting Light", "example.ch", "1×"]) assertStringIncludes(page, part);
     assertEquals((await as(() => api(node, { removePlan: String(planId) })) as Answer).ok, false); // in use
   });

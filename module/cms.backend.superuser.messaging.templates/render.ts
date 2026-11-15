@@ -2,7 +2,7 @@ import { getCtx, html, isEmptyObject, safeEqual } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { channels, placeholderName, saveTemplate, templated, templates } from "@qino/qino/messaging";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row, Ctx } from "@qino/qino";
 import type { Computed, Placeholder } from "@qino/qino/messaging";
 import type { Node } from "@qino/qino/cms";
 
@@ -24,11 +24,11 @@ export async function sampleMsg(app: App, format?: "md" | "html"): Promise<{ tex
   return { text: await app.t`This is where the message goes. It shows here as this channel would show it.`, format };
 }
 
-export function render(node: Node): Promise<HtmlString | string> {
-  const query = getCtx().req.query;
+export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
+  const query = ctx.req.query;
   const name = String(query.name ?? "");
   const channel = String(query.channel ?? "");
-  return name && channel ? detail(node, name, channel) : overview(node);
+  return name && channel ? detail(node, ctx, name, channel) : overview(node);
 }
 
 /** Every template that exists, and the form that writes the next. */
@@ -95,10 +95,9 @@ export async function overview(node: Node): Promise<HtmlString | string> {
 }
 
 /** One template: what it says, and what a message looks like inside it. */
-async function detail(node: Node, name: string, channel: string) {
+async function detail(node: Node, ctx: Ctx, name: string, channel: string) {
   const app = node.app;
   const t = app.t;
-  const ctx = getCtx();
   const post = ctx.req.body;
   u2.elements(ctx, "code"); // the editor highlights with a library of its own
   const back = ctx.req.url.toURL();

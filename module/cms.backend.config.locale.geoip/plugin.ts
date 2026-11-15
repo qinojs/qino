@@ -1,11 +1,11 @@
-import { getCtx, html } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { geoip, NAMES } from "@qino/qino/locale.geoip";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -25,10 +25,9 @@ const showTime = (ms?: number) => ms ? new Date(ms).toISOString().slice(0, 16).r
 const countryName = (id: string | undefined, lang: string) =>
   id ? `${new Intl.DisplayNames([lang], { type: "region" }).of(id) ?? id} (${id})` : undefined;
 
-async function render(node: Node) {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const { app } = node;
   const t = app.t;
-  const ctx = getCtx();
   const source = String(await app.settings["locale.geoip"].source ?? "dbip");
   const options = NAMES.map((v) => html`<option value=${v} ${v === source ? html.raw("selected") : ""}>${LABELS[v] ?? v}`);
   const fetched = await geoip.fetched(app);

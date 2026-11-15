@@ -1,18 +1,18 @@
-import { getCtx, html } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, inputAmount, money, refLink, rowLink } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, nameOf, today } from "@qino/qino/fin";
 import { horizon, periods, plans, renews, subscriptions } from "@qino/qino/fin.subscription";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const date = (value: unknown) => value ? String(value).slice(0, 10) : "";
 
 const selected = (yes: boolean) => yes ? html.raw(" selected") : "";
 
-export function render(node: Node): Promise<HtmlString> {
-  const url = getCtx().req.url.toURL();
+export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const url = ctx.req.url.toURL();
   const id = Number(url.searchParams.get("id"));
   if (Number.isSafeInteger(id) && id > 0) return detail(node, id);
   const plan = Number(url.searchParams.get("plan"));

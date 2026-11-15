@@ -1,4 +1,4 @@
-import { getCtx, html, sql, FileTransformer, deleteUnlinkedDbFiles, fs } from "@qino/qino";
+import { html, sql, FileTransformer, deleteUnlinkedDbFiles, fs } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -176,14 +176,13 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
   return false;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}) {
-  const ctx = getCtx();
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }) {
   const app = node.app;
   const t = app.t;
   const get = ctx.req.query;
 
   const id = Number(vars.id ?? get.id); // vars: a reload posts to the api, where the page query is gone
-  if (id) return renderDetail(node, id);
+  if (id) return renderDetail(node, ctx, id);
 
   const message = vars.do ? await runAction(node, String(vars.do)) : "";
   const orderOpts = ORDERS.map(o => html`<option>${o}`);
@@ -213,8 +212,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number) {
-  const ctx = getCtx();
+async function renderDetail(node: Node, ctx: Ctx, id: number) {
   u2.elements(ctx, "code"); // the text view highlights with a library of its own
   const app = node.app;
   const t = app.t;

@@ -68,7 +68,7 @@ test("messaging detail replies to the selected user's Telegram chat", async () =
         app,
         page: () => Promise.resolve({ children: () => Promise.resolve(new Map()), url: () => Promise.resolve("/de/backend/superuser/nachrichten") }),
       } as unknown as Node;
-      return requestStorage.run(ctx, () => cms.node.render(node).then(String));
+      return requestStorage.run(ctx, () => cms.node.render(node, { ctx }).then(String));
     };
     const normal = await render("http://qino.test/de/backend/superuser/nachrichten?usr=1");
     assertStringIncludes(normal, 'action="/de/backend/superuser/nachrichten"');
@@ -147,7 +147,7 @@ test("the message detail counts opens and clicks, and lists what was reached", a
     page: () => Promise.resolve({ children: () => Promise.resolve(new Map()), url: () => Promise.resolve("/backend") }),
   } as unknown as Node;
   const ctx = await testContext({ url: "http://qino.test/backend?msg=1", app });
-  const detail = String(await requestStorage.run(ctx, () => render(node)));
+  const detail = String(await requestStorage.run(ctx, () => render(node, { ctx })));
 
   assertStringIncludes(detail, "Opened");
   assertStringIncludes(detail, "<div class=-head>Links</div>");
@@ -159,7 +159,7 @@ test("the message detail counts opens and clicks, and lists what was reached", a
   assertEquals(detail.split("https://target.qino.test/orders").length - 1, 2); // one aggregated row: href and label
 
   const overviewCtx = await testContext({ url: "http://qino.test/backend", app });
-  const overview = String(await requestStorage.run(overviewCtx, () => render(node)));
+  const overview = String(await requestStorage.run(overviewCtx, () => render(node, { ctx: overviewCtx })));
   assertStringIncludes(overview, "<th>Opened");
   assertStringIncludes(overview, "<th>Clicks");
   assertStringIncludes(overview, '<td style="white-space:nowrap">2 <small><u2-time datetime="1970-01-01T00:00:02.000Z"'); // the second was only clicked

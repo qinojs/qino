@@ -8,7 +8,7 @@ import api from "../nodeApi.ts";
 import { backendDashboardWidget, backendRowWidget } from "../plugin.ts";
 import { render } from "../render.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 
 const FIN = ["fin.payment", "fin.invoice", "fin.subscription", "fin.hosting"];
 const BASE = "http://qino.test/backend/domains";
@@ -32,7 +32,7 @@ test("domains: the list shows owner, aliases, host and billing, flags what is no
     await link(app, "anna.ch", sub, "hosting");
 
     await save(app, "anna.net", { aliasOf: "anna.ch" }); // nothing to bill: folded under its domain
-    const page = String(await inRequest(app, BASE, () => render(node)));
+    const page = String(await inRequest(app, BASE, (ctx) => render(node, { ctx })));
     assertStringIncludes(page, `<a href="/backend/domains?id=anna.ch">anna.ch</a>`);
     assertStringIncludes(page, `<tr data-alias-of="anna.ch" hidden>`);
     assertStringIncludes(page, `<button data-aliases="anna.ch" class=u2-unstyle>+1</button>`);
@@ -49,10 +49,10 @@ test("domains: the list shows owner, aliases, host and billing, flags what is no
     assertStringIncludes(page, `>no customer</small>`);
     assertStringIncludes(page, "Anna AG");
 
-    const filtered = String(await inRequest(app, `${BASE}?search=ours`, () => render(node)));
+    const filtered = String(await inRequest(app, `${BASE}?search=ours`, (ctx) => render(node, { ctx })));
     assert(filtered.includes("ours.ch") && !filtered.includes("?id=theirs.ch")); // the to-do card lists the others still
     // searched for, an alias shows unfolded
-    assert(!String(await inRequest(app, `${BASE}?search=anna.com`, () => render(node))).includes("data-alias-of="));
+    assert(!String(await inRequest(app, `${BASE}?search=anna.com`, (ctx) => render(node, { ctx }))).includes("data-alias-of="));
 
     assertStringIncludes(String(await inRequest(app, BASE, () => backendDashboardWidget(app))), "<b>7</b> domains · <small class=u2-badge style=\"background:var(--orange)\">4 to do");
     const card = String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna, await node.page())));
@@ -64,7 +64,7 @@ test("domains: the list shows owner, aliases, host and billing, flags what is no
 test("domains: one is added, changed, linked, unlinked and removed; refusals come back as message", async () => {
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/domains");
-    const as = (run: () => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;
+    const as = (run: (ctx: Ctx) => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;
     const anna = await customer(app, "Anna AG");
     // named after no domain: nothing links it by itself, here it is done by hand
     const sub = await subscribe(app, { usrId: anna, name: "Domain", price: 2500, currency: "CHF", start: "2026-01-01" });
@@ -73,13 +73,13 @@ test("domains: one is added, changed, linked, unlinked and removed; refusals com
     assertEquals(added.url, "/backend/domains?id=anna.ch");
     assertEquals((await as(() => api(node, { save: { name: "nonsense", usrId: "" } }))).message, "not a domain: nonsense");
 
-    const detail = String(await inRequest(app, `${BASE}?id=anna.ch`, () => render(node)));
+    const detail = String(await inRequest(app, `${BASE}?id=anna.ch`, (ctx) => render(node, { ctx })));
     assertStringIncludes(detail, `<option value="${sub}">Domain`); // the owner's subscription, ready to link
     assertStringIncludes(detail, "data-remove=");
 
     await as(() => api(node, { link: { id: "anna.ch", subscription: String(sub), kind: "domain" } }));
     assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${sub}`, "fin.hosting:anna.ch/domain");
-    const linked = String(await inRequest(app, `${BASE}?id=anna.ch`, () => render(node)));
+    const linked = String(await inRequest(app, `${BASE}?id=anna.ch`, (ctx) => render(node, { ctx })));
     assertStringIncludes(linked, `data-unlink="${sub}"`);
     assertStringIncludes(linked, "It cannot be removed: Subscriptions still run for it.</small>");
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).ok, false);
@@ -90,7 +90,7 @@ test("domains: one is added, changed, linked, unlinked and removed; refusals com
     const row = await app.db.row`SELECT usr_id, registrar, host FROM fin_hosting_domain WHERE name = 'anna.ch'`;
     assertEquals([row?.usr_id, row?.registrar, row?.host], [OURS, "Infomaniak", "plesk:s3"]); // "0": ours, not none
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).url, "/backend/domains");
-    assertStringIncludes(String(await inRequest(app, `${BASE}?id=anna.ch`, () => render(node))), "No domain anna.ch");
+    assertStringIncludes(String(await inRequest(app, `${BASE}?id=anna.ch`, (ctx) => render(node, { ctx }))), "No domain anna.ch");
   });
 });
 
@@ -101,7 +101,7 @@ test("domains: an alias's page offers no customer and no host — they are its d
     await save(app, "anna.ch", { usrId: anna });
     await save(app, "anna.com", { aliasOf: "anna.ch" });
     await subscribe(app, { usrId: anna, name: "Hosting", price: 24000, currency: "CHF", start: "2026-01-01" });
-    const page = String(await inRequest(app, `${BASE}?id=anna.com`, () => render(node)));
+    const page = String(await inRequest(app, `${BASE}?id=anna.com`, (ctx) => render(node, { ctx })));
     assert(!page.includes("name=usrId") && !page.includes("name=host") && page.includes("data-link="));
     assert(!page.includes("<option value=hosting>")); // nor a hosting to link
     assertStringIncludes(page, `<option selected>anna.ch`);
@@ -114,10 +114,10 @@ test("domains: an alias's page offers no customer and no host — they are its d
 test("domains: sources are added, changed without showing the secret, and removed", async () => {
   await withFinApp([...FIN, "fin.hosting.plesk"], async (app) => {
     const node = backendNode(app, "/backend/domains");
-    const as = (run: () => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;
+    const as = (run: (ctx: Ctx) => Promise<unknown>) => inRequest(app, BASE, run) as Promise<Answer>;
     const source = { name: "s3", type: "plesk", url: "https://s3.example.com:8443", user: "admin", secret: "s3cr3t" };
     assertEquals((await as(() => api(node, { source }))).ok, true);
-    const page = String(await inRequest(app, BASE, () => render(node)));
+    const page = String(await inRequest(app, BASE, (ctx) => render(node, { ctx })));
     assertStringIncludes(page, `<button data-source-dialog>Edit</button><template>`); // changed in a dialog
     assertStringIncludes(page, `value="admin"`);
     assertStringIncludes(page, `placeholder="unchanged"`);
@@ -125,6 +125,6 @@ test("domains: sources are added, changed without showing the secret, and remove
     assertStringIncludes(page, "<button data-sync"); // a source there: something to sync
     assertEquals((await as(() => api(node, { source: { ...source, type: "nowhere" } }))).message, "no source type nowhere");
     await as(() => api(node, { removeSource: "s3" }));
-    assert(!String(await inRequest(app, BASE, () => render(node))).includes("data-source-dialog>Edit"));
+    assert(!String(await inRequest(app, BASE, (ctx) => render(node, { ctx }))).includes("data-source-dialog>Edit"));
   });
 });

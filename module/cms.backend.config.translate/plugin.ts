@@ -1,9 +1,9 @@
-import { html, getCtx, sql } from "@qino/qino";
+import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import api from "./nodeApi.ts";
 
-import type { HtmlString, App, Row } from "@qino/qino";
+import type { HtmlString, App, Row, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -28,8 +28,7 @@ export async function textsOf(app: App, rows: Row[]): Promise<Map<string, Record
   return out;
 }
 
-async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}) {
-  const ctx = getCtx();
+async function table(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const db = node.app.db;
   const langs = node.app.languages.all;
 
@@ -83,8 +82,7 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   <div class=-count>${rows.length} / ${total} entries</div>`;
 }
 
-async function render(node: Node) {
-  const ctx = getCtx();
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   const t = app.t;
   const langs = app.languages.all;
@@ -106,7 +104,7 @@ async function render(node: Node) {
     <br>
   </div>
   <div style="overflow:auto; padding:0; max-height:90vh" cms-part=table>
-    ${table(node)}
+    ${table(node, { ctx })}
   </div>
 </div>`;
 }

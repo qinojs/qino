@@ -2,6 +2,7 @@
 import { App, fs, requestStorage } from "@qino/qino";
 import { testContext } from "@qino/qino/tests";
 
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** What every fin app links from the module store. */
@@ -37,7 +38,7 @@ export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>)
 
 /** Run `fn` inside a request to `url`, as the app itself. What it renders must not hold a promise
  *  that was never awaited — the trap of a t`` inside a plain html``. */
-export async function inRequest<T>(app: App, url: string, fn: () => Promise<T>): Promise<T> {
+export async function inRequest<T>(app: App, url: string, fn: (ctx: Ctx) => Promise<T>): Promise<T> {
   // a session that can sign links to private files (receipts, PDFs)
   let grantKey = "";
   const core = {
@@ -45,7 +46,8 @@ export async function inRequest<T>(app: App, url: string, fn: () => Promise<T>):
     pending: () => undefined,
     grantKey: (v?: string) => v === undefined ? grantKey : (grantKey = v),
   };
-  const out = await requestStorage.run(await testContext({ url, app, set: { app }, sess: { data: { core } } }), fn);
+  const ctx = await testContext({ url, app, set: { app }, sess: { data: { core } } });
+  const out = await requestStorage.run(ctx, () => fn(ctx));
   if (String(out).includes("[object Promise]")) throw new Error(`${url} rendered a promise`);
   return out;
 }
@@ -59,7 +61,7 @@ export const backendNode = (app: App, url: string): Node => ({
 }) as unknown as Node;
 
 /** Run `fn` as user `userId` would call the api: in a request of theirs, signed in. */
-export async function asUser<T>(app: App, userId: number, fn: () => Promise<T>): Promise<T> {
+export async function asUser<T>(app: App, userId: number, fn: (ctx: Ctx) => Promise<T>): Promise<T> {
   let grantKey = "";
   const core = {
     userId: () => userId,
@@ -68,7 +70,7 @@ export async function asUser<T>(app: App, userId: number, fn: () => Promise<T>):
   };
   const sess = { data: { core } };
   const ctx = await testContext({ url: "https://shop.test/", app, userId, sess, set: { app } });
-  return await requestStorage.run(ctx, fn);
+  return await requestStorage.run(ctx, () => fn(ctx));
 }
 
 /** Two users and a superuser, to see what each may see and do. */

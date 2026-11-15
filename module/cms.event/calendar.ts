@@ -23,7 +23,7 @@ export const calendar: Source = {
         const node = await tree.node(id);
         if (edit) edit.searchParams.set("id", String(id));
         events.set(id, node.exists() && await node.isReadable() ? {
-          title: (await node.showTitle()).plain(), url: await node.url(), ...(icalStatus(row.status) && { status: icalStatus(row.status) }),
+          title: (await node.showTitle()).plain(), url: await node.url(), status: icalStatus(row.status),
           ...(edit && await node.access() >= 2 && { editUrl: edit.pathname + edit.search }),
         } : null);
       }

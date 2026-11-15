@@ -44,7 +44,7 @@ test("backend.locale.currency: the panel lists what is stored", async () => {
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
-    const html = String(await panel.node.render({ app } as unknown as Node));
+    const html = String(await panel.node.render({ app } as unknown as Node, { ctx }));
     assertEquals(html.includes("[object Promise]"), false);
     assertStringIncludes(html, "0.800000");
     assertStringIncludes(html, "Swiss Franc");
@@ -58,7 +58,7 @@ test("backend.locale.currency: every currency is listed, with its symbol", async
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
-    const html = String(await panel.node.render({ app } as unknown as Node));
+    const html = String(await panel.node.render({ app } as unknown as Node, { ctx }));
     assertEquals(html.includes("[object Promise]"), false);
     assertStringIncludes(html, "<td>JPY"); // not only the ones with a rate
     assertStringIncludes(html, "<td>€"); // a symbol where Intl has one
@@ -84,7 +84,7 @@ test("backend.locale.currency: rates are editable while the job is off", async (
   const ctx = await Ctx.create(app, new Request("http://test/"), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
   await requestStorage.run(ctx, async () => {
-    const render = () => panel.node.render({ app } as unknown as Node).then(String);
+    const render = () => panel.node.render({ app } as unknown as Node, { ctx }).then(String);
     const manual = await render();
     assertStringIncludes(manual, "class=-rate"); // "never": the rates are the admin's own
 

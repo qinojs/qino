@@ -1,18 +1,18 @@
-import { getCtx, html, sql, sqlSearch } from "@qino/qino";
+import { html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, option, pager, rowLink } from "@qino/qino/cms.backend.fin";
 import * as u2 from "@qino/qino/u2";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const PER_PAGE = 100;
 
 /** The accounts, a statement upload, and the lines — unassigned ones with what they might be. */
-export async function render(node: Node): Promise<HtmlString> {
+export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const url = getCtx().req.url.toURL();
+  const url = ctx.req.url.toURL();
   const self = await (await node.page()).url();
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const accounts = await app.db.query`

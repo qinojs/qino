@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, getCtx, html, sql, unixTime } from "@qino/qino";
+import { errMsg, html, sql, unixTime } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 import { IN_MIND, personal } from "@qino/qino/ai.user_memory";
@@ -7,7 +7,7 @@ import { sqlScore, strength } from "@qino/qino/score";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type Vars = Record<string, any>;
@@ -132,8 +132,8 @@ export async function sessions(node: Node, { vars = {} }: { vars?: Vars } = {}):
 }
 
 /** The users and the latest memories; with `?usr=` a user's page. */
-async function render(node: Node) {
-  const { db, t } = node.app, usr = Number(getCtx().req.query.usr) || 0;
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const { db, t } = node.app, usr = Number(ctx.req.query.usr) || 0;
   if (usr) {
     const vars = { usr }, username = await db.one`SELECT username FROM usr WHERE id = ${usr}`;
     return html.async`<div class=u2-flex>

@@ -1,27 +1,25 @@
-import { addContact, contactKey, contactOwner, contacts, contactTypes, getCtx, html, pwHash, safeEqual, setMainContact } from "@qino/qino";
+import { addContact, contactKey, contactOwner, contacts, contactTypes, html, pwHash, safeEqual, setMainContact } from "@qino/qino";
 import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
 import { list, allowLoginAs } from "./parts/list.ts";
 import api from "./nodeApi.ts";
 
-import type { HtmlString, App } from "@qino/qino";
+import type { HtmlString, App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.users", { en: "Users", de: "Benutzer" });
 }
 
-function render(node: Node): Promise<HtmlString | string> {
-  const ctx = getCtx();
+function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
   const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
 
-  if (id) return renderDetail(node, id);
-  return renderOverview(node);
+  if (id) return renderDetail(node, ctx, id);
+  return renderOverview(node, ctx);
 }
 
-async function renderOverview(node: Node) {
-  const ctx = getCtx();
+async function renderOverview(node: Node, ctx: Ctx) {
   const app = node.app;
   const t = app.t;
   const db = app.db;
@@ -228,8 +226,7 @@ async function contactsCard(node: Node, usrId: number) {
     </form>`;
 }
 
-async function renderDetail(node: Node, id: number) {
-  const ctx = getCtx();
+async function renderDetail(node: Node, ctx: Ctx, id: number) {
   const app = node.app;
   const t = app.t;
   const db = app.db;

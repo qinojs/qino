@@ -1,4 +1,4 @@
-import { getCtx, html, sql, sqlSearch } from "@qino/qino";
+import { html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
   badge, direction, field, money, option, pager, refLink, rowLink, sources, status,
@@ -7,15 +7,15 @@ import { mainCurrency } from "@qino/qino/fin";
 import { methods, provider as providerOf, slip } from "@qino/qino/fin.payment";
 import * as u2 from "@qino/qino/u2";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Provider } from "@qino/qino/fin.payment";
 
 const STATUSES = ["pending", "processing", "paid", "failed", "canceled", "expired", "refunded"];
 const PER_PAGE = 100;
 
-export function render(node: Node): Promise<HtmlString> {
-  const url = getCtx().req.url.toURL();
+export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const url = ctx.req.url.toURL();
   const id = Number(url.searchParams.get("id"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }

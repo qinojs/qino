@@ -19,10 +19,10 @@ const LIMIT = 500;
 const MAIN = sql`c.address = (SELECT o.address FROM usr_contact o
   WHERE o.type = ${CHANNEL} AND o.usr_id = c.usr_id ORDER BY o.main DESC, o.created, o.address LIMIT 1)`;
 
-export function render(node: Node): Promise<HtmlString | string> {
-  const query = getCtx().req.query;
+export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
+  const query = ctx.req.query;
   const issue = idOf(query.issue), list = idOf(query.list);
-  return node.app.t.with(NS, () => issue ? issueView(node, issue) : list ? listView(node, list) : overview(node));
+  return node.app.t.with(NS, () => issue ? issueView(node, ctx, issue) : list ? listView(node, ctx, list) : overview(node, ctx));
 }
 
 /** Links to this page, absolute: they hold wherever the node is shown. */
@@ -44,8 +44,8 @@ const csrf = (ctx: Ctx) => html`<input type=hidden name=csrfToken value="${ctx.c
 
 // --- overview -------------------------------------------------------------------------------
 
-async function overview(node: Node) {
-  const app = node.app, t = app.t, ctx = getCtx(), to = await here(node);
+async function overview(node: Node, ctx: Ctx) {
+  const app = node.app, t = app.t, to = await here(node);
   const post = posted(ctx);
   if (post && "createList" in post && str(post.name)) {
     return redirect(to({ list: await app.db.table("grp").insert({ name: str(post.name), type: TYPE }) }));
@@ -223,8 +223,8 @@ async function draft(app: App, grpId: number, from?: Row) {
 
 // --- issue ----------------------------------------------------------------------------------
 
-async function issueView(node: Node, id: number) {
-  const app = node.app, t = app.t, ctx = getCtx(), to = await here(node);
+async function issueView(node: Node, ctx: Ctx, id: number) {
+  const app = node.app, t = app.t, to = await here(node);
   let [row] = await issueRows(app, id);
   if (!row) return html.async`<div class=u2-card><div>${t`Newsletter not found.`}</div></div>`;
   const post = posted(ctx);
@@ -261,7 +261,7 @@ async function issueView(node: Node, id: number) {
       return redirect(to({ issue: id }));
     }
   }
-  return Number(row.recipients) ? report(node, row) : editor(node, row, notice);
+  return Number(row.recipients) ? report(node, ctx, row) : editor(node, ctx, row, notice);
 }
 
 /** Store the editor's fields; the list only changes to another list. */
@@ -291,8 +291,8 @@ async function test(app: App, row: Row, address: string) {
     : html.async`<u2-alert open variant=error>${t`Test not sent.`} ${error}</u2-alert>`;
 }
 
-async function editor(node: Node, row: Row, notice: unknown) {
-  const app = node.app, t = app.t, db = app.db, ctx = getCtx();
+async function editor(node: Node, ctx: Ctx, row: Row, notice: unknown) {
+  const app = node.app, t = app.t, db = app.db;
   const [lists, frames, me, to] = await Promise.all([
     listRows(app),
     db.col<string>`SELECT name FROM message_template WHERE channel = ${CHANNEL} ORDER BY name`,
@@ -361,8 +361,8 @@ async function previewCard(app: App, row: Row) {
 }
 
 /** What came of a sent or scheduled issue. */
-async function report(node: Node, row: Row) {
-  const app = node.app, t = app.t, db = app.db, ctx = getCtx();
+async function report(node: Node, ctx: Ctx, row: Row) {
+  const app = node.app, t = app.t, db = app.db;
   const id = Number(row.id);
   const [deliveries, links, to] = await Promise.all([
     db.query`
@@ -447,8 +447,8 @@ async function report(node: Node, row: Row) {
 
 // --- list -----------------------------------------------------------------------------------
 
-async function listView(node: Node, id: number) {
-  const app = node.app, t = app.t, db = app.db, ctx = getCtx(), to = await here(node);
+async function listView(node: Node, ctx: Ctx, id: number) {
+  const app = node.app, t = app.t, db = app.db, to = await here(node);
   const list = await db.row`SELECT id, name FROM grp WHERE id = ${id} AND type = ${TYPE}`;
   if (!list) return html.async`<div class=u2-card><div>${t`List not found.`}</div></div>`;
   const query = ctx.req.query;

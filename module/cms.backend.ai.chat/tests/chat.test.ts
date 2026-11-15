@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { App, fs, runAs } from "@qino/qino";
+import { App, fs, getCtx, runAs } from "@qino/qino";
 import { assert, assertStringIncludes } from "@qino/qino/tests";
 import { Agent } from "@qino/qino/ai.agent";
 
@@ -24,7 +24,7 @@ test("cms.backend.ai.chat: choose an agent, and resume own sessions", async () =
     const own = await agent.start(7), other = await agent.start(8);
     await app.db.table("ai_session_message").insert({ session_id: own.id, message: JSON.stringify({ role: "user", content: "My first question about the <blue> logo " + "x".repeat(90) }) });
     const node = { app, page: async () => ({ url: async () => "/chat" }) } as unknown as Node;
-    const page = String(await runAs(app, 7, "test", () => cms.node.render(node)));
+    const page = String(await runAs(app, 7, "test", () => cms.node.render(node, { ctx: getCtx() })));
     for (const part of ['<option value="1">#1 &lt;b&gt;lead&lt;/b&gt;</option>', `<tr u2-href>`, `href="/chat?session=${own.id}" data-session="${own.id}"`, "Start session", "<small><u2-time", "<table class=u2-table>", "My first question about the &lt;blue&gt; logo", " …"]) assertStringIncludes(page, part);
     assertStringIncludes(page, 'style="overflow:auto; max-height:30rem; padding:0"');
     assert(!page.includes("<blue>"));

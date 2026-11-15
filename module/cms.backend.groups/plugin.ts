@@ -1,10 +1,10 @@
-import { html, getCtx, safeEqual } from "@qino/qino";
+import { html, safeEqual } from "@qino/qino";
 import { backend, renderRowWidgets } from "@qino/qino/cms.backend";
 
 import api, { canManageMembers } from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App } from "@qino/qino";
+import type { HtmlString, App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -17,16 +17,14 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-function render(node: Node) {
-  const ctx = getCtx();
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
 
   if (id) return renderDetail(node, id);
-  return renderOverview(node);
+  return renderOverview(node, ctx);
 }
 
-async function renderOverview(node: Node) {
-  const ctx = getCtx();
+async function renderOverview(node: Node, ctx: Ctx) {
   const app = node.app;
   const t = app.t;
   const db = app.db;

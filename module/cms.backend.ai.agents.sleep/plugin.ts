@@ -1,12 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, getCtx, html, sql } from "@qino/qino";
+import { errMsg, html, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 import { apply, sleep } from "@qino/qino/ai.agent.sleep";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type Vars = Record<string, any>;
@@ -139,8 +139,8 @@ export async function plan(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
 }
 
 /** The agents and the latest sleeps; with `?sleep=` one sleep. */
-async function render(node: Node) {
-  const t = node.app.t, id = Number(getCtx().req.query.sleep) || 0;
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const t = node.app.t, id = Number(ctx.req.query.sleep) || 0;
   if (id) return html.async`<div class=u2-flex cms-part=plan>${plan(node, { vars: { sleep: id } })}</div>`;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 auto"><div class=-head>${t`Agents`}</div><table class=u2-table cms-part=agents>${agents(node)}</table></div>

@@ -1,11 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, getCtx, html, sql } from "@qino/qino";
+import { errMsg, html, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { backend } from "@qino/qino/cms.backend";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type Vars = Record<string, any>;
@@ -127,8 +127,8 @@ export async function failed(node: Node): Promise<HtmlString> {
 
 /** The topics, the open reports and the failed tool calls; with `?kind=` only those of a kind (config: for the
  *  site's operator, the others for Qino), with `?about=` the reports about one, `?done=1` also those dealt with. */
-async function render(node: Node) {
-  const { db, t } = node.app, query = getCtx().req.query, url = await pageUrl(node);
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const { db, t } = node.app, query = ctx.req.query, url = await pageUrl(node);
   const only = { ...query.kind && { kind: String(query.kind) }, ...query.about != null && { about: String(query.about) } };
   const vars = { ...only, ...query.done && { done: 1 } }, toggle = backend.toUrl(url, { ...only, ...!query.done && { done: 1 } });
   // the kinds there are, to show only one

@@ -5,7 +5,7 @@ import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -51,15 +51,15 @@ const missingModules = async (app: App) => (await app.db.query`
   FROM page p LEFT JOIN log l ON l.id = p.log_id_ch
   GROUP BY p.module`).filter((r) => r.name && !isContent(app, String(r.name)));
 
-async function renderOverview(node: Node) {
-  const app = node.app, t = app.t, ctx = getCtx();
+async function renderOverview(node: Node, ctx: Ctx) {
+  const app = node.app, t = app.t;
   const u = ctx.req.url.toURL();
 
   const mods = new Map((await moduleStats(app)).map((r) => [String(r.name), r]));
   const missing = new Map((await missingModules(app)).map((r) => [String(r.name), r]));
   const lMissing = await t`missing`;
 
-    console.log(getCtx().settings[name].filter.type());
+    console.log(ctx.settings[name].filter.type());
 
   const selType = ctx.settings[name].filter.type() ?? "";
   const types = new Set<string>();
@@ -167,9 +167,8 @@ async function historyRows(node: Node, ids: number[]) {
   return out;
 }
 
-async function renderDetail(node: Node, modName: string, message: string) {
+async function renderDetail(node: Node, ctx: Ctx, modName: string, message: string) {
   const app = node.app, t = app.t;
-  const ctx = getCtx();
   const back = ctx.req.url.toURL();
   back.searchParams.delete("mod");
 
@@ -275,12 +274,11 @@ async function renderDetail(node: Node, modName: string, message: string) {
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}) {
-  const ctx = getCtx();
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const message = vars.replace ? await replace(node, vars) : "";
   const modName = String(vars.mod ?? ctx.req.query.mod ?? "");
-  if (modName) return renderDetail(node, modName, message);
-  return renderOverview(node);
+  if (modName) return renderDetail(node, ctx, modName, message);
+  return renderOverview(node, ctx);
 }
 
 export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {

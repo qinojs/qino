@@ -1,18 +1,18 @@
-import { getCtx, html } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { LIMIT, search, SMALL_ROWS, words } from "./lib/search.ts";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { TableSearch } from "./lib/search.ts";
 
 const MAX_CELL = 200; // longer values are shown as a snippet around the first hit
 
-export async function render(node: Node): Promise<HtmlString> {
+export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app, t = app.t;
   const self = await (await node.page()).url();
-  const term = (getCtx().req.query.db_search ?? "").trim();
+  const term = (ctx.req.query.db_search ?? "").trim();
 
   const t0 = performance.now();
   const results = term ? await search(app.db, term) : [];

@@ -1,8 +1,8 @@
 import { backend } from "@qino/qino/cms.backend";
 import { dump } from "@nuxodin/dump";
-import { $item, getCtx, html, sys } from "@qino/qino";
+import { $item, html, sys } from "@qino/qino";
 
-import type { HtmlString, App } from "@qino/qino";
+import type { HtmlString, App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const DUMP_JS = "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@v1.5.2/mod.js";
@@ -11,7 +11,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.state", { en: "Server State", de: "Server-Status" });
 }
 
-function render(node: Node) {
+function render(node: Node, opts: { ctx: Ctx }) {
   return html`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 100%">
     <div class=-head>State</div>
@@ -19,12 +19,11 @@ function render(node: Node) {
       <button type=button data-reload>neu laden</button>
     </div>
   </div>
-  <div class=u2-flex cms-part=state>${renderState(node)}</div>
+  <div class=u2-flex cms-part=state>${renderState(node, opts)}</div>
 </div>`;
 }
 
-function renderState(node: Node) {
-  const ctx = getCtx();
+function renderState(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.importMap.set(DUMP_JS, DUMP_JS); // ugly
   ctx.res.csp["script-src"][DUMP_JS] = true;
   return html`

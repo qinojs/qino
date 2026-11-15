@@ -31,7 +31,7 @@ async function page(app: App, search: string, fields?: Record<string, string>) {
     : {};
   const ctx = await testContext({ url: URL + search, ...init, set: { csrfToken: "test" } });
   const node = await cms(app).nodeByModule("cms.backend.newsletter");
-  const out = String(await requestStorage.run(ctx, () => render(node as Node)));
+  const out = String(await requestStorage.run(ctx, () => render(node as Node, { ctx })));
   return { out, location: ctx.res.headers.get("Location") };
 }
 

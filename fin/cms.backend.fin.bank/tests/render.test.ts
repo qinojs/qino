@@ -6,12 +6,12 @@ import api from "../nodeApi.ts";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import { render } from "../render.ts";
 
-import type { App } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const FIN = ["fin.payment", "fin.bank", "fin.bank.camt", "fin.invoice"];
 
-type As = (url: string, run: () => Promise<unknown>) => Promise<unknown>;
+type As = (url: string, run: (ctx: Ctx) => Promise<unknown>) => Promise<unknown>;
 
 const withApp = (fn: (app: App, as: As, node: Node) => Promise<void>) =>
   withFinApp(FIN, async (app) => {
@@ -35,14 +35,14 @@ test("a statement is read, its unclaimed line suggests the invoice of its amount
     assertEquals(read.ok, true);
     assertStringIncludes(read.message, "1 new lines"); // the second copy adds nothing
 
-    let page = String(await as(`${base}?state=open`, () => render(node)));
+    let page = String(await as(`${base}?state=open`, (ctx) => render(node, { ctx })));
     for (const part of ["CH5604835012345678009", "Kunde &amp; Co", "data-assign", `value="fin.invoice:${invoice}"`]) {
       assertStringIncludes(page, part);
     }
     const line = Number(await app.db.one`SELECT id FROM bank_tx`);
     await as(base, () => api(node, { assign: { id: String(line), ref: `fin.invoice:${invoice}` } }));
     assertEquals((await app.db.row`SELECT status FROM invoice WHERE id = ${invoice}`)?.status, "paid");
-    page = String(await as(`${base}?state=open`, () => render(node)));
+    page = String(await as(`${base}?state=open`, (ctx) => render(node, { ctx })));
     assert(!page.includes("data-assign"));
   });
 });
@@ -50,7 +50,7 @@ test("a statement is read, its unclaimed line suggests the invoice of its amount
 test("with EBICS linked, the page offers its settings and enrolment; without a connection a step says so", async () => {
   await withFinApp([...FIN, "fin.bank.ebics"], async (app) => {
     const node = backendNode(app, "/backend/bank");
-    const page = String(await inRequest(app, "http://qino.test/backend/bank", () => render(node)));
+    const page = String(await inRequest(app, "http://qino.test/backend/bank", (ctx) => render(node, { ctx })));
     for (const part of [`source="/api/core/settings/fin.bank.ebics"`, "data-ebics", "value=keys", "value=sync"]) {
       assertStringIncludes(page, part);
     }

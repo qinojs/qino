@@ -9,7 +9,7 @@ import { Agent, called, declare, IN_MIND, Session } from "@qino/qino/ai.agent";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { ApiTree, App, Db, HtmlString, Sql } from "@qino/qino";
+import type { ApiTree, App, Db, HtmlString, Sql, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type Vars = Record<string, any>;
@@ -411,8 +411,8 @@ export async function conversation(node: Node, { vars = {} }: { vars?: Record<st
 }
 
 /** The list of agents and all sessions; with `?agent=` an agent's page, with `?session=` a session's. */
-async function render(node: Node) {
-  const t = node.app.t, query = getCtx().req.query, url = await pageUrl(node);
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  const t = node.app.t, query = ctx.req.query, url = await pageUrl(node);
   const id = Number(query.agent) || 0, sessionId = Number(query.session) || 0;
   allowMarkdown(); // the answers in a conversation
   if (sessionId) {
@@ -428,7 +428,7 @@ async function render(node: Node) {
     <div class=u2-card style="flex:0 1 auto">
       <div class=-head>${t`Conversation`} <button type=button data-raw title="${t`What the model is given at the next turn`}">${t`Raw`}</button></div>
       <div cms-part=conversation>${conversation(node, { vars })}</div>
-      ${s && Number(s.usr_id) === getCtx().userId ? html.async`<form class=u2-flex data-ask>
+      ${s && Number(s.usr_id) === ctx.userId ? html.async`<form class=u2-flex data-ask>
         <textarea name=content rows=3 required style="flex:1" placeholder="${t`Enter sends, Shift + Enter makes a new line`}"></textarea>
         <button data-stop="${t`Stop`}">${t`Send`}</button>
       </form>` : ""}

@@ -26,7 +26,7 @@ const plan = (result: { table: string; parts: { mode: string; fields: string[] }
 
 async function renderSearch(db: Db, term: string) {
   const ctx = await testContext({ url: `http://qino.test/?db_search=${encodeURIComponent(term)}`, app: { db, t: fakeT } });
-  return String(await requestStorage.run(ctx, () => render({ app: { db, t: fakeT }, page: () => ({ url: () => "/?cmspid=7&lang=en" }) } as never)));
+  return String(await requestStorage.run(ctx, () => render({ app: { db, t: fakeT }, page: () => ({ url: () => "/?cmspid=7&lang=en" }) } as never, { ctx })));
 }
 
 test("cms.backend.superuser.db.search: metadata is wired", () => {

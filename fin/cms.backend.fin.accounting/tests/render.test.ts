@@ -23,16 +23,16 @@ test("statements, journal and an entry by hand, its detail and its reversal", as
     assertEquals(booked.ok, true, booked.message);
     const id = Number(new URL(booked.url!, "http://-").searchParams.get("id"));
 
-    const page = String(await inRequest(app, BASE, () => render(node))).replaceAll(" ", " ");
+    const page = String(await inRequest(app, BASE, (ctx) => render(node, { ctx }))).replaceAll(" ", " ");
     // 1'000 revenue less 1'800 rent: a loss of 800
     for (const part of ["Balance sheet", "Rent &lt;March&gt;", "1100 Forderungen", "CHF 1,081.00", "Loss", "CHF 800.00"]) {
       assertStringIncludes(page, part);
     }
-    const detail = String(await inRequest(app, `${BASE}?id=${id}`, () => render(node)));
+    const detail = String(await inRequest(app, `${BASE}?id=${id}`, (ctx) => render(node, { ctx })));
     assertStringIncludes(detail, "data-reverse");
     const back = await inRequest(app, BASE, () => api(node, { reverse: String(id) })) as Answer;
     assertEquals(back.ok, true);
-    const again = String(await inRequest(app, `${BASE}?id=${id}`, () => render(node)));
+    const again = String(await inRequest(app, `${BASE}?id=${id}`, (ctx) => render(node, { ctx })));
     assert(!again.includes("data-reverse"));
     assertStringIncludes(again, "Reversed by");
 
@@ -48,12 +48,12 @@ test("a year is closed from its card, which lists what is still open, and opened
     const node = backendNode(app, "/backend/accounting");
     const base = "http://qino.test/backend/accounting";
     await create(app, { currency: "CHF", date: "2025-06-01", lines: [{ name: "Draft", price: 100 }] });
-    let page = String(await inRequest(app, base, () => render(node)));
+    let page = String(await inRequest(app, base, (ctx) => render(node, { ctx })));
     assertStringIncludes(page, `value="${new Date().getFullYear() - 1}-12-31"`); // last year, proposed
     assertStringIncludes(page, "draft invoices of the year");
     const closed = await inRequest(app, base, () => api(node, { close: { until: "2025-12-31" } }));
     assertEquals((closed as Answer).ok, true);
-    page = String(await inRequest(app, base, () => render(node)));
+    page = String(await inRequest(app, base, (ctx) => render(node, { ctx })));
     assertStringIncludes(page, 'value="2026-12-31"'); // the next one, a year on
     await inRequest(app, base, () => api(node, { reopen: true }));
     assertEquals(await app.settings["fin.accounting"].closedUntil, "");
@@ -64,13 +64,13 @@ test("the closing card compares the books with the open invoices, and finds mone
   await withFinApp(FIN, async (app) => {
     const node = backendNode(app, "/backend/accounting");
     await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Design", price: 10000 }] }));
-    let page = String(await inRequest(app, BASE, () => render(node)));
+    let page = String(await inRequest(app, BASE, (ctx) => render(node, { ctx })));
     assertStringIncludes(page, "receivables match the open invoices");
     // one the books never saw: issued before they were kept
     await app.db.table("invoice").insert({
       direction: "out", type: "invoice", status: "open", currency: "CHF", total: 5000, created: 1, changed: 1,
     });
-    page = String(await inRequest(app, BASE, () => render(node)));
+    page = String(await inRequest(app, BASE, (ctx) => render(node, { ctx })));
     assertStringIncludes(page, "receivables: books and open invoices differ by");
     assertStringIncludes(page, "50.00");
     // money for something else than an invoice: its owner books it, or nobody
@@ -80,6 +80,6 @@ test("the closing card compares the books with the open invoices, and finds mone
     // in the year the card closes: the last one
     await app.db.exec`UPDATE payment SET created = ${Date.parse(`${new Date().getFullYear() - 1}-06-01`) / 1000}
       WHERE id = ${payment}`;
-    assertStringIncludes(String(await inRequest(app, BASE, () => render(node))), unbooked);
+    assertStringIncludes(String(await inRequest(app, BASE, (ctx) => render(node, { ctx }))), unbooked);
   });
 });

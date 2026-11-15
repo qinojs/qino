@@ -52,7 +52,7 @@ test("the preview asks the modules themselves, so a template shows the real iden
   const app = { db, t: fakeT, url: () => Promise.resolve("http://qino.test/"), settings: { core: { _secret: "test-secret" } }, modules: { linked: () => linked } };
   const ctx = await testContext({ url: "http://qino.test/backend/templates?name=letter&channel=email", app, set: { csrfToken: "test" } });
 
-  const output = String(await requestStorage.run(ctx, () => render({ app } as never)));
+  const output = String(await requestStorage.run(ctx, () => render({ app } as never, { ctx })));
   assertStringIncludes(output, "&lt;h1&gt;Qino Demo&lt;/h1&gt;"); // inside the preview iframe's srcdoc
   assertStringIncludes(output, "Hallo Ada");
   assertStringIncludes(output, `<code data-copy title="Click to copy">{{identity.brand}}</code>`); // whose it is, ready to paste

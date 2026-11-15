@@ -1,11 +1,11 @@
-import { getCtx, html, sql, sqlSearch } from "@qino/qino";
+import { html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { badge, money, pager, refLink } from "@qino/qino/cms.backend.fin";
 import { addDays, addMonths, mainCurrency, today } from "@qino/qino/fin";
 import { balances, businessYear } from "@qino/qino/fin.accounting";
 import * as u2 from "@qino/qino/u2";
 
-import type { App, HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const PER_PAGE = 100;
@@ -16,8 +16,8 @@ const LINES = 4;
 const DEBIT = new Set(["asset", "expense"]);
 const TYPES = ["asset", "liability", "equity", "income", "expense"];
 
-export function render(node: Node): Promise<HtmlString> {
-  const url = getCtx().req.url.toURL();
+export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const url = ctx.req.url.toURL();
   const id = Number(url.searchParams.get("id"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }

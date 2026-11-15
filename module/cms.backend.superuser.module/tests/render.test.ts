@@ -41,7 +41,7 @@ function fixture(query = {}) {
 
 test("module administration combines stores and module metadata", async () => {
   const { node, ctx } = fixture();
-  const out = await requestStorage.run(ctx as any, () => cms.node.render(node as any).then(String));
+  const out = await requestStorage.run(ctx as any, () => cms.node.render(node as any, { ctx: ctx as any }).then(String));
   assertStringIncludes(out, "Module stores");
   assertStringIncludes(out, "demo.module");
   assertStringIncludes(out, "Demo description");
@@ -51,7 +51,7 @@ test("module administration combines stores and module metadata", async () => {
 
 test("module administration keeps the module detail view", async () => {
   const { node, ctx } = fixture({ mod: "demo.module" });
-  const out = await requestStorage.run(ctx as any, () => cms.node.render(node as any).then(String));
+  const out = await requestStorage.run(ctx as any, () => cms.node.render(node as any, { ctx: ctx as any }).then(String));
   assertStringIncludes(out, "Demo description");
   assertStringIncludes(out, "Exports");
   assertStringIncludes(out, "API routes");

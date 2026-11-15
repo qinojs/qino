@@ -1,11 +1,11 @@
-import { getCtx, html } from "@qino/qino";
+import { html } from "@qino/qino";
 
 import { renderTables } from "./view/tables.ts";
 import { renderDiff } from "./view/diff.ts";
 import { renderModules } from "./view/modules.ts";
 import { renderConflicts } from "./view/conflicts.ts";
 
-import type { HtmlString } from "@qino/qino";
+import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const VIEWS = [
@@ -17,8 +17,7 @@ const VIEWS = [
 
 type ViewKey = typeof VIEWS[number]["key"];
 
-export async function render(node: Node): Promise<HtmlString> {
-  const ctx = getCtx();
+export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
 
   const { db } = app;

@@ -1,11 +1,11 @@
-import { getCtx, html } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { currency, EVERY } from "@qino/qino/locale.currency";
 
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -23,10 +23,10 @@ const label = (t: App["t"], every: string) => every === "hourly" ? t`every hour`
 const showTime = (t: number) => t ? new Date(t * 1000).toISOString().slice(0, 16).replace("T", " ") : "";
 
 /** Rates are stored as units per 1 USD — the base the PHP original's source used. */
-async function render(node: Node) {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const { app } = node;
   const t = app.t;
-  const lang = getCtx().lang;
+  const lang = ctx.lang;
   const set = app.settings["locale.currency"];
   const every = String(await set.update ?? "never");
   const rows = await app.db.query`SELECT id, rate_to_usd FROM currency`;

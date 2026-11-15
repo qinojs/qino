@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, getCtx, html, safeEqual, sql } from "@qino/qino";
+import { errMsg, html, safeEqual, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 import { askDbAi } from "./lib/ai.ts";
 
-import type { App, HtmlString } from "@qino/qino";
+import type { App, HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const MAX_ROWS = 1000; // cap rendered rows; the query itself is not limited
@@ -17,8 +17,7 @@ const KEYWORDS = "SELECT FROM WHERE GROUP BY ORDER LIMIT OFFSET INSERT INTO VALU
 
 type Table = { name: string; fields: { name: string; type: string }[] };
 
-export async function render(node: Node): Promise<HtmlString> {
-  const ctx = getCtx();
+export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
   u2.elements(ctx, "code"); // the editor highlights with a library of its own
 

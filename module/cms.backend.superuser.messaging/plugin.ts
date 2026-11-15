@@ -1,4 +1,4 @@
-import { getCtx, html, sql, sqlSearch, unixTime } from "@qino/qino";
+import { html, sql, sqlSearch, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 import { channels, htmlOf, sanitizeHtml, textOf, userChannels } from "@qino/qino/messaging";
@@ -21,13 +21,13 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
 }
 
-export function render(node: Node): Promise<HtmlString> {
-  const url = getCtx().req.url.toURL();
+export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const url = ctx.req.url.toURL();
   const msgId = intParam(url, "msg");
   if (msgId) return renderMessage(node, msgId, url);
   const usrId = intParam(url, "usr");
   if (usrId) return renderConversation(node, usrId, url);
-  return renderOverview(node, url);
+  return renderOverview(node, ctx, url);
 }
 
 function intParam(url: URL, key: string) {
@@ -36,10 +36,9 @@ function intParam(url: URL, key: string) {
 }
 
 /** The journal as a table: one row per logical message, filtered by text and channel. */
-async function renderOverview(node: Node, url: URL) {
+async function renderOverview(node: Node, ctx: Ctx, url: URL) {
   const app = node.app;
   const t = app.t;
-  const ctx = getCtx();
   const search = url.searchParams.get("search") ?? "";
   const filter = url.searchParams.get("channel") ?? "";
   const way = url.searchParams.get("direction") ?? "";
