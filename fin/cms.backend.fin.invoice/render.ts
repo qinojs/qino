@@ -64,7 +64,7 @@ async function overview(node: Node, url: URL) {
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Invoices`}</div>
-    <form method=get action="${self}">${backend.toFields(self)}
+    <form method=get action="${self}" data-filter>${backend.toFields(self)}
       <input type=search name=search value="${q("search")}" placeholder="${t`Number, party, ref`}">
       <select name=direction>
         ${option("", t`Issued and received`, q("direction"))}
@@ -76,9 +76,8 @@ async function overview(node: Node, url: URL) {
       <select name=type>${option("", t`Any type`, q("type"))}
         ${TYPES.map((type) => option(type, typeName(node.app, type), q("type")))}</select>
       <label><input type=checkbox name=overdue value=1${q("overdue") ? html.raw(" checked") : ""}> ${t`overdue`}</label>
-      <button>${t`Filter`}</button>
     </form>
-    <div style="overflow:auto; max-height:70vh; padding:0">${list(node, url)}</div>
+    <div style="overflow:auto; max-height:70vh; padding:0" data-list>${list(node, url)}</div>
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`New invoice`}</div>

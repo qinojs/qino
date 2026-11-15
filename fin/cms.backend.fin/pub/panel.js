@@ -34,5 +34,25 @@ export function finPanel(el) {
     type: file.type,
     data: new Uint8Array(await file.arrayBuffer()).toBase64(),
   })));
-  return { node, execute, fields, files };
+  /** A GET filter form that applies itself as one types: debounced, the page is fetched at the new URL
+   *  and only `list` is swapped, so focus and caret stay; the address bar follows. */
+  const filter = (form, list) => {
+    let timer, ctrl;
+    const load = async () => {
+      const url = new URL(form.action);
+      url.search = new URLSearchParams([...new FormData(form)].filter(([, v]) => v));
+      ctrl?.abort();
+      ctrl = new AbortController();
+      const text = await fetch(url, { signal: ctrl.signal }).then((r) => r.text(), () => null);
+      if (text == null) return; // aborted by a newer one
+      const fresh = new DOMParser().parseFromString(text, "text/html")
+        .querySelector(`[qcms-id="${cms.el.nid(el)}"] [data-list]`);
+      if (!fresh) return void (location.href = url);
+      list.innerHTML = fresh.innerHTML;
+      history.replaceState(history.state, "", url);
+    };
+    form.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(load, 300); });
+    form.addEventListener("submit", (e) => { e.preventDefault(); clearTimeout(timer); load(); });
+  };
+  return { node, execute, fields, files, filter };
 }

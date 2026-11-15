@@ -2,8 +2,10 @@ import { finPanel } from "../../cms.backend.fin/pub/panel.js";
 import { t } from "@qino/pub/t.js";
 
 cms.initNode("backend.fin.invoice", (el) => {
-  const { node, execute, fields, files } = finPanel(el);
+  const { node, execute, fields, files, filter } = finPanel(el);
   const form = el.querySelector("[data-edit]");
+  const filterForm = el.querySelector("[data-filter]");
+  if (filterForm) filter(filterForm, el.querySelector("[data-list]"));
 
   el.addEventListener("submit", (e) => {
     const form = e.target;
@@ -17,7 +19,7 @@ cms.initNode("backend.fin.invoice", (el) => {
       files(form.elements.file).then(([file]) => execute(e.submitter, { attach: { id: form.dataset.attach, file } }));
       return;
     }
-    else if (!form.matches("[data-edit]")) return; // the filter is a plain GET form; the editor saves by itself
+    else if (!form.matches("[data-edit]")) return; // the filter applies itself (finPanel.filter); the editor saves by itself
     e.preventDefault();
   });
 
