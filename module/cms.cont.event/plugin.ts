@@ -16,7 +16,7 @@ const STATUS = { cancelled: "EventCancelled", postponed: "EventPostponed", resch
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   await answer(ctx, node, async () => [node]);
   const t = node.app.t.in("cms.cont.event");
-  const event = await get(node) ?? {}, dates = await list(node), zone = await zoneOf(node.app, event);
+  const [event = {}, dates] = await Promise.all([get(node), list(node)]), zone = await zoneOf(node.app, event);
   if (cmsCtx(ctx).requestedNode?.id === node.id) await structured(node, ctx, event, dates, zone);
   // what is stored is checked (cms.event set()): codes, language and links are valid or empty
   const money = (value: unknown) => new Intl.NumberFormat(ctx.lang, event.currency ? { style: "currency", currency: String(event.currency) } : {}).format(Number(value));

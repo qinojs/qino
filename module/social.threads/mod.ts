@@ -16,12 +16,13 @@ async function call(app: App, path: string, init: RequestInit = {}): Promise<any
   headers.set("authorization", `Bearer ${token}`);
   let res: Response;
   try { res = await safeFetch(new URL(path, BASE).href, { ...init, headers }, 0); }
-  catch (e) { throw new Error(`social.threads: ${errMsg(e)}`); }
+  catch (e) { throw new ProviderError(`social.threads: ${errMsg(e)}`); }
   const data = await res.json().catch(() => ({}));
   if (res.ok) return data;
   const message = String(data.error?.message ?? data.error?.type ?? `${res.status} ${res.statusText}`);
-  if (res.status === 429) throw new ProviderError(`social.threads: ${message}`, Number(res.headers.get("retry-after")) || 60);
-  throw new Error(`social.threads: ${message}`);
+  const retry = res.status === 429 ? Number(res.headers.get("retry-after")) || 60 : res.status >= 500 ? 60 : undefined;
+  const error = `social.threads: ${message}`;
+  throw retry ? new ProviderError(error, retry) : new Error(error);
 }
 
 async function targets(app: App) {

@@ -43,7 +43,7 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
   const date = published && new Date(published * 1000);
-  const file = await image(page), description = await text(page, "_description");
+  const [file, description] = await Promise.all([image(page), text(page, "_description")]);
   jsonLd(ctx, {
     "@type": "BlogPosting", headline: title, mainEntityOfPage: { "@id": canonical },
     ...(description && { description }),

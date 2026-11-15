@@ -14,10 +14,10 @@ async function config(app: App) {
   const settings = app.settings["social.mastodon"];
   const url = String(await settings.url ?? "").trim();
   const token = String(await settings.accessToken ?? "").trim();
-  if (!url || !token) throw new ProviderError("social.mastodon: configure url and accessToken");
+  if (!url || !token) throw new Error("social.mastodon: configure url and accessToken");
   const base = new URL(url);
-  if (base.protocol !== "https:") throw new ProviderError("social.mastodon: url must use HTTPS");
-  if (base.username || base.password) throw new ProviderError("social.mastodon: url must not contain credentials");
+  if (base.protocol !== "https:") throw new Error("social.mastodon: url must use HTTPS");
+  if (base.username || base.password) throw new Error("social.mastodon: url must not contain credentials");
   base.pathname = "/";
   base.search = base.hash = "";
   return { base, token };
@@ -36,7 +36,8 @@ async function call(app: App, path: string, init: RequestInit = {}): Promise<any
   if (res.ok) return data;
   const message = String(data.error_description ?? data.error ?? `${res.status} ${res.statusText}`);
   const retry = res.status === 429 ? Number(res.headers.get("retry-after")) || 60 : res.status >= 500 ? 60 : undefined;
-  throw new ProviderError(`social.mastodon: ${message}`, retry);
+  const error = `social.mastodon: ${message}`;
+  throw retry ? new ProviderError(error, retry) : new Error(error);
 }
 
 const targetId = (account: Account) => String(account.uri ?? account.url ?? account.acct ?? account.id);

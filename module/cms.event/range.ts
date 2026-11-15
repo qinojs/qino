@@ -82,12 +82,9 @@ export async function overview(db: Db, query: Sql, order: Sql, { from }: { from?
   const items = new Map<number, { row: Row; event: Row; count: number; dates: EventDate[]; period?: Range }>();
   for (const row of rows) {
     const id = Number(row.id);
-    if (!items.has(id)) {
-      const event = Object.fromEntries(EVENT_FIELDS.map((f) => [f, row[`event_${f}`]]));
-      items.set(id, { row, event: { id, ...event }, count: Number(row.date_count ?? 0), dates: [] });
-    }
+    const item = items.getOrInsertComputed(id, () =>
+      ({ row, event: { id, ...Object.fromEntries(EVENT_FIELDS.map((f) => [f, row[`event_${f}`]])) }, count: Number(row.date_count ?? 0), dates: [] }));
     if (row.date_start == null) continue;
-    const item = items.get(id)!;
     item.dates.push(decodeRow({ start: row.date_start, end: row.date_end, all_day: row.date_all_day, name: row.date_name, price: row.date_price }));
     item.period ??= { start: decode(row.period_start, row.period_start_all_day), end: decode(row.period_end, row.period_end_all_day) };
   }
