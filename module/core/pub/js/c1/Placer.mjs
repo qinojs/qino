@@ -64,7 +64,6 @@ export default class Placer {
       };
     }
     let viewport = {top: 0, left: 0}; // viewport relative to the layer
-    // css-position
     const position = getComputedStyle(this.el).getPropertyValue('position');
     if (position !== 'fixed') {
       //if (position !== 'absolute') this.el.style.position = 'absolute';
@@ -82,7 +81,6 @@ export default class Placer {
         };
       }
     }
-    // start
     let placeY = this.options.y;
     let placeX = this.options.x;
 

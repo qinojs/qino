@@ -22,12 +22,12 @@ export default function (pid) {
         <tr><th> Id: &nbsp;<td> ${pid}
       </table>`,
       [{
-        title: t`Paste on this page`, then() {
+        title: t`Paste on this page`, action() {
           cms.cont(pid).addPosition();
           els().forEach(el => el.remove());
           close();
         }
-      },{ title: t`Keep in place`, then: close 
+      },{ title: t`Keep in place`, action: close 
       },{ title: t`Close` }]
     );
   });

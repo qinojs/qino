@@ -52,11 +52,8 @@ export const comparer = {
       const win = this.contentWindow;
       const doc1 = win.document;
 
-      // scrollSync
       import('@qino/pub/c1/scrollSync.mjs').then(({ default: scrollSync }) => {
-        // sync scroll
         scrollSync.syncWindows(win, other.contentWindow);
-        // sync clicks
         win.addEventListener('click', e => {
           if (e.c1Synced) return;
           const selector = scrollSync.getSelector(e.target);

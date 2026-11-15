@@ -76,9 +76,7 @@ async function resolveNodeSpec(spec: string, node: Node) {
   if (m) return node.parent(m[1] ? Number(m[1]) : undefined);
 }
 
-// ---------------------------------------------------------------------------
 // cms-link — stable internal href resolved from a node
-// ---------------------------------------------------------------------------
 
 async function renderCmsLink(el: El, spec: string, t: Tpl) {
   const target = await resolveNodeSpec(spec, t.node);
@@ -98,9 +96,7 @@ async function renderCmsLink(el: El, spec: string, t: Tpl) {
   return renderElement({ ...el, attrs, children }, t);
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function attrValue(el: El, name: string, t: Tpl) {
   const a = el.attrs.find(a => a.name === name);
@@ -127,9 +123,7 @@ function serialize(nodes: TNode[], t: Tpl) {
   return out;
 }
 
-// ---------------------------------------------------------------------------
 // cms-text — the tag becomes the wrapper, inner html is the initial content
-// ---------------------------------------------------------------------------
 
 async function renderCmsText(el: El, name: string, t: Tpl) {
   const target = await targetNode(el, t);
@@ -145,9 +139,7 @@ async function renderCmsText(el: El, name: string, t: Tpl) {
   return String(await target.cms.text(target, name, options));
 }
 
-// ---------------------------------------------------------------------------
 // <cms-image name=... /> — rendered via cms.image, attributes become options
-// ---------------------------------------------------------------------------
 
 async function renderCmsImage(el: El, t: Tpl) {
   const name = attrValue(el, "name", t);
@@ -167,9 +159,7 @@ async function renderCmsImage(el: El, t: Tpl) {
   return String(await cms_image(file, opts));
 }
 
-// ---------------------------------------------------------------------------
 // <cms-cont name=... /> — embedded sub-content node
-// ---------------------------------------------------------------------------
 
 async function renderCmsCont(el: El, t: Tpl) {
   const name = attrValue(el, "name", t);

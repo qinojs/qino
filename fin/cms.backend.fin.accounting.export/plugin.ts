@@ -10,7 +10,7 @@ import type { App } from "@qino/qino";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.takeOver(app, "cms.backend.superuser.fin.accounting.export", name); // the module this one replaces
+  await backend.takeOver(app, "cms.backend.superuser.fin.accounting.export", name);
   await backend.install(app, name, { en: "Export", de: "Export" });
 }
 

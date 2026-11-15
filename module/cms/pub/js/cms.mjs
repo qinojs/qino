@@ -90,7 +90,7 @@ cms.reloadPart = (nid, part, vars) => {
   });
 };
 
-// global exports for legacy scripts
+// global: read by scripts outside this module graph
 globalThis.cms      = cms;
 
 // last: on() runs at once for existing nodes and needs cms

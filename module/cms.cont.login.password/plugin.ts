@@ -35,7 +35,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   if (ctx.user && !edit) return html.raw("");
   const csrfToken = ctx.csrfToken;
 
-  // Login error message
   let errorHtml: HtmlString | string = "";
   const errorT = await node.text("login failed");
   if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
@@ -54,7 +53,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
 
   const showSaveLogin = settings.saveLogin();
 
-  // Main login form
   const fixUser = settings["fix user"]();
   const noAutofocus = settings["no autofocus"]();
   // the way out for who forgot it, where the site offers one

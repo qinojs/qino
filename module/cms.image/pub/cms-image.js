@@ -8,12 +8,10 @@
 
   globalThis.cms_image = {
     init(c1Img){
-      // init once
       if (initialized.has(c1Img)) return;
       initialized.add(c1Img);
 
       let img = null;
-      // add image
       const noscript = c1Img.querySelector(':scope>noscript');
 
       if (noscript) {
@@ -33,7 +31,6 @@
 
       img.c1Image_url = img.src;
       img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
-      //preview
       c1Img.prepend(img);
       if (img.c1Image_url.startsWith('data:')) {
         img.src = img.c1Image_url;
@@ -100,12 +97,10 @@
     });
 
   }
-  // listen
   const observer = new IntersectionObserver(entries => {
     for (const entry of entries) onIntersecting(entry);
   }, {root:null, rootMargin:'150px', threshold:0});
 
-  // helper
   function roundImgSize(v){
     const interval = v > 400 ? 50 : 30;
     return Math.ceil(v/interval) * interval;
@@ -133,7 +128,7 @@
     img.src = url; // todo await img.decode() ?
     return () => {
       aborted = true;
-      img.src = ''; // Stoppt den Download
+      img.src = ''; // aborts the download
     }
   }
 

@@ -16,7 +16,7 @@ const HEAD = () => [t`no access`, t`view`, t`edit`, t`administer`];
 /** The api holds rows back on a long list — then, and only then, a search is needed. */
 export const partial = (res) => res.total > res.rows.length;
 
-/** One coloured counter per granted level, as the old accordion heads had. */
+/** One coloured counter per granted level. */
 export const levelBadges = (rows) => [1, 2, 3]
   .map((level) => ({ text: rows.filter((r) => Number(r.access) === level).length, class: '-access-' + level + '-bg' }))
   .filter((b) => b.text);

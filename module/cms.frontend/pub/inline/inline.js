@@ -21,7 +21,6 @@ cms.dialogs = root;
 /** Buttons a host adds to the content menu; `show(contPos)` decides visibility per marked content. */
 export const contMenuButtons = [];
 
-/* cms.element? */
 cms.contPos = function(el) {
   if (el.cmsContPos) return el.cmsContPos;
   if (!(this instanceof cms.contPos)) return new cms.contPos(el);
@@ -115,7 +114,7 @@ function loadCallback(res){
     const el = dom.el(html);
     if (!el) return console.warn('cms.cont.add: no html', res);
     cms.contPos(el);
-    cms.contPos.dd.start(el); // todo. what todo?
+    cms.contPos.dd.start(el);
     el.style.top = '130px';
     el.style.left = '130px';
   });
@@ -271,7 +270,7 @@ api.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.mes
 export const dialog = (title,body,buttons) =>
   root.modal({
     body: (title ? '<p>'+title+'</p>' : '') + body,
-    buttons: buttons?.map(b => ({ ...b, action: b.then })), // c1 used `then`, u2 uses `action`, todo: use action everywhere and remove this mapping
+    buttons,
   });
 
 api.on('PUT cms/txt/:id', ({ value }) => {

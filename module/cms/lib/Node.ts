@@ -138,12 +138,10 @@ export class Node {
         if (parent)
             return Math.max(await parent.#rawAccess(user), await this.#accessUserLevel(user));
 
-        // user
         if (!user) return Number(nodeLevel); // no user, return node level (or 0 if null)
         const access = Math.max(Number(nodeLevel), await this.#accessUserLevel(user));
         if (access === 3) return 3; // already ADMIN, no need to check groups
 
-        // group
         const grpAccess = await this.#accessGroupLevel(await user.grps());
         
         // return the higher of the two

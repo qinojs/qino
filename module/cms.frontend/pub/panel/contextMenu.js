@@ -38,13 +38,13 @@ addItem(t`Copy`, 'copy', {
     const node = cms.Tree.getNodeById(this.lastPid);
     dialog(t`Copy page "${node.data.title}"?`,'',[
       {
-        title:t`Copy page`,then(){
+        title:t`Copy page`,action(){
           api.cms.node(node.data.id).copy.post().then(() => {
             cms.Tree.reloadChildren(cms.Tree.parent(node));
           });
         }
       },{
-        title:t`including subpages`,then(){
+        title:t`including subpages`,action(){
           api.cms.node(node.data.id).copy.post({ deep: true }).then(() => {
             cms.Tree.reloadChildren(cms.Tree.parent(node));
           });

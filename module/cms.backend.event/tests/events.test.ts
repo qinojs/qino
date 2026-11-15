@@ -13,6 +13,7 @@ test("event management uses CMS categories, checks both permission levels and pa
   const dir = await fs.tempDir() + "/", app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.backend.event");
   await app.init();
+  app.languages.setLangs(["en", "de", "fr"]);
   const categoryPlugin = app.modules.get("cms.cont.event.category")!.plugin.cms;
   const context = async (userId = 0, url = "http://qino.test/") => {
     const ctx = await testContext({ app, userId, url, set: { app } });
@@ -68,6 +69,10 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertStringIncludes(html, `data-event-widget="${event.id}"`);
       await api(panel, { texts: { id: event.id, lang: app.languages.def, title: "Pottery", location: "Workshop hall", main: "<p>Learn pottery</p>" } });
       assertEquals((await event.showText("main", app.languages.def)).plain(), "Learn pottery");
+      await api(panel, { texts: { id: event.id, lang: "de", title: "Töpferkurs", location: "Atelier", main: "<p>Töpfern lernen</p>" } });
+      assertEquals(await event.title("en"), "Pottery");
+      assertEquals(await event.title("de"), "Töpferkurs");
+      assertEquals((await event.showText("main", "en")).plain(), "Learn pottery");
       await assertRejects(() => api(panel, { texts: { id: event.id, lang: "invalid", title: "Wrong", location: "", main: "" } }));
       await event.set("online_end", 1);
       assertEquals((await app.modules.get("cms.cont.event")!.plugin.cms.node.api(event, { blocks: true })).length, 1);
@@ -123,6 +128,7 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertStringIncludes(html, 'datetime="2027-07-12"');
       assertStringIncludes(html, `event=${event.id}`);
       assertStringIncludes(html, "<tr u2-href>");
+      assertEquals(html.includes("data-event-visibility"), false);
       assertEquals(html.includes("name=schedule"), false);
       assertEquals(html.includes("view=categories"), false);
       const publicList = String(await categoryPlugin.node.render(category, { ctx: admin }));

@@ -139,10 +139,8 @@ export class ImageEditor extends FullScreenDialog {
       this.el('.-brightness').addEventListener('input', adjust('brightness'));
       this.el('.-contrast').addEventListener('input', adjust('contrast'));
 
-      // rotate
       this.el('.-rotate').addEventListener('click', () => this.#bake(this.img.rotateRight()));
 
-      // crop
       this.el('.-crop').addEventListener('click', () => this.cropper.toggle());
       const cropit = () => {
         const s = this.scale;

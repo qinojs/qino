@@ -144,7 +144,6 @@ export class FileTransformer {
       const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
       const metaPath = `${cachePath}.mime`;
 
-      // Check cache hit
       const cacheStat = await fs.stat(cachePath);
       if (cacheStat) {
         const cachedMime = await fs.text(metaPath).catch(() => mime);

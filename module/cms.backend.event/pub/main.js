@@ -7,7 +7,7 @@ const t = translate.in("cms.backend.event");
 cms.initNode("backend.event", (el) => {
   const ref = api.cms.node(Number(cms.el.nid(el))), status = el.querySelector("[role=status]");
   for (const target of el.querySelectorAll("[data-event-widget]")) target.replaceChildren(widget(target.dataset.widgetSrc, {
-    node: { id: Number(target.dataset.eventWidget) }, content: el.querySelector("[data-event-content]"), onChange: () => {},
+    node: { id: Number(target.dataset.eventWidget) }, cards: true, onChange: () => {},
   }));
   if (el.querySelector("[data-event-texts]")) {
     import("@qino/u2/el/rte/rte.js");
@@ -41,24 +41,24 @@ cms.initNode("backend.event", (el) => {
   for (const form of el.querySelectorAll("[data-event-texts], [data-event-move]"))
     states.set(form, JSON.stringify(values(form)));
   let queue = Promise.resolve();
+  const saveState = (control) => [...(control.elements || [])].find((field) => field.matches("[data-save-state]"))
+    || control.parentElement.querySelector("[role=status]") || status;
   const change = (control, input, snapshot) => {
     queue = queue.then(async () => {
-      const output = control.querySelector("[data-save-state]") || status;
-      if (snapshot && snapshot === states.get(control)) return;
+      const output = saveState(control);
+      if (snapshot && snapshot === states.get(control)) { output.textContent = await t`Saved`; return; }
       const lock = !input.texts && !input.move;
       if (lock) control.inert = true;
       try {
         output.textContent = await t`Saving…`;
         const result = await ref.api.post(input);
-        if (input.texts) el.querySelector("[data-event-title]").textContent = input.texts.title;
+        if (input.texts) {
+          const title = el.querySelector("[data-event-title]");
+          if (title.dataset.lang === input.texts.lang) title.textContent = input.texts.title;
+        }
         else if (input.move) {
           const label = el.querySelector(`[data-event-category="${input.move.event}"]`);
           if (label) label.textContent = control.elements.category.selectedOptions[0].textContent;
-        } else if (input.visibility) {
-          const { id, inherit } = input.visibility;
-          el.querySelector(`[data-event-access="${id}"]`).textContent = await (inherit ? t`Inherited` : t`Private`);
-          control.dataset.inherit = String(!inherit);
-          control.textContent = await (inherit ? t`Make private` : t`Inherit category access`);
         } else if (result?.id && input.create && !input.create.category) {
           const url = new URL(location.href);
           url.searchParams.set("event", String(result.id));
@@ -73,17 +73,18 @@ cms.initNode("backend.event", (el) => {
       } catch (error) { output.textContent = error?.message || String(error); }
       finally { if (lock) control.inert = false; }
     });
+    return queue;
   };
   const save = (form) => {
     clearTimeout(timers.get(form));
     if (!form.checkValidity()) {
-      Promise.resolve(t`Unsaved changes`).then((message) => { form.querySelector("[data-save-state]").textContent = message; });
+      Promise.resolve(t`Unsaved changes`).then((message) => { saveState(form).textContent = message; });
       return;
     }
     const data = values(form), snapshot = JSON.stringify(data);
-    if (form.matches("[data-event-texts]")) change(form, { texts: { ...data, id: Number(data.id) } }, snapshot);
-    else if (form.matches("[data-event-move]")) change(form, { move: { event: Number(data.event), category: Number(data.category) } }, snapshot);
-    else change(form, { create: { parent: Number(data.parent), title: data.title, category: data.category === "1" } });
+    if (form.matches("[data-event-texts]")) return change(form, { texts: { ...data, id: Number(data.id) } }, snapshot);
+    else if (form.matches("[data-event-move]")) return change(form, { move: { event: Number(data.event), category: Number(data.category) } }, snapshot);
+    else return change(form, { create: { parent: Number(data.parent), title: data.title, category: data.category === "1" } });
   };
   el.addEventListener("input", (event) => {
     const form = event.target.form;
@@ -101,8 +102,5 @@ cms.initNode("backend.event", (el) => {
     event.preventDefault();
     save(form);
   });
-  el.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-event-visibility]");
-    if (button && !button.inert) change(button, { visibility: { id: Number(button.dataset.eventVisibility), inherit: button.dataset.inherit === "true" } });
-  });
+
 });

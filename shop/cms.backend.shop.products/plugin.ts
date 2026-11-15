@@ -1,6 +1,6 @@
 import { html, sql, sqlSearch } from "@qino/qino";
 import { cms as cmsOf, hasOwnUrl } from "@qino/qino/cms";
-import { backend } from "@qino/qino/cms.backend";
+import { backend, renderAccess } from "@qino/qino/cms.backend";
 import { input, renderRows, saveRows } from "@qino/qino/cms.backend.shop";
 import { mainCurrency, productUrl, shopT } from "@qino/qino/cms.shop";
 
@@ -205,6 +205,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     <div class=-head>${product.title(app.languages.def)}</div>
     <div><a href="${productUrl(product)}" target=_blank>${t`Open the page`}</a></div>
   </div>
+  ${product.node().then(async (target) => renderAccess(target, await node.access() >= 2))}
   ${(await tables(app, id)).map((spec) => renderRows(node, spec))}
 </div>`;
 }

@@ -5,12 +5,12 @@ and location (`location`) use the existing multilingual, inline-editable CMS tex
 
 The settings panel manages one or more fixed `cms.event` blocks, each with its own start and
 exclusive end at whole-second precision. Blocks may use dates for all-day events or local date-times in the configured
-IANA `time_zone` (initially taken from the editor’s browser, UTC before the first save). An all-day event on July 12 ends on July 13; the public view
-displays July 12. Timed blocks are stored as instants and displayed in the configured zone.
+IANA `time_zone` (initially taken from the editor’s browser, UTC before the first save). The editor uses the last included day for all-day ends. An all-day event entered as July 12–12
+is stored with exclusive end July 13; public views display July 12. Timed blocks are stored as instants and displayed in the configured zone.
 Ambiguous or nonexistent new local times are rejected; unchanged instants survive editing.
 
 The existing `cms.event` source supplies these blocks to the central calendar. Node visibility
-applies there as well. Only readable nodes with edit access allow block management. IDs are
+applies there as well. Block management requires edit access, including for unpublished drafts. IDs are
 always scoped to the owning node. This module has no additional database table.
 
 `formatDates(blocks, lang, timeZone)` supplies the shared range display for event details and

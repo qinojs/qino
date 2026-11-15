@@ -13,7 +13,7 @@ import type { App, HtmlString } from "@qino/qino";
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.takeOver(app, "cms.backend.superuser.fin.accounting", name); // the module this one replaces
+  await backend.takeOver(app, "cms.backend.superuser.fin.accounting", name);
   await backend.install(app, name, { en: "Accounting", de: "Buchhaltung" });
 }
 

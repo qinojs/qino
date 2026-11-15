@@ -393,22 +393,18 @@ class ImageZoomer {
 }
 Object.assign(ImageZoomer.prototype, Eventer);
 
-/*******************************/
-/* helpers *********************/
-/*******************************/
+/* helpers */
 function limit(number, min, max) {
   return Math.min(max, Math.max(number, min) );
 }
 let lastTime = 0;
 function wheelIntervalToFaktor(e) {
-  // interval diff
   const time = e.timeStamp;
   let diff = time-lastTime;
   if (!e._eventChecked) {
     lastTime = time;
     e._eventChecked = true;
   }
-  // factor
   const MAX = 400;
   const MIN = 10;
   diff = limit(diff, MIN, MAX+MIN);

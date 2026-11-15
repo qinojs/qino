@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
-// Small image-editing surface on a 2D canvas (replaces the Seriously WebGL stack).
+// Small image-editing surface on a 2D canvas.
 //
 // - brightness/contrast are live, non-destructive `ctx.filter` adjustments
 //   (re-applied on every render), so they stay editable after crop/rotate.

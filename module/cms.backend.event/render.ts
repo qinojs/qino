@@ -48,7 +48,7 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
     const item = await node.cms.node(Number(row.id), row);
     const access = await item.access();
     if (access < 2 && !await item.isReadable()) continue;
-    items.push({ ...entry, node: item, write: write && access >= 2, admin: write && access >= 3 });
+    items.push({ ...entry, node: item });
   }
   const missing = [...new Set([category, ...items.map((item) => Number(item.node.vs.basis))])]
     .filter((id) => id && !categories.some((item) => item.node.id === id));
@@ -72,12 +72,12 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
         <th scope=col>${t`Visibility`}</th>
         <th scope=col>${t`Actions`}</th>
       </tr></thead>
-      <tbody>${items.map(async ({ node: item, admin, period }) => html.async`<tr u2-href>
+      <tbody>${items.map(async ({ node: item, period }) => html.async`<tr u2-href>
         <th scope=row><a href="${link({ event: item.id })}">${item.showTitle()}</a>${item.settings.address_locality() ? html`<br><small>${item.settings.address_locality()}</small>` : ""}</th>
         <td>${period ? formatDates([period], ctx.lang, String(item.settings.time_zone() ?? "UTC")) : html.async`<span>${t`No date yet`}</span>`}</td>
         <td>${categories.find((c) => c.node.id === Number(item.vs.basis))?.title || await t`Unassigned`}</td>
         <td><span data-event-access="${item.id}">${item.vs.access === null ? t`Inherited` : Number(item.vs.access) === 0 ? t`Private` : t`Explicit access`}</span>
-          ${admin ? html.async`<br><button class=u2-unstyle type=button data-event-visibility="${item.id}" data-inherit="${item.vs.access === null ? "false" : "true"}">${item.vs.access === null ? t`Make private` : t`Inherit category access`}</button>` : ""}
+
         </td>
         <td><a href="${item.url()}">${t`Open page`}</a></td>
       </tr>`)}</tbody>
@@ -89,19 +89,18 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
     </nav>`;
   if (listOnly) return list;
   const targets = categories.filter((item) => item.write);
-  return html.async`<div class="u2-card cms-events">
+  return html.async`<div class="u2-card cms-events" style="flex:0 1 auto">
     <div class=-head>${t`Events`}</div>
-    <form data-event-filter class=u2-flex method=get action="${self}">${backend.toFields(self)}
+    <form data-event-filter method=get action="${self}">${backend.toFields(self)}
       <input type=search name=search value="${search}" aria-label="${t`Title`}" placeholder="${t`Title`}">
       <select name=category aria-label="${t`Category`}"><option value="">${t`All categories`}</option>${categories.map((item) => html`<option value="${item.node.id}" ${category === item.node.id ? html`selected` : ""}>${item.title}</option>`)}</select>
       <select name=sort aria-label="${t`Sort`}">${[["date", t`Date ascending`], ["date-desc", t`Date descending`], ["newest", t`Recently added`]].map(([value, label]) => html.async`<option value="${value}" ${sort === value ? html`selected` : ""}>${label}</option>`)}</select>
-      <a href="${backend.toUrl(self)}">${t`Reset`}</a>
     </form>
-    ${write && targets.length ? html.async`<details><summary>${t`Add event`}</summary><form data-event-create class=u2-flex>
-      <label>${t`Category`}<select name=parent required>${targets.map((item) => html.async`<option value="${item.node.id}">${item.title}</option>`)}</select></label>
-      <label>${t`Title`}<input name=title required></label>
-      <button type=submit>${t`Add event`}</button>
-    </form></details>` : ""}
+    ${write && targets.length ? html.async`<form data-event-create aria-label="${t`Add event`}">
+      <select name=parent required aria-label="${t`Category`}">${targets.map((item) => html`<option value="${item.node.id}">${item.title}</option>`)}</select>
+      <input name=title required placeholder="${t`Title`}" aria-label="${t`Title`}">
+      <button type=submit><u2-ico icon=add>+</u2-ico> ${t`Add event`}</button>
+    </form>` : ""}
     ${!categories.length ? html.async`<p>${t`Add a category to a content page first.`}</p>` : ""}
     <p role=status></p>
     <div cms-part=list style="padding:0">${list}</div>

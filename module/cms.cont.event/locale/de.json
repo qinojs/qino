@@ -44,5 +44,6 @@
   "Saving…": "Wird gespeichert…",
   "Saved": "Gespeichert",
   "Unsaved changes": "Ungespeicherte Änderungen",
+  "End must not precede start.": "Das Ende darf nicht vor dem Beginn liegen.",
   "End must follow start.": "Das Ende muss nach dem Beginn liegen."
 }

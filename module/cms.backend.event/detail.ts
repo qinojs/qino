@@ -1,4 +1,5 @@
-import { AccessError, ApiError, html } from "@qino/qino";
+import { AccessError, ApiError, html, sql, tableRef } from "@qino/qino";
+import { renderAccess } from "@qino/qino/cms.backend";
 import { list } from "@qino/qino/cms.event";
 import { formatDates } from "@qino/qino/cms.cont.event";
 import * as u2 from "@qino/qino/u2";
@@ -15,54 +16,58 @@ export default async function (panel: Node, id: number, categories: { node: Node
   const url = ctx.req.url.toURL(), back = new URL(url);
   back.searchParams.delete("event");
   back.searchParams.delete("content_lang");
-  const asked = url.searchParams.get("content_lang") || ctx.lang;
-  const lang = panel.app.languages.all.includes(asked) ? asked : panel.app.languages.def;
+  const langs = panel.app.languages.all, lang = langs.includes(ctx.lang) ? ctx.lang : panel.app.languages.def;
   const texts = await event.texts();
-  const text = async (name: string) => texts.has(name) ? String(await event.showText(name, lang)) : "";
-  const title = String(await event.title(lang));
-  const current = categories.find((category) => category.node.id === Number(event.vs.basis));
+  const ids = [Number(event.vs.title_id ?? 0), ...["location", "main"].flatMap((name) => texts.has(name) ? [texts.get(name)!.id] : [])];
+  const rows = await event.db.query`SELECT text_id, lang, text FROM ${sql.id(tableRef("text_lang"))}
+    WHERE ${sql.in("text_id", ids)} AND ${sql.in("lang", langs)}`;
+  for (const id of ids) for (const lang of langs) event.app.dbTexts.text(id).lang(lang).value = "";
+  for (const row of rows) event.app.dbTexts.text(Number(row.text_id)).lang(String(row.lang)).value = String(row.text ?? "");
+  const text = async (name: string, lang: string) => texts.has(name) ? String(await event.showText(name, lang)) : "";
+  const names = new Intl.DisplayNames(ctx.lang, { type: "language" });
   const blocks = write ? [] : await list(event);
-  u2.assets(ctx, ["el/rte/rte.css"]);
-  return html.async`<div class=cms-event-detail data-event-detail="${event.id}">
-    <nav class=u2-flex aria-label="${t`Event management`}"><a href="${back.href}">${t`Back to events`}</a> <a href="${event.url()}">${t`Open page`}</a></nav>
-    <h2 data-event-title>${event.showTitle(lang)}</h2>
-    <div class=u2-flex style="align-items:center">
-      <span data-event-access="${id}">${event.vs.access === null ? t`Inherited` : Number(event.vs.access) === 0 ? t`Private` : t`Explicit access`}</span>
-      ${write && access >= 3 ? html.async`<button class=u2-unstyle type=button data-event-visibility="${id}" data-inherit="${event.vs.access === null ? "false" : "true"}">${event.vs.access === null ? t`Make private` : t`Inherit category access`}</button>` : ""}
-      ${current ? html`<span data-event-category="${id}">${current.title}</span>` : ""}
-    </div>
-    ${panel.app.languages.all.length > 1 ? html.async`<form method=get action="${url.pathname}">
-      ${[...url.searchParams].filter(([key]) => key !== "content_lang").map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`)}
-      <label>${t`Content language`}<select name=content_lang>${panel.app.languages.all.map((value) => html`<option value="${value}" ${value === lang ? html`selected` : ""}>${value}</option>`)}</select></label>
-      <button type=submit>${t`Show`}</button>
-    </form>` : ""}
-    <p role=status></p>
-    <div class="${write ? "" : "u2-grid"}" style="--u2-Items-width:30rem">
-      <section class=u2-card data-event-content>
-        <h3 class=-head id="event-${id}-content">${t`Content`}</h3>
-        <form data-event-texts aria-labelledby="event-${id}-content">
-          <input type=hidden name=id value="${event.id}"><input type=hidden name=lang value="${lang}">
-          <fieldset class=u2-unstyle style="display:block" ${!write ? html`disabled` : ""}>
-            <legend hidden>${t`Content`}</legend>
-            <div class="u2-flex -Col">
-              <label for="event-${id}-title">${t`Title`}<input id="event-${id}-title" name=title value="${title}" required></label>
-              <label for="event-${id}-location">${t`Location`}<input id="event-${id}-location" name=location value="${await text("location")}"></label>
-              <label for="event-${id}-main">${t`Description`}</label>
-              <u2-rte name=main><textarea id="event-${id}-main" name=main rows=12 ${!write ? html`readonly` : ""}>${await text("main")}</textarea></u2-rte>
-              ${write ? html`<output data-save-state role=status></output>` : ""}
-            </div>
-          </fieldset>
-        </form>
-        ${write ? html.async`<form data-event-move>
-          <input type=hidden name=event value="${id}">
-          <label>${t`Category`}<select name=category required>${categories.filter((category) => category.write).map((category) => html`<option value="${category.node.id}" ${category.node.id === Number(event.vs.basis) ? html`selected` : ""}>${category.title}</option>`)}</select></label>
-          <output data-save-state role=status></output>
-        </form>` : ""}
-      </section>
-      ${write ? html`<div data-event-widget="${id}" data-widget-src="${event.modUrl}pub/widget.js"></div>` : html.async`<section class=u2-card>
-        <h3 class=-head>${t`Dates`}</h3>
-        ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, String(event.settings.time_zone() ?? "UTC")).map((date) => html`<li>${date}</li>`)}</ul>` : html.async`<p>${t`No date yet`}</p>`}
-      </section>`}
-    </div>
+  u2.assets(ctx, ["el/rte/rte.css", "el/fields/fields.css", "el/fields/fields.js"]);
+  return html.async`<div class="u2-flex cms-event-detail" style="align-items:flex-start" data-event-detail="${event.id}">
+    <section class=u2-card data-event-content style="flex:0 1 auto">
+      <div class=-head><a href="${back.href}">${t`Events`}</a> › <span data-event-title data-lang="${lang}">${event.showTitle(lang)}</span></div>
+      <div><a href="${event.url()}" target=_blank>${t`Open page`}</a></div>
+      ${langs.map((lang) => html`<form id="event-${id}-${lang}" data-event-texts hidden>
+        <input type=hidden name=id value="${id}"><input type=hidden name=lang value="${lang}">
+      </form>`)}
+      ${write ? html`<form id="event-${id}-category" data-event-move hidden><input type=hidden name=event value="${id}"></form>` : ""}
+      <div style="padding:0;overflow:auto" tabindex=0 role=region aria-label="${t`Content`}">
+        <table class=u2-table data-event-translations style="padding:0">
+          <thead><tr>
+            <th scope=col>${t`Content`}</th>
+            ${langs.map((lang) => html`<th scope=col lang="${ctx.lang}">${names.of(lang) || lang}</th>`)}
+          </tr></thead>
+          <tbody>
+            <tr>
+              <th scope=row>${t`Title`}</th>
+              ${langs.map(async (lang) => html.async`<td><input name=title lang="${lang}" form="event-${id}-${lang}" value="${await event.title(lang)}" size=28 required aria-label="${t`Title`}" ${!write ? html`disabled` : ""}></td>`)}
+            </tr>
+            <tr>
+              <th scope=row>${t`Location`}</th>
+              ${langs.map(async (lang) => html.async`<td><input name=location lang="${lang}" form="event-${id}-${lang}" value="${await text("location", lang)}" size=28 aria-label="${t`Location`}" ${!write ? html`disabled` : ""}></td>`)}
+            </tr>
+            <tr>
+              <th scope=row>${t`Description`}</th>
+              ${langs.map(async (lang) => html.async`<td><u2-rte name=main lang="${lang}"><textarea name=main form="event-${id}-${lang}" rows=6 cols=28 aria-label="${t`Description`}" ${!write ? html`readonly` : ""}>${await text("main", lang)}</textarea></u2-rte>${write ? html`<output data-save-state role=status form="event-${id}-${lang}"></output>` : ""}</td>`)}
+            </tr>
+            <tr>
+              <th scope=row><label for="event-${id}-category-select">${t`Category`}</label></th>
+              <td colspan="${langs.length}">${write ? html`<select id="event-${id}-category-select" name=category form="event-${id}-category" required>${categories.filter((category) => category.write).map((category) => html`<option value="${category.node.id}" ${category.node.id === Number(event.vs.basis) ? html`selected` : ""}>${category.title}</option>`)}</select><output data-save-state role=status form="event-${id}-category"></output>`
+                : categories.find((category) => category.node.id === Number(event.vs.basis))?.title || t`Unassigned`}</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </section>
+    ${renderAccess(event, write)}
+    ${write ? html`<div data-event-widget="${id}" data-widget-src="${event.modUrl}pub/widget.js"></div>` : html.async`<section class=u2-card style="flex:0 1 auto">
+      <div class=-head>${t`Dates`}</div>
+      ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, String(event.settings.time_zone() ?? "UTC")).map((date) => html`<li>${date}</li>`)}</ul>` : html.async`<p>${t`No date yet`}</p>`}
+    </section>`}
   </div>`;
 }

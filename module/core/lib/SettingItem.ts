@@ -21,7 +21,6 @@ class SettingItem extends Item<SettingItem> {
       if (id) this.data = await this.root.db.table("qg_setting").selectByID(id);
     }
 
-    // fetch children
     const id = this.data?.id ?? 0;
     const rows = await this.root.db.query`SELECT * FROM qg_setting WHERE basis = ${id} ORDER BY ${sql.id("offset")}`;
     for (const data of rows) {

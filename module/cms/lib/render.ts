@@ -12,7 +12,6 @@ export async function render(ctx: Ctx): Promise<void> {
   let page = await cm.nodeFromRequest();
 
   if (!page.exists()) {
-    // Search for redirect
     const redirect = await db.one`SELECT redirect FROM page_redirect WHERE request = ${ctx.req.appPath}`;
     if (redirect) {
       let url: string;
@@ -26,7 +25,6 @@ export async function render(ctx: Ctx): Promise<void> {
       ctx.res.status = 301;
       return;
     }
-    // Not found
     ctx.res.status = 404;
     page = await cm.nodeByPath(["system", "not-found"]) ?? await cm.node(0);
   }

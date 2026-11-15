@@ -87,7 +87,6 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // File upload
         const cmsPageFile = await ctx.req.files.cmsPageFile;
         if (cmsPageFile) {
-            // Fix EXIF orientation for JPEG (Deno doesn't have built-in exif support, stub for now)
             const cmspid = Number(ctx.req.query.cmspid ?? "0");
             const page = await cms(app).node(cmspid);
             if (isTrustedOrigin(ctx.req) && await page.access() > 1) {

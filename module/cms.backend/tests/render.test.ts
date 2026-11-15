@@ -1,6 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { test } from "node:test";
-import { assertEquals } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
+import { assertEquals, testContext } from "@qino/qino/tests";
+
+import { renderAccess } from "../lib/access.ts";
 
 import { renderRowWidgets } from "../lib/dashboard.ts";
 import { cms } from "../plugin.ts";
@@ -88,4 +91,16 @@ test("cms.backend: row widgets come from modules whose backend page the viewer m
   // the page's own module adds no card: the page shows the row in full
   const own = { ...node, vs: { module: "x.invoices" } };
   assertEquals(String(await renderRowWidgets(own as any, "usr", 7)), "");
+});
+
+test("cms.backend: access cards defer data and translation reads", async () => {
+  const ctx = await testContext({ url: "http://qino.test/cms2/", appUrl: "/cms2/" });
+  const node = {
+    id: 7, vs: { access: null },
+    get app() { throw new Error("No translation reads during rendering"); },
+    get db() { throw new Error("No database reads during rendering"); },
+    access() { throw new Error("Permissions are loaded after the response"); },
+  };
+  await requestStorage.run(ctx, () => renderAccess(node as any));
+  assertEquals(ctx.res.html.scripts.has(ctx.req.moduleUrl + "cms.backend/pub/access.js"), true);
 });

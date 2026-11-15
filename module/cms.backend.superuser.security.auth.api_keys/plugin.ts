@@ -13,7 +13,7 @@ const { name } = manifest;
 export const cms         = { node: { js: ["pub/main.js"], render, api, parts: { list } } };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.takeOver(app, "cms.backend.superuser.auth.api_keys", name); // the module this one replaces
+  await backend.takeOver(app, "cms.backend.superuser.auth.api_keys", name);
   await backend.install(app, name, { en: "API Keys", de: "API-Schlüssel" });
 }
 
