@@ -159,8 +159,7 @@ export async function breadcrumb(host: Node, nodeId: number): Promise<HtmlString
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
     const title = (await (await n.title()).string()).trim() || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
-    let url = "";
-    try { url = await n.url(); } catch { /* no url (e.g. detached) */ }
+    const url = await n.url().catch(() => ""); // no url (e.g. detached)
     crumbs.push(html`<a href="${url}">${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
   }
   if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);

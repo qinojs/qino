@@ -191,8 +191,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString | str
   for (const it of items) {
     const page = await cmsOf(app).node(it.pageId);
     const title = (await (await page.title()).string()).trim() || "#" + it.pageId;
-    let url = "";
-    try { url = await page.url(); } catch { /* no url */ }
+    const url = await page.url().catch(() => ""); // no url
     trs.push(html`<tr>
       <td>${it.name}
       <td style="white-space:nowrap">${u2.el.time(it.time)}
