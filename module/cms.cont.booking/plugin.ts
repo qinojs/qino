@@ -63,9 +63,9 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
         ${available.map((slot) => html`<option value="${JSON.stringify({ dateId: slot.dateId, start: slot.start })}">${stamp(slot.start)} – ${stamp(slot.end)}</option>`)}
       </select>
       <label for="${nameId}">${t`Name (required)`}</label>
-      <input id="${nameId}" name=name autocomplete=name maxlength=200 value="${vars.name ?? ""}" required>
+      <input id="${nameId}" name=name autocomplete=name maxlength=200 value="${vars.name}" required>
       <label for="${emailId}">${t`Email (required)`}</label>
-      <input id="${emailId}" type=email name=email autocomplete=email maxlength=254 value="${vars.email ?? ""}" required>
+      <input id="${emailId}" type=email name=email autocomplete=email maxlength=254 value="${vars.email}" required>
       <button type=submit name=book value=1>${t`Book appointment`}</button>
     </form>` : html.async`<p>${t`No appointments available in this period.`}</p>`}
     ${mine.length ? html.async`<section aria-label="${t`Bookings`}"><h3>${t`Bookings`}</h3><ul>${mine.map((row) => html.async`<li>

@@ -323,7 +323,7 @@ async function editor(node: Node, ctx: Ctx, row: Row, notice: unknown) {
       </div>
       <fieldset class=-actions>
         <legend>${t`Test`}</legend>
-        <input type=email name=address value="${me ?? ""}" placeholder="name@example.com" aria-label="${t`Address`}">
+        <input type=email name=address value="${me}" placeholder="name@example.com" aria-label="${t`Address`}">
         <button name=test>${t`Send test`}</button>
       </fieldset>
       <fieldset class=-actions>
