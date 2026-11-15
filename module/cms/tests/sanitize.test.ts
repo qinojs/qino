@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { assertEquals } from "@qino/qino/tests";
+import { assert, assertEquals } from "@qino/qino/tests";
 
 import { imageStyles, policy, policyCss, policyOf, sanitizeHtml } from "../lib/sanitize.ts";
 
@@ -55,4 +55,8 @@ test("policyOf resolves the site's own policy in the background", async () => {
   assertEquals(site.attributes, { "*": ["class"], a: ["href"] });
   assertEquals(site.protocols, { "*": { href: ["https"] } });
   assertEquals(sanitizeHtml('<p class="x" title="t">t</p><div>d</div>', site), '<p class="x">t</p>d');
+  // unchanged settings keep the object, so the sanitize cache keyed by it stays warm
+  policyOf(app as never);
+  await new Promise(resolve => setTimeout(resolve, 5));
+  assert(policyOf(app as never) === site);
 });

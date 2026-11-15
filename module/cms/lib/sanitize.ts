@@ -70,7 +70,9 @@ async function refresh(app: App) {
   if (list.length) use.elements = list;
   if (attributeGroups) use.attributes = attributeGroups as Policy["attributes"];
   if (protocolGroups) use.protocols = protocolGroups as Policy["protocols"];
-  resolved.set(app, { policy: use, at: performance.now() });
+  // an unchanged policy stays the same object: the sanitize cache is keyed by it
+  const known = resolved.get(app)?.policy;
+  resolved.set(app, { policy: known && JSON.stringify(known) === JSON.stringify(use) ? known : use, at: performance.now() });
 }
 
 /** Sanitize stored rich-HTML for output. Idempotent. */
