@@ -71,9 +71,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     initNodeChanged(app, signal);
 
-    app.on("render", async (e) => {
-        await render(e.ctx);
-    }, { signal });
+    app.on("render", (e) => render(e.ctx), { signal });
 
     app.on("route", async ({ ctx }) => {
         const settings = ctx.settings;

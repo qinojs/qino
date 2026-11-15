@@ -64,8 +64,7 @@ export async function render(ctx: Ctx): Promise<void> {
   if (langs.length > 1 && pageObj.vs.searchable)
     for (const l of langs) doc.link[ctx.req.url.origin + await speaker.url(l)] = { rel: "alternate", hreflang: l };
 
-  const content = await mainNode.html();
-  doc.content += content;
+  doc.content += await mainNode.html();
 
   await cm.fire("page:render-after", {ctx});
 

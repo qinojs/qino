@@ -263,10 +263,10 @@ export class CMS extends Emitter<CmsEvents> {
   async fileLang(node: Node, name: string, lang?: string): Promise<DbFile | undefined> {
     lang ||= getCtx().lang;
     // create all language entries — the lookup below returns early and would skip the rest
-    for (const l of node.cms.app.languages.all) await node.file(name + " " + l);
+    for (const l of this.app.languages.all) await node.file(name + " " + l);
     const file = await node.file(name + " " + lang);
     if (await file.exists()) return file;
-    for (const l of node.cms.app.languages.all) {
+    for (const l of this.app.languages.all) {
       const f = await node.file(name + " " + l);
       if (await f.exists()) return f;
     }

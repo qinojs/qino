@@ -157,7 +157,7 @@ export class Node {
     }
     async #accessUserLevel(user?: Usr | null) {
         if (!user?.$exists) return 0;
-        return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
+        return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}`) || 0;
     }
 
     /* Render */
@@ -211,9 +211,7 @@ export class Node {
             const mod = this.module;
             if (!mod) throw new Error(`Module "${this.vs.module}" is not imported`);
             let render = mod.plugin.cms?.node?.render;
-            if (!render) {
-                render = (await this.cms.fire("node:render-fallback", { node: this, render: null })).render ?? undefined;
-            }
+            render ??= (await this.cms.fire("node:render-fallback", { node: this, render: null })).render ?? undefined;
             if (!render) throw new Error(`No render function for module "${this.vs.module}"`);
             return render(this, {ctx:getCtx(), vars});
         });
@@ -468,8 +466,7 @@ export class Node {
         const dbFile = this.#filesAll!.get(name);
         if (!dbFile) return false;
         await this.db.table("page_file").delete({ page_id: String(this), name });
-        const used = await dbFile.used();
-        if (!used) await dbFile.remove();
+        if (!await dbFile.used()) await dbFile.remove();
         this.clearFileCache();
         return true;
     }
@@ -669,8 +666,7 @@ export class Node {
 
         page.#clearTreeCache();
 
-        const parent = await this.parent();
-        if (parent) parent.#clearTreeCache();
+        (await this.parent())?.#clearTreeCache();
         
         return page;
     }
@@ -697,7 +693,7 @@ export class Node {
 
         this.#clearTreeCache();
 
-        if (oldParent) oldParent.#clearTreeCache();
+        oldParent?.#clearTreeCache();
 
         await page.urlsGen();
         return true;
