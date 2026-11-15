@@ -13,10 +13,8 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
-  const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
-
-  if (id) return renderDetail(node, ctx, id);
-  return renderOverview(node, ctx);
+  const id = backend.id(ctx.req.url.toURL());
+  return id ? renderDetail(node, ctx, id) : renderOverview(node, ctx);
 }
 
 async function renderOverview(node: Node, ctx: Ctx) {

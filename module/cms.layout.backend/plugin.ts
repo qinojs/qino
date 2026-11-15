@@ -56,8 +56,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
   const page = await node.page();
 
   // Create default cont if none exists
-  const conts = await node.conts();
-  if (!conts.length) await node.cont("main");
+  if (!(await node.conts()).length) await node.cont("main");
 
   // Nav: get backend root page and its children
   const backendRoot = await node.cms.nodeByPath(["backend"]);

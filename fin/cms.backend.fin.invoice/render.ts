@@ -17,8 +17,8 @@ const PER_PAGE = 100;
 
 export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const url = ctx.req.url.toURL();
-  const id = Number(url.searchParams.get("id"));
-  return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
+  const id = backend.id(url);
+  return id ? detail(node, id) : overview(node, url);
 }
 
 /** The party's name, from the snapshot. */

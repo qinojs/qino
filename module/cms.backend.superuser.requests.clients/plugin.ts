@@ -92,7 +92,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  if (ctx.req.query.id) return renderDetail(node, Number(ctx.req.query.id));
+  const id = backend.id(ctx.req.url.toURL());
+  if (id) return renderDetail(node, id);
   const { t } = node.app;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:1 1 60rem">

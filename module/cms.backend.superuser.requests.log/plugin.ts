@@ -171,7 +171,8 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
-  if (ctx.req.query.id) return renderDetail(node, ctx, Number(ctx.req.query.id));
+  const id = backend.id(ctx.req.url.toURL());
+  if (id) return renderDetail(node, ctx, id);
   const { t } = node.app;
 
   const message = vars.do ? await runTool(node, String(vars.do), (vars.data ?? {}) as Record<string, unknown>) : "";

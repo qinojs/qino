@@ -13,8 +13,8 @@ const selected = (yes: boolean) => yes ? html.raw(" selected") : "";
 
 export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const url = ctx.req.url.toURL();
-  const id = Number(url.searchParams.get("id"));
-  if (Number.isSafeInteger(id) && id > 0) return detail(node, id);
+  const id = backend.id(url);
+  if (id) return detail(node, id);
   const plan = Number(url.searchParams.get("plan"));
   if (Number.isSafeInteger(plan) && plan > 0) return planDetail(node, plan);
   return overview(node, url);

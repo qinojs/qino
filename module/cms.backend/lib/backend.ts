@@ -25,9 +25,7 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       searchable: false,
       sort: 20,
     });
-    await page.changeGroup(1, 0);
-    await page.changeGroup(2, 0);
-    await page.changeGroup(3, 0);
+    for (const grp of [1, 2, 3]) await page.changeGroup(grp, 0);
     await (await page.cont('1')).set("module", "cms.backend");
     page.settings.childXML('<page visible=1></page>');
     node = await cm.nodeByModule("cms.backend");
@@ -47,8 +45,7 @@ export async function install(app: App, module: string, titles?: Record<string, 
     const mod = parentModule + "." + part;
     const existing = await cm.nodeByModule(mod);
     if (!existing) {
-      const parentNode = await cm.nodeByModule(parentModule);
-      const parent = parentNode ? await parentNode.page() : parentNode;
+      const parent = await (await cm.nodeByModule(parentModule))?.page();
       if (parent) {
         const cont = await (await parent.createChild({
           module: "cms.layout.backend",
@@ -61,8 +58,7 @@ export async function install(app: App, module: string, titles?: Record<string, 
     }
     parentModule = mod;
   }
-  const node = await cm.nodeByModule(module);
-  const p = await node?.page();
+  const p = await (await cm.nodeByModule(module))?.page();
   if (p && titles) for (const [lang, text] of Object.entries(titles)) await p.title(lang, text);
   return p;
 }
@@ -120,8 +116,7 @@ export async function uninstall(app: App, module: string): Promise<void> {
   const cm = cms(app);
   const page = await (await cm.nodeByModule(module))?.page();
   if (!page || (await page.children()).size) return;
-  const parent = await page.parent();
-  await parent?.removeChild(page);
+  await (await page.parent())?.removeChild(page);
 }
 
 /** A logged/reported URL as link — only http(s), since clients can send anything (e.g. `javascript:`). */

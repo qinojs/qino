@@ -7,12 +7,12 @@ import type { Node } from "@qino/qino/cms";
 /** Centered box with the page title, in the shared CMS look (ui.css). */
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
-  const resHtm = ctx.res.html;
+  const resHtml = ctx.res.html;
   u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css", "u2/auto.js"]);
 
-  resHtm.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
-  resHtm.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
-  resHtm.class.add("qgCMS");
+  resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
+  resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
+  resHtml.class.add("qgCMS");
 
   return html.async`
   <div id=container class=u2-card>
