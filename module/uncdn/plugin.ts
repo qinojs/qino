@@ -95,11 +95,12 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   // Served before routing — a cached asset is a static file and needs neither session nor database.
   app.on("request-start", async ({ request, base }) => {
-    if (!request.url.includes(base + PROXY_PREFIX)) return;
+    const prefix = base + PROXY_PREFIX;
+    if (!request.url.includes(prefix)) return;
     const url = new URL(request.url);
-    if (!url.pathname.startsWith(base + PROXY_PREFIX)) return; // this hook sees every request
+    if (!url.pathname.startsWith(prefix)) return; // this hook sees every request
     let rest: string;
-    try { rest = decodeURIComponent(url.pathname.slice(base.length + PROXY_PREFIX.length)); } catch { return; }
+    try { rest = decodeURIComponent(url.pathname.slice(prefix.length)); } catch { return; }
     if (!rest) return;
 
     const target = URL.parse("https://" + rest);
@@ -115,7 +116,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     await hit.body?.cancel();
 
     // The CSP declaration is the whole permission — what no page asked for is never fetched.
-    if (![...allowed].some(o => covers(o, target.href))) throw notFound("Not cached");
+    if (!allowed.values().some(o => covers(o, target.href))) throw notFound("Not cached");
 
     const pending = running.getOrInsertComputed(filePath, () =>
       fetchAndCache(app, target.href, filePath, cacheDir).finally(() => running.delete(filePath))

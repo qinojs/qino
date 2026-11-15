@@ -87,11 +87,12 @@ export async function page(ctx: Ctx, title: string, body: HtmlString, { status =
     identity.file(app, "logo").then((file) => file?.url({ h: 96 })).catch(() => undefined),
   ]);
   assets(ctx, ["css/norm/norm.css", "css/base/base.css", "css/classless/variables.css", "css/classless/classless.css"]);
-  ctx.res.html.inlineStyles.add(css + PAGE_CSS);
-  ctx.res.html.title = title;
-  ctx.res.html.meta.robots = "noindex, nofollow";
+  const doc = ctx.res.html;
+  doc.inlineStyles.add(css + PAGE_CSS);
+  doc.title = title;
+  doc.meta.robots = "noindex, nofollow";
   ctx.res.headers.set("Referrer-Policy", "no-referrer");
-  ctx.res.html.content = (await html.async`<main>${logo ? html`<img src="${logo}" alt="">` : ""}<h1>${title}</h1>${body}</main>`).html;
+  doc.content = (await html.async`<main>${logo ? html`<img src="${logo}" alt="">` : ""}<h1>${title}</h1>${body}</main>`).html;
   ctx.res.status = status;
   throw new Output();
 }

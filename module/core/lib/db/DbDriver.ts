@@ -375,7 +375,7 @@ class PostgresDriver extends DbDriver {
   async #syncAutoIncrements(schema: any) {
     for (const [table, tableSchema] of Object.entries(schema?.properties ?? {}) as [string, any][]) {
       const fields = tableSchema.additionalProperties?.properties ?? {};
-      const auto = Object.entries(fields).find(([, field]: any) => field["x-autoincrement"])?.[0];
+      const auto = Object.keys(fields).find((name) => fields[name]["x-autoincrement"]);
       if (!auto) continue;
       const max = Number((await this.query(`SELECT MAX(${this.quoteId(auto)}) AS max FROM ${this.quoteId(table)}`))[0]?.max ?? 0);
       if (max) await this.syncAutoIncrement(table, auto, max);

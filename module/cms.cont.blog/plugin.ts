@@ -65,17 +65,18 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
   const asked = Number(ctx.req.query.cms_blog_page);
   const pageNo = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
   const canonical = pageUrl(base, pageNo);
+  const doc = ctx.res.html;
   if (pageNo > 1) {
-    for (const [url, attrs] of Object.entries(ctx.res.html.link)) {
+    for (const [url, attrs] of Object.entries(doc.link)) {
       if (attrs.rel !== "alternate" || !attrs.hreflang) continue;
-      delete ctx.res.html.link[url];
-      ctx.res.html.link[pageUrl(url, pageNo)] = attrs;
+      delete doc.link[url];
+      doc.link[pageUrl(url, pageNo)] = attrs;
     }
   }
   const atom = feedUrl(node, base, "atom"), rss = feedUrl(node, base, "rss");
-  ctx.res.html.link[atom] = { rel: "alternate", type: "application/atom+xml", title };
-  ctx.res.html.link[rss] = { rel: "alternate", type: "application/rss+xml", title };
-  ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
+  doc.link[atom] = { rel: "alternate", type: "application/atom+xml", title };
+  doc.link[rss] = { rel: "alternate", type: "application/rss+xml", title };
+  doc.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
 
   const edit = await node.edit();
   const newTitle = String(vars.title ?? "").trim();
