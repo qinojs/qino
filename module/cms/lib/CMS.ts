@@ -97,12 +97,12 @@ export class CMS extends Emitter<CmsEvents> {
   async layoutPage(module: string): Promise<Node> {
     const system = await (await this.node(1)).child("system", { access: 0, visible: false, searchable: false });
     const layouts = await system.child("layout", { access: 1, visible: false });
-    let lPage = (await layouts.children({ module })).values().next().value;
-    if (!lPage) {
-      lPage = await layouts.createChild({ module, name: module, access: 1 });
-      await lPage.title(this.app.languages.def, module);
+    let page = (await layouts.children({ module })).values().next().value;
+    if (!page) {
+      page = await layouts.createChild({ module, name: module, access: 1 });
+      await page.title(this.app.languages.def, module);
     }
-    return lPage;
+    return page;
   }
 
   async nodeFromRequest(): Promise<Node> {
