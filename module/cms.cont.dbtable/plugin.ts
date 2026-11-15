@@ -312,13 +312,14 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
 /** A file for an image or file field (`?dbtable_upload=<node>&row=&field=&id=`, POST), and the list
  *  as CSV (`?dbtable_export=<node>&id=`), for nodes of the module `name`. */
 export async function route(app: App, ctx: Ctx, name = NAME) {
-  const upload = Number(ctx.req.query.dbtable_upload), exported = Number(ctx.req.query.dbtable_export);
+  const query = ctx.req.query;
+  const upload = Number(query.dbtable_upload), exported = Number(query.dbtable_export);
   const id = upload || exported;
   if (!id) return;
   const node = await cmsOf(app).node(id);
   if (node.module?.name !== name || !await node.isReadable()) return;
   if (exported) {
-    const q = await Query.of(node, { user: await state(ctx, node), id: ctx.req.query.id });
+    const q = await Query.of(node, { user: await state(ctx, node), id: query.id });
     if (!q?.settings.export) return;
     const fields = q.shown();
     const rows: unknown[][] = [await Promise.all(fields.map((f) => label(node, f)))];
@@ -330,19 +331,19 @@ export async function route(app: App, ctx: Ctx, name = NAME) {
 
   if (ctx.req.method !== "POST") return;
   if (!isTrustedOrigin(ctx.req) || !safeEqual(ctx.req.headers.get("x-csrf-token") ?? "", ctx.csrfToken)) throw new Output("csrf", { status: 403 });
-  const q = await Query.of(node, { id: ctx.req.query.id });
-  const f = q?.fields.get(String(ctx.req.query.field)), file = await ctx.req.files.file;
+  const q = await Query.of(node, { id: query.id });
+  const f = q?.fields.get(String(query.field)), file = await ctx.req.files.file;
   // only a row the list reaches
-  if (!q || !f?.own || !f.is("edit") || !["image", "file"].includes(f.type) || !file || !await q.row(node.db, ctx.req.query.row)) {
+  if (!q || !f?.own || !f.is("edit") || !["image", "file"].includes(f.type) || !file || !await q.row(node.db, query.row)) {
     throw new Output("not editable", { status: 403 });
   }
   const key = sql.id(q.primary!.name);
-  const old = Number(await node.db.one`SELECT ${sql.id(f.column.name)} FROM ${sql.id(q.table)} WHERE ${key} = ${ctx.req.query.row}`);
+  const old = Number(await node.db.one`SELECT ${sql.id(f.column.name)} FROM ${sql.id(q.table)} WHERE ${key} = ${query.row}`);
   // the file keeps its id: whoever points to it still finds it
   const stored = old && await (await app.dbFiles.file(old)).exists() ? await app.dbFiles.file(old) : await app.dbFiles.add();
   await stored.replaceFromUpload(file);
   await stored.access(1); // shown in the list to whoever sees it
-  await node.db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${Number(stored.id)} WHERE ${key} = ${ctx.req.query.row}`;
+  await node.db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${Number(stored.id)} WHERE ${key} = ${query.row}`;
   throw new Output("ok");
 }
 
