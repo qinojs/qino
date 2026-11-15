@@ -1,7 +1,6 @@
 {
   "All day": "Ganztägig",
   "Location": "Ort",
-  "Add block": "Block hinzufügen",
   "Delete block": "Block löschen",
   "Time zone": "Zeitzone",
   "Delete this block?": "Diesen Block löschen?",
@@ -15,18 +14,12 @@
   "City / locality": "Ortschaft",
   "Event blocks": "Veranstaltungsblöcke",
   "Actions": "Aktionen",
-  "No date yet": "Noch kein Termin",
   "Country code": "Ländercode",
   "Currency": "Währung",
   "Empty: unspecified. 0: free.": "Leer: keine Angabe. 0: kostenlos.",
   "Dates": "Termine",
   "Start": "Beginn",
   "End": "Ende",
-  "Add date": "Termin hinzufügen",
   "Advanced settings": "Erweiterte Einstellungen",
-  "Saving…": "Wird gespeichert…",
-  "Saved": "Gespeichert",
-  "Unsaved changes": "Ungespeicherte Änderungen",
-  "End must not precede start.": "Das Ende darf nicht vor dem Beginn liegen.",
-  "End must follow start.": "Das Ende muss nach dem Beginn liegen."
+  "Saved": "Gespeichert"
 }

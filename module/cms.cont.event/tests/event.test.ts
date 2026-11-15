@@ -28,21 +28,12 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       await event.text("location", "en", "<p>Hall &amp; garden</p>");
       event.settings.time_zone("Europe/Zurich");
       await app.db.flush();
-      await api(event, { details: {
-        address_street: " Main Street 1 ", address_postal_code: "01234", address_locality: "Town", address_country: "ch",
-        price: 12.5, currency: "chf", performer: "Teacher <script>alert(1)</script>", language: "de-CH",
-        external_link: "https://example.test/event?x=1&y=2", time_zone: "Pacific/Auckland",
-      } });
-      assertEquals(event.settings.time_zone(), "Europe/Zurich");
-      assertEquals(event.settings.address_country(), "CH");
-      assertEquals(event.settings.currency(), "CHF");
-      await assertRejects(() => api(event, { details: { external_link: "javascript:alert(1)" } }));
-      await assertRejects(() => api(event, { details: { external_link: "https://" } }));
-      await assertRejects(() => api(event, { details: { price: -1 } }));
-      await assertRejects(() => api(event, { details: { currency: "" } }));
-      await assertRejects(() => api(event, { details: { language: "invalid_tag!" } }));
-      await assertRejects(() => api(event, { details: { address_country: "CHE" } }));
-      assertEquals(event.settings.external_link(), "https://example.test/event?x=1&y=2");
+      Object.entries({
+        address_street: "Main Street 1", address_postal_code: "01234", address_locality: "Town", address_country: "CH",
+        price: "12.5", currency: "chf", performer: "Teacher <script>alert(1)</script>", language: "de-CH",
+        external_link: "https://example.test/event?x=1&y=2",
+      }).forEach(([key, value]) => event.settings[key](value));
+      await app.db.flush();
       await api(event, { save: { start: "2027-07-10T09:00:30", end: "2027-07-10T11:00:45" } });
       const saved = await api(event, { save: { start: "2027-07-12", end: "2027-07-13" } }) as { id: number };
       await api(hidden, { save: { start: "2027-07-12", end: "2027-07-13" } });
@@ -63,8 +54,7 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
     });
     await requestStorage.run(viewer, async () => {
       await assertRejects(() => api(event, { blocks: true }), AccessError);
-      await assertRejects(() => api(event, { details: { price: 0, currency: "EUR" } }), AccessError);
-      await assertRejects(() => api(hidden, { details: { performer: "Hidden" } }), AccessError);
+      await assertRejects(() => api(hidden, { blocks: true }), AccessError);
       await assertRejects(() => api(event, { save: { start: "2027-07-14", end: "2027-07-15" } }), AccessError);
       const blocks = await list(event);
       await assertRejects(() => api(event, { remove: blocks[0].id }), AccessError);
@@ -96,13 +86,14 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       assertStringIncludes(rendered, "14.–15. Juli 2027");
       await api(event, { remove: blocks[0].id });
       assertEquals((await list(event)).length, 1);
-      await api(event, { details: { price: 0 } });
+      event.settings.price(0);
       assertStringIncludes(String(await cms.node.render(event, { ctx: viewer })), "0,00");
-      await api(event, { details: { price: null, currency: "", external_link: "" } });
-      assertEquals(event.settings.price(), null);
-      const cleared = String(await cms.node.render(event, { ctx: viewer }));
-      assertEquals(cleared.includes("CHF"), false);
-      assertEquals(cleared.includes('href="https://example.test/event'), false);
+      // half-typed codes and unsafe links are left out instead of breaking the page
+      for (const [key, value] of [["currency", "C"], ["language", "invalid_tag!"], ["external_link", "javascript:alert(1)"]]) event.settings[key](value);
+      const partial = String(await cms.node.render(event, { ctx: viewer }));
+      assertEquals(partial.includes("0,00"), false);
+      assertEquals(partial.includes("javascript:"), false);
+      assertStringIncludes(partial, "Course description");
     });
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));

@@ -7,19 +7,25 @@ import { formatDates } from "./dates.ts";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+/** Settings are free text, and Intl throws on a code it cannot read. */
+function intl(format: () => string | undefined) {
+  try { return format(); } catch { return ""; }
+}
+
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t.in("cms.cont.event"), settings = node.settings;
   const blocks = await list(node);
   const location = await node.cms.text(node, "location", { if: true });
   const address = [settings.address_street(), [settings.address_postal_code(), settings.address_locality()].filter(Boolean).join(" "), settings.address_country()].filter(Boolean);
   const price = settings.price(), performer = settings.performer();
-  const currency = String(settings.currency() ?? ""), language = String(settings.language() ?? "");
+  const amount = price == null || price === "" ? "" : intl(() => new Intl.NumberFormat(ctx.lang, { style: "currency", currency: String(settings.currency()) }).format(Number(price)));
+  const language = intl(() => new Intl.DisplayNames(ctx.lang, { type: "language" }).of(String(settings.language() || "-")));
   const link = /^https?:\/\//i.test(settings.external_link() ?? "") ? settings.external_link() : "";
   const facts = [
     location || address.length ? html.async`<dt>${t`Location`}</dt><dd>${location}${address.length ? html`<div>${address.map((line) => html`<div>${line}</div>`)}</div>` : ""}</dd>` : "",
-    price != null && price !== "" && currency ? html.async`<dt>${t`Price`}</dt><dd>${new Intl.NumberFormat(ctx.lang, { style: "currency", currency }).format(Number(price))}</dd>` : "",
+    amount ? html.async`<dt>${t`Price`}</dt><dd>${amount}</dd>` : "",
     performer ? html.async`<dt>${t`Instructors / performers`}</dt><dd>${performer}</dd>` : "",
-    language ? html.async`<dt>${t`Event language`}</dt><dd>${new Intl.DisplayNames(ctx.lang, { type: "language" }).of(language)}</dd>` : "",
+    language ? html.async`<dt>${t`Event language`}</dt><dd>${language}</dd>` : "",
   ].filter(Boolean);
   return html.async`<article>
     ${node.cms.text(node, "title", { tag: "h2" })}
@@ -38,8 +44,8 @@ export const cms = { node: {
     address_postal_code: { type: "string", description: "Venue postal code." },
     address_locality: { type: "string", description: "Venue city or locality." },
     address_country: { type: "string", description: "Venue country, ISO 3166-1 alpha-2." },
-    price: { type: ["number", "null"], minimum: 0, description: "Displayed admission or course price; zero means free, unset means no price information." },
-    currency: { type: "string", description: "Price currency, ISO 4217. Required when a price is given." },
+    price: { type: ["number", "string", "null"], minimum: 0, description: "Displayed admission or course price; zero means free, unset means no price information." },
+    currency: { type: "string", description: "Price currency, ISO 4217. Without a valid one the price is not shown." },
     performer: { type: "string", description: "Names of instructors, speakers or performers; not linked to private user records." },
     language: { type: "string", description: "Event language as a BCP 47 language tag, independent of the page language." },
     external_link: { type: "string", description: "Optional HTTP(S) URL for the external event page or registration." },
