@@ -150,9 +150,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const exportUrl = ctx.req.url.toURL();
   exportUrl.search = "";
   exportUrl.searchParams.set("dbtable_export", String(node.id));
-  if (ctx.req.query.id) exportUrl.searchParams.set("id", ctx.req.query.id);
+  const id = ctx.req.query.id;
+  if (id) exportUrl.searchParams.set("id", id);
 
-  return html.async`<div class=u2-card data-id="${ctx.req.query.id}">
+  return html.async`<div class=u2-card data-id="${id}">
 	${node.cms.text(node, "title", { tag: "h2", class: "-head" })}
 	<div class=-tools>
 		${search}
