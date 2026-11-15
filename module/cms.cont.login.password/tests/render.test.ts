@@ -48,10 +48,10 @@ test("cms.cont.login.password: render shows login form for guests", async () => 
   const ctx = await makeCtx(false);
   const node = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden"), db: { one: () => Promise.resolve(9) } },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
     cms: {
       text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`),
-      node: () => ({ url: () => "/forgot" }),
+      nodeByModule: () => Promise.resolve({ url: () => "/forgot" }),
     },
     settings: settings({ saveLogin: true }),
     text: () => textObj("Login failed"),
@@ -90,8 +90,8 @@ test("cms.cont.login.password: render escapes fixed users", async () => {
   const guestCtx = await makeCtx(false);
   const guestNode = {
     edit: () => false,
-    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden"), db: { one: () => Promise.resolve(undefined) } },
-    cms: { text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`) },
+    app: { t: (_strings: TemplateStringsArray) => Promise.resolve("Anmelden") },
+    cms: { text: (_node: unknown, name: string) => Promise.resolve(`[${name}]`), nodeByModule: () => Promise.resolve(undefined) },
     settings: settings({ "fix user": `a"><script>alert(1)</script>` }),
     text: () => textObj(""),
   };

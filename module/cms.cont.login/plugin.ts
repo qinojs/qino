@@ -15,7 +15,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <div>${node.cont("logout", "cms.cont.logout")}</div>
   </div>`;
 
-  const reset = await node.cms.nodeByModule("cms.cont.password_reset");
+  // the password form links to the password reset itself
   return html.async`<div class=u2-card>
     <header>
       <h2>${t`Sign in`}</h2>
@@ -23,7 +23,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     </header>
     ${node.cont("known", "cms.cont.login.known")}
     ${node.cont("password", "cms.cont.login.password")}
-    ${reset ? html.async`<a href="${reset.url()}">${t`Forgot your password?`}</a>` : ""}
     <div class=-or>${t`or`}</div>
     ${node.cont("passkey", "cms.cont.login.webauthn")}
     <div class="-providers u2-flex">${node.cont("oauth", "cms.cont.login.oauth")}</div>

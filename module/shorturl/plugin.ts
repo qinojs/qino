@@ -25,7 +25,8 @@ export const shortener = { shorten };
 const PREFIX = PATH + "/";
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("route", ({ ctx }) => handleHit(ctx), { signal });
+  // every request passes here: the check stays synchronous, so a miss allocates nothing
+  app.on("route", ({ ctx }) => ctx.req.appPath.startsWith(PREFIX) ? handleHit(ctx) : undefined, { signal });
 }
 
 export const cron = {
@@ -38,9 +39,7 @@ export const cron = {
 
 /** `s/<code>` redirects; anything after the code is the caller's own marker. */
 async function handleHit(ctx: Ctx) {
-  const path = ctx.req.appPath;
-  if (!path.startsWith(PREFIX)) return; // every request passes here; nothing is allocated to say no
-  const [code, tag] = path.slice(PREFIX.length).split("/");
+  const [code, tag] = ctx.req.appPath.slice(PREFIX.length).split("/");
   // a code of the wrong length was cut or pasted, not guessed — the rest is somebody trying codes
   if (!await valid(ctx.app, code)) {
     const mangled = code.length !== LEN;

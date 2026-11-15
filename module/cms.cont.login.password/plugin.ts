@@ -30,9 +30,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
         return "";
       }
     }
+    return html.raw("");
   }
-
-  if (ctx.user && !edit) return html.raw("");
   const csrfToken = ctx.csrfToken;
 
   let errorHtml: HtmlString | string = "";
@@ -56,8 +55,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const fixUser = settings["fix user"]();
   const noAutofocus = settings["no autofocus"]();
   // the way out for who forgot it, where the site offers one
-  const resetId = await node.app.db.one`SELECT id FROM page WHERE module = 'cms.cont.password_reset'`;
-  const resetUrl = resetId ? await (await node.cms.node(Number(resetId))).url() : "";
+  const reset = await node.cms.nodeByModule("cms.cont.password_reset");
+  const resetUrl = reset ? await reset.url() : "";
 
   return html.async`<div>
 ${errorHtml}

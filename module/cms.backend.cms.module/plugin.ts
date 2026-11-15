@@ -55,11 +55,9 @@ async function renderOverview(node: Node, ctx: Ctx) {
   const app = node.app, t = app.t;
   const u = ctx.req.url.toURL();
 
-  const mods = new Map((await moduleStats(app)).map((r) => [String(r.name), r]));
-  const missing = new Map((await missingModules(app)).map((r) => [String(r.name), r]));
+  const [mods, missing] = (await Promise.all([moduleStats(app), missingModules(app)]))
+    .map((rows) => new Map(rows.map((r) => [String(r.name), r])));
   const lMissing = await t`missing`;
-
-    console.log(ctx.settings[name].filter.type());
 
   const selType = ctx.settings[name].filter.type() ?? "";
   const types = new Set<string>();

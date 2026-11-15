@@ -2,20 +2,17 @@ import { html } from "@qino/qino";
 import { cms_image } from "@qino/qino/cms.image";
 import * as u2 from "@qino/qino/u2";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const MAX_LENGTH = 100;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["el/masonry/masonry.css", "el/masonry/masonry.js", "attr/lightbox/lightbox.js", "class/width/width.css"]);
-  const images: HtmlString[] = [];
-  for (const file of (await node.files()).values()) {
-    if (!file.mime.startsWith("image/")) continue;
-    images.push(html`<a href="${await file.url()}" u2-lightbox="gallery-${node.id}">
+  const images = await Promise.all([...(await node.files()).values()].filter((file) => file.mime.startsWith("image/")).map(async (file) =>
+    html`<a href="${await file.url()}" u2-lightbox="gallery-${node.id}">
       ${await cms_image(file, {})}
-    </a>`);
-  }
+    </a>`));
   const width = node.settings["col-width"]<string>();
   const style = width && width.length <= MAX_LENGTH && !/[;{}]/.test(width) ? html` style="--u2-Items-width:${width}"` : "";
   return html`<div class=u2-width>
