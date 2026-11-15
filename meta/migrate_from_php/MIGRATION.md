@@ -562,7 +562,7 @@ Generisch dazugekommen:
 `cms.layout.system` (in PHP hiess das Layout `cms.layout.login`).
 
 Die Passwörter der PHP-Installation gelten weiter: qino ersetzt beim Prüfen PHPs `$2y$`-Präfix
-durch `$2b$` ([login.ts:80](../../module/core/lib/auth/login.ts#L80)), bcrypt ist ansonsten identisch.
+durch `$2b$` ([login.ts:141](../../module/core/lib/auth/login.ts#L141)), bcrypt ist ansonsten identisch.
 Getestet mit einem gesetzten Testpasswort auf `usr` 3 in der **Kopie-DB** — richtiges Passwort
 ergibt eine Session mit „Log out", falsches den Fehlertext.
 

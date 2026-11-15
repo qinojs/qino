@@ -54,8 +54,10 @@ test("standard.2 API: HTML/CSS tools; reading a missing file returns its startin
 
     for (const key of ["html", "css"]) {
       const content = key === "html" ? "<main>Custom</main>" : "";
+      const revision = f.ctx.app.assetRev;
       assertEquals(await f.call("PUT", key, { content }), "<div>rendered</div>");
       assertEquals(await f.call("GET", key), { content });
+      assertEquals(f.ctx.app.assetRev > revision, key === "css");
     }
   } finally {
     await fs.remove(dir, { recursive: true });

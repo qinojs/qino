@@ -5,12 +5,12 @@ import type { Db } from "../db/Db.ts";
 import type { Session } from "../SessionManager.ts";
 import type { Usr } from "../rows.ts";
 
-async function buildRoot(
-    load: () => Promise<string | null | undefined>,
+function buildRoot(
+    json: string | null | undefined,
     save: (json: string) => Promise<void>,
     schema?: any,
-): Promise<any> {
-    const root = bildJsonItem(await load(), save, {debounce:0});
+): any {
+    const root = bildJsonItem(json, save, {debounce:0});
     if (schema) {
         root.setSchema(schema);
         enableItemSchemaDefaults(root);
@@ -18,18 +18,18 @@ async function buildRoot(
     return root;
 }
 
-export function userSettingsItem(user: Usr, schema?: any): Promise<any> {
+export function userSettingsItem(user: Usr, schema?: any): any {
     return buildRoot(
-        async () => user.settings,
+        user.settings,
         async (json) => { await user.$set({ settings: json }); },
         schema,
     );
 }
 
 /* ugly — why not sess.settingsItem ?? usr.settingsItem directly, as a lazy item generator? */
-export function sessSettingsItem(sess: Session, schema?: any): Promise<any> {
+export function sessSettingsItem(sess: Session, schema?: any): any {
     return buildRoot(
-        async () => sess.settings,
+        sess.settings,
         async (json) => {
             sess.settings = json;
             await sess.db.table("sess").update(sess.id, { settings: json });

@@ -240,10 +240,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     app.on("respond", async ({ ctx }) => {
         //ctx.res.headers.set("Accept-CH", "DPR");
 
-        const enableRaw = String(await settings.csp.enable ?? "");
-        const enable = enableRaw === "report only" ? "report only" : (isOn(enableRaw) ? "enforce" : "");
+        const enable = String(await settings.csp.enable ?? "");
+        const reportOnly = enable === "report only";
 
-        if (enable) {
+        if (reportOnly || isOn(enable)) {
             // Hashes, not nonces: they follow from the body, so they stay valid in any cache (CDN,
             // service worker). Only hash what the server built itself. A hash disables 'unsafe-inline'
             // (and with it style="" and onclick), so directives allowing inline get no hashes.
@@ -257,8 +257,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
                 await hash("style-src", ctx.res.html.inlineStyles);
             }
 
-            const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
-            ctx.res.headers.set(headerName, ctx.res.csp.toHeader());
+            ctx.res.headers.set("Content-Security-Policy" + (reportOnly ? "-Report-Only" : ""), ctx.res.csp.toHeader());
         }
     }, { signal });
 }

@@ -16,6 +16,17 @@ function replaceFrom(db: Db, versTable: string, cols: Record<string, any>[], sou
   return db.exec`INSERT INTO ${sql.id(versTable)} ${source} ON CONFLICT (${sql.join(keys.map(sql.id))}) DO UPDATE SET ${sql.join(set)}`;
 }
 
+/** The shadow table's columns, as loaded with the table (no query), and a snapshot row's select
+ *  list in that order. */
+const columnsOf = (db: Db, versTable: string) => [...db.table(versTable).fields!.values()].map((f) => f.vs);
+const snapshot = (cols: Record<string, any>[], space: number, logId: string, deleted: boolean) => sql.join(cols.map((c) => {
+  const f = c.Field;
+  if (f === "_vers_space")   return sql`${space}`;
+  if (f === "_vers_log")     return sql`${logId}`;
+  if (f === "_vers_deleted") return sql.raw(deleted ? "1" : "0");
+  return sql.id(f);
+}));
+
 export function initHistory(app: App, signal: AbortSignal) {
 
   // ctx + shadow table + logId for a tracked write, or null to skip. logId is awaited only after
@@ -37,18 +48,10 @@ export function initHistory(app: App, signal: AbortSignal) {
     const t = await track(e);
     if (!t) return;
     const { ctx, tableName, versTable, logId } = t;
-    // Build field list from _vers_* table to ensure correct column order
-    const versCols = await ctx.app.db.columns(versTable);
-    const selects = versCols.map((c) => {
-      const f = c.Field;
-      if (f === "_vers_space")   return sql`${getVers(ctx).space}`;
-      if (f === "_vers_log")     return sql`${logId}`;
-      if (f === "_vers_deleted") return sql.raw("0");
-      return sql.id(f);
-    });
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
-    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`);
+    const versCols = columnsOf(ctx.app.db, versTable);
+    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, getVers(ctx).space, logId, false)} FROM ${sql.id(tableName)} WHERE ${where}`);
   };
   app.db.on("table:update-after", catchInsertUpdate, { signal });
   app.db.on("table:insert-after", catchInsertUpdate, { signal });
@@ -63,15 +66,8 @@ export function initHistory(app: App, signal: AbortSignal) {
     // The live row is gone: copy its latest snapshot with _vers_deleted set, so all NOT NULL
     // columns are filled.
     const space = getVers(ctx).space;
-    const versCols = await ctx.app.db.columns(versTable);
-    const selects = versCols.map((c) => {
-      const f = c.Field;
-      if (f === "_vers_space")   return sql`${space}`;
-      if (f === "_vers_log")     return sql`${logId}`;
-      if (f === "_vers_deleted") return sql.raw("1");
-      return sql.id(f);
-    });
-    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${sql.join(selects)} FROM (
+    const versCols = columnsOf(ctx.app.db, versTable);
+    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, space, logId, true)} FROM (
       SELECT * FROM ${sql.id(versTable)} WHERE ${where} AND _vers_space = ${space}
       ORDER BY _vers_log DESC LIMIT 1) AS src`);
   }, { signal });

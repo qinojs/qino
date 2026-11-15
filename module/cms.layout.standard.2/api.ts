@@ -32,7 +32,7 @@ const codeFile = (key: "html" | "css", label: string) => ({
       const file = codeFiles(node)[key];
       await fs.mkdir(file.replace(/[^/]+$/, ""));
       await fs.write(file, content);
-      ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1); // the css lives under pub/, so its url has to change
+      if (key === "css") ctx.app.assetRev = Math.max(unixTime(), ctx.app.assetRev + 1); // the css lives under pub/, so its url has to change
       return String(await node.html());
     },
   },

@@ -7,10 +7,9 @@ import type { Node } from "@qino/qino/cms";
 // Shared by the backend dashboard and the grouping pages (e.g. superuser).
 export async function renderDashboard(node: Node): Promise<HtmlString> {
   const page = await node.page();
-  const children = [...(await page.children()).values()];
   const widgets = [];
 
-  for (const child of children) {
+  for (const child of (await page.children()).values()) {
     if (!child.vs.visible || !(await child.access())) continue; // only visible pages the user may see
     const cont = (await child.conts())[0];
     const widget = cont?.module?.plugin.backendDashboardWidget;

@@ -37,13 +37,8 @@ async function render(node: Node) {
   const settings = node.app.settings["social.mastodon"];
   const url = String(await settings.url ?? "");
   const configured = Boolean(await settings.accessToken);
-  const applications = (() => {
-    try {
-      const base = new URL(url);
-      return base.protocol === "https:" ? new URL("/settings/applications", base).href : "https://mastodon.social/settings/applications";
-    }
-    catch { return "https://mastodon.social/settings/applications"; }
-  })();
+  const base = URL.parse(url);
+  const applications = base?.protocol === "https:" ? new URL("/settings/applications", base).href : "https://mastodon.social/settings/applications";
   return html.async`<div class=u2-card>
     <div class=-head>${t`Mastodon`}</div>
     <form class=-body method=post>
