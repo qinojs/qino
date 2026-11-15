@@ -71,6 +71,23 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   return list;
 }
 
+/** Backend pages that edit the node, for buttons in its panel: modules answer `backendEdit(node)` with
+  * a title and the parameters of their page ("Edit event in the backend", `{ event: 12 }`). */
+async function backendEdits(ctx: Ctx, pid: number) {
+  const tree = cms(ctx.app), node = await tree.node(pid);
+  if (await node.access() < 2) throw new AccessError();
+  type Edit = (node: unknown) => Promise<{ title: string; params: Record<string, unknown> } | undefined>;
+  const found = await Promise.all(ctx.app.modules.linked().filter((mod) => typeof mod.plugin.backendEdit === "function").map(async (mod) => {
+    const edit = await (mod.plugin.backendEdit as Edit)(node);
+    const page = edit && await (await tree.nodeByModule(mod.name))?.page();
+    if (!edit || !page || await page.access() < 1) return;
+    const url = new URL(await page.url(), ctx.req.url.href);
+    for (const [key, value] of Object.entries(edit.params)) url.searchParams.set(key, String(value));
+    return { title: edit.title, url: url.pathname + url.search };
+  }));
+  return found.filter(Boolean);
+}
+
 /* The two file roots of a node's module: the site's files and the module's own. */
 const ROOTS = ["data", "app"] as const;
 
@@ -191,6 +208,15 @@ export const api: ApiTree = {
           await fs.remove(inRoot(await moduleRoot(ctx, Number(pid), scope), path)).catch(() => {});
           return { ok: true };
         },
+      },
+    },
+  },
+  edits: {
+    ":pid": {
+      get: {
+        description: "Backend pages that edit a node: title and url each.",
+        access: Access.USER,
+        execute: ({ pid }: PidInput, ctx: Ctx) => backendEdits(ctx, Number(pid)),
       },
     },
   },

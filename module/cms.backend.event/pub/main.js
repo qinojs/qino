@@ -6,9 +6,14 @@ const t = translate.in("cms.backend.event");
 
 cms.initNode("backend.event", (el) => {
   const ref = api.cms.node(Number(cms.el.nid(el))), status = el.querySelector("[role=status]");
-  for (const target of el.querySelectorAll("[data-event-widget]")) target.replaceChildren(widget(target.dataset.widgetSrc, {
-    node: { id: Number(target.dataset.eventWidget) }, cards: true, onChange: () => {},
-  }));
+  // the dates go through this page's api: the node may be any content, its own api knows nothing of them
+  for (const target of el.querySelectorAll("[data-event-widget]")) {
+    const id = Number(target.dataset.eventWidget);
+    target.replaceChildren(widget(target.dataset.widgetSrc, {
+      node: { id }, cards: true, onChange: () => {}, details: "details" in target.dataset,
+      post: (input) => ref.api.post({ dates: { id, ...input } }),
+    }));
+  }
   if (el.querySelector("[data-event-texts]")) {
     import("@qino/u2/el/rte/rte.js");
     import("@qino/u2/js/rte/blocks.js");

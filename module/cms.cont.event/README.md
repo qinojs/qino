@@ -5,7 +5,7 @@ and location (`location`) use the existing multilingual, inline-editable CMS tex
 
 The settings panel manages one or more fixed `cms.event` blocks, each with its own start and
 exclusive end at whole-second precision. Blocks use dates for all-day events or local date-times
-in the node's IANA `time_zone` (taken from the editor's browser with the first block, UTC before).
+in the node's IANA `time_zone`, else the default of `cms.event` (`zoneOf(node)`).
 The editor shows the last included day for all-day ends: July 12–12 is stored with the exclusive
 end July 13. A row saves when both ends are valid; the empty last row adds a block. Ambiguous or
 nonexistent new local times are rejected; unchanged instants survive editing.

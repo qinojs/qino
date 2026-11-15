@@ -8,6 +8,11 @@ import type { Period, Range } from "@qino/qino/calendar";
 
 export { ahead, overview } from "./range.ts";
 
+/** The node's IANA time zone for its dates: its own setting, else the app's default. */
+export async function zoneOf(node: Node): Promise<string> {
+  return String(node.settings.time_zone() || await node.app.settings["cms.event"].time_zone || "UTC");
+}
+
 /** Add an event to a CMS node. All-day dates stay dates; timed boundaries are stored in UTC. */
 export function add(node: Node, range: Range) {
   return node.db.table("cms_event").insert({ node_id: node.id, ...encode(range) });

@@ -1,6 +1,6 @@
 import { html, sql } from "@qino/qino";
 import { answer, formatDates, PARAM } from "@qino/qino/cms.cont.event";
-import { ahead, overview } from "@qino/qino/cms.event";
+import { ahead, overview, zoneOf } from "@qino/qino/cms.event";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -32,7 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     if (!await event.isReadable()) continue;
     events.push(html.async`<li><article>
       <h3><a href="${event.url()}">${event.showTitle()}</a></h3>
-      <ul>${formatDates(blocks, ctx.lang, String(event.settings.time_zone() ?? "UTC")).map((date) => html`<li>${date}</li>`)}</ul>
+      <ul>${formatDates(blocks, ctx.lang, await zoneOf(event)).map((date) => html`<li>${date}</li>`)}</ul>
       ${event.settings.address_locality() ? html`<p>${event.settings.address_locality()}</p>` : ""}
       ${count > blocks.length ? html.async`<p><a href="${event.url()}">${t`All dates`} (${count})</a></p>` : ""}
     </article></li>`);

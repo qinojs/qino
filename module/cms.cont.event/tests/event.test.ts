@@ -37,7 +37,8 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       await api(event, { save: { start: "2027-07-10T09:00:30", end: "2027-07-10T11:00:45" } });
       const saved = await api(event, { save: { start: "2027-07-12", end: "2027-07-13" } }) as { id: number };
       await api(hidden, { save: { start: "2027-07-12", end: "2027-07-13" } });
-      const blocks = await api(event, { blocks: true }) as { id: number; start: string; localStart: string; allDay: boolean }[];
+      const { timeZone, blocks } = await api(event, { blocks: true }) as { timeZone: string; blocks: { id: number; start: string; localStart: string; allDay: boolean }[] };
+      assertEquals(timeZone, "Europe/Zurich");
       assertEquals(blocks.length, 2);
       assertEquals(blocks[0].start, "2027-07-10T07:00:30Z");
       assertEquals(blocks[0].localStart, "2027-07-10T09:00:30");
@@ -47,9 +48,13 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       await assertRejects(() => api(event, { save: { start: "2027-07-12", end: "2027-07-12T12:00Z" } }), RangeError);
       await assertRejects(() => api(other, { save: { id: saved.id, start: "2027-07-14", end: "2027-07-15" } }));
       await api(other, { remove: saved.id });
-      const first = await api(other, { save: { start: "2028-07-10T09:00", end: "2028-07-10T11:00", timeZone: "Europe/Zurich" } }) as { start: string };
-      assertEquals(first.start, "2028-07-10T07:00:00Z");
-      assertEquals(other.settings.time_zone(), "Europe/Zurich");
+      // without a zone of its own the node takes the default of cms.event; its own wins once set
+      assertEquals((await api(other, { save: { start: "2028-07-10T09:00", end: "2028-07-10T11:00" } }) as { start: string }).start, "2028-07-10T09:00:00Z");
+      await app.settings["cms.event"].time_zone("Europe/Zurich");
+      assertEquals((await api(other, { save: { start: "2028-07-10T09:00", end: "2028-07-10T11:00" } }) as { start: string }).start, "2028-07-10T07:00:00Z");
+      assertEquals(await api(other, { zone: "America/New_York" }), { timeZone: "America/New_York" });
+      assertEquals(await api(other, { zone: "" }), { timeZone: "Europe/Zurich" });
+      await assertRejects(() => api(other, { zone: "Mars/Olympus" }), RangeError);
       assertEquals((await list(event)).length, 2);
     });
     await requestStorage.run(viewer, async () => {

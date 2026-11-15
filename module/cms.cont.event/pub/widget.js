@@ -14,13 +14,14 @@ function shiftDate(value, days) {
   return date.toISOString().split("T")[0];
 }
 
-export default async function (widget, { node, signal, cards = false, onChange = () => cms.reloadNode(node.id) }) {
+/** The dates of a node; on an event also its details. `post` is the date API, by default the node's own. */
+export default async function (widget, {
+  node, signal, cards = false, details = true, onChange = () => cms.reloadNode(node.id),
+  post = (input) => api.cms.node(node.id).api.post(input, { signal }),
+}) {
   const ref = api.cms.node(node.id);
-  const [settings, blocks] = await Promise.all([
-    ref.settings.get({}, { signal }), ref.api.post({ blocks: true }, { signal }),
-  ]);
+  const [settings, { timeZone: zone, blocks }] = await Promise.all([details ? ref.settings.get({}, { signal }) : {}, post({ blocks: true })]);
   const prefix = `event-${node.id}`;
-  const zone = settings.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   // all-day ends show the last included day, a moment no end; the row without a block adds one
   const row = (item = {}) => {
     const type = item.allDay ? "date" : "datetime-local";
@@ -56,7 +57,7 @@ export default async function (widget, { node, signal, cards = false, onChange =
         </details>
       </div>
     </section>
-    <section class="${cards ? "u2-card" : ""}" style="flex:0 1 auto">
+    ${details ? html.async`<section class="${cards ? "u2-card" : ""}" style="flex:0 1 auto">
       <div class="${cards ? "-head" : ""}">${t`Event details`}</div>
       <u2-fields>
         ${field("address_street", t`Street address`)}
@@ -70,9 +71,9 @@ export default async function (widget, { node, signal, cards = false, onChange =
         ${field("external_link", t`External event page`, html`type=url`)}
       </u2-fields>
       <small id="${prefix}-price-hint">${t`Empty: unspecified. 0: free.`}</small>
-    </section>
+    </section>` : ""}
   </div>`;
-  bindSettings(widget, ref);
+  if (details) bindSettings(widget, ref);
 
   const status = widget.querySelector("[role=status]");
   let queue = Promise.resolve();
@@ -103,25 +104,25 @@ export default async function (widget, { node, signal, cards = false, onChange =
     // an unchanged wall time keeps its exact instant: during a clock change it occurs twice
     const same = (key) => item?.allDay === local.allDay && Date.parse(item[key]) === Date.parse(local[key]);
     const save = {
-      id: item?.id, timeZone: zone,
+      id: item?.id,
       start: same("localStart") ? item.start : local.localStart,
       end: same("localEnd") ? item.end : local.localEnd,
     };
     change(async () => {
-      const saved = await ref.api.post({ save }, { signal });
+      const saved = await post({ save });
       item ? Object.assign(item, local, saved) : await widget.reload();
     });
   });
   widget.on("click", "[data-remove]", async (button) => {
     if (!await confirm(await t`Delete this block?`)) return;
     change(async () => {
-      await ref.api.post({ remove: Number(button.closest("tr").dataset.block) }, { signal });
+      await post({ remove: Number(button.closest("tr").dataset.block) });
       await widget.reload();
     });
   });
   // local times are shown in the zone, so they are read again
   widget.on("change", "[name=timeZone]", (select) => change(async () => {
-    await ref.settings.time_zone.put({ value: select.value }, { signal });
+    await post({ zone: select.value });
     await widget.reload();
   }));
 }

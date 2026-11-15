@@ -86,3 +86,22 @@ test("cms.frontend: exposes stored app path unchanged", async () => {
 
   assertEquals(jsData.qino?.cms?.beUrl, "////frontend/page");
 });
+
+test("cms.frontend: backend pages that edit a node give the panel a link each", async () => {
+  const node = { id: 7, access: () => 2 };
+  const page = (access: number) => ({ page: async () => ({ access: () => access, url: () => "/de/backend/events?cmspid=9" }) });
+  const pages: Record<string, ReturnType<typeof page>> = { "cms.backend.event": page(1), "cms.backend.hidden": page(0) };
+  const edit = (title: string) => (n: { id: number }) => Promise.resolve({ title, params: { event: n.id } });
+  const app = { modules: { linked: () => [
+    { name: "cms.backend.event", plugin: { backendEdit: edit("Edit event in the backend") } },
+    { name: "cms.backend.hidden", plugin: { backendEdit: edit("Not allowed") } },
+    { name: "cms.backend.none", plugin: { backendEdit: () => Promise.resolve(undefined) } },
+    { name: "cms.text", plugin: {} },
+  ] } };
+  fakeCms(app, { node: () => node, nodeByModule: (name: string) => pages[name] });
+  const ctx = { app, user: { id: 1 }, userId: 1, req: { url: new URL("http://qino.test/de/x") } } as unknown as Ctx;
+  // the backend page keeps its own query and gets the module's parameters
+  assertEquals(await requestStorage.run(ctx, () => invoke(api, "GET", "/edits/7")), [
+    { title: "Edit event in the backend", url: "/de/backend/events?cmspid=9&event=7" },
+  ]);
+});

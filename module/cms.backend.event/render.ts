@@ -1,7 +1,7 @@
 import { AccessError, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { formatDates } from "@qino/qino/cms.cont.event";
-import { overview } from "@qino/qino/cms.event";
+import { overview, zoneOf } from "@qino/qino/cms.event";
 
 import detail from "./detail.ts";
 
@@ -9,6 +9,7 @@ import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const PER_PAGE = 50;
+const EVENT = "cms.cont.event", CATEGORY = "cms.cont.event.category";
 
 /** Editors see offline nodes as well. */
 const visible = async (node: Node) => await node.access() >= 2 || await node.isReadable();
@@ -38,13 +39,14 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
   const sort = ["date-desc", "newest"].includes(q("sort")) ? q("sort") : "date";
   const search = q("search"), category = Number(q("category")) || 0;
   const asked = Number(q("page")), page = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
-  const categories = await categoriesOf(node, await node.db.query`SELECT * FROM page WHERE module = ${"cms.cont.event.category"} ORDER BY id DESC LIMIT ${100}`);
+  const categories = await categoriesOf(node, await node.db.query`SELECT * FROM page WHERE module = ${CATEGORY} ORDER BY id DESC LIMIT ${100}`);
   if (Number.isSafeInteger(eventId) && eventId > 0) return detail(node, eventId, categories, ctx);
   const title = sqlSearch(search, ["tl.text"]).where;
   const order = sort === "newest" ? sql`p.id DESC`
     : sql`CASE WHEN p.event_start IS NULL THEN 1 ELSE 0 END, p.event_start ${sort === "date-desc" ? sql`DESC` : sql`ASC`}, p.id DESC`;
+  // events and any other dated node, both through their index rather than a scan of every page
   const query = sql`SELECT p.* FROM (SELECT p.* ${sort !== "newest" ? sql`, (SELECT MIN(e.${sql.id("start")}) FROM cms_event e WHERE e.node_id = p.id) AS event_start` : sql``}
-    FROM page p WHERE p.module = ${"cms.cont.event"}
+    FROM page p WHERE (p.module = ${EVENT} OR p.id IN (SELECT node_id FROM cms_event))
     ${search ? sql`AND EXISTS (SELECT 1 FROM text_lang tl WHERE tl.text_id = p.title_id AND ${title})` : sql``}
     ${category ? sql`AND p.basis = ${category}` : sql``}
     ) p ORDER BY ${order} LIMIT ${PER_PAGE + 1} OFFSET ${(page - 1) * PER_PAGE}`;
@@ -54,11 +56,11 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
     const item = await node.cms.node(Number(entry.row.id), entry.row);
     if (await visible(item)) items.push({ ...entry, node: item });
   }
-  // the picker lists a hundred categories; add the ones this page shows beyond those
+  // the picker lists a hundred categories; add what this page shows beyond those, the parents of
+  // other dated content (a shop category of courses) too
   const missing = [...new Set([category, ...items.map((item) => Number(item.node.vs.basis))])]
     .filter((id) => id && !categories.some((item) => item.node.id === id));
-  if (missing.length)
-    categories.push(...await categoriesOf(node, await node.db.query`SELECT * FROM page WHERE module = ${"cms.cont.event.category"} AND ${sql.in("id", missing)}`));
+  if (missing.length) categories.push(...await categoriesOf(node, await node.db.query`SELECT * FROM page WHERE ${sql.in("id", missing)}`));
   const link = (params: Record<string, unknown>) => backend.toUrl(self, {
     ...(search && { search }), ...(category && { category }), ...(sort !== "date" && { sort }), ...params,
   });
@@ -72,7 +74,7 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
           <th scope=col>${t`Actions`}
         <tbody>${items.map(async ({ node: item, period }) => html.async`<tr u2-href>
           <th scope=row><a href="${link({ event: item.id })}">${item.showTitle()}</a>${item.settings.address_locality() ? html`<br><small>${item.settings.address_locality()}</small>` : ""}</th>
-          <td>${period ? formatDates([period], ctx.lang, String(item.settings.time_zone() ?? "UTC")) : t`No date yet`}
+          <td>${period ? formatDates([period], ctx.lang, await zoneOf(item)) : t`No date yet`}
           <td>${categories.find((c) => c.node.id === Number(item.vs.basis))?.title || t`Unassigned`}
           <td>${item.vs.access === null ? t`Inherited` : Number(item.vs.access) === 0 ? t`Private` : t`Explicit access`}
           <td><a href="${item.url()}">${t`Open page`}</a>`)}
@@ -84,7 +86,7 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
       ${rows.length > PER_PAGE ? html.async`<a href="${link({ page: page + 1 })}">${t`Next`}</a>` : ""}
     </nav>`;
   if (listOnly) return list;
-  const targets = await node.access() >= 2 ? categories.filter((item) => item.write) : [];
+  const targets = await node.access() >= 2 ? categories.filter((item) => item.write && item.node.vs.module === CATEGORY) : [];
   return html.async`<div class="u2-card cms-events" style="flex:0 1 auto">
     <div class=-head>${t`Events`}</div>
     <form data-event-filter method=get action="${self}">${backend.toFields(self)}

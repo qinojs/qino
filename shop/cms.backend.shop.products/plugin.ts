@@ -227,6 +227,12 @@ async function create(app: App, category: number, title: string) {
   return { ok: true, product: child.id };
 }
 
+/** A product is edited here. */
+export async function backendEdit(node: Node) {
+  if (!await node.db.one`SELECT id FROM shop_product WHERE id = ${node.id}`) return;
+  return { title: await shopT(node.app)`Edit product in the backend`, params: { product: node.id } };
+}
+
 /** Node access is the permission: whoever may open this page may change a product. */
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;

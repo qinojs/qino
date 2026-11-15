@@ -10,8 +10,8 @@ event modules; it runs in its `install()`, as long as no `event2` date has a blo
   moment). The placeholder PHP made for an event without a date ("now", to the second) is left out.
 - `cms.cont.event2.default` → `cms.cont.event`, `.category3` → `cms.cont.event.category`,
   `cms.backend.event2` → `cms.backend.event` (the new backend page stands). Address, price,
-  currency, language, external link and the performers' names become the event's settings, its
-  time zone `Europe/Paris`.
+  currency, language, external link and the performers' names become the event's settings.
+  The default zone of `cms.event` becomes `Europe/Paris`: every node's dates are shown in it.
 
 The legacy tables stay. What `cms.event` does not hold lives on only there: participants,
 capacity, deadline, tags, translation language, performers as users, per-date names and prices.

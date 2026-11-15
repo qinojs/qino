@@ -5,7 +5,8 @@ no dependency on a particular source. Link `cms.event` to include node events, o
 module's `calendar.query(ctx, period)` export.
 
 The browser requests the visible period in its IANA time zone, refreshes on navigation and links
-entries to their source page. Empty results and failed requests are shown separately. The page
+entries to their source page. An empty period is just an empty calendar; failed requests are
+reported. The page
 does not create sample events or change source data.
 
 A compact Sources button opens the U2 form dialog. Source visibility is stored in the current

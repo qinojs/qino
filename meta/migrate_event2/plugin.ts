@@ -44,6 +44,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   if (await db.one`SELECT e.id FROM cms_event e JOIN event2_dates d ON d.page_id = e.node_id LIMIT 1`) return;
   await db.transaction(async () => {
     const report: string[] = [], zone = ZONE;
+    await app.settings["cms.event"].time_zone(zone); // the dates of every node, without a zone of its own
 
     // pages first: the details are settings of the new module
     const waiting: string[] = [];
@@ -70,7 +71,6 @@ export async function install({ app }: { app: App }): Promise<void> {
         const people = await db.query`SELECT u.* FROM event2_performer p JOIN usr u ON u.id = p.usr_id WHERE p.event_id = ${id} ORDER BY p.sort`;
         const link = String(event.external_link ?? "").trim();
         await node.settings[$item].set({
-          time_zone: zone,
           address_street: event.address_street ?? "", address_postal_code: event.address_postal_code ?? "",
           address_locality: event.address_locality ?? "", address_country: String(event.address_country ?? "").toUpperCase(),
           price: event.price == null || event.price === "" ? null : Number(event.price), currency: event.currency ?? "",

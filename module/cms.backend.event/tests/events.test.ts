@@ -7,7 +7,7 @@ import { assertEquals, assertRejects, assertStringIncludes, testContext } from "
 
 import api from "../nodeApi.ts";
 import render from "../render.ts";
-import { install } from "../plugin.ts";
+import { backendEdit, install } from "../plugin.ts";
 
 test("event management uses CMS categories, checks both permission levels and paginates", async () => {
   const dir = await fs.tempDir() + "/", app = new App({ db: "sqlite::memory:", dir });
@@ -70,7 +70,7 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertEquals((await event.showText("main", "en")).plain(), "Learn pottery");
       await assertRejects(() => api(panel, { texts: { id: event.id, lang: "invalid", title: "Wrong", location: "", main: "" } }));
       await event.set("online_end", 1);
-      assertEquals((await app.modules.get("cms.cont.event")!.plugin.cms.node.api(event, { blocks: true })).length, 1);
+      assertEquals((await app.modules.get("cms.cont.event")!.plugin.cms.node.api(event, { blocks: true })).blocks.length, 1);
       await event.set("online_end", 0);
     });
     await requestStorage.run(await context(), async () => {
@@ -117,6 +117,23 @@ test("event management uses CMS categories, checks both permission levels and pa
     });
     await requestStorage.run(await context(), async () => {
       assertEquals(await entries(await context(), period), []);
+    });
+    // any content with dates is an event to the backend: a course sold as a product, say
+    await requestStorage.run(admin, async () => {
+      const course = await page.cont("main", "cms.cont.text");
+      await course.title("en", "Course as content");
+      assertEquals(await backendEdit(course), undefined);
+      assertEquals((await api(panel, { dates: { id: course.id, save: { start: "2027-07-20", end: "2027-07-21" } } }) as { id: number }).id > 0, true);
+      assertEquals((await backendEdit(course))?.params, { event: course.id });
+      assertEquals((await backendEdit(event))?.params, { event: event.id });
+      assertStringIncludes(String(await render(panel, { ctx: admin })), "Course as content");
+      const ctx = await context(await app.db.one`SELECT id FROM usr WHERE username = ${"event-admin"}`.then(Number), `http://qino.test/?event=${course.id}`);
+      const detail = String(await render(panel, { ctx }));
+      assertStringIncludes(detail, `data-event-widget="${course.id}" data-widget-src="${app.modules.get("cms.cont.event")!.modUrl}pub/widget.js"`);
+      assertEquals(detail.includes("data-details"), false);
+      assertEquals(detail.includes("name=location"), false);
+      await api(panel, { texts: { id: course.id, lang: "en", title: "Course renamed", main: "<p>About</p>" } });
+      assertEquals(await course.title("en"), "Course renamed");
     });
     await requestStorage.run(admin, async () => {
       const second = await category.parent();

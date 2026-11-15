@@ -32,10 +32,11 @@ function announce(head, { head: title, badge }) {
 
 export default async function (widget, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
-  const [vs, modules, widgets] = await Promise.all([
+  const [vs, modules, widgets, edits] = await Promise.all([
     ref.get({}, { signal }),
     moduleList(),
     api['cms.frontend'].widgets(node.id).get({}, { signal }),
+    api['cms.frontend'].edits(node.id).get({}, { signal }), // backend pages that edit it
   ]);
   const parent = vs.basis ? await api.cms.node(vs.basis).get({}, { signal }).catch(() => null) : null;
   const isPage = vs.type === 'p';
@@ -73,6 +74,7 @@ export default async function (widget, { node, dialogs, signal }) {
             ? html` ${shortName(parent.module)} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-.125rem">✎</span>`
             : ''}</a></div>`
       : ''}
+    ${edits.map((e) => html`<div><a href="${e.url}" style="font-weight:bold">${e.title} ✎</a></div>`)}
   </div>`;
 
   // Every accordion below is a widget module named by the list.

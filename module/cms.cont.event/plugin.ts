@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { instant, isDate } from "@qino/qino/calendar";
 import { cmsCtx } from "@qino/qino/cms";
-import { list } from "@qino/qino/cms.event";
+import { list, zoneOf } from "@qino/qino/cms.event";
 import { jsonLd } from "@qino/qino/seo";
 
 import api from "./nodeApi.ts";
@@ -36,7 +36,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ].filter(Boolean);
   return html.async`<article>
     ${node.cms.text(node, "title", { tag: "h2" })}
-    ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, settings.time_zone() ?? "UTC").map((date) => html`<li>${date}</li>`)}</ul>` : ""}
+    ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, await zoneOf(node)).map((date) => html`<li>${date}</li>`)}</ul>` : ""}
     ${facts.length ? html.async`<dl>${facts}</dl>` : ""}
     ${node.cms.text(node, "main")}
     ${blocks.length ? html.async`<p><a href="?${PARAM}=${node.id}" rel=nofollow download>${t`Add to calendar`}</a></p>` : ""}
@@ -46,7 +46,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
 /** schema.org Event, one per date: what search engines show as event results. */
 async function structured(node: Node, ctx: Ctx, blocks: Range[]) {
-  const s = node.settings, zone = String(s.time_zone() ?? "UTC"), venue = await place(node);
+  const s = node.settings, zone = await zoneOf(node), venue = await place(node);
   const url = new URL(await node.url(), ctx.req.url.href).href, name = (await node.showTitle()).plain();
   const description = (await node.showText("main")).plain().slice(0, 500);
   // dates stay dates; times keep the offset of the event's zone
@@ -70,7 +70,7 @@ async function structured(node: Node, ctx: Ctx, blocks: Range[]) {
 export const cms = { node: {
   render, api, widget: "pub/widget.js",
   settingsSchema: { properties: {
-    time_zone: { type: "string", description: "IANA time zone for event display and local time input; initially taken from the editor’s browser." },
+    time_zone: { type: "string", description: "IANA time zone for event display and local time input; unset: the default of cms.event." },
     address_street: { type: "string", description: "Venue street address." },
     address_postal_code: { type: "string", description: "Venue postal code." },
     address_locality: { type: "string", description: "Venue city or locality." },

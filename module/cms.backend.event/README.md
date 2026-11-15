@@ -10,6 +10,12 @@ the shared `cms.backend.renderAccess(node, write)` card, also used for products.
 Categories are managed in the CMS page structure. Each category is a
 `cms.cont.event.category` node, so titles, URLs, hierarchy and permissions remain CMS features.
 
+Every node with dates is listed and edited here, not only `cms.cont.event`: a course sold as a
+shop product, a page with a date. Such a node gets title, description and its dates; location,
+event details and the category picker belong to events. The dates go through this page's API
+(`dates`), as the node's own API knows nothing of them. `backendEdit(node)` gives the editing
+panel of every such node an „Event im Backend bearbeiten“ link.
+
 New events start private. The access card can inherit the category or grant public, group and user access explicitly. Moving an event also changes its parent and inherited access.
 Backend write access and write access to every affected content node are both required.
 Publication times require edit access; changing public or group access requires CMS admin access.

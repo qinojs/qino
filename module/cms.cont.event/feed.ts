@@ -1,6 +1,6 @@
 import { header, Output } from "@qino/qino";
 import { ics, instant } from "@qino/qino/calendar";
-import { list } from "@qino/qino/cms.event";
+import { list, zoneOf } from "@qino/qino/cms.event";
 
 import type { Ctx } from "@qino/qino";
 import type { Entry } from "@qino/qino/calendar";
@@ -27,7 +27,7 @@ export async function entries(node: Node, ctx: Ctx): Promise<(Entry & { location
 /** Answers the iCalendar request for this node, if it is one; upcoming only, unless it is a single event. */
 export async function answer(ctx: Ctx, node: Node, events: () => Promise<Node[]>) {
   if (Number(ctx.req.query[PARAM]) !== node.id) return;
-  const now = Temporal.Now.instant(), zone = String(node.settings.time_zone() ?? "UTC");
+  const now = Temporal.Now.instant(), zone = await zoneOf(node);
   const nodes = await events();
   const items = (await Promise.all(nodes.map((n) => entries(n, ctx)))).flat()
     .filter((entry) => nodes.length === 1 || Temporal.Instant.compare(instant(entry.end, zone), now) >= 0);

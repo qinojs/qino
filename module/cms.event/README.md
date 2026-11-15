@@ -19,6 +19,9 @@ second precision are rejected rather than rounded. IDs use BIGINT as well.
 calendar days use UTC-midnight numeric storage coordinates and are decoded back to dates;
 their actual bounds in a viewer's time zone still follow calendar-day semantics, including DST.
 
+`zoneOf(node)` is the IANA time zone a node's dates are entered and shown in: its own `time_zone`
+setting, else the module's (`app.settings["cms.event"].time_zone`, `UTC` until a site sets one).
+
 `list(node)` reads the node's blocks, `query(node, period)` only the overlapping ones, with their
 `eventId`. A block may end where it starts: a moment, for an event whose end is not given (as a
 VEVENT without DTEND in RFC 5545). Reads and writes (`add`, `update(node, id, range)`,

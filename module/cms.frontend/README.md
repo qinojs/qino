@@ -57,6 +57,12 @@ Der Kontext ist, was der Mount uebergibt, plus `signal`. Ueblich sind `node` und
 `widgets/:pid` liefert die Liste, `files/:pid` die Moduldateien des Nodes samt Anlegen und Loeschen,
 `feedback` das Panel-Feedback.
 
+`edits/:pid` liefert die Backend-Seiten, die den Node bearbeiten; das Panel zeigt sie als Links
+unter „Übergeordnet“ („Event im Backend bearbeiten“). Ein Modul mit eigener Backend-Seite meldet
+sich mit `export async function backendEdit(node)` im plugin.ts: `{ title, params }` für Nodes,
+die es bearbeitet, sonst `undefined`. Die Parameter kommen an die URL seiner Seite; wer die Seite
+nicht lesen darf, sieht den Link nicht. Läuft nur beim Öffnen des Panels, nie im Request.
+
 ## Mounts
 
 Die vier Sidebars stehen in `SIDEBAR_WIDGETS` ([pub/panel/panel.js](pub/panel/panel.js)). Die

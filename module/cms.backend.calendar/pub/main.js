@@ -47,8 +47,6 @@ cms.initNode("backend.calendar", (el) => {
         if (icon) (entry.querySelector("a") ?? entry).prepend(icon, document.createTextNode(" "));
         calendar.append(entry);
       }
-      const message = items.length ? "" : await t`No entries in this period.`;
-      if (current === version) status.textContent = message;
     } catch (error) {
       if (current === version && el.isConnected) {
         period = "";
