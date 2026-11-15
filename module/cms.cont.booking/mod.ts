@@ -25,7 +25,7 @@ export async function slots(node: Node, period: Period) {
   if (from.until(until).total("hours") > 366 * 24) throw new ApiError(400, "Booking query exceeds one year");
   const range = { start: from.toString({ fractionalSecondDigits: 9 }), end: until.toString({ fractionalSecondDigits: 9 }), timeZone: period.timeZone };
   const offers = await query(node, range);
-  const result = new Map<string, { eventId: number; start: Temporal.Instant; end: Temporal.Instant }>();
+  const result = new Map<string, { dateId: number; start: Temporal.Instant; end: Temporal.Instant }>();
   let count = 0;
   for (const offer of offers) {
     if (isDate(offer.start)) continue;
@@ -41,7 +41,7 @@ export async function slots(node: Node, period: Period) {
       const last = duration ? start.add({ minutes: duration }) : end;
       if (Temporal.Instant.compare(last, end) > 0 || Temporal.Instant.compare(start, until) >= 0) break;
       if (Temporal.Instant.compare(start, from) >= 0)
-        result.set(`${start.epochNanoseconds}/${last.epochNanoseconds}`, { eventId: offer.eventId, start, end: last });
+        result.set(`${start.epochNanoseconds}/${last.epochNanoseconds}`, { dateId: offer.dateId, start, end: last });
       if (!duration) break;
       start = last;
     }
@@ -60,10 +60,10 @@ export async function slots(node: Node, period: Period) {
   return candidates.filter((slot) => {
     while (cursor < booked.length && Temporal.Instant.compare(booked[cursor].end, slot.start) <= 0) cursor++;
     return cursor === booked.length || Temporal.Instant.compare(booked[cursor].start, slot.end) >= 0;
-  }).map((slot) => ({ eventId: slot.eventId, start: slot.start.toString({ fractionalSecondDigits: 9 }), end: slot.end.toString({ fractionalSecondDigits: 9 }) }));
+  }).map((slot) => ({ dateId: slot.dateId, start: slot.start.toString({ fractionalSecondDigits: 9 }), end: slot.end.toString({ fractionalSecondDigits: 9 }) }));
 }
 
-export async function book(node: Node, input: { eventId: number; start: string; name: string; email: string; timeZone: string }) {
+export async function book(node: Node, input: { dateId: number; start: string; name: string; email: string; timeZone: string }) {
   await readable(node);
   const name = typeof input.name === "string" ? input.name.trim() : "";
   let email = "";
@@ -75,12 +75,12 @@ export async function book(node: Node, input: { eventId: number; start: string; 
     // A database row lock serializes overlapping offers and requests across processes as well.
     await lock(node);
     const available = await slots(node, { start: first.toString(), end: first.add({ nanoseconds: 1 }).toString(), timeZone: input.timeZone });
-    const slot = available.find((item) => item.eventId === Number(input.eventId) && Temporal.Instant.from(item.start).equals(first));
+    const slot = available.find((item) => item.dateId === Number(input.dateId) && Temporal.Instant.from(item.start).equals(first));
     if (!slot) throw new ApiError(409, "This appointment is no longer available");
     // slots() checks the complete appointment while the calendar lock is held.
     const token = crypto.randomUUID();
     const id = await node.db.table("cms_booking").insert({
-      node_id: node.id, event_id: slot.eventId, start: slot.start, end: slot.end,
+      node_id: node.id, date_id: slot.dateId, start: slot.start, end: slot.end,
       name, email, usr_id: ctx.userId || null, token, created: unixTime(), cancelled: false,
     });
     return { id: Number(id), token, start: slot.start, end: slot.end };

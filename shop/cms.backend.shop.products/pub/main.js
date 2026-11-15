@@ -6,8 +6,8 @@ document.addEventListener("submit", async (e) => {
   if (!form) return;
   e.preventDefault();
   const res = await api.cms.node(Number(cms.el.nid(form))).api.post({ create: Object.fromEntries(new FormData(form)) });
-  if (!res?.product) return;
+  if (!res?.id) return;
   const url = new URL(location);
-  url.searchParams.set("product", res.product);
+  url.searchParams.set("id", res.id);
   location.href = url;
 });

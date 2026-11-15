@@ -6,12 +6,11 @@ const t = translate.in("cms.backend.event");
 
 cms.initNode("backend.event", (el) => {
   const ref = api.cms.node(Number(cms.el.nid(el))), status = el.querySelector("[role=status]");
-  // the dates go through this page's api: the node may be any content, its own api knows nothing of them
+  // through this page's api: the event may be shown by any module, whose own api knows nothing of it
   for (const target of el.querySelectorAll("[data-event-widget]")) {
     const id = Number(target.dataset.eventWidget);
     target.replaceChildren(widget(target.dataset.widgetSrc, {
-      node: { id }, cards: true, onChange: () => {}, details: "details" in target.dataset,
-      post: (input) => ref.api.post({ dates: { id, ...input } }),
+      node: { id }, cards: true, onChange: () => {}, post: (input) => ref.api.post({ event: { id, ...input } }),
     }));
   }
   if (el.querySelector("[data-event-texts]")) {
@@ -62,7 +61,7 @@ cms.initNode("backend.event", (el) => {
           if (title.dataset.lang === input.texts.lang) title.textContent = input.texts.title;
         } else if (input.create) {
           const url = new URL(location.href);
-          url.searchParams.set("event", result.id);
+          url.searchParams.set("id", result.id);
           location.href = url.href;
         }
         if (snapshot) states.set(control, snapshot);

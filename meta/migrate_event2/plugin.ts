@@ -1,9 +1,8 @@
-// event2 → cms.event, once: the dates of the PHP events as blocks of their nodes, the details as
-// settings of the event content. The legacy tables stay as they are; what the event system does
+// event2 → cms.event, once: each event2 row is a cms_event row (the node is an event), its dates
+// those of cms_event_date. The legacy tables stay as they are; what the event system does
 // not hold yet lives on only there (README.md).
-import { $item } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { add } from "@qino/qino/cms.event";
+import { add, set } from "@qino/qino/cms.event";
 
 import type { App, Row } from "@qino/qino";
 
@@ -38,17 +37,33 @@ export function range(date: Row, zone: string) {
   return { start: start.toZonedDateTime(zone).toInstant().toString(), end: end.toZonedDateTime(zone).toInstant().toString() };
 }
 
+/** What PHP kept that a standard does not take is left out: the event stays, without that detail. */
+function details(event: Row, people: Row[]) {
+  const text = (v: unknown) => String(v ?? "").trim();
+  const language = text(event.lang);
+  const valid = (test: () => unknown) => { try { return !!test(); } catch { return false; } };
+  return {
+    address_street: text(event.address_street), address_postal_code: text(event.address_postal_code),
+    address_locality: text(event.address_locality),
+    address_country: /^[a-z]{2}$/i.test(text(event.address_country)) ? text(event.address_country) : "",
+    price: event.price == null || event.price === "" ? null : Number(event.price),
+    currency: /^[a-z]{3}$/i.test(text(event.currency)) ? text(event.currency) : "",
+    performer: people.map((u) => [u.title, u.given_name ?? u.firstname, u.middlename, u.family_name ?? u.lastname].filter(Boolean).join(" ")).join(", "),
+    language: language && valid(() => new Intl.Locale(language)) ? language : "",
+    external_link: /^https?:\/\/./i.test(text(event.external_link)) && URL.canParse(text(event.external_link)) ? text(event.external_link) : "",
+  };
+}
+
 export async function install({ app }: { app: App }): Promise<void> {
   const db = app.db, tree = cms(app);
   if (!(await db.columns("event2_dates").catch(() => [])).length) return; // no event2 here
-  if (await db.one`SELECT e.id FROM cms_event e JOIN event2_dates d ON d.page_id = e.node_id LIMIT 1`) return;
+  if (await db.one`SELECT d.id FROM cms_event_date d JOIN event2 e ON e.id = d.event_id LIMIT 1`) return;
   await db.transaction(async () => {
     const report: string[] = [], zone = ZONE;
-    await app.settings["cms.event"].time_zone(zone); // the dates of every node, without a zone of its own
+    await app.settings["cms.event"].time_zone(zone); // the zone of every event without its own
 
-    // pages first: the details are settings of the new module
+    // pages: the event modules under their new names
     const waiting: string[] = [];
-    let details = 0;
     for (const [from, to] of Object.entries(MODULES)) {
       const pages = await db.col<number>`SELECT id FROM page WHERE module = ${from}`;
       if (!pages.length) continue;
@@ -66,35 +81,33 @@ export async function install({ app }: { app: App }): Promise<void> {
         }
         await node.set({ module: to });
         await node.urlsGen();
-        const event = to === "cms.cont.event" && await db.row`SELECT * FROM event2 WHERE id = ${id}`;
-        if (!event) continue;
-        const people = await db.query`SELECT u.* FROM event2_performer p JOIN usr u ON u.id = p.usr_id WHERE p.event_id = ${id} ORDER BY p.sort`;
-        const link = String(event.external_link ?? "").trim();
-        await node.settings[$item].set({
-          address_street: event.address_street ?? "", address_postal_code: event.address_postal_code ?? "",
-          address_locality: event.address_locality ?? "", address_country: String(event.address_country ?? "").toUpperCase(),
-          price: event.price == null || event.price === "" ? null : Number(event.price), currency: event.currency ?? "",
-          performer: people.map((u) => [u.title, u.given_name ?? u.firstname, u.middlename, u.family_name ?? u.lastname].filter(Boolean).join(" ")).join(", "),
-          language: event.lang ?? "", external_link: /^https?:\/\//i.test(link) ? link : "",
-        });
-        details++;
       }
       report.push(`${pages.length} × ${from} → ${to}`);
     }
-    if (details) report.push(`${details} events with their details`);
     if (waiting.length) report.push(`left without a qino module: ${waiting.join(", ")}`);
 
-    // dates: of every node that has some, whatever shows it (a product can be a course)
-    let blocks = 0, empty = 0, lost = 0;
+    // events: an event2 row made its page one, whatever module shows it (a product can be a course)
+    let events = 0;
+    for (const event of await db.query`SELECT * FROM event2`) {
+      const node = await tree.node(Number(event.id));
+      if (!node.exists()) continue;
+      const people = await db.query`SELECT u.* FROM event2_performer p JOIN usr u ON u.id = p.usr_id WHERE p.event_id = ${event.id} ORDER BY p.sort`;
+      await set(node, details(event, people));
+      events++;
+    }
+    report.push(`${events} events`);
+
+    // dates: of every event; one without an event2 row becomes one with its first date
+    let dates = 0, empty = 0, lost = 0;
     for (const date of await db.query`SELECT * FROM event2_dates ORDER BY page_id, start_date, id`) {
       const node = await tree.node(Number(date.page_id));
       if (!node.exists()) { lost++; continue; }
       // PHP made a date of "now" for an event without one: the same second twice, and hardly a full minute
       if (date.start_date === date.end_date && local(date.start_date, zone).second) { empty++; continue; }
       await add(node, range(date, zone));
-      blocks++;
+      dates++;
     }
-    report.push(`${blocks} dates`);
+    report.push(`${dates} dates`);
     if (empty) report.push(`${empty} placeholder dates left out`);
     if (lost) report.push(`${lost} dates of pages that are gone left out`);
     console.log(`[migrate_event2] ${report.join(", ")}`);

@@ -23,8 +23,9 @@ test("a product tells search engines the price it shows, only where the page is 
     // in a category: silent in its list, told at the product's own address
     const page = await (await cmsOf(app).node(1)).createChild({ access: 1 });
     const category = await page.cont("main", "cms.cont.shop.category");
+    // the module makes it a product: the row is there with the node
     const cup = await category.createCont({ module: "cms.cont.shop.product" });
-    await app.db.table("shop_product").insert({ id: cup.id, price: 900 });
+    await app.db.table("shop_product").update(cup.id, { price: 900 });
     for (const [asked, told] of [[page, null], [cup, "9.00"]] as const) await asVisitor(app, async (ctx) => {
       cmsCtx(ctx).requestedNode = asked;
       await cms.node.render(cup, { ctx });

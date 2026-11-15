@@ -37,8 +37,8 @@ test("a new invoice opens in the editor, saves as one types, is issued, asked fo
   await withApp(async (app, as, node) => {
     const base = "http://qino.test/backend/invoices";
     const created = await as(base, () => api(node, { create: { direction: "out", currency: "chf" } })) as Answer;
-    const id = Number(new URL(created.url!, "http://-").searchParams.get("invoice"));
-    let page = String(await as(`${base}?invoice=${id}`, () => render(node)));
+    const id = Number(new URL(created.url!, "http://-").searchParams.get("id"));
+    let page = String(await as(`${base}?id=${id}`, () => render(node)));
     for (const part of [`data-edit="${id}"`, "data-preview", "data-add-line", "data-action=remove"]) assertStringIncludes(page, part);
 
     const saved = await as(base, () => api(node, { save: { ...edited, id: String(id) } })) as Answer & { html: string };
@@ -49,7 +49,7 @@ test("a new invoice opens in the editor, saves as one types, is issued, asked fo
     assertEquals(JSON.parse(String(row?.party)).address.addressCountry, "CH");
     // the term is typed in days; the due date follows from it on issue
     await as(base, () => api(node, { save: { ...edited, term: "10", id: String(id) } }));
-    assertStringIncludes(String(await as(`${base}?invoice=${id}`, () => render(node))), 'name=term min=0 value="10"');
+    assertStringIncludes(String(await as(`${base}?id=${id}`, () => render(node))), 'name=term min=0 value="10"');
     // a line dragged up: its fields come first, so it does
     const { name5, quantity5, unit5, price5, taxRate5, ...rest } = edited;
     await as(base, () => api(node, { save: { name5, quantity5, unit5, price5, taxRate5, ...rest, id: String(id) } }));
@@ -58,7 +58,7 @@ test("a new invoice opens in the editor, saves as one types, is issued, asked fo
     assertEquals(atob(viewed.pdf).slice(0, 5), "%PDF-"); // the draft as PDF, not kept
     assertEquals((await app.db.row`SELECT file_id FROM invoice WHERE id = ${id}`)?.file_id, null);
     await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
-    page = String(await as(`${base}?invoice=${id}`, () => render(node)));
+    page = String(await as(`${base}?id=${id}`, () => render(node)));
     assertStringIncludes(page, 'value="120"'); // prices come back as typed
     // a unit price finer than a minor unit stays so, and grouped amounts are read
     await as(base, () => api(node, { save: { ...edited, price0: "0.2345", price5: "1'200,50", id: String(id) } }));
@@ -75,7 +75,7 @@ test("a new invoice opens in the editor, saves as one types, is issued, asked fo
 
     const issued = await as(base, () => api(node, { action: { action: "issue", id: String(id) } })) as Answer;
     assertStringIncludes(issued.message!, `${new Date().getFullYear()}-1`);
-    page = String(await as(`${base}?invoice=${id}`, () => render(node)));
+    page = String(await as(`${base}?id=${id}`, () => render(node)));
     assertStringIncludes(page, "data-request"); // the QR bill is offered for the open amount
     assert(!page.includes("data-action=issue"));
 
@@ -96,7 +96,7 @@ test("a draft is thrown away; an unpaid issued invoice is revised into a new dra
     const action = (name: string, id: number) => as(base, () => api(node, { action: { action: name, id: String(id) } })) as Promise<Answer>;
     const make = async () => {
       const created = await as(base, () => api(node, { create: { direction: "out", currency: "CHF" } })) as Answer;
-      const id = Number(new URL(created.url!, "http://-").searchParams.get("invoice"));
+      const id = Number(new URL(created.url!, "http://-").searchParams.get("id"));
       await as(base, () => api(node, { save: { ...edited, id: String(id) } }));
       return id;
     };
@@ -106,9 +106,9 @@ test("a draft is thrown away; an unpaid issued invoice is revised into a new dra
 
     const id = await make();
     await action("issue", id);
-    assertStringIncludes(String(await as(`${base}?invoice=${id}`, () => render(node))), "data-action=revise");
+    assertStringIncludes(String(await as(`${base}?id=${id}`, () => render(node))), "data-action=revise");
     const revised = await action("revise", id);
-    const copy = Number(new URL(revised.url!, "http://-").searchParams.get("invoice"));
+    const copy = Number(new URL(revised.url!, "http://-").searchParams.get("id"));
     assertEquals((await app.db.row`SELECT status FROM invoice WHERE id = ${id}`)?.status, "canceled");
     assertEquals((await app.db.row`SELECT status, total FROM invoice WHERE id = ${copy}`)?.total, 43132);
   });
@@ -118,14 +118,14 @@ test("a received invoice shows its original beside the editor; the receipt is up
   await withApp(async (_app, as, node) => {
     const base = "http://qino.test/backend/invoices";
     const created = await as(base, () => api(node, { create: { direction: "in", currency: "CHF" } })) as Answer;
-    const id = Number(new URL(created.url!, "http://-").searchParams.get("invoice"));
-    let page = String(await as(`${base}?invoice=${id}`, () => render(node)));
+    const id = Number(new URL(created.url!, "http://-").searchParams.get("id"));
+    let page = String(await as(`${base}?id=${id}`, () => render(node)));
     assertStringIncludes(page, `data-attach="${id}"`);
     assert(!page.includes("data-preview")); // no print preview: the original is what counts
     const file = { name: "bill.png", type: "image/png", data: new Uint8Array([137, 80, 78, 71]).toBase64() };
     const attached = await as(base, () => api(node, { attach: { id: String(id), file } })) as Answer;
     assertEquals(attached.ok, true, attached.message);
-    page = String(await as(`${base}?invoice=${id}`, () => render(node)));
+    page = String(await as(`${base}?id=${id}`, () => render(node)));
     assertStringIncludes(page, "bill.png");
     assertStringIncludes(page, "<img");
   });
@@ -138,7 +138,7 @@ test("a user is picked and gives the invoice their name, address and language", 
       street_address: "Seeweg 2", postal_code: "3000", address_locality: "Bern", address_country: "CH", lang: "de",
     }));
     const draft = Number(await create(app, { currency: "CHF", lines: [], usrId: id }));
-    const page = String(await as(`http://qino.test/?invoice=${draft}`, () => render(node)));
+    const page = String(await as(`http://qino.test/?id=${draft}`, () => render(node)));
     assertStringIncludes(page, `<option value="${id}" selected>Anna Muster, Muster AG`);
     assertEquals(await as("http://qino.test/", () => api(node, { usr: String(id) })), {
       name: "Muster AG", streetAddress: "Seeweg 2", postalCode: "3000", addressLocality: "Bern",
@@ -159,7 +159,7 @@ test("an issued invoice is mailed with its PDF, in its language, to the address 
     const lines = [{ name: "Design", price: 10000 }];
     const id = Number((await issue(app, await create(app, { currency: "CHF", lang: "de", lines })))?.id);
     const base = "http://qino.test/backend/invoices";
-    const page = String(await inRequest(app, `${base}?invoice=${id}`, () => render(node)));
+    const page = String(await inRequest(app, `${base}?id=${id}`, () => render(node)));
     assertStringIncludes(page, `data-send="${id}"`);
     const to = { id: String(id), email: "kunde@example.com" };
     const answer = await inRequest(app, base, () => api(node, { send: to }));
@@ -182,9 +182,9 @@ test("a credit note is made from an invoice, and what it owes goes onto the cust
     const id = Number((await issue(app, await create(app, { currency: "CHF", usrId: usr, lines })))?.id);
     await as(() => api(node, { record: { id: String(id), amount: "", provider: "bank" } })); // paid in full
     const made = await as(() => api(node, { action: { action: "credit", id: String(id) } })) as Answer;
-    const note = Number(new URL(made.url!, "http://-").searchParams.get("invoice"));
+    const note = Number(new URL(made.url!, "http://-").searchParams.get("id"));
     await issue(app, note);
-    const page = String(await as(() => inRequest(app, `${base}?invoice=${note}`, () => render(node))));
+    const page = String(await as(() => inRequest(app, `${base}?id=${note}`, () => render(node))));
     for (const part of ["data-action=tocredit", "Paid back"]) assertStringIncludes(page, part);
     await as(() => api(node, { action: { action: "tocredit", id: String(note) } }));
     assertEquals((await app.db.row`SELECT status FROM invoice WHERE id = ${note}`)?.status, "paid");
@@ -208,7 +208,7 @@ test("issued, it goes to the customer at once where asked to, and says when", as
     assertStringIncludes(issued.ask, "anna@example.com");
     assertStringIncludes(String(await as(issued.then).then((a) => (a as Answer).message)), "Sent.");
     assertEquals(mails.length, 1);
-    const page = String(await inRequest(app, `http://qino.test/backend/invoices?invoice=${id}`, () => render(node)));
+    const page = String(await inRequest(app, `http://qino.test/backend/invoices?id=${id}`, () => render(node)));
     assertStringIncludes(page, `data-sent="${id}"`);
   });
 });
@@ -221,7 +221,7 @@ test("a customer's page shows their invoices as a card, and nothing without any"
     assertEquals(await card(), "");
     const draft = Number(await create(app, { currency: "CHF", lines: [], usrId: id }));
     const out = await card();
-    assertStringIncludes(out, `?invoice=${draft}">#${draft}</a>`);
+    assertStringIncludes(out, `?id=${draft}">#${draft}</a>`);
     assertStringIncludes(out, "draft");
   });
 });
@@ -271,15 +271,15 @@ test("a pro forma becomes its invoice; an invoice is held, reminded, written off
     const as = (url: string, run: () => Promise<unknown>) => inRequest(app, url, run);
     const base = "http://qino.test/backend/invoices";
     const act = (action: string, id: number) => as(base, () => api(node, { action: { action, id: String(id) } })) as Promise<Answer>;
-    const idOf = (answer: Answer) => Number(new URL(answer.url!, "http://-").searchParams.get("invoice"));
+    const idOf = (answer: Answer) => Number(new URL(answer.url!, "http://-").searchParams.get("id"));
 
     const created = await as(base, () => api(node, { create: { direction: "proforma", currency: "chf" } })) as Answer;
     const proforma = idOf(created);
     await as(base, () => api(node, { save: { ...edited, id: String(proforma) } }));
     await act("issue", proforma);
-    assertStringIncludes(String(await as(`${base}?invoice=${proforma}`, () => render(node))), "data-action=finalize");
+    assertStringIncludes(String(await as(`${base}?id=${proforma}`, () => render(node))), "data-action=finalize");
     const invoice = idOf(await act("finalize", proforma));
-    const page = String(await as(`${base}?invoice=${invoice}`, () => render(node)));
+    const page = String(await as(`${base}?id=${invoice}`, () => render(node)));
     for (const part of [`data-action="hold"`, "data-action=remind", "data-action=writeOff"]) assertStringIncludes(page, part);
 
     await act("hold", invoice);
@@ -287,9 +287,9 @@ test("a pro forma becomes its invoice; an invoice is held, reminded, written off
     await act("release", invoice);
     const reminder = idOf(await act("remind", invoice));
     assertEquals(await app.db.one`SELECT type FROM invoice WHERE id = ${reminder}`, "reminder");
-    assertStringIncludes(String(await as(`${base}?invoice=${reminder}`, () => render(node))), "Reminded invoices");
+    assertStringIncludes(String(await as(`${base}?id=${reminder}`, () => render(node))), "Reminded invoices");
     // the invoice names the reminders it is on
-    assertStringIncludes(String(await as(`${base}?invoice=${invoice}`, () => render(node))), `?invoice=${reminder}"`);
+    assertStringIncludes(String(await as(`${base}?id=${invoice}`, () => render(node))), `?id=${reminder}"`);
     await act("writeOff", invoice);
     assertEquals(await app.db.one`SELECT status FROM invoice WHERE id = ${invoice}`, "uncollectible");
   });
@@ -300,7 +300,7 @@ test("paid by hand, the source is suggested: those the books know an account for
     const node = backendNode(app, "/backend/invoices");
     const draft = await create(app, { direction: "in", number: "S-1", currency: "CHF", lines: [{ name: "Software", price: 5000 }] });
     const id = Number((await issue(app, draft))?.id);
-    const page = String(await inRequest(app, `http://qino.test/backend/invoices?invoice=${id}`, () => render(node)));
+    const page = String(await inRequest(app, `http://qino.test/backend/invoices?id=${id}`, () => render(node)));
     assertStringIncludes(page, `list="sources-${id}"`);
     assertStringIncludes(page, `<option value="bank">1020 Bank`);
     assertStringIncludes(page, `<option value="owner">2210 Kontokorrent Gesellschafter`);

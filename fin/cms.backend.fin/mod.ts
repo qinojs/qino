@@ -131,23 +131,17 @@ export function pager(
     ${(page + 1) * per < total ? html`<a href="${at(page + 1)}">›</a>` : ""}`;
 }
 
-/** A link to a row in another fin backend page, as text where that page is not installed. */
-export async function rowLink(
-  node: Node,
-  module: string,
-  param: string,
-  id: unknown,
-  label = `#${id}`,
-): Promise<HtmlString> {
-  const url = (await backend.toModuleUrl(node, module))({ [param]: id });
+/** A link to a row in another fin backend page (`?id=`), as text where that page is not installed. */
+export async function rowLink(node: Node, module: string, id: unknown, label = `#${id}`): Promise<HtmlString> {
+  const url = (await backend.toModuleUrl(node, module))({ id });
   return url ? html`<a href="${url}">${label}</a>` : html`${label}`;
 }
 
-/** Where a `ref` of a fin module is shown: its backend page, the parameter, the word for it. */
-const REFS: Record<string, [string, string, string]> = {
-  "fin.invoice": ["cms.backend.fin.invoice", "invoice", "invoice"],
-  "fin.payment": ["cms.backend.fin.payment", "payment", "payment"],
-  "fin.hosting": ["cms.backend.fin.hosting", "domain", "domain"],
+/** Where a `ref` of a fin module is shown: its backend page and the word for it. */
+const REFS: Record<string, [string, string]> = {
+  "fin.invoice": ["cms.backend.fin.invoice", "invoice"],
+  "fin.payment": ["cms.backend.fin.payment", "payment"],
+  "fin.hosting": ["cms.backend.fin.hosting", "domain"],
 };
 
 /** `fin.invoice:7`, `fin.payment:12` or `fin.hosting:example.ch/domain` as a link where its page is
@@ -157,5 +151,5 @@ export async function refLink(node: Node, ref: unknown): Promise<HtmlString | st
   const target = REFS[module];
   const id = rest?.split("/")[0];
   if (!target || !id) return String(ref ?? "");
-  return rowLink(node, target[0], target[1], id, /^\d+$/.test(id) ? `${target[2]} #${id}` : `${target[2]} ${id}`);
+  return rowLink(node, target[0], id, /^\d+$/.test(id) ? `${target[1]} #${id}` : `${target[1]} ${id}`);
 }

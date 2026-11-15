@@ -16,7 +16,7 @@ const PER_PAGE = 100;
 
 export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
-  const id = Number(url.searchParams.get("payment"));
+  const id = Number(url.searchParams.get("id"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
 
@@ -99,7 +99,7 @@ async function list(node: Node, url: URL) {
       <th>${t`For`}
       <th>${t`Description`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
-      <td><a href="${backend.toUrl(pageUrl, { payment: row.id })}">${row.id}</a>
+      <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.id}</a>
       <td style="white-space:nowrap">${u2.el.time(row.created, { narrow: true })}
       <td>${direction(row.direction, row.direction === "in" ? t`in` : t`out`)}
       <td>${row.provider}${row.method ? html`<small>.${row.method}</small>` : ""}
@@ -207,7 +207,7 @@ async function detail(node: Node, id: number) {
   ${lines.length ? html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Bank lines`}</div>
     <table class=u2-table>${lines.map((line) => html.async`<tr>
-      <td>${rowLink(node, "cms.backend.fin.bank", "line", line.id)}
+      <td>${rowLink(node, "cms.backend.fin.bank", line.id)}
       <td>${line.date}
       <td style="text-align:end">${money(line.amount, line.currency)}
       <td>${line.party_name}`)}</table>

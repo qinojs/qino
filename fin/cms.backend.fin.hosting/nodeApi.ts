@@ -21,7 +21,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         registrar: v.registrar ?? null,
       });
       if (v.id) return { ok: true, message: await t`Saved.` };
-      return { ok: true, url: backend.toUrl(await (await node.page()).url(), { domain: name }) };
+      return { ok: true, url: backend.toUrl(await (await node.page()).url(), { id: name }) };
     }
     if (vars.sync) {
       const report = await sync(app);

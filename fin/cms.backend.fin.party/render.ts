@@ -13,7 +13,7 @@ const PER_PAGE = 100;
 
 export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
-  const id = Number(url.searchParams.get("usr"));
+  const id = Number(url.searchParams.get("id"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
 
@@ -92,7 +92,7 @@ async function overview(node: Node, url: URL) {
         <th>${t`Payable`}
         ${credits ? html.async`<th>${t`Credit`}` : ""}
       <tbody>${rows.map((row) => html.async`<tr u2-href>
-        <td><a href="${backend.toUrl(pageUrl, { usr: row.id })}">${row.id}</a>
+        <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.id}</a>
         <td>${nameOf(row)}
         <td>${row.address_locality}
         <td>${Number(row.issued) ? badge(t`customer`, "--blue") : ""} ${
@@ -165,7 +165,7 @@ export async function partyCard(app: App, id: unknown, page: Node): Promise<{ ti
     : [];
   const place = [u.postal_code, u.address_locality].filter(Boolean).join(" ");
   const lines = [nameOf(u), u.street_address, place, u.address_country].filter(Boolean);
-  const url = backend.toUrl(await page.url(), { usr: usrId });
+  const url = backend.toUrl(await page.url(), { id: usrId });
   const body = await html.async`<div>
     <a href="${url}">${lines[0] || html`#${usrId}`}</a>${lines.slice(1).map((line) => html`<br>${line}`)}
     ${u.iban ? html`<br><small>${u.iban}</small>` : ""}

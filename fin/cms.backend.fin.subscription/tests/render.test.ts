@@ -24,7 +24,7 @@ test("subscriptions are added, billed from the run, canceled, and deleted only u
     const backendPage = await node.page();
     const card = String(await as(() => backendRowWidget.usr(app, usr, backendPage)));
     assertStringIncludes(card, "Hosting example.ch</a>");
-    assertStringIncludes(card, "?subscription=");
+    assertStringIncludes(card, "?id=");
     assertEquals(String(await as(() => backendRowWidget.usr(app, usr + 1, backendPage))), ""); // someone without any
     let page = String(await as(() => render(node)));
     assertStringIncludes(page, "Hosting example.ch");
@@ -55,7 +55,7 @@ test("a subscription is changed on its page: start and period only until billed"
     await as(() => api(node, { subscribe: hosting }));
     const id = Number(await app.db.one`SELECT id FROM subscription`);
     const page = async () =>
-      String(await inRequest(app, `http://qino.test/?subscription=${id}`, () => render(node)));
+      String(await inRequest(app, `http://qino.test/?id=${id}`, () => render(node)));
     assertStringIncludes(await page(), 'value="240"');
     assertStringIncludes(await page(), "data-action=cancel"); // runs on: may be canceled here
     await app.db.exec`UPDATE subscription SET ref = ${"fin.hosting:example.ch/domain"} WHERE id = ${id}`;

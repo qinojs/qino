@@ -12,7 +12,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (child) return html.async`<div>${child}</div>`;
   // the feed: every readable event of the category, upcoming dates only
   await answer(ctx, node, async () => {
-    const all = [...(await node.children({ type: "c" })).values()].filter((c) => c.vs.module === "cms.cont.event");
+    const all = await Promise.all((await node.db.col`SELECT p.id FROM page p JOIN cms_event ev ON ev.id = p.id WHERE p.basis = ${node.id}`)
+      .map((id) => node.cms.node(Number(id))));
     const readable = await Promise.all(all.map((c) => c.isReadable()));
     return all.filter((_, i) => readable[i]);
   });
@@ -20,21 +21,21 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const param = `cms_event_${node.id}_page`;
   const asked = Number(ctx.req.query[param]);
   const page = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
-  // what is still ahead, the next date first
+  // its events, what is still ahead, the next date first
   const from = Temporal.Now.instant(), now = ahead(from);
-  const rows = await overview(node.db, sql`SELECT p.*, (SELECT MIN(e.${sql.id("start")}) FROM cms_event e WHERE e.node_id = p.id AND e.${sql.id("end")} >= ${now}) AS next_start
-    FROM page p WHERE p.basis = ${node.id} AND p.module = ${"cms.cont.event"}
-      AND EXISTS (SELECT 1 FROM cms_event e WHERE e.node_id = p.id AND e.${sql.id("end")} >= ${now})
-    ORDER BY next_start, p.id LIMIT ${PER_PAGE + 1} OFFSET ${(page - 1) * PER_PAGE}`, sql`p.next_start, p.id`, { from });
+  const next = sql`SELECT MIN(d.${sql.id("start")}) FROM cms_event_date d WHERE d.event_id = p.id AND d.${sql.id("end")} >= ${now}`;
+  const rows = await overview(node.db, sql`SELECT p.* FROM (SELECT p.*, (${next}) AS next_start FROM page p JOIN cms_event ev ON ev.id = p.id
+      WHERE p.basis = ${node.id}) p WHERE p.next_start IS NOT NULL
+    ORDER BY p.next_start, p.id LIMIT ${PER_PAGE + 1} OFFSET ${(page - 1) * PER_PAGE}`, sql`p.next_start, p.id`, { from });
   const events = [];
-  for (const { row, blocks, count } of rows.slice(0, PER_PAGE)) {
-    const event = await node.cms.node(Number(row.id), row);
-    if (!await event.isReadable()) continue;
+  for (const { row, event, dates, count } of rows.slice(0, PER_PAGE)) {
+    const item = await node.cms.node(Number(row.id), row);
+    if (!await item.isReadable()) continue;
     events.push(html.async`<li><article>
-      <h3><a href="${event.url()}">${event.showTitle()}</a></h3>
-      <ul>${formatDates(blocks, ctx.lang, await zoneOf(event)).map((date) => html`<li>${date}</li>`)}</ul>
-      ${event.settings.address_locality() ? html`<p>${event.settings.address_locality()}</p>` : ""}
-      ${count > blocks.length ? html.async`<p><a href="${event.url()}">${t`All dates`} (${count})</a></p>` : ""}
+      <h3><a href="${item.url()}">${item.showTitle()}</a></h3>
+      <ul>${formatDates(dates, ctx.lang, await zoneOf(node.app, event)).map((date) => html`<li>${date}</li>`)}</ul>
+      ${event.address_locality ? html`<p>${event.address_locality}</p>` : ""}
+      ${count > dates.length ? html.async`<p><a href="${item.url()}">${t`All dates`} (${count})</a></p>` : ""}
     </article></li>`);
   }
   const link = (page: number) => {

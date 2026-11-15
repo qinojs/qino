@@ -1,13 +1,13 @@
 # Appointment booking
 
 Each `cms.cont.booking` content node owns its offers and bookings. Offers use `cms.event`;
-each offer is a concrete event block, without a recurrence rule.
+each offer is a concrete event date, without a recurrence rule.
 Every new instance starts empty. Add appointments in its CMS settings panel.
 
 With `duration: 0`, an offer is booked as a whole. A positive duration (minutes) splits offers
 into consecutive slots. For example, a concrete
-09:00–11:00 window with `duration: 30` provides four slots. Further days use further blocks.
-The instance's `time_zone` controls date selection and display; local input is converted to explicit instants when an offer is saved. `horizon_days` limits how far ahead visitors can book (default 60).
+09:00–11:00 window with `duration: 30` provides four slots. Further days use further dates.
+A booking instance is an event (`is: ["cms_event"]`): its offers are the event's dates, and the event's time zone (`zoneOf`) controls date selection and display; local input is converted to explicit instants when an offer is saved. Bookings point to the date they take (`date_id`). `horizon_days` limits how far ahead visitors can book (default 60).
 
 Visitors choose a slot and supply name and email. Booking and cancellation work without JS,
 through the CMS's CSRF-protected POST forms. No email or payment is triggered. Guest bookings

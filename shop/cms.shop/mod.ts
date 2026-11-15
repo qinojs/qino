@@ -8,7 +8,7 @@ export { descriptionHtml, methodStep, orderTable } from "./lib/view.ts";
 export { appOf, countries, country, currencies, currency, currencyFor, grpsOf, listen, listOf, mainCurrency, sellsTo, settingsOf, shopT, taxIncluded, taxRate } from "./lib/shop.ts";
 export type { Errors, Extra, Method, Party, PriceQuery, ShippingProvider, Solution, Status } from "./lib/rows.ts";
 
-/** The product row of a page that renders as one, created on first sight. */
+/** Makes the node a product, if it is none yet; content modules that show products get it by `is`. */
 export async function ensureProduct(node: Node): Promise<Product> {
   const table = node.app.db.table("shop_product");
   return await table.get<Product>(node.id) ?? (await table.add<Product>({ id: node.id }))!;

@@ -28,7 +28,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const type = direction === "proforma" ? "proforma" : "invoice";
       const kind = direction === "in" ? "in" : "out";
       const id = await create(app, { direction: kind, type, currency: currency.toUpperCase(), lines: [] });
-      return { ok: true, url: await pageUrl({ invoice: id }) };
+      return { ok: true, url: await pageUrl({ id: id }) };
     }
     // the editor saves as one types, and gets the invoice back as it will be printed
     if (vars.save) {
@@ -81,7 +81,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     if (action === "cancel") return { ok: !!await cancel(app, Number(id)), message: await t`Canceled.` };
     if (action === "credit") {
-      return { ok: true, url: await pageUrl({ invoice: await creditNote(app, Number(id)) }) };
+      return { ok: true, url: await pageUrl({ id: await creditNote(app, Number(id)) }) };
     }
     // what a credit note owes, onto the customer's credit: paid out, through the credit provider
     if (action === "tocredit") {
@@ -102,19 +102,19 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     if (action === "print") return { ok: !!await print(app, Number(id)), message: await t`Printed.` };
     if (action === "remind") {
       const { remind } = await import("@qino/qino/fin.invoice.reminder");
-      return { ok: true, url: await pageUrl({ invoice: await remind(app, [Number(id)]) }) };
+      return { ok: true, url: await pageUrl({ id: await remind(app, [Number(id)]) }) };
     }
     if (action === "hold" || action === "release") {
       await app.db.exec`UPDATE invoice SET remind = ${action === "release"} WHERE id = ${Number(id)}`;
       return { ok: true };
     }
     if (action === "writeOff") return { ok: !!await writeOff(app, Number(id)), message: await t`Written off.` };
-    if (action === "finalize") return { ok: true, url: await pageUrl({ invoice: await finalize(app, Number(id)) }) };
+    if (action === "finalize") return { ok: true, url: await pageUrl({ id: await finalize(app, Number(id)) }) };
     if (action === "remove") {
       await remove(app, Number(id));
       return { ok: true, url: await pageUrl({}) };
     }
-    if (action === "revise") return { ok: true, url: await pageUrl({ invoice: await revise(app, Number(id)) }) };
+    if (action === "revise") return { ok: true, url: await pageUrl({ id: await revise(app, Number(id)) }) };
     if (vars.request) {
       const { id, method } = vars.request as { id: string; method: string };
       const invoice = await app.db.row`SELECT * FROM invoice WHERE id = ${Number(id)}`;
@@ -127,7 +127,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         description: `${await t`Invoice`} ${invoice.number ?? ""}`.trim(),
         usrId: invoice.usr_id == null ? undefined : Number(invoice.usr_id),
         payer: payerOf(invoice),
-        return: await pageUrl({ invoice: id }),
+        return: await pageUrl({ id: id }),
       });
       return { ok: true, message: `${await t`Payment`} #${payment.id}: ${payment.redirect}` };
     }

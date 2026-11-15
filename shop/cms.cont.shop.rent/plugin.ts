@@ -1,9 +1,10 @@
 import { html, unixTime } from "@qino/qino";
-import { cart, ensureProduct, mainCurrency, shopT } from "@qino/qino/cms.shop";
+import { cart, mainCurrency, shopT } from "@qino/qino/cms.shop";
 import { busy, factorAt, rentals, rules, step } from "@qino/qino/cms.shop.rent";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+import type { Product } from "@qino/qino/cms.shop";
 import type { Range } from "@qino/qino/cms.shop.rent";
 
 const DAY = 86400;
@@ -16,7 +17,8 @@ function weekOf(week: number): Date[] {
 
 /** Like a product, but its page books times: the product is the page, its interval the step. */
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars?: { week?: unknown } }) {
-  const app = node.app, t = shopT(app), product = await ensureProduct(node);
+  const app = node.app, t = shopT(app), product = await app.db.table("shop_product").get<Product>(node.id);
+  if (!product) return html`<div></div>`;
   const week = Math.max(0, Math.trunc(Number(vars?.week) || 0));
   const seconds = Math.min(step(product), DAY), capacity = Number(product.rent_capacity) || 1;
   const days = weekOf(week), from = days[0].getTime() / 1000, to = days[7].getTime() / 1000;
@@ -66,4 +68,4 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars?: { week?: unk
 </div>`;
 }
 
-export const cms = { node: { render, css: ["pub/main.css"], js: ["../cms.shop/pub/shop.js", "pub/main.js"] } };
+export const cms = { node: { render, is: ["shop_product"], css: ["pub/main.css"], js: ["../cms.shop/pub/shop.js", "pub/main.js"] } };

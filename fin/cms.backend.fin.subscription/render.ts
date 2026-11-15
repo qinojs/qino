@@ -13,7 +13,7 @@ const selected = (yes: boolean) => yes ? html.raw(" selected") : "";
 
 export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
-  const id = Number(url.searchParams.get("subscription"));
+  const id = Number(url.searchParams.get("id"));
   if (Number.isSafeInteger(id) && id > 0) return detail(node, id);
   const plan = Number(url.searchParams.get("plan"));
   if (Number.isSafeInteger(plan) && plan > 0) return planDetail(node, plan);
@@ -73,8 +73,8 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
           <th>${t`Ends`}
           <th>
         <tbody>${all.map((s) => html.async`<tr>
-          <td>${rowLink(node, "cms.backend.fin.party", "usr", s.usr_id, names.get(Number(s.usr_id)))}
-          <td><a href="${backend.toUrl(pageUrl, { subscription: s.id })}">${s.label}</a>
+          <td>${rowLink(node, "cms.backend.fin.party", s.usr_id, names.get(Number(s.usr_id)))}
+          <td><a href="${backend.toUrl(pageUrl, { id: s.id })}">${s.label}</a>
             ${s.detail ? html`<small>${s.detail}</small>` : ""}
           <td style="text-align:end">${money(s.amount, s.currencyCode)}
           <td>${every(app, s.unit, s.count)}
@@ -193,7 +193,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
     ${billed.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
       <table class=u2-table style="white-space:nowrap">${billed.map((p) => html.async`<tr>
         <td>${date(p.period_start)} – ${date(p.period_end)}
-        <td>${Number(p.invoice_id) ? rowLink(node, "cms.backend.fin.invoice", "invoice", p.invoice_id) : "—"}`)}
+        <td>${Number(p.invoice_id) ? rowLink(node, "cms.backend.fin.invoice", p.invoice_id) : "—"}`)}
       </table></div>` : html.async`<p>${t`Nothing billed yet`}`}
   </div>
 </div>`;
@@ -206,7 +206,7 @@ export async function userSubscriptions(app: App, id: unknown, page: Node): Prom
   const pageUrl = await page.url();
   const ended = (s: Row) => s.end_date && String(s.next) >= date(s.end_date);
   return html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr>
-    <td><a href="${backend.toUrl(pageUrl, { subscription: s.id })}">${s.label}</a>
+    <td><a href="${backend.toUrl(pageUrl, { id: s.id })}">${s.label}</a>
     <td style="text-align:end">${money(s.amount, s.currencyCode)}
     <td>${every(app, s.unit, s.count)}
     <td>${ended(s) ? badge(app.t`ended`) : s.next}`)}

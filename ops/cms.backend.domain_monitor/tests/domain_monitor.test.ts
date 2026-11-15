@@ -140,7 +140,7 @@ test("cms.backend.domain_monitor: detail renders current and historical values s
        ${'v=spf1 <script>alert(1)</script>'})`;
     await db.exec`INSERT INTO monitor_domain_check (domain, checked_at, result) VALUES (${"example.com"}, ${900}, ${JSON.stringify(previous)})`;
     await db.exec`INSERT INTO monitor_domain_check (domain, checked_at, result) VALUES (${"example.com"}, ${1000}, ${JSON.stringify(result)})`;
-    const ctx = await testContext({ url: "http://qino.test/backend?domain=example.com", app: { db } });
+    const ctx = await testContext({ url: "http://qino.test/backend?id=example.com", app: { db } });
     const out = String(await render({ app } as never, { ctx }));
     assertEquals(out.includes("Check history (2)"), true);
     assertEquals(out.includes("123 ms"), true);
@@ -298,7 +298,7 @@ test("cms.backend.domain_monitor: a change is what the last check found differen
   assertEquals(cell(now - 30 * day).includes("changed: dns_a"), true);
   assertEquals(String(rowHtml(base as never, page)).includes("data-changed data-value=\"0\""), true);
   // the detail link carries the page's own parameters, or it would leave the backend page
-  assertEquals(cell(now).includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;domain=example.com"'), true);
+  assertEquals(cell(now).includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;id=example.com"'), true);
 });
 
 test("cms.backend.domain_monitor: an expired certificate reads the same on every check", () => {
@@ -322,7 +322,7 @@ test("cms.backend.domain_monitor: the dashboard widget lists what changed last",
     const now = Math.floor(Date.now() / 1000);
     await db.table("monitor_domain").insert({ domain: "moved.example", created: 1, changed: now, changes: "dns_a" });
     const out = String(await inRequest(() => backendDashboardWidget(app, node)));
-    assertEquals(out.includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;domain=moved.example"'), true);
+    assertEquals(out.includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;id=moved.example"'), true);
     assertEquals(out.includes("changed: dns_a"), true);
     assertEquals(out.includes("quiet.example"), false);
   } finally {

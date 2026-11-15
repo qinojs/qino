@@ -28,8 +28,8 @@ const date = (time: unknown) => Number(time) ? new Date(Number(time) * 1000).toI
 
 function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const url = ctx.req.url.toURL();
-  const id = Number(vars.order ?? url.searchParams.get("order")); // a reload has its own address
-  return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : list(node, url);
+  const id = backend.id(url, vars); // a reload has its own address
+  return id ? detail(node, id) : list(node, url);
 }
 
 /** Placed orders, newest first: search over number, names and addresses, filter by status. */
@@ -66,7 +66,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <th>${t`Total`}
       <th>${t`Status`}
     <tbody>${orders.slice(0, PER_PAGE).map(async (o) => html.async`<tr>
-      <td><a href="${link({ order: o.$id })}">${o.$id}</a>
+      <td><a href="${link({ id: o.$id })}">${o.$id}</a>
       <td>${date(carts ? o.created : o.ordered)}
       <td>${o.party("bill")?.name}
       <td>${o.country}

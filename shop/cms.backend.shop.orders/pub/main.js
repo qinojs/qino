@@ -8,6 +8,6 @@ cms.initNode("backend.shop.orders", (el) => {
     button.disabled = true;
     const { order } = button.closest("[data-order]").dataset;
     await api.cms.node(nid).api.post({ order, status: button.dataset.status });
-    cms.reloadNode(nid, { order });
+    cms.reloadNode(nid, { id: order });
   });
 });

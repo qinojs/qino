@@ -1,10 +1,11 @@
 import { html } from "@qino/qino";
 import { cmsCtx, hasOwnUrl } from "@qino/qino/cms";
-import { cart, country, ensureProduct, mainCurrency, shopT } from "@qino/qino/cms.shop";
+import { cart, country, mainCurrency, shopT } from "@qino/qino/cms.shop";
 import { jsonLd } from "@qino/qino/seo";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+import type { Product } from "@qino/qino/cms.shop";
 
 const settingsSchema = {
   properties: {
@@ -12,11 +13,12 @@ const settingsSchema = {
   },
 };
 
-/** A product is a page: its id is the product's, the row comes with it. One row per variant to
- *  order several at once, else the product itself. */
+/** A product is a page: its id is the product's, the row comes with the module (`is`). One row per
+ *  variant to order several at once, else the product itself. */
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app, t = shopT(app);
-  const product = await ensureProduct(node);
+  const product = await app.db.table("shop_product").get<Product>(node.id);
+  if (!product) return html`<div></div>`;
   const order = await cart(ctx, false);
   const currency = await order?.currencyRow() ?? await mainCurrency(app);
   const where = order?.country ?? await country(app);
@@ -63,4 +65,4 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 </div>`;
 }
 
-export const cms = { node: { render, js: ["../cms.shop/pub/shop.js"], settingsSchema } };
+export const cms = { node: { render, is: ["shop_product"], js: ["../cms.shop/pub/shop.js"], settingsSchema } };

@@ -45,7 +45,7 @@ async function card(node: Node, module: string, title: Promise<string>, rows: (u
 
 function newestOrders(app: App, url: string): Promise<HtmlString[]> {
   return app.db.table("shop_order").all<Order>`WHERE status <> ${"cart"} ORDER BY ordered DESC LIMIT ${LIST}`.then((orders) => Promise.all(orders.map(async (o) => html`<tr>
-    <td><a href="${backend.toUrl(url, { order: o.$id })}">${o.$id}</a>
+    <td><a href="${backend.toUrl(url, { id: o.$id })}">${o.$id}</a>
     <td>${o.party("bill")?.name}
     <td>${(await o.currencyRow())?.show(Number(o.total)) ?? o.total}`)));
 }
@@ -54,12 +54,12 @@ async function bestsellers(app: App, url: string): Promise<HtmlString[]> {
   const rows = await app.db.query`SELECT l.product_id, MIN(l.name) AS name, SUM(l.quantity) AS sold FROM shop_order_line l
     JOIN shop_order o ON o.id = l.order_id WHERE o.status <> ${"cart"} AND l.${sql.id("key")} = ${""} AND l.product_id IS NOT NULL
     GROUP BY l.product_id ORDER BY sold DESC LIMIT ${LIST}`;
-  return rows.map((r) => html`<tr><td>${Number(r.sold)} ×<td><a href="${backend.toUrl(url, { product: r.product_id })}">${r.name}</a>`);
+  return rows.map((r) => html`<tr><td>${Number(r.sold)} ×<td><a href="${backend.toUrl(url, { id: r.product_id })}">${r.name}</a>`);
 }
 
 async function latestProducts(app: App, url: string): Promise<HtmlString[]> {
   const products = await app.db.table("shop_product").all<Product>`ORDER BY id DESC LIMIT ${LIST}`;
-  return Promise.all(products.map(async (p) => html`<tr><td><a href="${backend.toUrl(url, { product: p.$id })}">${await p.title(app.languages.def)}</a>`));
+  return Promise.all(products.map(async (p) => html`<tr><td><a href="${backend.toUrl(url, { id: p.$id })}">${await p.title(app.languages.def)}</a>`));
 }
 
 function render(node: Node): Promise<HtmlString> {

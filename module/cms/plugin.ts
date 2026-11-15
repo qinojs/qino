@@ -119,6 +119,15 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     for (const name of ["table:insert-after", "table:update-after", "table:delete-after"] as const)
         app.db.on(name, (e) => { if (String(e.table) === "page_url") cms(app).clearUrlCache(); }, { signal });
 
+    // What a node is: a row keyed by its id in each table its module names (`cms.node.is`). Given
+    // once, when the node gets the module; it stays when the module changes, until the node goes.
+    for (const name of ["table:insert-after", "table:update-after"] as const)
+        app.db.on(name, async (e) => {
+            if (String(e.table) !== "page" || !e.data?.module) return;
+            const is: string[] = app.modules.get(String(e.data.module))?.plugin.cms?.node?.is ?? [];
+            for (const table of is) await app.db.table(table).ensure({ id: Number(e.id) });
+        }, { signal });
+
     // Uploading into a placeholder changes the file row, not page_file, so invalidate the nodes.
     app.db.on("table:update-after", async (e) => {
         if (String(e.table) !== "file" || !("md5" in (e.data ?? {}))) return;

@@ -4,8 +4,6 @@ import { t as translate } from "@qino/pub/t.js";
 import "@qino/u2/el/fields/fields.js";
 import { confirm } from "@qino/u2/js/dialog/dialog.js";
 
-import { bindSettings } from "../../cms/pub/js/settings.js";
-
 const t = translate.in("cms.cont.event");
 
 function shiftDate(value, days) {
@@ -14,37 +12,36 @@ function shiftDate(value, days) {
   return date.toISOString().split("T")[0];
 }
 
-/** The dates of a node; on an event also its details. `post` is the date API, by default the node's own. */
+/** An event's dates and details. `post` is its api, by default the node's own (the backend passes its own). */
 export default async function (widget, {
-  node, signal, cards = false, details = true, onChange = () => cms.reloadNode(node.id),
+  node, signal, cards = false, onChange = () => cms.reloadNode(node.id),
   post = (input) => api.cms.node(node.id).api.post(input, { signal }),
 }) {
-  const ref = api.cms.node(node.id);
-  const [settings, { timeZone: zone, blocks }] = await Promise.all([details ? ref.settings.get({}, { signal }) : {}, post({ blocks: true })]);
+  const { event, timeZone: zone, dates } = await post({ get: true });
   const prefix = `event-${node.id}`;
-  // all-day ends show the last included day, a moment no end; the row without a block adds one
+  // all-day ends show the last included day, a moment no end; the row without a date adds one
   const row = (item = {}) => {
     const type = item.allDay ? "date" : "datetime-local";
-    return html.async`<tr data-block="${item.id ?? ""}">
+    return html.async`<tr data-date="${item.id ?? ""}">
       <td><input type=checkbox name=allDay ${item.allDay ? html`checked` : ""} aria-label="${t`All day`}">
       <td><input name=start type="${type}" step=1 value="${item.localStart ?? ""}" required aria-label="${t`Start`}">
       <td><input name=end type="${type}" step=1 value="${item.allDay ? shiftDate(item.localEnd, -1) : item.localEnd === item.localStart ? "" : item.localEnd ?? ""}" aria-label="${t`End`}">
-      <td>${item.id ? html.async`<button type=button class=u2-unstyle data-remove aria-label="${t`Delete block`}" title="${t`Delete block`}"><u2-ico icon=delete>✕</u2-ico></button>` : ""}
+      <td>${item.id ? html.async`<button type=button class=u2-unstyle data-remove aria-label="${t`Delete date`}" title="${t`Delete date`}"><u2-ico icon=delete>✕</u2-ico></button>` : ""}
     </tr>`;
   };
   const field = (name, label, attributes = "") => html.async`<label for="${prefix}-${name}">${label}</label>
-    <input id="${prefix}-${name}" setting="${name}" value="${settings[name] ?? ""}" ${attributes}>`;
+    <input id="${prefix}-${name}" name="${name}" data-event-field value="${event[name] ?? ""}" ${attributes}>`;
   await widget.html`<div class="cms-event-editor ${cards ? "u2-flex" : ""}">
     <section class="${cards ? "u2-card" : ""}" style="flex:0 1 auto">
-      <div class="${cards ? "-head" : ""}">${t`Dates`} (${blocks.length})</div>
-      <div data-date-table style="padding:0;overflow:auto" tabindex=0 role=region aria-label="${t`Event blocks`}">
+      <div class="${cards ? "-head" : ""}">${t`Dates`} (${dates.length})</div>
+      <div style="padding:0;overflow:auto" tabindex=0 role=region aria-label="${t`Dates`}">
         <table class=u2-table style="padding:0;white-space:nowrap">
           <thead><tr>
             <th scope=col>${t`All day`}
             <th scope=col>${t`Start`}
             <th scope=col>${t`End`}
             <th scope=col aria-label="${t`Actions`}">
-          <tbody>${blocks.map(row)}${row()}
+          <tbody>${dates.map(row)}${row()}
         </table>
       </div>
       <div>
@@ -52,12 +49,15 @@ export default async function (widget, {
         <details><summary>${t`Advanced settings`}</summary>
           <u2-fields>
             <label for="${prefix}-zone">${t`Time zone`}</label>
-            <select id="${prefix}-zone" name=timeZone>${[...new Set([zone, ...Intl.supportedValuesOf("timeZone")])].map((id) => html`<option ${id === zone ? html`selected` : ""}>${id}`)}</select>
+            <select id="${prefix}-zone" name=time_zone data-event-field>
+              <option value="">${t`Site default`}${event.time_zone ? "" : ` (${zone})`}
+              ${Intl.supportedValuesOf("timeZone").map((id) => html`<option ${id === event.time_zone ? html`selected` : ""}>${id}`)}
+            </select>
           </u2-fields>
         </details>
       </div>
     </section>
-    ${details ? html.async`<section class="${cards ? "u2-card" : ""}" style="flex:0 1 auto">
+    <section class="${cards ? "u2-card" : ""}" style="flex:0 1 auto">
       <div class="${cards ? "-head" : ""}">${t`Event details`}</div>
       <u2-fields>
         ${field("address_street", t`Street address`)}
@@ -71,10 +71,8 @@ export default async function (widget, {
         ${field("external_link", t`External event page`, html`type=url`)}
       </u2-fields>
       <small id="${prefix}-price-hint">${t`Empty: unspecified. 0: free.`}</small>
-    </section>` : ""}
+    </section>
   </div>`;
-  if (details) bindSettings(widget, ref);
-
   const status = widget.querySelector("[role=status]");
   let queue = Promise.resolve();
   // one change after the other, so a slow answer never overtakes a later one
@@ -85,7 +83,7 @@ export default async function (widget, {
       await onChange();
     } catch (error) { if (error?.name !== "AbortError") status.textContent = error?.message || String(error); }
   });
-  widget.on("change", "[data-block] input", (input) => {
+  widget.on("change", "[data-date] input", (input) => {
     const tr = input.closest("tr"), [allDay, start, end] = tr.querySelectorAll("input");
     if (input === allDay) {
       for (const field of [start, end]) {
@@ -99,7 +97,7 @@ export default async function (widget, {
     end.min = start.value;
     if (!start.checkValidity() || !end.checkValidity()) return;
     // no end: the day itself, or the moment it starts
-    const item = blocks.find((block) => block.id === Number(tr.dataset.block));
+    const item = dates.find((date) => date.id === Number(tr.dataset.date));
     const local = { allDay: allDay.checked, localStart: start.value, localEnd: allDay.checked ? shiftDate(end.value || start.value, 1) : end.value || start.value };
     // an unchanged wall time keeps its exact instant: during a clock change it occurs twice
     const same = (key) => item?.allDay === local.allDay && Date.parse(item[key]) === Date.parse(local[key]);
@@ -114,15 +112,16 @@ export default async function (widget, {
     });
   });
   widget.on("click", "[data-remove]", async (button) => {
-    if (!await confirm(await t`Delete this block?`)) return;
+    if (!await confirm(await t`Delete this date?`)) return;
     change(async () => {
-      await post({ remove: Number(button.closest("tr").dataset.block) });
+      await post({ remove: Number(button.closest("tr").dataset.date) });
       await widget.reload();
     });
   });
-  // local times are shown in the zone, so they are read again
-  widget.on("change", "[name=timeZone]", (select) => change(async () => {
-    await post({ zone: select.value });
-    await widget.reload();
+  // details save as they are left; the server checks them. Local times are shown in the zone: read again
+  widget.on("change", "[data-event-field]", (field) => change(async () => {
+    const value = field.name === "price" ? (field.value === "" ? null : Number(field.value)) : field.value;
+    await post({ set: { [field.name]: value } });
+    if (field.name === "time_zone") await widget.reload();
   }));
 }

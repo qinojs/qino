@@ -18,7 +18,7 @@ const TYPES = ["asset", "liability", "equity", "income", "expense"];
 
 export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
-  const id = Number(url.searchParams.get("entry"));
+  const id = Number(url.searchParams.get("id"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
 
@@ -250,7 +250,7 @@ async function journal(node: Node, url: URL, from: string, to: string) {
       const own = lines.filter((l) => Number(l.entry_id) === Number(entry.id));
       const debit = own.filter((l) => Number(l.amount) > 0);
       return html.async`<tr u2-href>
-        <td><a href="${backend.toUrl(pageUrl, { entry: entry.id })}">${entry.id}</a>
+        <td><a href="${backend.toUrl(pageUrl, { id: entry.id })}">${entry.id}</a>
         <td style="white-space:nowrap">${entry.date}
         <td>${entry.text}${entry.reverses ? html` <small>↩ ${entry.reverses}</small>` : ""}
         <td>${debit.map((l) => l.number).join(", ")}
@@ -302,7 +302,7 @@ async function detail(node: Node, id: number) {
     const file = await app.dbFiles.file(Number(fileId));
     return html`<a href="${await file.url({ grant: "session" })}" target=_blank>${file.name}</a>`;
   }));
-  const link = (other: unknown) => html`<a href="${backend.toUrl(pageUrl, { entry: other })}">#${other}</a>`;
+  const link = (other: unknown) => html`<a href="${backend.toUrl(pageUrl, { id: other })}">#${other}</a>`;
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Journal`}</a> › #${id}</div>

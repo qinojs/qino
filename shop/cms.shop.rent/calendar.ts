@@ -31,7 +31,7 @@ export const calendar: Source = {
       }
       const product = products.get(id)!;
       const link = url && row.order_id ? new URL(url, ctx.req.url.href) : undefined;
-      link?.searchParams.set("order", String(row.order_id));
+      link?.searchParams.set("id", String(row.order_id));
       result.push({
         id: String(row.id), title: product.title, url: product.url,
         start: Temporal.Instant.fromEpochMilliseconds(Number(row.begins) * 1000).toString(),

@@ -21,7 +21,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         return { account: v[key], amount };
       });
       const id = await book(app, { date: v.date, text: v.text, lines });
-      return { ok: true, url: backend.toUrl(await (await node.page()).url(), { entry: id }) };
+      return { ok: true, url: backend.toUrl(await (await node.page()).url(), { id }) };
     }
     if (vars.close) {
       await close(app, String((vars.close as Record<string, string>).until));
@@ -33,7 +33,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     if (vars.reverse) {
       const id = await reverse(app, Number(vars.reverse));
-      return { ok: true, url: backend.toUrl(await (await node.page()).url(), { entry: id }) };
+      return { ok: true, url: backend.toUrl(await (await node.page()).url(), { id }) };
     }
     if (vars.account) {
       const { number, name, type } = vars.account as Record<string, string>;

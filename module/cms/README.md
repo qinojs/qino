@@ -52,6 +52,21 @@ cms.initNode("backend.superuser.requests.log", (el) => {
 `cms.`). On the server, `render` and parts run in a request context, so `getCtx()` and `app.t`
 are available.
 
+## What a node is (`cms.node.is`)
+
+A node *is* a product, an event … when the table of that kind has a row with the node's id as its
+primary key (`x-qg-parent: page`, so it is copied and deleted with the node). That row is the only
+criterion: lists join it, backend pages edit it, whatever module shows the node.
+
+A content module names the kinds of its nodes, and the row is made when a node gets the module —
+created or switched, never while rendering:
+
+```ts
+export const cms = { node: { render, is: ["shop_product"] } };
+```
+
+A node keeps what it is when its module changes. Any other node becomes one by inserting the row.
+
 ## GET parameter naming
 
 A parameter needs a prefix when other modules may read the same request — action hooks, the

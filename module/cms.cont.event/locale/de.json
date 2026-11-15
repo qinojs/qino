@@ -1,9 +1,7 @@
 {
   "All day": "Ganztägig",
   "Location": "Ort",
-  "Delete block": "Block löschen",
   "Time zone": "Zeitzone",
-  "Delete this block?": "Diesen Block löschen?",
   "Price": "Preis",
   "Instructors / performers": "Leitung / Mitwirkende",
   "Event language": "Veranstaltungssprache",
@@ -12,7 +10,6 @@
   "Street address": "Strasse und Hausnummer",
   "Postal code": "Postleitzahl",
   "City / locality": "Ortschaft",
-  "Event blocks": "Veranstaltungsblöcke",
   "Actions": "Aktionen",
   "Country code": "Ländercode",
   "Currency": "Währung",
@@ -22,5 +19,8 @@
   "End": "Ende",
   "Advanced settings": "Erweiterte Einstellungen",
   "Saved": "Gespeichert",
-  "Add to calendar": "In Kalender eintragen"
+  "Add to calendar": "In Kalender eintragen",
+  "Delete date": "Termin löschen",
+  "Delete this date?": "Diesen Termin löschen?",
+  "Site default": "Standard der Website"
 }

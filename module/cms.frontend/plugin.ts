@@ -71,19 +71,19 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   return list;
 }
 
-/** Backend pages that edit the node, for buttons in its panel: modules answer `backendEdit(node)` with
-  * a title and the parameters of their page ("Edit event in the backend", `{ event: 12 }`). */
+/** Backend pages that edit the node, for links in its panel: a module that does answers
+  * `backendEdit(node)` with the link's title ("Edit event in the backend"); its page opens `?id=`. */
 async function backendEdits(ctx: Ctx, pid: number) {
   const tree = cms(ctx.app), node = await tree.node(pid);
   if (await node.access() < 2) throw new AccessError();
-  type Edit = (node: unknown) => Promise<{ title: string; params: Record<string, unknown> } | undefined>;
+  type Edit = (node: unknown) => Promise<string | undefined>;
   const found = await Promise.all(ctx.app.modules.linked().filter((mod) => typeof mod.plugin.backendEdit === "function").map(async (mod) => {
-    const edit = await (mod.plugin.backendEdit as Edit)(node);
-    const page = edit && await (await tree.nodeByModule(mod.name))?.page();
-    if (!edit || !page || await page.access() < 1) return;
+    const title = await (mod.plugin.backendEdit as Edit)(node);
+    const page = title && await (await tree.nodeByModule(mod.name))?.page();
+    if (!page || await page.access() < 1) return;
     const url = new URL(await page.url(), ctx.req.url.href);
-    for (const [key, value] of Object.entries(edit.params)) url.searchParams.set(key, String(value));
-    return { title: edit.title, url: url.pathname + url.search };
+    url.searchParams.set("id", String(node.id));
+    return { title, url: url.pathname + url.search };
   }));
   return found.filter(Boolean);
 }

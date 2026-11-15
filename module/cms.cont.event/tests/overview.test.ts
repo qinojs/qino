@@ -6,7 +6,7 @@ import { assertEquals, assertStringIncludes, testContext } from "@qino/qino/test
 
 import { formatDates } from "../mod.ts";
 
-test("event previews keep nodes paginated and dates bounded in one SQL query", async () => {
+test("event previews keep events paginated, their rows along and dates bounded in one SQL query", async () => {
   const dir = await fs.tempDir() + "/", app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.event");
   await app.init();
@@ -30,16 +30,18 @@ test("event previews keep nodes paginated and dates bounded in one SQL query", a
       assertStringIncludes(period, "17. November 2026");
       assertStringIncludes(period, "15. Juli 2027");
       assertStringIncludes(period, "11:00");
-      assertEquals(items[0].blocks.length, 3);
+      assertEquals(items[0].dates.length, 3);
       assertEquals(items[1].count, 0);
-      assertEquals(items[1].blocks, []);
-      assertEquals(items[0].blocks[0], { start: "2026-11-17", end: "2026-11-19" });
-      const dates = formatDates(items[0].blocks, "de", "Europe/Zurich").map(String);
+      // the event's own row comes along, for its zone and place
+      assertEquals([items[0].event.id, items[0].event.time_zone], [first.id, ""]);
+      assertEquals(items[1].dates, []);
+      assertEquals(items[0].dates[0], { start: "2026-11-17", end: "2026-11-19" });
+      const dates = formatDates(items[0].dates, "de", "Europe/Zurich").map(String);
       assertStringIncludes(dates[0], "17.–18. November 2026");
       assertStringIncludes(dates[1], "09:00");
       assertStringIncludes(dates[1], "11:00");
       assertEquals(dates[0].includes("Ganztägig"), false);
-      assertStringIncludes(String(formatDates([items[0].blocks[0]], "de", "America/Los_Angeles")[0]), "17.–18. November 2026");
+      assertStringIncludes(String(formatDates([items[0].dates[0]], "de", "America/Los_Angeles")[0]), "17.–18. November 2026");
       const one = await overview(app.db, sql`SELECT * FROM page WHERE ${sql.in("id", [first.id, second.id])} ORDER BY id LIMIT ${1} OFFSET ${1}`, sql`p.id`);
       assertEquals(one.map((item) => Number(item.row.id)), [second.id]);
     });

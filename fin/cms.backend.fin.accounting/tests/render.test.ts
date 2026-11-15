@@ -21,18 +21,18 @@ test("statements, journal and an entry by hand, its detail and its reversal", as
       book: { date: `${year}-03-02`, text: "Rent <March>", account0: "6000", debit0: "1'800.00", account1: "1020", credit1: "1800" },
     })) as Answer;
     assertEquals(booked.ok, true, booked.message);
-    const id = Number(new URL(booked.url!, "http://-").searchParams.get("entry"));
+    const id = Number(new URL(booked.url!, "http://-").searchParams.get("id"));
 
     const page = String(await inRequest(app, BASE, () => render(node))).replaceAll(" ", " ");
     // 1'000 revenue less 1'800 rent: a loss of 800
     for (const part of ["Balance sheet", "Rent &lt;March&gt;", "1100 Forderungen", "CHF 1,081.00", "Loss", "CHF 800.00"]) {
       assertStringIncludes(page, part);
     }
-    const detail = String(await inRequest(app, `${BASE}?entry=${id}`, () => render(node)));
+    const detail = String(await inRequest(app, `${BASE}?id=${id}`, () => render(node)));
     assertStringIncludes(detail, "data-reverse");
     const back = await inRequest(app, BASE, () => api(node, { reverse: String(id) })) as Answer;
     assertEquals(back.ok, true);
-    const again = String(await inRequest(app, `${BASE}?entry=${id}`, () => render(node)));
+    const again = String(await inRequest(app, `${BASE}?id=${id}`, () => render(node)));
     assert(!again.includes("data-reverse"));
     assertStringIncludes(again, "Reversed by");
 

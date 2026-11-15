@@ -17,7 +17,7 @@ const PER_PAGE = 100;
 
 export function render(node: Node): Promise<HtmlString> {
   const url = getCtx().req.url.toURL();
-  const id = Number(url.searchParams.get("invoice"));
+  const id = Number(url.searchParams.get("id"));
   return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : overview(node, url);
 }
 
@@ -33,11 +33,11 @@ const userLabel = (u: Row) =>
 
 /** A user, linked to their page among customers and suppliers. */
 const userLink = (node: Node, id: unknown, label = "") =>
-  id ? rowLink(node, "cms.backend.fin.party", "usr", id, label || `#${id}`) : "";
+  id ? rowLink(node, "cms.backend.fin.party", id, label || `#${id}`) : "";
 
 /** A small link to the party's page, behind its name: the list stays about the invoices. */
 async function partyIcon(node: Node, id: unknown) {
-  const url = (await backend.toModuleUrl(node, "cms.backend.fin.party"))({ usr: id });
+  const url = (await backend.toModuleUrl(node, "cms.backend.fin.party"))({ id });
   return url ? html.async` <a href="${url}" title="${node.app.t`Customer`}"><u2-ico icon=person>👤</u2-ico></a>` : "";
 }
 
@@ -119,7 +119,7 @@ async function list(node: Node, url: URL) {
       <th>${t`Status`}
       <th>${t`For`}
     <tbody>${rows.map((row) => html.async`<tr u2-href>
-      <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
+      <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.number || html`<small>#${row.id}</small>`}</a>
         ${row.type === "invoice" ? "" : badge(typeName(app, row.type))}
       <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
       <td><span class=-party title="${partyName(row)}">${partyName(row)}</span>${row.usr_id ? partyIcon(node, row.usr_id) : ""}
@@ -390,7 +390,7 @@ async function detail(node: Node, id: number) {
       ${field(t`Language`, row.lang)}
       ${field(t`Type`, typeName(app, row.type))}
       ${row.preceding
-        ? field(credit ? t`Corrects` : t`Follows`, rowLink(node, "cms.backend.fin.invoice", "invoice", row.preceding))
+        ? field(credit ? t`Corrects` : t`Follows`, rowLink(node, "cms.backend.fin.invoice", row.preceding))
         : ""}
       ${field(t`Direction`, html.async`${direction(row.direction, "")}
         ${row.direction === "out" ? t`issued (receivable)` : t`received (payable)`}`)}
@@ -401,7 +401,7 @@ async function detail(node: Node, id: number) {
         <input type=date name=date value="${row.sent}"> <button>${t`Save`}</button>
       </form>`) : ""}
       ${listing.length ? field(t`Reminded`, html.join(listing.map((r) =>
-        html`<a href="${backend.toUrl(pageUrl, { invoice: r.id })}">${r.number || `#${r.id}`}</a>
+        html`<a href="${backend.toUrl(pageUrl, { id: r.id })}">${r.number || `#${r.id}`}</a>
           <small>${r.date}</small>`), ", ")) : ""}
       ${claims && reminders && row.status === "open" ? field(t`Reminders`, html.async`
         ${row.remind ? t`go out` : badge(t`held`, "--orange")}
@@ -483,7 +483,7 @@ async function detail(node: Node, id: number) {
   ${listed.length ? html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Reminded invoices`}</div>
     <table class=u2-table>${listed.map((l) => html.async`<tr>
-      <td><a href="${backend.toUrl(pageUrl, { invoice: l.id })}">${l.number || `#${l.id}`}</a>
+      <td><a href="${backend.toUrl(pageUrl, { id: l.id })}">${l.number || `#${l.id}`}</a>
       <td>${t`Due`} ${l.due}
       <td style="text-align:end">${money(l.open, row.currency)}
       <td>${l.level}.`)}</table>
@@ -491,7 +491,7 @@ async function detail(node: Node, id: number) {
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Payments`} <small>ref ${refOf(id)}</small></div>
     ${payments.length ? html.async`<table class=u2-table>${payments.map((p) => html.async`<tr>
-      <td>${rowLink(node, "cms.backend.fin.payment", "payment", p.id)}
+      <td>${rowLink(node, "cms.backend.fin.payment", p.id)}
       <td>${direction(p.direction, p.direction)} ${p.provider}
       <td style="text-align:end">${money(p.amount, p.currency)}
       <td style="text-align:end">${money(Number(p.paid) - Number(p.refunded), p.currency)}
@@ -536,7 +536,7 @@ export async function userInvoices(app: App, id: unknown, page: Node): Promise<H
     ? html.async`<p><a href="${backend.toUrl(pageUrl, { usr: id })}">${t`All`} ${count} ${t`invoices`}</a>`
     : "";
   return html.async`<table class=u2-table style="white-space:nowrap">${rows.map((row) => html.async`<tr>
-    <td><a href="${backend.toUrl(pageUrl, { invoice: row.id })}">${row.number || `#${row.id}`}</a>
+    <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.number || `#${row.id}`}</a>
     <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
     <td>${row.date}
     <td style="text-align:end">${money(row.total, row.currency)}

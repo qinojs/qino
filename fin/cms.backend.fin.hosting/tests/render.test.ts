@@ -33,10 +33,10 @@ test("domains: the list shows owner, aliases, host and billing, flags what is no
 
     await save(app, "anna.net", { aliasOf: "anna.ch" }); // nothing to bill: folded under its domain
     const page = String(await inRequest(app, BASE, () => render(node)));
-    assertStringIncludes(page, `<a href="/backend/domains?domain=anna.ch">anna.ch</a>`);
+    assertStringIncludes(page, `<a href="/backend/domains?id=anna.ch">anna.ch</a>`);
     assertStringIncludes(page, `<tr data-alias-of="anna.ch" hidden>`);
     assertStringIncludes(page, `<button data-aliases="anna.ch" class=u2-unstyle>+1</button>`);
-    assertStringIncludes(page, `<tr>\n        <td style="white-space:nowrap"><small>↳</small> <a href="/backend/domains?domain=anna.com">`); // to bill: shown
+    assertStringIncludes(page, `<tr>\n        <td style="white-space:nowrap"><small>↳</small> <a href="/backend/domains?id=anna.com">`); // to bill: shown
     assert(/<small>Hosting<\/small> Webspace <small>CHF\s240\.00 \/ year<\/small>/.test(page)); // Intl puts a no-break space
     const row = (name: string) => page.slice(page.lastIndexOf(`>${name}</a>`)).split("<tr>")[0];
     assertStringIncludes(row("anna.ch"), "Domain not billed"); // its hosting is, its registration not
@@ -50,7 +50,7 @@ test("domains: the list shows owner, aliases, host and billing, flags what is no
     assertStringIncludes(page, "Anna AG");
 
     const filtered = String(await inRequest(app, `${BASE}?search=ours`, () => render(node)));
-    assert(filtered.includes("ours.ch") && !filtered.includes("?domain=theirs.ch")); // the to-do card lists the others still
+    assert(filtered.includes("ours.ch") && !filtered.includes("?id=theirs.ch")); // the to-do card lists the others still
     // searched for, an alias shows unfolded
     assert(!String(await inRequest(app, `${BASE}?search=anna.com`, () => render(node))).includes("data-alias-of="));
 
@@ -70,16 +70,16 @@ test("domains: one is added, changed, linked, unlinked and removed; refusals com
     const sub = await subscribe(app, { usrId: anna, name: "Domain", price: 2500, currency: "CHF", start: "2026-01-01" });
 
     const added = await as(() => api(node, { save: { name: "Anna.CH", usrId: String(anna), aliasOf: "", registrar: "" } }));
-    assertEquals(added.url, "/backend/domains?domain=anna.ch");
+    assertEquals(added.url, "/backend/domains?id=anna.ch");
     assertEquals((await as(() => api(node, { save: { name: "nonsense", usrId: "" } }))).message, "not a domain: nonsense");
 
-    const detail = String(await inRequest(app, `${BASE}?domain=anna.ch`, () => render(node)));
+    const detail = String(await inRequest(app, `${BASE}?id=anna.ch`, () => render(node)));
     assertStringIncludes(detail, `<option value="${sub}">Domain`); // the owner's subscription, ready to link
     assertStringIncludes(detail, "data-remove=");
 
     await as(() => api(node, { link: { id: "anna.ch", subscription: String(sub), kind: "domain" } }));
     assertEquals(await app.db.one`SELECT ref FROM subscription WHERE id = ${sub}`, "fin.hosting:anna.ch/domain");
-    const linked = String(await inRequest(app, `${BASE}?domain=anna.ch`, () => render(node)));
+    const linked = String(await inRequest(app, `${BASE}?id=anna.ch`, () => render(node)));
     assertStringIncludes(linked, `data-unlink="${sub}"`);
     assertStringIncludes(linked, "It cannot be removed: Subscriptions still run for it.</small>");
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).ok, false);
@@ -90,7 +90,7 @@ test("domains: one is added, changed, linked, unlinked and removed; refusals com
     const row = await app.db.row`SELECT usr_id, registrar, host FROM fin_hosting_domain WHERE name = 'anna.ch'`;
     assertEquals([row?.usr_id, row?.registrar, row?.host], [OURS, "Infomaniak", "plesk:s3"]); // "0": ours, not none
     assertEquals((await as(() => api(node, { remove: "anna.ch" }))).url, "/backend/domains");
-    assertStringIncludes(String(await inRequest(app, `${BASE}?domain=anna.ch`, () => render(node))), "No domain anna.ch");
+    assertStringIncludes(String(await inRequest(app, `${BASE}?id=anna.ch`, () => render(node))), "No domain anna.ch");
   });
 });
 
@@ -101,7 +101,7 @@ test("domains: an alias's page offers no customer and no host — they are its d
     await save(app, "anna.ch", { usrId: anna });
     await save(app, "anna.com", { aliasOf: "anna.ch" });
     await subscribe(app, { usrId: anna, name: "Hosting", price: 24000, currency: "CHF", start: "2026-01-01" });
-    const page = String(await inRequest(app, `${BASE}?domain=anna.com`, () => render(node)));
+    const page = String(await inRequest(app, `${BASE}?id=anna.com`, () => render(node)));
     assert(!page.includes("name=usrId") && !page.includes("name=host") && page.includes("data-link="));
     assert(!page.includes("<option value=hosting>")); // nor a hosting to link
     assertStringIncludes(page, `<option selected>anna.ch`);

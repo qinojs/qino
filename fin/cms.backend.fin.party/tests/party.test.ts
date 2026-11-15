@@ -37,12 +37,12 @@ test("customers and suppliers follow from the invoices; a new one keeps its addr
     assertStringIncludes(String(await as(`${base}?role=customer`, () => render(node))), "Druck AG");
     await as(base, () => api(node, { credit: { id: String(id), amount: "5", currency: "CHF", text: "Start" } }));
     assertStringIncludes(String(await as(base, () => render(node))), "5.00</span>"); // credit in the list
-    page = String(await as(`${base}?usr=${id}`, () => render(node)));
+    page = String(await as(`${base}?id=${id}`, () => render(node)));
     const parts = ['value="Seeweg 2"', `data-save="${id}"`, `data-credit="${id}"`]; // its invoices: a card of fin.invoice
     for (const part of parts) assertStringIncludes(page, part);
     const goodwill = { id: String(id), amount: "12.50", currency: "chf", text: "Goodwill" };
     await as(base, () => api(node, { credit: goodwill }));
-    assertStringIncludes(String(await as(`${base}?usr=${id}`, () => render(node))), "Goodwill");
+    assertStringIncludes(String(await as(`${base}?id=${id}`, () => render(node))), "Goodwill");
   });
 });
 
@@ -71,7 +71,7 @@ test("the list shows current parties; former ones on request or when searched fo
     const list = (query = "") => inRequest(app, base + query, () => render(node)).then(String);
     const page = await list();
     assert(page.includes("Offen AG") && page.includes("Neu AG") && !page.includes("Alt AG"));
-    assertStringIncludes(page, `<td><a href="/backend/parties?usr=${recent}">${recent}</a>`);
+    assertStringIncludes(page, `<td><a href="/backend/parties?id=${recent}">${recent}</a>`);
     assertStringIncludes(await list("?former=1"), "Alt AG");
     assertStringIncludes(await list("?search=Alt"), "Alt AG");
   });
@@ -88,7 +88,7 @@ test("a user's address and credit, as a card on other pages, links to where they
     const out = await inRequest(app, "http://qino.test/", async () => backendRowWidget.usr(app, id, await node.page()));
     assertEquals(out && out.title, "Address");
     const card = String(out && out.body);
-    assertStringIncludes(card, `<a href="/backend/parties?usr=${id}">Druck AG</a><br>Seeweg 2<br>3000 Bern`);
+    assertStringIncludes(card, `<a href="/backend/parties?id=${id}">Druck AG</a><br>Seeweg 2<br>3000 Bern`);
     assertStringIncludes(card, "CH9300762011623852957");
     assert(/Credit[\s\S]*5\.00/.test(card));
     assertEquals(String(await inRequest(app, "http://qino.test/", async () => backendRowWidget.usr(app, id + 99, await node.page()))), "");

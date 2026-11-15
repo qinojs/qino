@@ -35,9 +35,9 @@ export async function render(node: Node): Promise<HtmlString> {
         <th>${t`Read`}
         <th>${t`Received`}
       <tbody>${drafts.map((row) => html.async`<tr u2-href>
-        <td><a href="${invoices({ invoice: row.id })}">${supplier(row)}</a>
+        <td><a href="${invoices({ id: row.id })}">${supplier(row)}</a>
         <td>${row.usr_id
-          ? rowLink(node, "cms.backend.fin.party", "usr", row.usr_id)
+          ? rowLink(node, "cms.backend.fin.party", row.usr_id)
           : html.async`<button data-supplier="${row.id}">${t`Find or create`}</button>`}
         <td>${row.number}
         <td>${row.date}

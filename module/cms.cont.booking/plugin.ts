@@ -1,4 +1,5 @@
 import { ApiError, html } from "@qino/qino";
+import { get, zoneOf } from "@qino/qino/cms.event";
 
 import { book, bookings, cancel, slots } from "./mod.ts";
 import api from "./nodeApi.ts";
@@ -10,14 +11,13 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 export { calendar } from "./calendar.ts";
 
 const settingsSchema = { properties: {
-  time_zone: { type: "string", default: "UTC", description: "IANA time zone for the displayed appointments, for example Europe/Zurich." },
   duration: { type: "integer", minimum: 0, default: 0, description: "Slot length in minutes. Zero books each offered event as a whole; a positive value splits availability windows." },
   horizon_days: { type: "integer", minimum: 1, default: 60, description: "How many days ahead visitors may book." },
 } };
 
 async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
   const t = node.app.t.in("cms.cont.booking");
-  const timeZone = String(node.settings.time_zone() ?? "UTC");
+  const timeZone = await zoneOf(node.app, await get(node));
   const today = Temporal.Now.zonedDateTimeISO(timeZone).toPlainDate();
   const param = `cms_booking_${node.id}_date`;
   let date = today, error = "", success = "";
@@ -27,7 +27,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
       if (vars.your_name) throw new ApiError(400, "Booking could not be completed");
       const slot = JSON.parse(String(vars.slot ?? "null"));
       if (!slot || typeof slot.start !== "string") throw new ApiError(400, "Choose an appointment");
-      await book(node, { eventId: Number(slot.eventId), start: slot.start, name: String(vars.name ?? ""), email: String(vars.email ?? ""), timeZone });
+      await book(node, { dateId: Number(slot.dateId), start: slot.start, name: String(vars.name ?? ""), email: String(vars.email ?? ""), timeZone });
       success = await t`Your appointment is booked.`;
     } catch (e) {
       if (!(e instanceof ApiError) && !(e instanceof RangeError) && !(e instanceof SyntaxError)) throw e;
@@ -60,7 +60,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
       <input type=text name=your_name autocomplete=off tabindex=-1 aria-hidden=true>
       <label for="${slotId}">${t`Appointment (required)`}</label>
       <select id="${slotId}" name=slot required><option value="">${t`Choose an appointment`}</option>
-        ${available.map((slot) => html`<option value="${JSON.stringify({ eventId: slot.eventId, start: slot.start })}">${stamp(slot.start)} – ${stamp(slot.end)}</option>`)}
+        ${available.map((slot) => html`<option value="${JSON.stringify({ dateId: slot.dateId, start: slot.start })}">${stamp(slot.start)} – ${stamp(slot.end)}</option>`)}
       </select>
       <label for="${nameId}">${t`Name (required)`}</label>
       <input id="${nameId}" name=name autocomplete=name maxlength=200 value="${vars.name ?? ""}" required>
@@ -77,4 +77,5 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   </div>`;
 }
 
-export const cms = { node: { render, api, settingsSchema, widget: "pub/widget.js", css: ["pub/main.css"] } };
+// its offers are the dates of the event it is; their zone is the event's
+export const cms = { node: { render, api, is: ["cms_event"], settingsSchema, widget: "pub/widget.js", css: ["pub/main.css"] } };

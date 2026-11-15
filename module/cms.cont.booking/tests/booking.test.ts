@@ -49,7 +49,7 @@ test("appointment booking isolates instances, enforces node rights, and serializ
       await assertRejects(() => api(first, { offers: true }), AccessError);
       await assertRejects(() => api(first, { save: { start, end } }), AccessError);
     });
-    const input = { eventId: offers[0], start, name: "Guest <b>one</b>", email: "guest@example.test", timeZone: "UTC" };
+    const input = { dateId: offers[0], start, name: "Guest <b>one</b>", email: "guest@example.test", timeZone: "UTC" };
     const reserved = await requestStorage.run(guest, () => book(first, input));
     assertEquals((await requestStorage.run(guest, () => bookings(first))).length, 1);
     assertEquals(await requestStorage.run(other, () => bookings(first)), []);
@@ -73,13 +73,13 @@ test("appointment booking isolates instances, enforces node rights, and serializ
     await requestStorage.run(admin, async () => { second.settings.duration(0); await app.db.flush(); });
     const fixed = await requestStorage.run(owner, () => slots(second, period));
     assertEquals(fixed.length, 2);
-    const owned = await requestStorage.run(owner, () => book(second, { ...input, eventId: offers[1] }));
+    const owned = await requestStorage.run(owner, () => book(second, { ...input, dateId: offers[1] }));
     assertEquals(Temporal.Instant.from(owned.start).until(Temporal.Instant.from(owned.end)).total("hours"), 2);
     assertEquals((await requestStorage.run(owner, () => calendar.query(owner, period))).map((item) => item.id), [String(owned.id)]);
     assertEquals(await requestStorage.run(other, () => calendar.query(other, period)), []);
     await requestStorage.run(admin, async () => {
       const before = await list(first);
-      await assertRejects(() => api(second, { save: { id: offers[0], start, end, timeZone: "UTC" } }));
+      await assertRejects(() => api(second, { save: { id: offers[0], start, end } }));
       assertEquals(await list(first), before);
       await assertRejects(() => api(second, { remove: offers[1] }));
       await second.set({ access: 0 });
@@ -101,18 +101,18 @@ test("appointment booking isolates instances, enforces node rights, and serializ
       first.settings.duration(0);
       await app.db.flush();
       await add(first, { start: `${day}T09:00Z`, end: `${day}T11:00Z` });
-      const eventId = Number(await add(first, { start: `${day}T10:00Z`, end: `${day}T10:30Z` }));
-      await requestStorage.run(guest, () => book(first, { ...input, eventId, start: `${day}T10:00Z` }));
+      const dateId = Number(await add(first, { start: `${day}T10:00Z`, end: `${day}T10:30Z` }));
+      await requestStorage.run(guest, () => book(first, { ...input, dateId, start: `${day}T10:00Z` }));
     });
     assertEquals(await requestStorage.run(guest, () => slots(first, {
       start: `${day}T09:00Z`, end: `${day}T10:00Z`, timeZone: "UTC",
     })), []);
     await requestStorage.run(admin, async () => {
-      const range = { start: `${day}T12:00:30Z`, end: `${day}T13:00:45Z`, timeZone: "UTC" };
+      const range = { start: `${day}T12:00:30Z`, end: `${day}T13:00:45Z` };
       const saved = await api(first, { save: range }) as { id: number };
-      const offers = await api(first, { offers: true }) as { id: number; localStart: string; localEnd: string; timeZone: string }[];
+      const { offers } = await api(first, { offers: true }) as { offers: { id: number; localStart: string; localEnd: string }[] };
       const offer = offers.find((item) => item.id === saved.id)!;
-      await api(first, { save: { id: saved.id, start: offer.localStart, end: offer.localEnd, timeZone: offer.timeZone } });
+      await api(first, { save: { id: saved.id, start: offer.localStart, end: offer.localEnd } });
       const event = (await list(first)).find((item) => item.id === saved.id)!;
       assertEquals(Temporal.Instant.from(event.start).equals(range.start), true);
       assertEquals(Temporal.Instant.from(event.end).equals(range.end), true);

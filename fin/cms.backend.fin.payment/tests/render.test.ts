@@ -47,7 +47,7 @@ test("the detail shows every field, the bank lines and the slip; sync asks again
       currency: "CHF",
       transactions: [{ id: "1", date: "2026-10-07", amount: 20000, reference, partyName: "Kunde" }],
     });
-    const page = String(await as(`http://qino.test/backend/payments?payment=${id}`, () => render(node)));
+    const page = String(await as(`http://qino.test/backend/payments?id=${id}`, () => render(node)));
     for (const part of ["processing", reference, "Kunde", "<svg"]) assertStringIncludes(page, part);
     const answer = await as("http://qino.test/", () => api(node, { sync: id })) as { ok: boolean; message: string };
     assertEquals(answer.ok, true);
@@ -68,7 +68,7 @@ test("what cannot be done says so instead of failing", async () => {
 test("a payment recorded by hand can be canceled from its page; one a provider stands behind cannot", async () => {
   await withApp(async (app, as, node) => {
     const { id: asked } = await create(app, { method: "qrbill", amount: 1000, currency: "CHF", return: "/" });
-    const page = (id: unknown) => as(`http://qino.test/backend/payments?payment=${id}`, () => render(node)).then(String);
+    const page = (id: unknown) => as(`http://qino.test/backend/payments?id=${id}`, () => render(node)).then(String);
     assert(!(await page(asked)).includes("data-cancel"));
     await as("http://qino.test/", () => api(node, {
       record: { direction: "out", provider: "cash", amount: "5", currency: "CHF", ref: "", description: "Typo" },

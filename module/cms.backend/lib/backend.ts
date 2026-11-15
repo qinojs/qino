@@ -85,6 +85,13 @@ export async function takeOver(app: App, old: string, module: string): Promise<v
   await app.modules.uninstall(old).catch(() => {});
 }
 
+/** What a backend page shows in detail: `?id=` (a part reload passes it in `vars`), a positive
+ *  integer; undefined shows its list. Every detail page is opened this way. */
+export function id(url: URL, vars: Record<string, unknown> = {}): number | undefined {
+  const id = Number(vars.id ?? url.searchParams.get("id"));
+  return Number.isSafeInteger(id) && id > 0 ? id : undefined;
+}
+
 /** Add query params to an app-relative page url ("" stays ""). */
 export function toUrl(url: string, params: Record<string, unknown> = {}): string {
   if (!url) return "";

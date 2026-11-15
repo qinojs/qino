@@ -1,50 +1,54 @@
 {
   "properties": {
     "cms_event": {
-      "description": "Calendar event blocks attached to CMS nodes. A node can have multiple cms_event records, each representing one fixed block with its own start and exclusive end.",
+      "description": "A node that is an event: one row, keyed by the node's id. Its dates are in cms_event_date.",
       "additionalProperties": {
         "properties": {
           "id": {
             "type": "integer",
             "x-index": "primary",
-            "x-autoincrement": true,
-            "minimum": 1,
-            "maximum": 9007199254740991
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade",
+            "x-qg-on-parent-copy": "cascade",
+            "description": "The node that is the event."
           },
-          "node_id": {
+          "time_zone": { "type": "string", "maxLength": 64, "default": "", "description": "IANA time zone its dates are entered and shown in; empty: the site's (cms.event setting)." },
+          "address_street": { "type": "string", "maxLength": 191, "default": "" },
+          "address_postal_code": { "type": "string", "maxLength": 16, "default": "" },
+          "address_locality": { "type": "string", "maxLength": 191, "default": "", "x-index": true },
+          "address_country": { "type": "string", "maxLength": 2, "default": "", "description": "ISO 3166-1 alpha-2." },
+          "price": { "type": ["number", "null"], "minimum": 0, "description": "Displayed price, in units of the currency; zero is free, null unspecified. Not for checkout." },
+          "currency": { "type": "string", "maxLength": 3, "default": "", "description": "ISO 4217." },
+          "performer": { "type": "string", "maxLength": 500, "default": "", "description": "Names of instructors, speakers or performers, comma-separated." },
+          "language": { "type": "string", "maxLength": 35, "default": "", "x-index": true, "description": "BCP 47 tag of the event's language, independent of the page's." },
+          "external_link": { "type": "string", "maxLength": 2048, "default": "", "description": "HTTP(S) URL of an external event or registration page." }
+        },
+        "required": ["id"]
+      }
+    },
+    "cms_event_date": {
+      "description": "The dates of an event: each a fixed interval with an inclusive start and exclusive end; equal ends are a moment.",
+      "additionalProperties": {
+        "properties": {
+          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true, "minimum": 1, "maximum": 9007199254740991 },
+          "event_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "page",
+            "x-qg-parent": "cms_event",
             "x-qg-on-parent-delete": "cascade",
             "x-qg-on-parent-copy": "cascade"
           },
           "start": {
-            "type": "integer",
-            "minimum": -8640000000000,
-            "maximum": 8640000000000,
-            "x-index": true,
+            "type": "integer", "minimum": -8640000000000, "maximum": 8640000000000, "x-index": true,
             "description": "Inclusive start in epoch seconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
           "end": {
-            "type": "integer",
-            "minimum": -8640000000000,
-            "maximum": 8640000000000,
-            "x-index": true,
+            "type": "integer", "minimum": -8640000000000, "maximum": 8640000000000, "x-index": true,
             "description": "Exclusive end in epoch seconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
-          "all_day": {
-            "type": "boolean",
-            "default": false,
-            "description": "True for whole calendar days; derived from date-only boundaries when a block is written."
-          }
+          "all_day": { "type": "boolean", "default": false, "description": "True for whole calendar days; derived from date-only boundaries when written." }
         },
-        "required": [
-          "id",
-          "node_id",
-          "start",
-          "end",
-          "all_day"
-        ]
+        "required": ["id", "event_id", "start", "end", "all_day"]
       }
     }
   }

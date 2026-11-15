@@ -98,7 +98,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       const product = await p.node();
       return html.async`<tr data-id="${p.$id}">
       <td>${thumbnail(product)}
-      <td><a href="${link({ product: p.$id })}">${p.title(lang)}</a>${await product.isOnline() ? "" : html.async` <small>${t`Offline`}</small>`}
+      <td><a href="${link({ id: p.$id })}">${p.title(lang)}</a>${await product.isOnline() ? "" : html.async` <small>${t`Offline`}</small>`}
       <td>${(await categoryOf(product))?.showTitle()}
       <td>${p.sku}
       ${columns.map((c, i) => html`<td>${input({ ...c, label: labels[i] }, { [c.name!]: p.$get(c.name!) })}`)}`;
@@ -115,7 +115,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
 async function tables(app: App, id: number): Promise<Rows[]> {
   const t = shopT(app), has = (module: string) => !!app.modules.get(module);
   const main = (await mainCurrency(app))?.$id ?? "", inMain = () => main;
-  const vars = { product: id };
+  const vars = { id };
   const stock: Column[] = has("cms.shop.stock") ? [{ name: "stock", label: t`In stock`, type: "number" }] : [];
   const fields = await app.db.table("shop_product").init();
   // yes-or-no marks a site declares itself (prop_bestseller)
@@ -212,8 +212,8 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
 
 function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const url = ctx.req.url.toURL();
-  const id = Number(vars.product ?? url.searchParams.get("product"));
-  return Number.isSafeInteger(id) && id > 0 ? detail(node, id) : list(node, url);
+  const id = backend.id(url, vars);
+  return id ? detail(node, id) : list(node, url);
 }
 
 /** A new product, in a category, of the kind that lives there. */
@@ -224,13 +224,12 @@ async function create(app: App, category: number, title: string) {
   const child = await parent.createCont({ module: kind ?? "cms.cont.shop.product", visible: true });
   await app.db.table("shop_product").ensure({ id: child.id });
   await child.title(app.languages.def, title.trim());
-  return { ok: true, product: child.id };
+  return { ok: true, id: child.id };
 }
 
 /** A product is edited here. */
 export async function backendEdit(node: Node) {
-  if (!await node.db.one`SELECT id FROM shop_product WHERE id = ${node.id}`) return;
-  return { title: await shopT(node.app)`Edit product in the backend`, params: { product: node.id } };
+  if (await node.db.one`SELECT id FROM shop_product WHERE id = ${node.id}`) return shopT(node.app)`Edit product in the backend`;
 }
 
 /** Node access is the permission: whoever may open this page may change a product. */
@@ -244,7 +243,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
     const main = (await mainCurrency(app))?.$id ?? "";
     return saveRows(node, [{ table: "shop_product", title: "", fixed: true, columns: listColumns(app, main) }], vars);
   }
-  return saveRows(node, await tables(app, Number(vars.product)), vars);
+  return saveRows(node, await tables(app, Number(vars.id)), vars);
 }
 
 export const cms = { node: { render, api, js: ["../cms.backend.shop/pub/rows.js", "pub/main.js"] } };

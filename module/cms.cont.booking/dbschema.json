@@ -17,10 +17,10 @@
             "x-qg-parent": "page",
             "x-qg-on-parent-delete": "cascade"
           },
-          "event_id": {
+          "date_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "cms_event",
+            "x-qg-parent": "cms_event_date",
             "minimum": 1,
             "maximum": 9007199254740991
           },
@@ -64,7 +64,7 @@
         "required": [
           "id",
           "node_id",
-          "event_id",
+          "date_id",
           "start",
           "end",
           "name",

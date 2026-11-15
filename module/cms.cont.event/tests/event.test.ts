@@ -2,13 +2,13 @@ import { test } from "node:test";
 import { AccessError, App, fs, Output, requestStorage } from "@qino/qino";
 import { entries } from "@qino/qino/calendar";
 import { cms as tree, cmsCtx } from "@qino/qino/cms";
-import { list } from "@qino/qino/cms.event";
+import { get, list, set } from "@qino/qino/cms.event";
 import { assertEquals, assertRejects, assertStringIncludes, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
 
-test("event content renders CMS texts and fixed blocks, scopes writes and preserves node visibility", async () => {
+test("event content is an event: renders its texts, details and dates, checks what is stored, scopes writes", async () => {
   const dir = await fs.tempDir() + "/", app = new App({ db: "sqlite::memory:", dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.event");
   await app.init();
@@ -22,47 +22,51 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       const create = (access: number) => root.createChild({ module: "cms.cont.event", access, online_start: 0, online_end: 0 });
       return Promise.all([create(1), create(0), create(1)]);
     });
+    // the module makes its nodes events: the row comes with the node
+    assertEquals(await get(event), { id: event.id, time_zone: "", address_street: "", address_postal_code: "", address_locality: "",
+      address_country: "", price: null, currency: "", performer: "", language: "", external_link: "" });
     await requestStorage.run(admin, async () => {
       await event.title("en", "Course <b>one</b>");
       await event.text("main", "en", "<p>Course description</p>");
       await event.text("location", "en", "<p>Hall &amp; garden</p>");
-      event.settings.time_zone("Europe/Zurich");
-      await app.db.flush();
-      Object.entries({
-        address_street: "Main Street 1", address_postal_code: "01234", address_locality: "Town", address_country: "CH",
-        price: "12.5", currency: "chf", performer: "Teacher <script>alert(1)</script>", language: "de-CH",
+      await api(event, { set: {
+        time_zone: "Europe/Zurich", address_street: " Main Street 1 ", address_postal_code: "01234", address_locality: "Town",
+        address_country: "ch", price: 12.5, currency: "chf", performer: "Teacher <script>alert(1)</script>", language: "de-ch",
         external_link: "https://example.test/event?x=1&y=2",
-      }).forEach(([key, value]) => event.settings[key](value));
-      await app.db.flush();
+      } });
+      // stored as the standards write them, so whatever shows them can trust them
+      const stored = await get(event);
+      assertEquals([stored!.address_street, stored!.address_country, stored!.currency, stored!.language], ["Main Street 1", "CH", "CHF", "de-CH"]);
+      for (const wrong of [{ currency: "C" }, { language: "invalid_tag!" }, { external_link: "javascript:alert(1)" }, { time_zone: "Mars/Olympus" }, { price: -1 }, { unknown: "x" }])
+        await assertRejects(() => api(event, { set: wrong }));
       await api(event, { save: { start: "2027-07-10T09:00:30", end: "2027-07-10T11:00:45" } });
       const saved = await api(event, { save: { start: "2027-07-12", end: "2027-07-13" } }) as { id: number };
       await api(hidden, { save: { start: "2027-07-12", end: "2027-07-13" } });
-      const { timeZone, blocks } = await api(event, { blocks: true }) as { timeZone: string; blocks: { id: number; start: string; localStart: string; allDay: boolean }[] };
+      const { timeZone, dates } = await api(event, { get: true }) as { timeZone: string; dates: { id: number; start: string; localStart: string; allDay: boolean }[] };
       assertEquals(timeZone, "Europe/Zurich");
-      assertEquals(blocks.length, 2);
-      assertEquals(blocks[0].start, "2027-07-10T07:00:30Z");
-      assertEquals(blocks[0].localStart, "2027-07-10T09:00:30");
-      assertEquals(blocks[1].allDay, true);
+      assertEquals(dates.length, 2);
+      assertEquals(dates[0].start, "2027-07-10T07:00:30Z");
+      assertEquals(dates[0].localStart, "2027-07-10T09:00:30");
+      assertEquals(dates[1].allDay, true);
       await assertRejects(() => api(event, { save: { start: "2027-03-28T02:30", end: "2027-03-28T04:00" } }), RangeError);
       await assertRejects(() => api(event, { save: { start: "2027-10-31T02:30", end: "2027-10-31T04:00" } }), RangeError);
       await assertRejects(() => api(event, { save: { start: "2027-07-12", end: "2027-07-12T12:00Z" } }), RangeError);
       await assertRejects(() => api(other, { save: { id: saved.id, start: "2027-07-14", end: "2027-07-15" } }));
       await api(other, { remove: saved.id });
-      // without a zone of its own the node takes the default of cms.event; its own wins once set
+      // without a zone of its own an event takes the site's; its own wins once set
       assertEquals((await api(other, { save: { start: "2028-07-10T09:00", end: "2028-07-10T11:00" } }) as { start: string }).start, "2028-07-10T09:00:00Z");
       await app.settings["cms.event"].time_zone("Europe/Zurich");
       assertEquals((await api(other, { save: { start: "2028-07-10T09:00", end: "2028-07-10T11:00" } }) as { start: string }).start, "2028-07-10T07:00:00Z");
-      assertEquals(await api(other, { zone: "America/New_York" }), { timeZone: "America/New_York" });
-      assertEquals(await api(other, { zone: "" }), { timeZone: "Europe/Zurich" });
-      await assertRejects(() => api(other, { zone: "Mars/Olympus" }), RangeError);
+      assertEquals((await api(other, { set: { time_zone: "America/New_York" } }) as { timeZone: string }).timeZone, "America/New_York");
+      assertEquals((await api(other, { set: { time_zone: "" } }) as { timeZone: string }).timeZone, "Europe/Zurich");
       assertEquals((await list(event)).length, 2);
     });
     await requestStorage.run(viewer, async () => {
-      await assertRejects(() => api(event, { blocks: true }), AccessError);
-      await assertRejects(() => api(hidden, { blocks: true }), AccessError);
+      await assertRejects(() => api(event, { get: true }), AccessError);
+      await assertRejects(() => api(hidden, { set: { performer: "Hidden" } }), AccessError);
       await assertRejects(() => api(event, { save: { start: "2027-07-14", end: "2027-07-15" } }), AccessError);
-      const blocks = await list(event);
-      await assertRejects(() => api(event, { remove: blocks[0].id }), AccessError);
+      const dates = await list(event);
+      await assertRejects(() => api(event, { remove: dates[0].id }), AccessError);
       const items = await entries(viewer, { start: "2027-07-01", end: "2027-08-01", timeZone: "Europe/Zurich" });
       assertEquals(items.length, 2);
       assertEquals(items.map((item) => item.title), ["Course one", "Course one"]);
@@ -102,21 +106,19 @@ test("event content renders CMS texts and fixed blocks, scopes writes and preser
       assertStringIncludes(body, "LOCATION:Hall & garden\\, Main Street 1\\, 01234 Town\\, CH\r\n");
     });
     await requestStorage.run(admin, async () => {
-      const blocks = await list(event);
-      await api(event, { save: { id: blocks[1].id, start: "2027-07-14", end: "2027-07-16" } });
+      const dates = await list(event);
+      await api(event, { save: { id: dates[1].id, start: "2027-07-14", end: "2027-07-16" } });
       assertEquals((await list(event))[1].end, "2027-07-16");
       const rendered = String(await cms.node.render(event, { ctx: viewer }));
       assertStringIncludes(rendered, "14.–15. Juli 2027");
-      await api(event, { remove: blocks[0].id });
+      await api(event, { remove: dates[0].id });
       assertEquals((await list(event)).length, 1);
-      event.settings.price(0);
+      await set(event, { price: 0 });
       assertStringIncludes(String(await cms.node.render(event, { ctx: viewer })), "0,00");
-      // half-typed codes and unsafe links are left out instead of breaking the page
-      for (const [key, value] of [["currency", "C"], ["language", "invalid_tag!"], ["external_link", "javascript:alert(1)"]]) event.settings[key](value);
-      const partial = String(await cms.node.render(event, { ctx: viewer }));
-      assertEquals(partial.includes("0,00"), false);
-      assertEquals(partial.includes("javascript:"), false);
-      assertStringIncludes(partial, "Course description");
+      await set(event, { price: null, currency: "", external_link: "" });
+      const cleared = String(await cms.node.render(event, { ctx: viewer }));
+      assertEquals(cleared.includes("CHF"), false);
+      assertEquals(cleared.includes('href="https://example.test'), false);
     });
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));

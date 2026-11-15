@@ -35,7 +35,7 @@ export const calendar: Source = {
         if (row.end_date && start >= String(row.end_date).slice(0, 10)) break;
         if (start < days.start) continue;
         const link = url ? new URL(url, ctx.req.url.href) : undefined;
-        link?.searchParams.set("subscription", String(row.id));
+        link?.searchParams.set("id", String(row.id));
         result.push({ id: `${row.id}:${start}`, title, start, end: date.add({ days: 1 }).toString(), ...(link && { editUrl: link.href }) });
       }
     }

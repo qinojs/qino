@@ -303,10 +303,10 @@ function frequencySelect(row: DomainRow) {
 /** The table's page, from the node — api calls that re-render a row run on the api url. */
 export const nodeUrl = async (node: Node, ctx: Ctx): Promise<URL> => new URL(await node.url(), ctx.req.url.href);
 
-// Same page, one parameter more — a bare "?domain=…" would drop cmspid, lang and editmode.
+// Same page, one parameter more — a bare "?id=…" would drop cmspid, lang and editmode.
 const detailLink = (pageUrl: URL, domain: string) => {
   const url = new URL(pageUrl);
-  url.searchParams.set("domain", domain);
+  url.searchParams.set("id", domain);
   return url.pathname + url.search;
 };
 
@@ -367,7 +367,7 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
 async function renderDetail(node: Node, ctx: Ctx, domain: string) {
   const row = await node.app.db.row<DomainRow>`SELECT * FROM monitor_domain WHERE domain = ${domain}`;
   const back = ctx.req.url.toURL();
-  back.searchParams.delete("domain");
+  back.searchParams.delete("id");
   if (!row) return html`<div class=u2-card>
     <div class=-head>Domain monitor</div>
     <div><a href="${back.search || "?"}">← Domains</a><p>Domain not found.</div></div>`;
@@ -520,7 +520,7 @@ export async function backendDashboardWidget(app: App, node: Node): Promise<Html
 }
 
 export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
-  const domain = ctx.req.query.domain ?? "";
+  const domain = ctx.req.query.id ?? "";
   if (domain) return renderDetail(node, ctx, domain);
 
   const app = node.app;

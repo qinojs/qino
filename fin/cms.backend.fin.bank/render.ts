@@ -94,7 +94,7 @@ async function lines(node: Node, url: URL) {
   const app = node.app;
   const t = app.t;
   const q = (key: string) => url.searchParams.get(key) ?? "";
-  const sh = sqlSearch(q("search") || q("line"), ["party_name", "reference", "text"], { exact: ["id"] });
+  const sh = sqlSearch(q("search") || q("id"), ["party_name", "reference", "text"], { exact: ["id"] });
   const where = [
     sh.where,
     q("account") ? sql`account_id = ${Number(q("account"))}` : null,
@@ -128,7 +128,7 @@ async function lines(node: Node, url: URL) {
       <td>${row.reference ? html`<code style="white-space:nowrap">${readable(String(row.reference))}</code>` : ""}
       <td style="white-space:pre-line">${row.text}
       <td>${row.payment_id
-        ? rowLink(node, "cms.backend.fin.payment", "payment", row.payment_id)
+        ? rowLink(node, "cms.backend.fin.payment", row.payment_id)
         : assignForm(app, row, guesses.get(Number(row.id)) ?? [])}`)}
     ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 7 })}
   </table>`;

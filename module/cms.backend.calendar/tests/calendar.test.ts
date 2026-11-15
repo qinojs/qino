@@ -35,9 +35,9 @@ test("backend calendar reads CMS events through calendar, with node access and b
       assertEquals([result[0].start, result[0].end], ["2027-07-12T07:00:00Z", "2027-07-12T09:00:00Z"]);
       assertEquals([result[2].start, result[2].end], ["2027-07-14", "2027-07-15"]);
       assertEquals(result.every((item) => Boolean(item.url)), true);
-      const stored = await app.db.row`SELECT ${sql.id("start")} AS value FROM cms_event WHERE node_id = ${visible.id} AND all_day = ${false} ORDER BY id LIMIT 1`;
+      const stored = await app.db.row`SELECT ${sql.id("start")} AS value FROM cms_event_date WHERE event_id = ${visible.id} AND all_day = ${false} ORDER BY id LIMIT 1`;
       assertEquals(Number(stored!.value), Temporal.Instant.from("2027-07-12T07:00Z").epochMilliseconds / 1000);
-      const wholeDay = await app.db.row`SELECT ${sql.id("start")} AS value FROM cms_event WHERE node_id = ${visible.id} AND all_day = ${true}`;
+      const wholeDay = await app.db.row`SELECT ${sql.id("start")} AS value FROM cms_event_date WHERE event_id = ${visible.id} AND all_day = ${true}`;
       assertEquals(Number(wholeDay!.value), Temporal.Instant.from("2027-07-14T00:00Z").epochMilliseconds / 1000);
       assertThrows(() => add(visible, { start: "2027-07-21T09:00:00.000000001Z", end: "2027-07-21T10:00Z" }), RangeError);
       assertThrows(() => add(visible, { start: "2027-07-21T09:00:00.001Z", end: "2027-07-21T10:00Z" }), RangeError);
@@ -61,9 +61,9 @@ test("backend calendar reads CMS events through calendar, with node access and b
       assertStringIncludes(rendered, 'data-source-icon="cms.event"');
       assertStringIncludes(rendered, "pub/module.svg#main");
 
-      const count = await app.db.one`SELECT COUNT(*) FROM cms_event`;
+      const count = await app.db.one`SELECT COUNT(*) FROM cms_event_date`;
       assertEquals(await entries(ctx, { ...period, start: "2028-01-01", end: "2028-02-01" }), []);
-      assertEquals(await app.db.one`SELECT COUNT(*) FROM cms_event`, count);
+      assertEquals(await app.db.one`SELECT COUNT(*) FROM cms_event_date`, count);
 
       const userId = Number(await app.db.table("usr").insert({ username: "calendar-user", superuser: true }));
       const user = await testContext({ app, userId, set: { app } });

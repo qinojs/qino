@@ -14,7 +14,7 @@ export const calendar: Source = {
     const nodes = new Map<number, { title: string; url: string } | null>();
     const result: Entry[] = [];
     for (const row of rows) {
-      const id = Number(row.node_id);
+      const id = Number(row.event_id);
       if (!nodes.has(id)) {
         const node = await tree.node(id);
         nodes.set(id, node.exists() && await node.isReadable()

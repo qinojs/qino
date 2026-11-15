@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { AccessError, App, fs, Output, requestStorage } from "@qino/qino";
 import { cms as tree } from "@qino/qino/cms";
 import { entries } from "@qino/qino/calendar";
-import { add } from "@qino/qino/cms.event";
+import { add, get } from "@qino/qino/cms.event";
 import { assertEquals, assertRejects, assertStringIncludes, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
@@ -57,7 +57,7 @@ test("event management uses CMS categories, checks both permission levels and pa
       return event;
     });
     const period = { start: "2027-07-01", end: "2027-08-01", timeZone: "UTC" };
-    const detailContext = await context(editorId, `http://qino.test/?event=${event.id}`);
+    const detailContext = await context(editorId, `http://qino.test/?id=${event.id}`);
     await requestStorage.run(detailContext, async () => {
       const html = String(await render(panel, { ctx: detailContext }));
       assertStringIncludes(html, "data-event-texts");
@@ -70,7 +70,7 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertEquals((await event.showText("main", "en")).plain(), "Learn pottery");
       await assertRejects(() => api(panel, { texts: { id: event.id, lang: "invalid", title: "Wrong", location: "", main: "" } }));
       await event.set("online_end", 1);
-      assertEquals((await app.modules.get("cms.cont.event")!.plugin.cms.node.api(event, { blocks: true })).blocks.length, 1);
+      assertEquals((await app.modules.get("cms.cont.event")!.plugin.cms.node.api(event, { get: true })).dates.length, 1);
       await event.set("online_end", 0);
     });
     await requestStorage.run(await context(), async () => {
@@ -99,7 +99,7 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertStringIncludes(rendered, "Pottery");
       assertEquals(rendered.includes("Private category"), false);
       assertEquals(rendered.includes("data-event-visibility"), false);
-      const ctx = await context(readerId, `http://qino.test/?event=${event.id}`);
+      const ctx = await context(readerId, `http://qino.test/?id=${event.id}`);
       const detail = String(await render(panel, { ctx }));
       assertEquals(detail.includes("data-event-widget"), false);
       assertStringIncludes(detail, "disabled");
@@ -118,21 +118,24 @@ test("event management uses CMS categories, checks both permission levels and pa
     await requestStorage.run(await context(), async () => {
       assertEquals(await entries(await context(), period), []);
     });
-    // any content with dates is an event to the backend: a course sold as a product, say
+    // what is an event is the row, whatever module shows it: a course sold as a product, say
     await requestStorage.run(admin, async () => {
       const course = await page.cont("main", "cms.cont.text");
       await course.title("en", "Course as content");
       assertEquals(await backendEdit(course), undefined);
-      assertEquals((await api(panel, { dates: { id: course.id, save: { start: "2027-07-20", end: "2027-07-21" } } }) as { id: number }).id > 0, true);
-      assertEquals((await backendEdit(course))?.params, { event: course.id });
-      assertEquals((await backendEdit(event))?.params, { event: event.id });
+      await assertRejects(() => api(panel, { event: { id: course.id, get: true } }));
+      await add(course, { start: "2027-07-20", end: "2027-07-21" }); // a date makes it one
+      assertEquals(await backendEdit(course), "Edit event in the backend");
+      await api(panel, { event: { id: course.id, set: { address_locality: "Basel" } } });
+      assertEquals((await get(course))?.address_locality, "Basel");
       assertStringIncludes(String(await render(panel, { ctx: admin })), "Course as content");
-      const ctx = await context(await app.db.one`SELECT id FROM usr WHERE username = ${"event-admin"}`.then(Number), `http://qino.test/?event=${course.id}`);
+      const ctx = await context(await app.db.one`SELECT id FROM usr WHERE username = ${"event-admin"}`.then(Number), `http://qino.test/?id=${course.id}`);
       const detail = String(await render(panel, { ctx }));
+      // the same detail as any event's: location too, the category is its parent's title
       assertStringIncludes(detail, `data-event-widget="${course.id}" data-widget-src="${app.modules.get("cms.cont.event")!.modUrl}pub/widget.js"`);
-      assertEquals(detail.includes("data-details"), false);
-      assertEquals(detail.includes("name=location"), false);
-      await api(panel, { texts: { id: course.id, lang: "en", title: "Course renamed", main: "<p>About</p>" } });
+      assertStringIncludes(detail, "name=location");
+      assertEquals(detail.includes("data-event-move"), false);
+      await api(panel, { texts: { id: course.id, lang: "en", title: "Course renamed", location: "Hall", main: "<p>About</p>" } });
       assertEquals(await course.title("en"), "Course renamed");
     });
     await requestStorage.run(admin, async () => {
@@ -151,7 +154,7 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertEquals(html.split("<th scope=row>").length - 1, 50);
       assertStringIncludes(html, "page=2");
       assertStringIncludes(html, 'datetime="2027-07-12"');
-      assertStringIncludes(html, `event=${event.id}`);
+      assertStringIncludes(html, `id=${event.id}`);
       assertStringIncludes(html, "<tr u2-href>");
       assertEquals(html.includes("data-event-visibility"), false);
       assertEquals(html.includes("name=schedule"), false);
