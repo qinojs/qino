@@ -90,8 +90,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const own = String(row.client_id) === String(ctx.clientId);
     const info = uaInfo(row.user_agent ?? "");
     // referer is red only when it comes from another host (compare origins, not paths)
-    let foreignRef = false;
-    if (row.referer) { try { foreignRef = new URL(row.referer).host !== ownHost; } catch { foreignRef = true; } }
+    const foreignRef = !!row.referer && URL.parse(row.referer)?.host !== ownHost;
     const post = row.post ? (row.post.length >= 2000 ? "(too big)" : row.post) : "";
     trs.push(html`
 <tr u2-href>
@@ -249,8 +248,6 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 // ── detail ──────────────────────────────────────────────────────────────────
 async function renderDetail(node: Node, ctx: Ctx, id: number) {
   const { t, db } = node.app;
-  if (!id) return html`<div>${await t`Not found`}</div>`;
-
   const log = await db.row`
     SELECT log.*, url.url AS url, referer.url AS referer, ip.ip AS ip, ua.user_agent AS user_agent
      FROM log

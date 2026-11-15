@@ -378,8 +378,7 @@ const node = {
         if (before) await node.insertBefore(c, before);
         await c.changeUser(ctx.user, 3);
         await asMainNode(node, ctx);
-        const html = String(await c.html());
-        return { id: c.id, html, ...await shape(c) };
+        return { id: c.id, html: String(await c.html()), ...await shape(c) };
       },
     },
   },
@@ -416,15 +415,14 @@ const node = {
           execute: async ({ node, user, access, recursive }: any) => {
             await node.changeUser(user, access);
             if (!recursive) return { ok: true };
-            let done = 0, has = 0;
             const bough = await node.bough({ type: "p" });
+            let done = 0;
             for (const page of bough.values()) {
-              has++;
               if (await page.access() < 3) continue;
               await page.changeUser(user, access);
               done++;
             }
-            return { done, has };
+            return { done, has: bough.size };
           },
         },
       },
@@ -483,12 +481,12 @@ const node = {
         description: "Delete duplicate files (same MD5)",
         ...nodeWrite,
         execute: async ({ node }: { node: Node }) => {
-          const files = await node.files();
-          const seen: Record<string, boolean> = {};
-          for (const [name, file] of files) {
+          const seen = new Set<string>();
+          for (const [name, file] of await node.files()) {
             const md5 = file.vs?.md5;
-            if (md5 && seen[md5]) await node.deleteFile(name);
-            if (md5) seen[md5] = true;
+            if (!md5) continue;
+            if (seen.has(md5)) await node.deleteFile(name);
+            seen.add(md5);
           }
           return { ok: true };
         },

@@ -1,6 +1,7 @@
 import { test } from "node:test";
-import { assertEquals } from "./deps.ts";
 import { Hono } from "hono";
+
+import { assertEquals } from "./deps.ts";
 import { App } from "../lib/App.ts";
 import { fs } from "../lib/fs.ts";
 import { honoAdapter } from "../lib/hono.ts";

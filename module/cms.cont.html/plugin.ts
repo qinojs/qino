@@ -1,11 +1,10 @@
+import { ADMIN } from "@qino/qino/cms";
 import { renderTemplateFile } from "@qino/qino/cms.templateParser";
 import { editorUrl } from "@qino/qino/fileEditor";
 
 import { codeFiles } from "./codeFiles.ts";
 import { nodeApi } from "./api.ts";
 import manifest from "./manifest.json" with { type: "json" };
-
-import { ADMIN } from "@qino/qino/cms";
 
 import type { Node } from "@qino/qino/cms";
 

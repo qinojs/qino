@@ -1,4 +1,4 @@
-import { fs, hee, html } from "@qino/qino";
+import { fs, hee, html, isEmptyObject } from "@qino/qino";
 import { send as sendMail } from "@qino/qino/messaging.email";
 import { spamScore } from "@qino/qino/security";
 import * as u2 from "@qino/qino/u2";
@@ -108,7 +108,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 
   // Empty vars = page view; a form post (with or without JS) has vars.
   const form = openForm(node);
-  if (Object.keys(vars).length) form.posted = vars;
+  if (!isEmptyObject(vars)) form.posted = vars;
 
   // Rendering the fields fills `form` with their values, so it must run before the checks below.
   const fields = await (await node.cont("main")).html();

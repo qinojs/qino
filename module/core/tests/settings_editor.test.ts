@@ -1,7 +1,8 @@
 import { test } from "node:test";
-import { fs } from "../lib/fs.ts";
 import { runInNewContext } from "node:vm";
 import { assertEquals } from "@qino/qino/tests";
+
+import { fs } from "../lib/fs.ts";
 
 test("SettingsEditor saves the input captured before shadow DOM event retargeting", async () => {
   const source = await fs.text(import.meta.dirname + "/../pub/js/SettingsEditor.mjs");

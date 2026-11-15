@@ -150,11 +150,10 @@ export async function candidates(app: App, capability: string, input: unknown, {
   // quality: the capability's own benchmark (image, speak) where there is one, else intelligence
   const quality = rows.some((r) => scores.has(`${r.model_id} ${capability}`)) ? capability : "intelligence";
   const weights = Object.entries(prefer ?? { quality: 2, cost: 1, speed: 1 }).map(([k, w]) => [k === "quality" ? quality : k, w] as const);
-  const value = (r: Candidate, k: string) => (k === "cost" || k === "speed" ? r[k] : scores.get(`${r.model_id} ${k}`)) ?? undefined;
   // $0.10 → $1 is the step $1 → $10 is; free (0) counts as a thousandth of a dollar
   const scaled = (r: Candidate, k: string) => {
-    const v = value(r, k);
-    return v == null ? undefined : k === "cost" || k === "speed" ? Math.log(Math.max(v, 1e-3)) : v;
+    const ratio = k === "cost" || k === "speed", v = ratio ? r[k] : scores.get(`${r.model_id} ${k}`);
+    return v == null ? undefined : ratio ? Math.log(Math.max(v, 1e-3)) : v;
   };
   for (const r of rows) r.rank = 0;
   for (const [k, weight] of weights) {

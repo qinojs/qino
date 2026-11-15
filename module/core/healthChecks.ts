@@ -305,8 +305,8 @@ async function corruptTables(db: App["db"]): Promise<Record<string, string>> {
     return Object.fromEntries(rows.map((row) => [String(row.name), String(row.msg)]));
   }
   if (db.dialect !== "sqlite") return {};
-  const rows = await db.query`PRAGMA quick_check`.catch((e) => [{ msg: e.message }]); // badly broken files throw instead
-  const errors = rows.map((row) => String(Object.values(row)[0])).filter((msg) => msg !== "ok");
+  const rows = await db.col`PRAGMA quick_check`.catch((e) => [e.message]); // badly broken files throw instead
+  const errors = rows.map(String).filter((msg) => msg !== "ok");
   return errors.length ? { database: errors.join("\n") } : {};
 }
 

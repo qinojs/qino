@@ -1,8 +1,8 @@
 import { test } from "node:test";
-import { fs } from "../lib/fs.ts";
 import { assertEquals, assertRejects } from "@std/assert";
 import { App, requestStorage } from "@qino/qino";
 
+import { fs } from "../lib/fs.ts";
 import { fakeSettings } from "./appFake.ts";
 
 import type { Ctx } from "@qino/qino";

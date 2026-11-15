@@ -1,4 +1,4 @@
-import { ApiError, NotFoundError, sha256hex } from "@qino/qino";
+import { ApiError, isEmptyObject, NotFoundError, sha256hex } from "@qino/qino";
 
 import { provider } from "./mod.ts";
 
@@ -67,7 +67,7 @@ async function source(app: App, input: Source): Promise<Omit<Datapoint, "id"> & 
   const mapping = Object.fromEntries(Object.entries(codes ?? {}).sort(([a], [b]) => a.localeCompare(b)));
   if (Object.values(mapping).some((code) => !Number.isInteger(code) || code < -128 || code > 127))
     throw new ApiError(400, "Invalid datapoint state mapping");
-  if (type === "number" && Object.keys(mapping).length)
+  if (type === "number" && !isEmptyObject(mapping))
     throw new ApiError(400, "State mappings require a state datapoint");
   // A path joins the identity only when set: datapoints of the state keep theirs.
   const key = [input.provider, entity, type, unit, mapping, ...path ? [path] : []];

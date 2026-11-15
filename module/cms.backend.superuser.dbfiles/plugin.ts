@@ -300,7 +300,7 @@ async function renderDetail(node: Node, ctx: Ctx, id: number) {
 
 async function deleteUnlinkedFs(node: Node) {
   const { db, dbFiles: fm } = node.app;
-  const dbMd5s = new Set((await db.query`SELECT md5 FROM file WHERE md5 IS NOT NULL`).map((r) => r.md5));
+  const dbMd5s = new Set(await db.col`SELECT md5 FROM file WHERE md5 IS NOT NULL`);
   let deleted = 0, size = 0;
   for (const e of await fs.list(fm.directory)) {
     if (e.name.length < 32 || e.name[0] === "." || dbMd5s.has(e.name)) continue;

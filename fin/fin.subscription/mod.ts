@@ -1,4 +1,4 @@
-import { hee, sql, unixTime } from "@qino/qino";
+import { hee, isEmptyObject, sql, unixTime } from "@qino/qino";
 import { addDays, addMonths, partyOf, today } from "@qino/qino/fin";
 import { create as invoice, issue, send as sendInvoice } from "@qino/qino/fin.invoice";
 
@@ -53,7 +53,7 @@ export async function removePlan(app: App, id: number): Promise<boolean> {
  * `rate`, `unit`, `count`, and the first day not billed yet as `next`.
  */
 async function withNext(app: App, where: Record<string, unknown> = {}): Promise<Row[]> {
-  const filter = Object.keys(where).length ? app.db.table("subscription").valuesToFragment(where, "s") : sql`${true}`;
+  const filter = isEmptyObject(where) ? sql`${true}` : app.db.table("subscription").valuesToFragment(where, "s");
   const rows = await app.db.query`SELECT s.*,
       (SELECT MAX(i.period_end) FROM subscription_invoice i WHERE i.subscription_id = s.id) AS billed
     FROM subscription s WHERE ${filter} ORDER BY s.usr_id, s.id`;
@@ -149,7 +149,7 @@ export async function update(app: App, id: number, values: Values): Promise<void
     throw new Error("fin.subscription: billed already — the start stays");
   }
   const fields = fieldsOf(values);
-  if (!Object.keys(fields).length) return;
+  if (isEmptyObject(fields)) return;
   await app.db.table("subscription").update(id, fields);
   await saved(app, id);
 }

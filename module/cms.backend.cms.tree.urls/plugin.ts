@@ -81,7 +81,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
         : html`<span class=-toggle></span>`;
       const urls: Promise<HtmlString>[] = [];
       const custom = new Set(access >= 2
-        ? (await node.app.db.query`SELECT lang FROM page_url WHERE page_id = ${page.id} AND custom = ${true}`).map(row => row.lang)
+        ? await node.app.db.col<string>`SELECT lang FROM page_url WHERE page_id = ${page.id} AND custom = ${true}`
         : []);
       for (const lang of langs) {
         const url = access > 0 ? page.urlSeo(lang) : "---";

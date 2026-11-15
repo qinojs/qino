@@ -1,4 +1,4 @@
-import { Access, s } from "@qino/qino";
+import { Access, isEmptyObject, s } from "@qino/qino";
 
 import type { ApiTree, Ctx, Params } from "@qino/qino";
 
@@ -32,7 +32,7 @@ export const api: ApiTree = {
       const clean = (key: string, value: string) => key === "addressCountry" ? value.trim().toUpperCase() : value.trim();
       const fields = Object.fromEntries(Object.entries(COLUMNS).filter(([key]) => values[key] !== undefined)
         .map(([key, column]) => [column, clean(key, String(values[key]))]));
-      if (Object.keys(fields).length) await ctx.app.db.table("usr").update(ctx.userId, fields);
+      if (!isEmptyObject(fields)) await ctx.app.db.table("usr").update(ctx.userId, fields);
       return { ok: true };
     },
   },

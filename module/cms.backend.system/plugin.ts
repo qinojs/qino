@@ -23,8 +23,8 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 async function render(node: Node) {
-  const { t, db } = node.app;
-  const app  = node.app;
+  const app = node.app;
+  const { t, db } = app;
 
   // ── server info ────────────────────────────────────────────────────────
 
@@ -236,10 +236,7 @@ async function sqliteBox(node: Node) {
   const db = node.app.db;
   const PRAGMAS = ["journal_mode", "page_size", "foreign_keys"];
   const rows = [html`<tr><td>version<td>${await db.one`SELECT sqlite_version()`}`];
-  for (const p of PRAGMAS) {
-    const r = await db.row`PRAGMA ${sql.raw(p)}`;
-    rows.push(html`<tr><td>${p}<td>${r ? Object.values(r)[0] : ""}`);
-  }
+  for (const p of PRAGMAS) rows.push(html`<tr><td>${p}<td>${await db.one`PRAGMA ${sql.raw(p)}`}`);
   return dbCard("SQLite", html.join(rows));
 }
 
@@ -267,7 +264,7 @@ async function dbDetails(node: Node) {
   if (db.dialect === "sqlite") {
     const PRAGMAS = ["journal_mode", "page_size", "cache_size", "foreign_keys", "synchronous", "auto_vacuum"];
     const rows: [string, string][] = [];
-    for (const p of PRAGMAS) { const r = await db.row`PRAGMA ${sql.raw(p)}`; rows.push([p, String(r ? Object.values(r)[0] : "")]); }
+    for (const p of PRAGMAS) rows.push([p, String(await db.one`PRAGMA ${sql.raw(p)}` ?? "")]);
     return kvTable(rows);
   }
   const vars = await db.query`SHOW VARIABLES`;

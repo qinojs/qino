@@ -36,15 +36,9 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
     const nodeIds = async (table: string, vs: Record<string, any>) => {
         const id = idOf(table, vs);
         if (table === "page" || LINKED.has(table)) return [Number(id)];
-        if (table === "text_lang") {
-            const links = await db.query`SELECT page_id FROM page_text WHERE text_id = ${id}
-                UNION SELECT id FROM page WHERE title_id = ${id}`;
-            return links.map((r) => Number(r.page_id));
-        }
-        if (table === "file") {
-            const links = await db.query`SELECT page_id FROM page_file WHERE file_id = ${id}`;
-            return links.map((r) => Number(r.page_id));
-        }
+        if (table === "text_lang") return (await db.col`SELECT page_id FROM page_text WHERE text_id = ${id}
+                UNION SELECT id FROM page WHERE title_id = ${id}`).map(Number);
+        if (table === "file") return (await db.col`SELECT page_id FROM page_file WHERE file_id = ${id}`).map(Number);
         return [];
     };
 

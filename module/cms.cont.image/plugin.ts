@@ -1,7 +1,7 @@
 import { html } from "@qino/qino";
 import { cms_image } from "@qino/qino/cms.image";
 
-import type { Ctx, HtmlString } from "@qino/qino";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
@@ -59,13 +59,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const imgHtml = cms_image(img, options);
 
-  let editHtml: Promise<HtmlString> | string = "";
-  if (edit) {
-    editHtml = html.async`
+  const editHtml = edit ? html.async`
         <div class="-alt-edit qgCMS">
             <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text.plain()}">
-        </div>`;
-  }
+        </div>` : "";
 
   return html.async`<${tag}${hrefAttr}>\n    ${imgHtml}${editHtml}\n</${tag}>`;
 }

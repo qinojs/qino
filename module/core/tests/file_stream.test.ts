@@ -1,9 +1,9 @@
 import { test } from "node:test";
-import { fs } from "../lib/fs.ts";
 import dns from "node:dns";
 import https from "node:https";
 import { Readable, Writable } from "node:stream";
 
+import { fs } from "../lib/fs.ts";
 import { assertEquals, assertRejects } from "./deps.ts";
 import { readDataUrl, readUploadFile, safeFetch } from "../lib/fileStream.ts";
 

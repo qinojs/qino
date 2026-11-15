@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import { stat } from "node:fs/promises";
-import { fs } from "../lib/fs.ts";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { fs } from "../lib/fs.ts";
 import { assertEquals, assertStringIncludes } from "./deps.ts";
 import { itemRoot, u2Root } from "../lib/util.ts";
 

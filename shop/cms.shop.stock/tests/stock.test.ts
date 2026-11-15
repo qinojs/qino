@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import { assertEquals } from "@qino/qino/tests";
-
-import { asVisitor, withShop } from "../../tests/app.ts";
-import type {} from "../plugin.ts"; // its column on the product
 import { cart } from "@qino/qino/cms.shop";
 
+import { asVisitor, withShop } from "../../tests/app.ts";
+
 import type { Product } from "@qino/qino/cms.shop";
+import type {} from "../plugin.ts"; // its column on the product
 
 test("stock blocks what is not there and is taken off when ordered; none is not kept", async () => {
   await withShop(["cms.shop.stock"], async (app) => {

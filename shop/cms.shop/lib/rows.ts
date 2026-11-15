@@ -1,6 +1,6 @@
 // Row classes of the shop. Columns are data, methods are verbs: `price` is a column, so the
 // calculation is `prices()`. Amounts are minor units (fin's rule): 2450 is CHF 24.50.
-import { ConflictError, DbRow, hee, sql, unixTime } from "@qino/qino";
+import { ConflictError, DbRow, hee, isEmptyObject, sql, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { fromMinor } from "@qino/qino/fin";
 import { totals } from "@qino/qino/fin.invoice";
@@ -525,7 +525,7 @@ export class Order extends ShopRow {
       await this.reprice();
       const e = { order: this, errors: await this.errors(), prevent: false, redirect: "" };
       await this.$app.fire("shop:place", e);
-      const ok = !e.prevent && !Object.keys(e.errors).length;
+      const ok = !e.prevent && isEmptyObject(e.errors);
       if (ok) await this.#freeze();
       return { ok, errors: e.errors, redirect: e.redirect };
     } finally {

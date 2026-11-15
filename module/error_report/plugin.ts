@@ -94,7 +94,7 @@ async function handleCspError(ctx: Ctx) {
     const directive = v("effective-directive", "effectiveDirective", "violated-directive");
     let blockedUri = v("blocked-uri", "blockedURL");
     if (typeof blockedUri === "string" && /^https?:/.test(blockedUri)) {
-      try { blockedUri = new URL(blockedUri).origin; } catch { /* keep invalid browser URL as-is */ }
+      blockedUri = URL.parse(blockedUri)?.origin ?? blockedUri; // keep an invalid browser URL as is
     }
     const reportOnly = report.disposition === "report";
     await addReport(ctx.app, {

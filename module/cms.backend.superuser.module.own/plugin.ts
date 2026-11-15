@@ -43,7 +43,7 @@ async function copyTemplate(template: Module, dir: string, name: string) {
   if (!files?.length) throw new Error(`Template "${template.name}" does not list its files`);
   const base = new URL(".", template.source);
   for (const file of files) {
-    if (!isModuleFile(file)) throw new Error(`Template "${template.name}" lists an invalid file: ${String(file)}`);
+    if (!isModuleFile(file)) throw new Error(`Template "${template.name}" lists an invalid file: ${file}`);
     const url = new URL(file.split("/").map(encodeURIComponent).join("/"), base);
     const res = url.protocol === "file:" ? new Response(await fs.bytes(fileURLToPath(url))) : await fetch(url);
     if (!res.ok) throw new Error(`Cannot copy "${file}" from template "${template.name}": ${res.status} ${res.statusText}`);

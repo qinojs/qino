@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { zipSync } from "fflate";
 
 import { parse, ingestZip } from "../mod.ts";
-import { zipSync } from "fflate";
 import { withFinApp } from "../../tests/app.ts";
 
 const statement = `<?xml version="1.0" encoding="UTF-8"?>

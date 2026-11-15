@@ -32,6 +32,7 @@ function fakeApp(opts: { tree: Record<number, { type: string; basis: number }>; 
       for (const [key, rows] of Object.entries(links)) if (text.includes(key)) return Promise.resolve(rows);
       return Promise.resolve([]);
     },
+    col: (...a: any[]) => db.query(...a).then((rows: any[]) => rows.map((r) => Object.values(r)[0])),
   };
   const app: any = { db };
   return { app, handlers, inserts };

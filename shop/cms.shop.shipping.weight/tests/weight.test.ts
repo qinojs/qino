@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import { assert, assertEquals } from "@qino/qino/tests";
-
-import { asVisitor, withShop } from "../../tests/app.ts";
 import { cms as cmsOf } from "@qino/qino/cms";
 import { cart, methodStep, shippingMethods } from "@qino/qino/cms.shop";
+
+import { asVisitor, withShop } from "../../tests/app.ts";
 
 import type { Product } from "@qino/qino/cms.shop";
 

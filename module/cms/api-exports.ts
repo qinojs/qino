@@ -228,7 +228,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
         );
     } else {
         const order = by === "date" ? sql`f.log_id` : sql`pf.sort DESC`;
-        sorted = (await db.query`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r) => r.name);
+        sorted = await db.col<string>`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`;
     }
     await node.sortFiles(sorted);
 }
@@ -281,8 +281,7 @@ export async function searchFiles(s: string): Promise<any[]> {
     const db  = ctx.app.db;
     const id  = /^\d+$/.test(s) ? Number(s) : 0;
     const res = [];
-    let i = 0;
-    const used: Record<string, boolean> = {};
+    const used = new Set<string>();
     // file contents live in the fulltext-indexed `text` column; only MySQL can use that index
     const inText = db.dialect === "mysql"
         ? sql`MATCH(f.text) AGAINST (${s + "*"} IN BOOLEAN MODE)`
@@ -299,9 +298,9 @@ export async function searchFiles(s: string): Promise<any[]> {
         const dbFile = await ctx.app.dbFiles.file(vs.id, vs);
         if (!await dbFile.exists()) continue;
         const md5 = vs.md5;
-        if (md5 && used[md5]) continue;
-        if (++i > 10) break;
-        if (md5) used[md5] = true;
+        if (md5 && used.has(md5)) continue;
+        if (res.length >= 10) break;
+        if (md5) used.add(md5);
         const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(dbFile.extension);
         const imgSrc = isImg ? await dbFile.url({w: 32, h: 32}) : "about:blank";
         res.push({

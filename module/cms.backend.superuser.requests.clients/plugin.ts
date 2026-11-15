@@ -134,7 +134,7 @@ const ACTIVE = 900; // a session touched within 15 min counts as active
 
 async function renderDetail(node: Node, id: number) {
   const { t, db } = node.app;
-  const client = id ? await db.row`SELECT * FROM client WHERE id = ${id}` : undefined;
+  const client = await db.row`SELECT * FROM client WHERE id = ${id}`;
   if (!client) return html.async`<div>${t`Not found`}</div>`;
 
   const withErrors = !!node.app.modules.linked("error_report");

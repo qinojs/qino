@@ -1,7 +1,7 @@
 import { test } from "node:test";
-import { fs } from "../lib/fs.ts";
 import { pathToFileURL } from "node:url";
 
+import { fs } from "../lib/fs.ts";
 import { assert, assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { App } from "../lib/App.ts";
 
