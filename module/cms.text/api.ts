@@ -161,7 +161,7 @@ class CmsTextService {
   }
 
   async isTranslated(textIds: number | number[], lang = this.ctx.lang) {
-    const ids = (Array.isArray(textIds) ? textIds : [textIds]).map(Number).filter(Number.isFinite);
+    const ids = [textIds].flat().map(Number).filter(Number.isFinite);
     if (!ids.length) return Array.isArray(textIds) ? {} : false;
     const rows = await this.#app.db.query<{ text_id: number; text: string | null }>`SELECT text_id, text FROM text_lang WHERE ${sql.in("text_id", ids)} AND lang = ${lang}`;
     const map: Record<number, boolean> = {};

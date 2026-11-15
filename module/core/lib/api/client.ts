@@ -29,7 +29,7 @@ export function apiClient(tree: ApiTree) {
       apply(_t, _thisArg, args: unknown[]) {
         const paramKey = Object.keys(node).find((k) => k.startsWith(":"));
         if (!paramKey) throw new Error(`api rpc: no :param under /${pathSoFar.join("/")}`);
-        const vals = isCatchall(paramKey) ? args.flatMap((v) => Array.isArray(v) ? v : [v]) : [args[0]];
+        const vals = isCatchall(paramKey) ? args.flat() : [args[0]];
         return buildProxy(branch(node[paramKey]) ?? {}, [...pathSoFar, ...vals.map((v) => encodeURIComponent(String(v)))]);
       },
     });

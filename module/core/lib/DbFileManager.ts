@@ -59,8 +59,7 @@ export class DbFileManager {
 
   clearCache(id?: number | string) {
     const cache = this.#files();
-    if (id !== undefined) cache.delete(String(id));
-    else cache.clear();
+    id !== undefined ? cache.delete(String(id)) : cache.clear();
   }
 
   async add(source?: string | globalThis.File): Promise<DbFile> {
@@ -170,10 +169,7 @@ export class DbFile extends File {
   }
 
   async ensureVs(): Promise<Record<string, any>> {
-    if (this.id && !this.vs) {
-      this.vs = await this.#manager.db.row`SELECT * FROM ${sql.id(tableRef("file"))} WHERE id = ${this.id}` ?? {};
-      this.path = this.vs.md5 ? this.#manager.directory + this.vs.md5 : "";
-    }
+    if (this.id && !this.vs) this.setLocalVs(await this.#manager.db.row`SELECT * FROM ${sql.id(tableRef("file"))} WHERE id = ${this.id}` ?? {});
     return this.vs!;
   }
 

@@ -27,8 +27,7 @@ export class DbTextManager {
 
   clearCache(id?: number | string) {
     const cache = this.#texts();
-    if (id !== undefined) cache.delete(String(id));
-    else cache.clear();
+    id !== undefined ? cache.delete(String(id)) : cache.clear();
   }
 
   async generate(): Promise<DbText> {
@@ -77,8 +76,7 @@ export class DbText {
   }
 
   async string(): Promise<string | null> {
-    const lang = getCtx().lang;
-    return (await this.orFallback(lang)).get();
+    return (await this.orFallback(getCtx().lang)).get();
   }
 
   toString(): string { throw new Error("DbText: toString() not implemented"); }

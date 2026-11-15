@@ -136,7 +136,7 @@ export class CMS extends Emitter<CmsEvents> {
 
   // deno-lint-ignore no-explicit-any
   async filter(pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
-    const parts = Array.isArray(filter) ? filter : [filter];
+    const parts = [filter].flat();
     const tags = parts.filter((part): part is string => typeof part === "string");
     filter = Object.assign({}, ...parts.filter((part) => part && typeof part === "object"));
     filter.type ??= "p";

@@ -53,7 +53,7 @@ export class ApiClient extends EventTarget {
         key === "then" ? undefined
           : METHODS.has(key) ? (input = {}, opts = {}) => this.#request(key, parts, input, opts)
             : this.#node([...parts, String(key)]),
-      apply: (_t, _this, args) => this.#node([...parts, ...args.flatMap(arg => Array.isArray(arg) ? arg : [arg]).map(String)]),
+      apply: (_t, _this, args) => this.#node([...parts, ...args.flat().map(String)]),
     });
   }
 

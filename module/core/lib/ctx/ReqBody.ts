@@ -70,8 +70,7 @@ export class ReqBody {
     else {
       const entries = groupFormData(await (src ?? request.clone()).formData().catch(bad));
       const post = Object.create(null);
-      for (const [key, val] of Object.entries(entries)) {
-        const vals = Array.isArray(val) ? val : [val];
+      for (const [key, vals] of Object.entries(entries)) {
         const file = vals.findLast((v) => v instanceof File);
         const fields = vals.filter((v) => !(v instanceof File));
         if (file) body.#rawFiles[key] = file; // several per name: last wins
@@ -109,14 +108,9 @@ function deepFreeze(v: any) {
   return v;
 }
 
-/** FormData as a flat record; repeated keys become arrays. */
-function groupFormData(form: FormData): Record<string, unknown> {
+/** FormData as a record of every value per key. */
+function groupFormData(form: FormData): Record<string, FormDataEntryValue[]> {
   const out = Object.create(null);
-  for (const [k, v] of form) {
-    const cur = out[k];
-    if (cur === undefined) out[k] = v;
-    else if (Array.isArray(cur)) cur.push(v);
-    else out[k] = [cur, v];
-  }
+  for (const [k, v] of form) (out[k] ??= []).push(v);
   return out;
 }
