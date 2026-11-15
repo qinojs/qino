@@ -6,13 +6,12 @@ import type { Ctx } from "@qino/qino";
 
 export async function render(ctx: Ctx): Promise<void> {
   const app = ctx.app;
-  const db = app.db;
   const cm = cms(app);
 
   let page = await cm.nodeFromRequest();
 
   if (!page.exists()) {
-    const redirect = await db.one`SELECT redirect FROM page_redirect WHERE request = ${ctx.req.appPath}`;
+    const redirect = await app.db.one`SELECT redirect FROM page_redirect WHERE request = ${ctx.req.appPath}`;
     if (redirect) {
       let url: string;
       if (!isNaN(Number(redirect))) {

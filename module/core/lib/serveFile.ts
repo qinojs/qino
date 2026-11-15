@@ -21,7 +21,8 @@ export async function serveFile(req: Request, path: string, headers: Headers = n
   const etag = headers.get("ETag")!, modified = headers.get("Last-Modified");
 
   const inm = req.headers.get("If-None-Match");
-  if (inm ? etagMatch(inm, etag) : Date.parse(req.headers.get("If-Modified-Since")!) >= Date.parse(modified!)) {
+  const ims = !inm && req.headers.get("If-Modified-Since");
+  if (inm ? etagMatch(inm, etag) : ims && Date.parse(ims) >= Date.parse(modified!)) {
     return new Response(null, { status: 304, headers });
   }
 

@@ -177,8 +177,9 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     // a local host can't point at the attacker, so it always passes
     app.on("request-start", async ({ request }) => {
         const list = String(await settings.hosts ?? "");
+        if (!list) return;
         const host = new URL(request.url).hostname;
-        if (!list || isLocalHost(host)) return;
+        if (isLocalHost(host)) return;
         const own = URL.parse(String(await settings.url ?? ""))?.hostname ?? "";
         if (!hostAllowed(`${list} ${own}`, host)) throw new Output("", { status: 421 });
     }, { signal });
