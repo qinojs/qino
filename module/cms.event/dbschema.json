@@ -12,25 +12,96 @@
             "x-qg-on-parent-copy": "cascade",
             "description": "The node that is the event."
           },
-          "time_zone": { "type": "string", "maxLength": 64, "default": "", "description": "IANA time zone its dates are entered and shown in; empty: the site's (cms.event setting)." },
-          "address_street": { "type": "string", "maxLength": 191, "default": "" },
-          "address_postal_code": { "type": "string", "maxLength": 16, "default": "" },
-          "address_locality": { "type": "string", "maxLength": 191, "default": "", "x-index": true },
-          "address_country": { "type": "string", "maxLength": 2, "default": "", "description": "ISO 3166-1 alpha-2." },
-          "price": { "type": ["number", "null"], "minimum": 0, "description": "Displayed price, in units of the currency; zero is free, null unspecified. Not for checkout." },
-          "currency": { "type": "string", "maxLength": 3, "default": "", "description": "ISO 4217." },
-          "performer": { "type": "string", "maxLength": 500, "default": "", "description": "Names of instructors, speakers or performers, comma-separated." },
-          "language": { "type": "string", "maxLength": 35, "default": "", "x-index": true, "description": "BCP 47 tag of the event's language, independent of the page's." },
-          "external_link": { "type": "string", "maxLength": 2048, "default": "", "description": "HTTP(S) URL of an external event or registration page." }
+          "time_zone": {
+            "type": "string",
+            "maxLength": 64,
+            "default": "",
+            "description": "IANA time zone its dates are entered and shown in; empty: the site's (cms.event setting)."
+          },
+          "address_street": {
+            "type": "string",
+            "maxLength": 191,
+            "default": ""
+          },
+          "address_postal_code": {
+            "type": "string",
+            "maxLength": 16,
+            "default": ""
+          },
+          "address_locality": {
+            "type": "string",
+            "maxLength": 191,
+            "default": "",
+            "x-index": true
+          },
+          "address_country": {
+            "type": "string",
+            "maxLength": 2,
+            "default": "",
+            "description": "ISO 3166-1 alpha-2."
+          },
+          "price": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Displayed price, in units of the currency; zero is free, null unspecified. Not for checkout."
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "default": "",
+            "description": "ISO 4217."
+          },
+          "performer": {
+            "type": "string",
+            "maxLength": 500,
+            "default": "",
+            "description": "Names of instructors, speakers or performers, comma-separated."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 35,
+            "default": "",
+            "x-index": true,
+            "description": "BCP 47 tag of the event's language, independent of the page's."
+          },
+          "external_link": {
+            "type": "string",
+            "maxLength": 2048,
+            "default": "",
+            "description": "HTTP(S) URL of an external event or registration page."
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 16,
+            "default": "",
+            "description": "Empty while it takes place as planned; else cancelled, postponed or rescheduled (schema.org eventStatus)."
+          },
+          "online_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "default": "",
+            "description": "HTTP(S) URL to take part online; with an address as well, it takes place both ways."
+          }
         },
-        "required": ["id"]
+        "required": [
+          "id"
+        ]
       }
     },
     "cms_event_date": {
       "description": "The dates of an event: each a fixed interval with an inclusive start and exclusive end; equal ends are a moment.",
       "additionalProperties": {
         "properties": {
-          "id": { "type": "integer", "x-index": "primary", "x-autoincrement": true, "minimum": 1, "maximum": 9007199254740991 },
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true,
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
           "event_id": {
             "type": "integer",
             "x-index": true,
@@ -39,16 +110,46 @@
             "x-qg-on-parent-copy": "cascade"
           },
           "start": {
-            "type": "integer", "minimum": -8640000000000, "maximum": 8640000000000, "x-index": true,
+            "type": "integer",
+            "minimum": -8640000000000,
+            "maximum": 8640000000000,
+            "x-index": true,
             "description": "Inclusive start in epoch seconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
           "end": {
-            "type": "integer", "minimum": -8640000000000, "maximum": 8640000000000, "x-index": true,
+            "type": "integer",
+            "minimum": -8640000000000,
+            "maximum": 8640000000000,
+            "x-index": true,
             "description": "Exclusive end in epoch seconds. Whole calendar days use UTC midnight coordinates with all_day set."
           },
-          "all_day": { "type": "boolean", "default": false, "description": "True for whole calendar days; derived from date-only boundaries when written." }
+          "all_day": {
+            "type": "boolean",
+            "default": false,
+            "description": "True for whole calendar days; derived from date-only boundaries when written."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "default": "",
+            "description": "Optional name of this date within the event, such as a module of a course."
+          },
+          "price": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Displayed price of this date alone, in the event's currency; null: none of its own."
+          }
         },
-        "required": ["id", "event_id", "start", "end", "all_day"]
+        "required": [
+          "id",
+          "event_id",
+          "start",
+          "end",
+          "all_day"
+        ]
       }
     }
   }

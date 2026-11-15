@@ -26,6 +26,8 @@ export default async function (widget, {
       <td><input type=checkbox name=allDay ${item.allDay ? html`checked` : ""} aria-label="${t`All day`}">
       <td><input name=start type="${type}" step=1 value="${item.localStart ?? ""}" required aria-label="${t`Start`}">
       <td><input name=end type="${type}" step=1 value="${item.allDay ? shiftDate(item.localEnd, -1) : item.localEnd === item.localStart ? "" : item.localEnd ?? ""}" aria-label="${t`End`}">
+      <td><input name=name value="${item.name ?? ""}" size=12 aria-label="${t`Name`}">
+      <td><input name=price type=number min=0 step=any size=6 value="${item.price ?? ""}" aria-label="${t`Own price`}">
       <td>${item.id ? html.async`<button type=button class=u2-unstyle data-remove aria-label="${t`Delete date`}" title="${t`Delete date`}"><u2-ico icon=delete>✕</u2-ico></button>` : ""}
     </tr>`;
   };
@@ -40,6 +42,8 @@ export default async function (widget, {
             <th scope=col>${t`All day`}
             <th scope=col>${t`Start`}
             <th scope=col>${t`End`}
+            <th scope=col>${t`Name`}
+            <th scope=col>${t`Own price`}
             <th scope=col aria-label="${t`Actions`}">
           <tbody>${dates.map(row)}${row()}
         </table>
@@ -69,6 +73,12 @@ export default async function (widget, {
         ${field("performer", t`Instructors / performers`)}
         ${field("language", t`Event language`)}
         ${field("external_link", t`External event page`, html`type=url`)}
+        ${field("online_url", t`Take part online`, html`type=url`)}
+        <label for="${prefix}-status">${t`Status`}</label>
+        <select id="${prefix}-status" name=status data-event-field>
+          ${[["", t`As planned`], ["cancelled", t`Cancelled`], ["postponed", t`Postponed`], ["rescheduled", t`Rescheduled`]]
+            .map(([value, label]) => html.async`<option value="${value}" ${event.status === value ? html`selected` : ""}>${label}`)}
+        </select>
       </u2-fields>
       <small id="${prefix}-price-hint">${t`Empty: unspecified. 0: free.`}</small>
     </section>
@@ -84,7 +94,7 @@ export default async function (widget, {
     } catch (error) { if (error?.name !== "AbortError") status.textContent = error?.message || String(error); }
   });
   widget.on("change", "[data-date] input", (input) => {
-    const tr = input.closest("tr"), [allDay, start, end] = tr.querySelectorAll("input");
+    const tr = input.closest("tr"), [allDay, start, end, name, price] = tr.querySelectorAll("input");
     if (input === allDay) {
       for (const field of [start, end]) {
         const value = field.value, last = field === end;
@@ -102,7 +112,7 @@ export default async function (widget, {
     // an unchanged wall time keeps its exact instant: during a clock change it occurs twice
     const same = (key) => item?.allDay === local.allDay && Date.parse(item[key]) === Date.parse(local[key]);
     const save = {
-      id: item?.id,
+      id: item?.id, name: name.value, price: price.value === "" ? null : Number(price.value),
       start: same("localStart") ? item.start : local.localStart,
       end: same("localEnd") ? item.end : local.localEnd,
     };

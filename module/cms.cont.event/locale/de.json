@@ -22,5 +22,14 @@
   "Add to calendar": "In Kalender eintragen",
   "Delete date": "Termin löschen",
   "Delete this date?": "Diesen Termin löschen?",
-  "Site default": "Standard der Website"
+  "Site default": "Standard der Website",
+  "Name": "Name",
+  "Own price": "Eigener Preis",
+  "Take part online": "Online teilnehmen",
+  "Online": "Online",
+  "Status": "Status",
+  "As planned": "Wie geplant",
+  "Cancelled": "Abgesagt",
+  "Postponed": "Verschoben",
+  "Rescheduled": "Neu angesetzt"
 }

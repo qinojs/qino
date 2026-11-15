@@ -1,10 +1,12 @@
 // event2 → cms.event, once: each event2 row is a cms_event row (the node is an event), its dates
 // those of cms_event_date. The legacy tables stay as they are; what the event system does
 // not hold yet lives on only there (README.md).
+import { ApiError } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { add, set } from "@qino/qino/cms.event";
 
 import type { App, Row } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** Old page modules → new ones. The site's own (overview.cd …) stay for the site to port. */
 const MODULES: Record<string, string> = {
@@ -37,21 +39,25 @@ export function range(date: Row, zone: string) {
   return { start: start.toZonedDateTime(zone).toInstant().toString(), end: end.toZonedDateTime(zone).toInstant().toString() };
 }
 
-/** What PHP kept that a standard does not take is left out: the event stays, without that detail. */
+/** The details of an event2 row, as cms.event names them. */
 function details(event: Row, people: Row[]) {
   const text = (v: unknown) => String(v ?? "").trim();
-  const language = text(event.lang);
-  const valid = (test: () => unknown) => { try { return !!test(); } catch { return false; } };
   return {
     address_street: text(event.address_street), address_postal_code: text(event.address_postal_code),
-    address_locality: text(event.address_locality),
-    address_country: /^[a-z]{2}$/i.test(text(event.address_country)) ? text(event.address_country) : "",
-    price: event.price == null || event.price === "" ? null : Number(event.price),
-    currency: /^[a-z]{3}$/i.test(text(event.currency)) ? text(event.currency) : "",
+    address_locality: text(event.address_locality), address_country: text(event.address_country),
+    price: event.price == null || event.price === "" ? null : Number(event.price), currency: text(event.currency),
     performer: people.map((u) => [u.title, u.given_name ?? u.firstname, u.middlename, u.family_name ?? u.lastname].filter(Boolean).join(" ")).join(", "),
-    language: language && valid(() => new Intl.Locale(language)) ? language : "",
-    external_link: /^https?:\/\/./i.test(text(event.external_link)) && URL.canParse(text(event.external_link)) ? text(event.external_link) : "",
+    language: text(event.lang), external_link: text(event.external_link),
   };
+}
+
+/** Stores what cms.event takes; a detail it refuses (a malformed link, an unknown language) is left out, the event stays. */
+async function store(node: Node, values: Record<string, unknown>) {
+  const refused = (e: unknown) => { if (!(e instanceof ApiError)) throw e; };
+  await set(node, values).catch(async (e) => {
+    refused(e);
+    for (const [key, value] of Object.entries(values)) await set(node, { [key]: value }).catch(refused);
+  });
 }
 
 /** PHP made a date of "now" for an event without one: the same second twice, and hardly a full minute. */
@@ -101,7 +107,7 @@ export async function install({ app }: { app: App }): Promise<void> {
       // the currency PHP gave every row by default says nothing on its own
       const { currency: _, ...said } = values;
       if (!dated.has(node.id) && !Object.values(said).some((v) => v != null && v !== "")) { traces++; continue; }
-      await set(node, values);
+      await store(node, values);
       events++;
     }
     report.push(`${events} events`);

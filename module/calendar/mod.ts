@@ -9,7 +9,8 @@ export { occurrences } from "./recurrence.ts";
 export type Range = { start: string; end: string };
 
 export type Period = Range & { timeZone: string };
-export type Entry = Range & { id: string; title: string; url?: string; editUrl?: string };
+/** `status` as RFC 5545 has it for events; none is confirmed. */
+export type Entry = Range & { id: string; title: string; url?: string; editUrl?: string; status?: "TENTATIVE" | "CONFIRMED" | "CANCELLED" };
 export type Source = { title?: string | Record<string, string>; color?: string; query(ctx: Ctx, period: Period): Promise<Entry[]> };
 
 const linked = (app: App) => app.modules.linked().filter((mod) => typeof mod.plugin.calendar?.query === "function");

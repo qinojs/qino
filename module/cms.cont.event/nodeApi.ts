@@ -7,14 +7,14 @@ import type { Node } from "@qino/qino/cms";
 
 /** An event for its editors: its details (`set`, the zone among them), its dates in local time, a date to save or remove. */
 export default async function (node: Node, input: {
-  get?: boolean; set?: Record<string, unknown>; save?: Range & { id?: number }; remove?: number;
+  get?: boolean; set?: Record<string, unknown>; save?: Range & { id?: number; name?: string; price?: number | null }; remove?: number;
 }) {
   if (await node.access() < 2) throw new AccessError();
   if (input.set) await set(node, input.set);
   const event = await get(node) ?? { id: node.id }, timeZone = await zoneOf(node.app, event);
   if (input.save) {
-    const { id } = input.save;
-    const range = { start: exact(input.save.start, timeZone), end: exact(input.save.end, timeZone) };
+    const { id, name, price } = input.save;
+    const range = { start: exact(input.save.start, timeZone), end: exact(input.save.end, timeZone), name, price };
     if (id && !await update(node, Number(id), range)) throw new ApiError(404, "Event date not found");
     return { id: id ? Number(id) : Number(await add(node, range)), ...range };
   }

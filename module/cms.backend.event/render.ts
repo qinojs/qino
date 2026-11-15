@@ -35,12 +35,14 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
   }
   const q = (key: string) => url.searchParams.get(key) ?? "";
   const self = await (await node.page()).url();
-  const id = Number(q("id"));
   const sort = ["date-desc", "newest"].includes(q("sort")) ? q("sort") : "date";
   const search = q("search"), category = Number(q("category")) || 0;
   const asked = Number(q("page")), page = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
-  const categories = await categoriesOf(node, await node.db.query`SELECT * FROM page WHERE module = ${CATEGORY} ORDER BY id DESC LIMIT ${100}`);
-  if (Number.isSafeInteger(id) && id > 0) return detail(node, id, categories, ctx);
+  // the picker's categories: a hundred, loaded where a page needs them
+  const picker = async () => categoriesOf(node, await node.db.query`SELECT * FROM page WHERE module = ${CATEGORY} ORDER BY id DESC LIMIT ${100}`);
+  const id = backend.id(url, vars);
+  if (id) return detail(node, id, picker, ctx);
+  const categories = await picker();
   const title = sqlSearch(search, ["tl.text"]).where;
   const order = sort === "newest" ? sql`p.id DESC`
     : sql`CASE WHEN p.event_start IS NULL THEN 1 ELSE 0 END, p.event_start ${sort === "date-desc" ? sql`DESC` : sql`ASC`}, p.id DESC`;

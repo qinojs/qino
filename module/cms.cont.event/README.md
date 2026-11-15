@@ -22,7 +22,9 @@ Names are public display text, not user IDs.
 
 Standard outputs, without a setting: the detail page links its dates as an iCalendar download
 (`?cms_event_ics=<node id>`, RFC 5545) and, where the event is what the page is about, adds one
-schema.org `Event` per date (place, address, offer, performers, language) for search engines.
+schema.org `Event` per date (status, place and online location, offer, performers, language,
+organizer) for search engines. A named date goes by "Title – Name", with its own price if it has
+one. The organizer is the site's (`identity`: organization or name, contact email).
 `answer(ctx, node, events)` sends the iCalendar file for a node — the category uses it for its feed.
 
 Compared with PHP event2, this keeps the useful descriptive fields. Participant registration,

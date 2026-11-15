@@ -3,8 +3,10 @@
 A node *is* an event when `cms_event` has a row with its id (see `cms.node.is` in the cms README):
 whatever module shows it — `cms.cont.event`, a shop product that is a course, an appointment
 booking. The row holds what the event has: its time zone, venue address, displayed price and
-currency, performers, language and an external link. Its dates are `cms_event_date` rows; each is
-one fixed interval with an inclusive `start` and exclusive `end`, without a recurrence rule.
+currency, performers, language, an external link, a link to take part online and its `status`
+(empty while as planned, `cancelled`, `postponed`, `rescheduled`, as schema.org has them). Its dates
+are `cms_event_date` rows; each is one fixed interval with an inclusive `start` and exclusive `end`,
+without a recurrence rule, and may have a name and a price of its own (a module of a course).
 
 ```ts
 import { add, get, set } from "@qino/qino/cms.event";
@@ -13,6 +15,9 @@ await set(node, { address_locality: "Zürich", price: 90, currency: "CHF" }); //
 await add(node, { start: "2027-07-12", end: "2027-07-13" });                 // so does a date
 await add(node, { start: "2027-07-14T09:00+02:00", end: "2027-07-14T11:00+02:00" });
 ```
+
+`icalStatus(status)` gives the status as RFC 5545 has it, `titled(title, date)` the title a named
+date goes by ("Course – Module 1"); the calendar source and the iCalendar feed use both.
 
 `get(node)` is the event's row, or undefined. `set(node, values)` checks what it stores — currency
 and country codes, the BCP 47 language, the zone, an HTTP(S) link — so whatever shows an event can

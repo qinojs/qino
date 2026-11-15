@@ -24,7 +24,7 @@ test("event content is an event: renders its texts, details and dates, checks wh
     });
     // the module makes its nodes events: the row comes with the node
     assertEquals(await get(event), { id: event.id, time_zone: "", address_street: "", address_postal_code: "", address_locality: "",
-      address_country: "", price: null, currency: "", performer: "", language: "", external_link: "" });
+      address_country: "", price: null, currency: "", performer: "", language: "", external_link: "", status: "", online_url: "" });
     await requestStorage.run(admin, async () => {
       await event.title("en", "Course <b>one</b>");
       await event.text("main", "en", "<p>Course description</p>");
@@ -87,6 +87,10 @@ test("event content is an event: renders its texts, details and dates, checks wh
       assertEquals(rendered.includes("Ganztägig"), false);
       assertEquals(rendered.includes('datetime="2027-07-13"'), false);
       assertStringIncludes(rendered, `?cms_event_ics=${event.id}`);
+      // a page addressed by cmspid (edit mode) keeps it in its calendar link
+      const addressed = await testContext({ app, url: `http://qino.test/?cmspid=${event.id}&lang=de`, set: { app, lang: "de" } });
+      const linked = String(await requestStorage.run(addressed, () => cms.node.render(event, { ctx: addressed })));
+      assertStringIncludes(linked, `?cmspid=${event.id}&amp;lang=de&amp;cms_event_ics=${event.id}`);
       // schema.org Event per date, only where the event is what the page is about
       assertEquals(viewer.res.html.head.includes('"@type":"Event"'), false);
       cmsCtx(viewer).requestedNode = event;
@@ -104,6 +108,34 @@ test("event content is an event: renders its texts, details and dates, checks wh
       assertStringIncludes(body, "DTSTART:20270710T070030Z\r\nDTEND:20270710T090045Z\r\n");
       assertStringIncludes(body, "DTSTART;VALUE=DATE:20270712\r\nDTEND;VALUE=DATE:20270713\r\n");
       assertStringIncludes(body, "LOCATION:Hall & garden\\, Main Street 1\\, 01234 Town\\, CH\r\n");
+    });
+    // cancelled, online as well, a named date with its own price; the organizer is the site's
+    await requestStorage.run(admin, async () => {
+      await app.settings.identity.organization.name("Hall & Co");
+      await app.settings.identity.contact.email("info@example.test");
+      await set(event, { status: "cancelled", online_url: "https://meet.example.test/x" });
+      await assertRejects(() => api(event, { set: { status: "maybe" } }));
+      const dates = await list(event);
+      await api(event, { save: { id: dates[1].id, start: dates[1].start, end: dates[1].end, name: "Module 1", price: 40 } });
+      assertEquals((await list(event))[1].name, "Module 1");
+      const page = await testContext({ app, set: { app, lang: "de" } });
+      cmsCtx(page).requestedNode = event;
+      const html = String(await requestStorage.run(page, () => cms.node.render(event, { ctx: page })));
+      assertStringIncludes(html, "<strong>Abgesagt</strong>");
+      assertStringIncludes(html, "Module 1: <time");
+      assertStringIncludes(html, 'href="https://meet.example.test/x"');
+      const data = [...page.res.html.head.matchAll(/<script type=application\/ld\+json>(.*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
+      assertEquals(data[1].name, "Course one – Module 1");
+      assertEquals(data[1].eventStatus, "https://schema.org/EventCancelled");
+      assertEquals(data[1].eventAttendanceMode, "https://schema.org/MixedEventAttendanceMode");
+      assertEquals(data[1].offers.price, "40");
+      assertEquals(data[1].organizer.name, "Hall & Co");
+      const feed = await testContext({ app, url: `http://qino.test/?cms_event_ics=${event.id}`, set: { app } });
+      const out = await requestStorage.run(feed, () => cms.node.render(event, { ctx: feed }).then(() => undefined, (e: Output) => e));
+      assertStringIncludes(String(out?.body), "SUMMARY:Course one – Module 1\r\n");
+      assertStringIncludes(String(out?.body), "STATUS:CANCELLED\r\n");
+      assertStringIncludes(String(out?.body), 'ORGANIZER;CN="Hall & Co":mailto:info@example.test\r\n');
+      await set(event, { status: "", online_url: "" });
     });
     await requestStorage.run(admin, async () => {
       const dates = await list(event);

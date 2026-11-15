@@ -7,7 +7,7 @@ import * as u2 from "@qino/qino/u2";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-export default async function (panel: Node, id: number, categories: { node: Node; title: string; write: boolean }[], ctx: Ctx) {
+export default async function (panel: Node, id: number, picker: () => Promise<{ node: Node; title: string; write: boolean }[]>, ctx: Ctx) {
   const event = await panel.cms.node(id), access = await event.access();
   const row = event.exists() && await get(event);
   if (!row) throw new ApiError(404, "Event not found");
@@ -15,6 +15,10 @@ export default async function (panel: Node, id: number, categories: { node: Node
   const parent = await event.parent(), movable = parent?.vs.module === "cms.cont.event.category";
   if (access < 2 && !await event.isReadable()) throw new AccessError();
   const write = await panel.access() >= 2 && access >= 2;
+  // its own category among them, also beyond the hundred the picker lists
+  const categories = movable ? await picker() : [];
+  if (movable && !categories.some((category) => category.node.id === parent.id))
+    categories.push({ node: parent, title: (await parent.showTitle()).plain(), write: await parent.access() >= 2 });
   const t = panel.app.t.in("cms.backend.event");
   const url = ctx.req.url.toURL(), back = new URL(url);
   back.searchParams.delete("id");

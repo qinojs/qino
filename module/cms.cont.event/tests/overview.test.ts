@@ -35,7 +35,7 @@ test("event previews keep events paginated, their rows along and dates bounded i
       // the event's own row comes along, for its zone and place
       assertEquals([items[0].event.id, items[0].event.time_zone], [first.id, ""]);
       assertEquals(items[1].dates, []);
-      assertEquals(items[0].dates[0], { start: "2026-11-17", end: "2026-11-19" });
+      assertEquals(items[0].dates[0], { start: "2026-11-17", end: "2026-11-19", name: "", price: null });
       const dates = formatDates(items[0].dates, "de", "Europe/Zurich").map(String);
       assertStringIncludes(dates[0], "17.–18. November 2026");
       assertStringIncludes(dates[1], "09:00");

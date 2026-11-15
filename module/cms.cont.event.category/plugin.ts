@@ -1,5 +1,5 @@
 import { html, sql } from "@qino/qino";
-import { answer, formatDates, PARAM } from "@qino/qino/cms.cont.event";
+import { answer, feedUrl, formatDates, statusText } from "@qino/qino/cms.cont.event";
 import { ahead, overview, zoneOf } from "@qino/qino/cms.event";
 
 import type { Ctx } from "@qino/qino";
@@ -10,9 +10,10 @@ const PER_PAGE = 20;
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const child = node.cms.requestedChild(node);
   if (child) return html.async`<div>${child}</div>`;
-  // the feed: every readable event of the category, upcoming dates only
+  // the feed: the readable events of the category with dates still ahead, only those dates
   await answer(ctx, node, async () => {
-    const all = await Promise.all((await node.db.col`SELECT p.id FROM page p JOIN cms_event ev ON ev.id = p.id WHERE p.basis = ${node.id}`)
+    const all = await Promise.all((await node.db.col`SELECT p.id FROM page p JOIN cms_event ev ON ev.id = p.id WHERE p.basis = ${node.id}
+      AND EXISTS (SELECT 1 FROM cms_event_date d WHERE d.event_id = p.id AND d.${sql.id("end")} >= ${ahead(Temporal.Now.instant())})`)
       .map((id) => node.cms.node(Number(id))));
     const readable = await Promise.all(all.map((c) => c.isReadable()));
     return all.filter((_, i) => readable[i]);
@@ -33,6 +34,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     if (!await item.isReadable()) continue;
     events.push(html.async`<li><article>
       <h3><a href="${item.url()}">${item.showTitle()}</a></h3>
+      ${event.status ? html.async`<p><strong>${statusText(node.app, event.status)}</strong></p>` : ""}
       <ul>${formatDates(dates, ctx.lang, await zoneOf(node.app, event)).map((date) => html`<li>${date}</li>`)}</ul>
       ${event.address_locality ? html`<p>${event.address_locality}</p>` : ""}
       ${count > dates.length ? html.async`<p><a href="${item.url()}">${t`All dates`} (${count})</a></p>` : ""}
@@ -46,7 +48,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   return html.async`<div>
     ${node.cms.text(node, "title", { tag: "h2" })}
     ${events.length ? html.async`<ul>${events}</ul>` : html.async`<p>${t`No events found.`}</p>`}
-    <p><a href="?${PARAM}=${node.id}" rel=nofollow download>${t`Subscribe in calendar`}</a></p>
+    <p><a href="${feedUrl(ctx, node)}" rel=nofollow download>${t`Subscribe in calendar`}</a></p>
     ${page > 1 || rows.length > PER_PAGE ? html.async`<nav aria-label="${t`Event pages`}">
       ${page > 1 ? html.async`<a href="${link(page - 1)}">${t`Previous`}</a>` : ""}
       ${rows.length > PER_PAGE ? html.async`<a href="${link(page + 1)}">${t`Next`}</a>` : ""}
