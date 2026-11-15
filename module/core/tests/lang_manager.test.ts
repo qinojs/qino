@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { test } from "node:test";
 import { assert, assertEquals, testContext } from "./deps.ts";
 import { md5 } from "../lib/crypto.ts";
