@@ -108,10 +108,8 @@ function inRoot(root: string, path: string) {
 }
 
 async function* walkDir(dir: string): AsyncGenerator<string> {
-  const entries = [];
-  try {
-    entries.push(...await fs.list(dir));
-  } catch { return; }
+  const entries = await fs.list(dir).catch(() => null);
+  if (!entries) return;
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     if (entry.isDirectory) yield* walkDir(dir + entry.name + "/");
     else yield dir + entry.name;
@@ -131,9 +129,8 @@ async function moduleFiles(ctx: Ctx, pid: number) {
       .map(({ path, info }) => ({ path, name: path.slice(root.length), mtime: Number(info!.mtime ?? 0), editor: editorUrl(path) }));
   };
   const [data, app] = await Promise.all(ROOTS.map(filesIn));
-  const list = { data, app };
   // the module's app settings, if it has any — shown below the files
-  return { ...list, settings: module && module in ctx.app.settings ? module : null };
+  return { data, app, settings: module && module in ctx.app.settings ? module : null };
 }
 
 /** Feedback from the panel: sent to the configured address, replies go to the sender. */
@@ -247,15 +244,13 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     const qino = html.jsData.qino ??= {};
     qino.cms ??= {};
 
-    if (access > 1 || inBackend) {
-      if ((await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
-        const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
-        const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
-        const url = ctx.req.url;
-        settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
-        qino.cms.beUrl = String(settings.cms[otherKey]() ?? "");
-        html.scripts.add(moduleUrl + name + "/pub/js/init.js");
-      }
+    if ((access > 1 || inBackend) && (await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
+      const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
+      const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
+      const url = ctx.req.url;
+      settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
+      qino.cms.beUrl = String(settings.cms[otherKey]() ?? "");
+      html.scripts.add(moduleUrl + name + "/pub/js/init.js");
     }
 
     if (access > 1) {
@@ -270,8 +265,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         qino.cms.ui = await settings[name].ui ?? {};
         qino.cms.tourSeen = !!await settings[name].tour_seen;
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
-        const panelHtml = String(await app.t.with("cms", () => panel.default?.()) ?? "");
-        html.content += panelHtml;
+        html.content += String(await app.t.with("cms", () => panel.default?.()) ?? "");
 
         html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
         html.styles.add(moduleUrl + "cms/pub/css/ui.css");

@@ -104,8 +104,7 @@ export async function login(ctx: Ctx, id: number | string, via?: string | Record
   const oldSession = ctx.sess.data() as Record<string, unknown>;
   await logout(ctx);
   // new session id after logout prevents session fixation
-  const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
-  ctx.sess = session;
+  ctx.sess = await ctx.app.sessions.regenerateId(ctx.sess.token);
   const saved = ctx.sess.data.core.userId(id);
   const record = typeof via === "string" ? { [via]: unixTime() } : via ?? {};
   for (const [name, at] of Object.entries(record)) ctx.sess.data.core.via[name](at);
