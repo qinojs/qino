@@ -53,18 +53,19 @@ export async function render(ctx: Ctx): Promise<void> {
   const pageObj = await mainNode.page();
   const speaker = own ? requested : pageObj;
   const plain = async (name: string) => (await speaker.showText(name)).plain();
-  ctx.res.html.title = await plain("_title") || (await speaker.showTitle()).plain();
-  ctx.res.html.meta.description = await plain("_description");
+  const doc = ctx.res.html;
+  doc.title = await plain("_title") || (await speaker.showTitle()).plain();
+  doc.meta.description = await plain("_description");
 
-  if (!pageObj.vs.searchable) ctx.res.html.meta.robots = "noindex, nofollow";
+  if (!pageObj.vs.searchable) doc.meta.robots = "noindex, nofollow";
 
   // hreflang alternates: only meaningful with more than one language, and only for indexable pages
   const langs = app.languages.all;
   if (langs.length > 1 && pageObj.vs.searchable)
-    for (const l of langs) ctx.res.html.link[ctx.req.url.origin + await speaker.url(l)] = { rel: "alternate", hreflang: l };
+    for (const l of langs) doc.link[ctx.req.url.origin + await speaker.url(l)] = { rel: "alternate", hreflang: l };
 
   const content = await mainNode.html();
-  ctx.res.html.content += content;
+  doc.content += content;
 
   await cm.fire("page:render-after", {ctx});
 

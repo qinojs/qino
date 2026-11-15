@@ -534,7 +534,7 @@ export class Node {
     /** Make the addresses of this node and below anew, after a change of title or place. A set one stays. */
     urlsGen(lang?: string): Promise<void> {
         return this.db.transaction(async () => {
-            for (const l of lang ? [lang] : this.cms.app.languages.all) {
+            for (const l of lang ? [lang] : this.app.languages.all) {
                 if (!(await this.urls()).get(l)?.custom) await this.urlSet(l, { url: await generate(this, l) });
                 for (const child of (await this.children({ type: "*" })).values()) await child.urlsGen(l);
             }
