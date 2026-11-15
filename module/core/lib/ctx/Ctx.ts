@@ -82,7 +82,7 @@ export class Ctx {
   static async create(app: App, request: Request, opt: { appUrl: string; peerAddr?: string; time?: number; url?: URL }): Promise<Ctx> {
     const req = await Req.create(request, {
       ...opt,
-      maxSize: await app.settings.core.uploadMaxFileSize as number | undefined,
+      maxSize: request.body ? await app.settings.core.uploadMaxFileSize as number | undefined : undefined,
       assetRev: app.assetRev,
       trustedProxyHops: app.trustedProxyHops,
     });

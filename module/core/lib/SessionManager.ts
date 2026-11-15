@@ -76,7 +76,8 @@ export class SessionManager {
     const row = token
       ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${token}`
       : null;
-    if (!row || !pinned && unixTime() - (Number(row.access) || 0) > await this.maxIdle()) { // unreadable access = expired
+    // unreadable access = expired
+    if (!row || !pinned && unixTime() - (Number(row.access) || 0) > await this.maxIdle()) {
       if (!pinned) return this.#create();
       return this.#create(token).catch(() => this.load(token)); // a parallel request inserted it: read that row
     }

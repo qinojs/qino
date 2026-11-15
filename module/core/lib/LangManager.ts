@@ -121,8 +121,7 @@ export class LangManager {
   #index(ns: string, lang: string): Promise<Map<string, string>> {
     return this.#indexes.getOrInsertComputed(`${ns}|${lang}`, async () => {
       const order = [lang, ...this.#langs.filter((l) => l !== lang)];
-      const end = order.indexOf("en");
-      const chain = end < 0 ? order : order.slice(0, end + 1);
+      const chain = order.includes("en") ? order.slice(0, order.indexOf("en") + 1) : order;
       const rows = await this.#app.db.query`SELECT s.original, s.namespace, l.lang, l.text FROM smalltext s
         LEFT JOIN smalltext_lang l ON l.hash = s.hash AND l.namespace = s.namespace AND l.lang IN (${sql.join(chain.map((l) => sql`${l}`))})
         WHERE s.namespace IN (${ns}, '')`;
@@ -141,9 +140,8 @@ export class LangManager {
    *  index of another language meets it later — in the background. */
   #record(index: Map<string, string>, ns: string, original: string) {
     index.set(original, "");
-    const key = ns + "\n" + original;
-    if (this.#recorded.has(key)) return;
-    this.#recorded.add(key);
+    if (this.#recorded.has(ns + "\n" + original)) return;
+    this.#recorded.add(ns + "\n" + original);
     this.#app.db.table("smalltext").insert({ namespace: ns, hash: md5(original), original }).catch(() => {});
   }
 
