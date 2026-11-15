@@ -227,7 +227,7 @@ export class App extends Emitter<AppEvents> {
     async url(): Promise<string> {
         const set = String(await this.settings.core.url ?? "");
         if (!set) throw new Error("core.url is not set");
-        return set.replace(/\/?$/, "/");
+        return ensureSlash(set);
     }
 
     assertAllowedPath(file: string): void {

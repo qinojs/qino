@@ -1,5 +1,5 @@
 import { sql } from "./deps.ts";
-import { hee, unixTime } from "./lib/util.ts";
+import { ensureSlash, hee, unixTime } from "./lib/util.ts";
 import { fs } from "./lib/fs.ts";
 import { getCtx, requestStorage } from "./lib/ctx/Ctx.ts";
 import { pwVerify } from "./lib/auth/mod.ts";
@@ -49,8 +49,7 @@ export async function healthChecks(app: App) {
   warning["public address is not the one you are on"] = async () => {
     const url = String(await settings.core.url ?? "");
     const current = here();
-    const slash = (u: string) => u.replace(/\/?$/, "/");
-    if (!url || !current || slash(url) === slash(current)) return;
+    if (!url || !current || ensureSlash(url) === ensureSlash(current)) return;
     return { info: `mails and jobs link to ${hee(url)}`, solutions: setTo(current) };
   };
 

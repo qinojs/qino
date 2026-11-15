@@ -136,7 +136,7 @@ export const api: ApiTree = {
           const rpId = await getRpId(ctx.app);
           const challenge = randB64(32);
           const token     = await storeChallenge(db, challenge, ctx.userId, "register");
-          const usr       = await db.row`SELECT username, given_name, family_name FROM usr WHERE id = ${ctx.userId}`;
+          const usr       = ctx.user; // loaded with the request
           return {
             token,
             publicKey: {

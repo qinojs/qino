@@ -19,10 +19,8 @@ export const api: ApiTree = {
   get: {
     description: "One's own profile: name, organization and postal address (schema.org)",
     access: Access.USER,
-    execute: async (_: Params, ctx: Ctx) => {
-      const usr = await ctx.app.db.row`SELECT * FROM usr WHERE id = ${ctx.userId}`;
-      return Object.fromEntries(Object.entries(COLUMNS).map(([key, column]) => [key, usr?.[column] ?? null]));
-    },
+    // ctx.user is loaded with the request
+    execute: (_: Params, ctx: Ctx) => Object.fromEntries(Object.entries(COLUMNS).map(([key, column]) => [key, ctx.user?.$get(column) ?? null])),
   },
   put: {
     description: "Change it; fields left out stay, an empty one is cleared",
