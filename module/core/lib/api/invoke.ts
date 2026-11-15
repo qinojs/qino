@@ -110,7 +110,7 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
 }
 
 function decodeSegment(s: string) {
-  try { return decodeURIComponent(s); } catch { return s; }
+  try { return s.includes("%") ? decodeURIComponent(s) : s; } catch { return s; }
 }
 
 export function coerce(raw: unknown, schema: StandardSchema): unknown {

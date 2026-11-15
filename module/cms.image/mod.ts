@@ -34,7 +34,7 @@ async function imageHtml(dbFile: DbFile, options: Record<string, any>, cacheDir:
   if (position) styles["background-position"] = position;
   styles["--aspect-ratio"] = `${w}/${h}`;
 
-  let styleStr = Object.entries(styles).map(([k, v]) => `${k}:${v}`).join(";");
+  let styleStr = Object.keys(styles).map((k) => `${k}:${styles[k]}`).join(";");
   if (options.style) styleStr += ";" + options.style;
 
   let attrStr = ` style="${hee(styleStr)}"`;

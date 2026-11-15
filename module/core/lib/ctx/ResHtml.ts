@@ -104,7 +104,7 @@ class InlineScripts extends Map<string, Record<string, string>> {
 
 /** Attributes as HTML, skipping keys that aren't plain attribute names. */
 const attrs = (o: Record<string, string>) =>
-  Object.entries(o).map(([k, v]) => /^[a-zA-Z][\w-]*$/.test(k) ? ` ${k}="${hee(v)}"` : "").join("");
+  Object.keys(o).map((k) => /^[a-zA-Z][\w-]*$/.test(k) ? ` ${k}="${hee(o[k])}"` : "").join("");
 
 /** JSON serialized safely for inlining into a <script> element (escapes `<` so `</script>` can't break out). */
 function jsonScript(value: unknown) {

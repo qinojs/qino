@@ -113,8 +113,9 @@ export class Req {
     const peerAddr = opt.peerAddr ?? "";
     const body = await ReqBody.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 });
 
+    const path = url.pathname.slice(appUrl.length);
     let appPath: string;
-    try { appPath = decodeURIComponent(url.pathname.slice(appUrl.length)); }
+    try { appPath = path.includes("%") ? decodeURIComponent(path) : path; }
     catch { throw new Output("Bad Request", { status: 400 }); }
 
     return new Req(request, url, body, {
@@ -148,7 +149,8 @@ export function parseCookies(header: string | undefined): Record<string, string>
     const k = part.slice(0, i).trim();
     if (!k || k in out) continue;
     const v = part.slice(i + 1).trim();
-    try { out[k] = decodeURIComponent(v); } catch { out[k] = v; } // keep raw value on broken %-encoding
+    try { out[k] = v.includes("%") ? decodeURIComponent(v) : v; }
+    catch { out[k] = v; /* keep raw value on broken %-encoding */ }
   }
   return out;
 }

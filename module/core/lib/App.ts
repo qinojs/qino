@@ -196,14 +196,15 @@ export class App extends Emitter<AppEvents> {
         // Send the document unless a body or Location was set — so a route can end with
         // `throw new Output()` and its page is sent.
         if (res.hasHtml && !res.body && !res.headers.has("Location")) {
-            res.html.resolve(); // before html-ready: its handlers (uncdn, csp) see real urls
+            const doc = res.html;
+            doc.resolve(); // before html-ready: its handlers (uncdn, csp) see real urls
             await this.fire("html-ready", { ctx });
-            res.html.lang = ctx.lang;
-            const qino = res.html.jsData.qino ??= {};
+            doc.lang = ctx.lang;
+            const qino = doc.jsData.qino ??= {};
             qino.csrfToken = ctx.csrfToken;
             qino.appUrl = ctx.req.appUrl;
             qino.moduleUrl = ctx.req.moduleUrl;
-            res.body = res.html.render();
+            res.body = doc.render();
             if (!res.headers.has("Content-Type")) res.headers.set("Content-Type", "text/html; charset=utf-8");
         }
         await this.fire("respond", { ctx });

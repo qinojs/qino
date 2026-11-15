@@ -75,7 +75,7 @@ export class DbRow {
   $set(values: Record<string, unknown>): Promise<this>;
   $set(a: string | Record<string, unknown>, b?: unknown): any {
     if (typeof a === "string") return this.#assign(a, b);
-    for (const [name, value] of Object.entries(a)) this.#assign(name, value);
+    for (const name of Object.keys(a)) this.#assign(name, a[name]);
     return this.$save(); // the object form returns a promise
   }
 

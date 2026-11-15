@@ -293,5 +293,5 @@ export class CMS extends Emitter<CmsEvents> {
 }
 
 function attrsHtml(attrs: Record<string, string>) {
-  return Object.entries(attrs).map(([name, value]) => ` ${name}="${hee(value)}"`).join("");
+  return Object.keys(attrs).map((name) => ` ${name}="${hee(attrs[name])}"`).join("");
 }
