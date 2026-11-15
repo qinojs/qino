@@ -21,10 +21,11 @@ export class ReqDeadline {
     clearTimeout(this.#timer);
     this.#deadline = seconds === Infinity ? Infinity : Date.now() + seconds * 1000;
     if (this.#deadline === Infinity) return;
-    this.#timer = setTimeout(
-      () => this.#ctrl.abort(new Output("Gateway Timeout", { status: 504 })),
-      Math.max(0, seconds) * 1000,
-    );
+    // timers may fire a little before Date.now() reaches the deadline: expired is expired
+    this.#timer = setTimeout(() => {
+      this.#deadline = 0;
+      this.#ctrl.abort(new Output("Gateway Timeout", { status: 504 }));
+    }, Math.max(0, seconds) * 1000);
   }
 
   clear(): void { clearTimeout(this.#timer); }
