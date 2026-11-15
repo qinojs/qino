@@ -7,7 +7,7 @@ export const css = `
 .-access input[type=radio] { display:block; margin:auto; }
 .-access thead th { text-align:center; vertical-align:bottom; width:calc(var(--rem) * 1.5); }
 .-access thead th:first-child { text-align:left; width:auto; }
-.-access thead span { white-space:nowrap; writing-mode:vertical-rl; }
+.-access thead th[class^="-access-"] { writing-mode:sideways-lr; text-align: left; }
 .-access .-search { width:100%; margin-bottom:.5em; }
 `;
 
@@ -36,6 +36,6 @@ export const row = (label, name, access) => html.async`<tr>
 export const table = (label, rows) => html.async`<table class=-styled>
   <thead><tr>
     <th>${label}
-    ${HEAD().map((h, i) => html.async`<th><span class=-access-${i}>${h}</span>`)}
+    ${HEAD().map((h, i) => html.async`<th class=-access-${i}>${h}`)}
   <tbody>${rows}
 </table>`;

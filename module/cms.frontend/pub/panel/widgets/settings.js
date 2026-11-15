@@ -40,41 +40,37 @@ export default async function (widget, { node, dialogs, signal }) {
   ]);
   const parent = vs.basis ? await api.cms.node(vs.basis).get({}, { signal }).catch(() => null) : null;
   const isPage = vs.type === 'p';
-  const editmode = !!globalThis.qino?.cms?.editmode;
+  const editmode = globalThis.qino?.cms?.editmode;
   const icon = modules.find((m) => m.name === vs.module)?.icon;
 
   widget.head = t`Settings`;
 
   await widget.html`<div class=-standalone style="font-size:1.2em;margin-bottom:1em">
-    <div title="Nr.${vs.id}">
-      <div class=u2-flex style="align-items:baseline; margin-bottom:1em">
-        <h1>${isPage ? t`Page` : t`Content`}:</h1>
+    <div style="display:grid;grid-template-columns:auto 1fr; gap:.4em; align-items: baseline;">
+      <h1 style="margin:0">${isPage ? t`Page` : t`Content`}:</h1>
+      <div style="display:flex;">
         <input ${editmode ? html.raw(`cmstxt=${vs.title_id}`) : ''} value="${unhee(vs.title)}" placeholder="no title"
-               style="background:transparent;flex:1;padding:0;border:none;font-size:20px">
-        <div style="margin-top:-.9em">
-          <svg class=-img fill="var(--cms-dark)" width=46 height=46 style="display:block">
-            <use href="${(icon ?? FALLBACK_ICON()) + '#main'}" />
-          </svg>
-        </div>
+              class=u2-unstyle style="flex:1;font-size:1.2em">
+        <svg class=-img fill="var(--cms-dark)" width=46 height=46 style="margin-top:-.9em">
+          <use href="${(icon ?? FALLBACK_ICON()) + '#main'}" />
+        </svg>
       </div>
-      <div class=u2-flex>
-        <span style="flex:0 1 3.6em" title="${vs.module}">${isPage ? 'Layout' : 'Module'}: </span>
-        <select class=-changemodule
-                style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-.25rem;margin-bottom:-.1875rem;background:transparent">
-          ${!vs.module || modules.some((m) => m.name === vs.module) ? '' : html`<option value="${vs.module}" selected>${shortName(vs.module)}`}
-          ${modules.filter((m) => m.kind === (isPage ? 'layout' : 'cont') || m.name === vs.module)
-            .map((m) => html`<option value="${m.name}" ${m.name === vs.module ? 'selected' : ''}>${shortName(m.name)}`)}
-        </select>
-      </div>
+
+      <span title="${vs.module}">${isPage ? 'Layout' : t`Module`}:</span>
+      <select class="-changemodule u2-unstyle" style="font-size:inherit;font-weight:bold;">
+        ${!vs.module || modules.some((m) => m.name === vs.module) ? '' : html`<option value="${vs.module}" selected>${shortName(vs.module)}`}
+        ${modules.filter((m) => m.kind === (isPage ? 'layout' : 'cont') || m.name === vs.module)
+          .map((m) => html`<option value="${m.name}" ${m.name === vs.module ? 'selected' : ''}>${shortName(m.name)}`)}
+      </select>
+
+      ${parent
+        ? html.async`<span>${t`Parent:`}</span>
+            <a class=-editparent href="${parent.url}" style="font-weight:bold;">${parent.title}${parent.type === 'c'
+              ? html` ${shortName(parent.module)} <u2-ico inline icon=edit>✎</u2-ico>`
+              : ''}</a>`
+        : ''}
+      ${edits.map((e) => html`<a href="${e.url}" style="grid-column: span 2; font-weight:bold">${e.title} <u2-ico inline icon=edit>✎</u2-ico></a>`)}
     </div>
-    ${parent
-      ? html.async`<div class="-editparent u2-flex">
-          <span style="flex:0 1 3.6em">${t`Parent:`}</span>
-          <a href="${parent.url}" style="font-weight:bold">${parent.title}${parent.type === 'c'
-            ? html` ${shortName(parent.module)} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-.125rem">✎</span>`
-            : ''}</a></div>`
-      : ''}
-    ${edits.map((e) => html`<div><a href="${e.url}" style="font-weight:bold">${e.title} ✎</a></div>`)}
   </div>`;
 
   // Every accordion below is a widget module named by the list.
