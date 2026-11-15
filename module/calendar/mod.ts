@@ -33,51 +33,59 @@ export function dateRange(period: Period): Range {
 
 /** Read linked sources in the caller's context; failures propagate instead of hiding missing entries. */
 export async function entries(ctx: Ctx, period: Period & { sources?: string[] }): Promise<(Entry & { source: string })[]> {
-  const [start, end] = instants(period, period.timeZone);
-  start.toZonedDateTimeISO(period.timeZone);
-  const range = { start: start.toString(), end: end.toString(), timeZone: period.timeZone };
-  const selected = period.sources;
-  if (selected !== undefined && (!Array.isArray(selected) || selected.some((id) => typeof id !== "string")))
-    throw new TypeError("calendar: sources must be an array of source IDs");
-  return (await Promise.all(linked(ctx.app).filter((mod) => selected === undefined || selected.includes(mod.name)).map(async (mod) => {
+  const { timeZone, sources: selected } = period, [start, end] = instants(period, timeZone);
+  start.toZonedDateTimeISO(timeZone); // rejects an unknown time zone
+  const range = { start: start.toString(), end: end.toString(), timeZone };
+  const mods = linked(ctx.app).filter((mod) => !selected || selected.includes(mod.name));
+  return (await Promise.all(mods.map(async (mod) => {
     const items = await (mod.plugin.calendar as Source).query(ctx, range);
-    return items.filter((item) => overlaps(item, range, { timeZone: period.timeZone }))
-      .map((item) => ({ ...item, source: mod.name }));
+    return items.filter((item) => overlaps(item, range, { timeZone })).map((item) => ({ ...item, source: mod.name }));
   }))).flat();
 }
 
 const DATE = /^(?:\d{4}|[+-]\d{6})-\d{2}-\d{2}$/;
 
+/** Whether a boundary is a whole date (`YYYY-MM-DD`) rather than a timestamp. */
+export const isDate = (value: string): boolean => DATE.test(value);
+
+/** The exact instant of a timestamp, or of a date's first moment in the time zone. */
+export function instant(value: string, timeZone?: string): Temporal.Instant {
+  if (!isDate(value)) return value.includes("[") ? Temporal.ZonedDateTime.from(value).toInstant() : Temporal.Instant.from(value);
+  if (!timeZone) throw new RangeError("calendar: comparing dates with timestamps requires a time zone");
+  return Temporal.PlainDate.from(value).toZonedDateTime(timeZone).toInstant();
+}
+
+/** Throws unless both bounds are dates or both timestamps, and the start precedes the end. */
+export function validateRange(range: Range): void {
+  const dates = isDate(range.start);
+  if (dates !== isDate(range.end)) throw new RangeError("calendar: start and end must both be dates or both timestamps");
+  const order = dates ? Temporal.PlainDate.compare(range.start, range.end) : Temporal.Instant.compare(instant(range.start), instant(range.end));
+  if (order >= 0) throw new RangeError("calendar: start must precede end");
+}
+
+/** Exact bounds of a valid range; dates begin with their first moment in the time zone. */
+export function instants(range: Range, timeZone?: string): [Temporal.Instant, Temporal.Instant] {
+  validateRange(range);
+  return [instant(range.start, timeZone), instant(range.end, timeZone)];
+}
+
 /** Whether two intervals overlap. Comparing dates with timestamps requires an explicit time zone. */
 export function overlaps(a: Range, b: Range, { timeZone }: { timeZone?: string } = {}): boolean {
-  if (DATE.test(a.start) && DATE.test(b.start)) {
-    const [startA, endA] = dates(a), [startB, endB] = dates(b);
-    return Temporal.PlainDate.compare(startA, endB) < 0 && Temporal.PlainDate.compare(startB, endA) < 0;
+  if (isDate(a.start) && isDate(b.start)) {
+    validateRange(a);
+    validateRange(b);
+    return Temporal.PlainDate.compare(a.start, b.end) < 0 && Temporal.PlainDate.compare(b.start, a.end) < 0;
   }
   const [startA, endA] = instants(a, timeZone), [startB, endB] = instants(b, timeZone);
+  // a date its time zone skips entirely is empty there
   return Temporal.Instant.compare(startA, endA) < 0 && Temporal.Instant.compare(startB, endB) < 0
     && Temporal.Instant.compare(startA, endB) < 0 && Temporal.Instant.compare(startB, endA) < 0;
 }
 
-function dates(range: Range) {
-  if (!DATE.test(range.end)) throw new RangeError("calendar: start and end must both be dates or both timestamps");
-  const start = Temporal.PlainDate.from(range.start), end = Temporal.PlainDate.from(range.end);
-  if (Temporal.PlainDate.compare(start, end) >= 0) throw new RangeError("calendar: start must precede end");
-  return [start, end];
-}
+/** A date or exact timestamp as given; a local date-time is read in the time zone, where skipped and repeated wall times throw. */
+export const exact = (value: string, timeZone: string): string => isDate(value) || /(?:Z|[+-]\d\d:\d\d|\])$/i.test(value) ? value
+  : Temporal.PlainDateTime.from(value).toZonedDateTime(timeZone, { disambiguation: "reject" }).toInstant().toString();
 
-function instants(range: Range, timeZone?: string) {
-  if (DATE.test(range.start)) {
-    const [start, end] = dates(range);
-    if (!timeZone) throw new RangeError("calendar: comparing dates with timestamps requires a time zone");
-    return [start.toZonedDateTime(timeZone).toInstant(), end.toZonedDateTime(timeZone).toInstant()];
-  }
-  if (DATE.test(range.end)) throw new RangeError("calendar: start and end must both be dates or both timestamps");
-  const start = instant(range.start), end = instant(range.end);
-  if (Temporal.Instant.compare(start, end) >= 0) throw new RangeError("calendar: start must precede end");
-  return [start, end];
-}
-
-const instant = (value: string) => value.includes("[")
-  ? Temporal.ZonedDateTime.from(value).toInstant()
-  : Temporal.Instant.from(value);
+/** Local date-time of a timestamp in the time zone, as `datetime-local` inputs take it. */
+export const toLocal = (value: string, timeZone: string): string =>
+  instant(value).toZonedDateTimeISO(timeZone).toPlainDateTime().toString({ smallestUnit: "second" });

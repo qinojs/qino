@@ -1,5 +1,5 @@
 import { AccessError, ApiError, contactKey, getCtx, safeEqual, sql, unixTime } from "@qino/qino";
-import { overlaps } from "@qino/qino/calendar";
+import { instants, isDate } from "@qino/qino/calendar";
 import { query } from "@qino/qino/cms.event";
 
 import { lock, readable } from "./access.ts";
@@ -12,17 +12,15 @@ const NAME = "cms.cont.booking";
 /** Each content instance owns an independent appointment calendar. */
 export async function slots(node: Node, period: Period) {
   await readable(node);
-  overlaps(period, period, { timeZone: period.timeZone });
+  const [lower, upper] = instants(period, period.timeZone);
   const now = Temporal.Now.instant();
   const duration = Number(node.settings.duration() ?? 0);
   if (!Number.isSafeInteger(duration) || duration < 0) throw new ApiError(400, "Invalid slot duration");
   const horizon = Number(node.settings.horizon_days() ?? 60);
   if (!Number.isSafeInteger(horizon) || horizon < 1) throw new ApiError(400, "Invalid booking horizon");
   const limit = now.toZonedDateTimeISO(period.timeZone).add({ days: horizon }).toInstant();
-  const instant = (value: string) => /[Tt ]/.test(value) ? Temporal.Instant.from(value)
-    : Temporal.PlainDate.from(value).toZonedDateTime(period.timeZone).toInstant();
-  const from = Temporal.Instant.compare(instant(period.start), now) < 0 ? now : instant(period.start);
-  const until = Temporal.Instant.compare(instant(period.end), limit) > 0 ? limit : instant(period.end);
+  const from = Temporal.Instant.compare(lower, now) < 0 ? now : lower;
+  const until = Temporal.Instant.compare(upper, limit) > 0 ? limit : upper;
   if (Temporal.Instant.compare(from, until) >= 0) return [];
   if (from.until(until).total("hours") > 366 * 24) throw new ApiError(400, "Booking query exceeds one year");
   const range = { start: from.toString({ fractionalSecondDigits: 9 }), end: until.toString({ fractionalSecondDigits: 9 }), timeZone: period.timeZone };
@@ -30,7 +28,7 @@ export async function slots(node: Node, period: Period) {
   const result = new Map<string, { eventId: number; start: Temporal.Instant; end: Temporal.Instant }>();
   let count = 0;
   for (const offer of offers) {
-    if (!/[Tt ]/.test(offer.start)) continue;
+    if (isDate(offer.start)) continue;
     const end = Temporal.Instant.from(offer.end);
     let start = Temporal.Instant.from(offer.start);
     if (duration && Temporal.Instant.compare(start, from) < 0) {

@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import { App, fs, requestStorage, sql } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { add } from "@qino/qino/cms.event";
+import { add, overview } from "@qino/qino/cms.event";
 import { assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
 
-import { formatDates, overview } from "../mod.ts";
+import { formatDates } from "../mod.ts";
 
 test("event previews keep nodes paginated and dates bounded in one SQL query", async () => {
   const dir = await fs.tempDir() + "/", app = new App({ db: "sqlite::memory:", dir });

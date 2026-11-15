@@ -24,7 +24,7 @@ test("event management uses CMS categories, checks both permission levels and pa
     const user = async (username: string, superuser = false) => Number(await app.db.table("usr").insert({ username, superuser, pw: "", given_name: username, family_name: "Test" }));
     const admin = await context(await user("event-admin", true)), editorId = await user("event-editor"), readerId = await user("event-reader");
     const root = await tree(app).node(1);
-    const { panel, page, category, hidden, shared } = await requestStorage.run(admin, async () => {
+    const { panel, page, category, hidden } = await requestStorage.run(admin, async () => {
       await install({ app });
       const panel = (await tree(app).nodeByModule("cms.backend.event"))!;
       await panel.changeUser(editorId, 2);
@@ -33,28 +33,23 @@ test("event management uses CMS categories, checks both permission levels and pa
       await page.title("en", "Event venue");
       await page.changeUser(editorId, 2);
       const container = await page.cont("main", "cms.cont.flexible");
-      const result = await api(panel, { create: { parent: container.id, title: "Workshops", category: true } }) as { id: number };
-      const category = await tree(app).node(result.id);
-      const other = await api(panel, { create: { parent: container.id, title: "Private category", category: true } }) as { id: number };
-      const hidden = await tree(app).node(other.id);
+      const category = await container.createCont({ module: "cms.cont.event.category" });
+      await category.title("en", "Workshops");
+      const hidden = await container.createCont({ module: "cms.cont.event.category" });
+      await hidden.title("en", "Private category");
       await hidden.set("access", 0);
       await hidden.changeUser(editorId, 0);
-      const shared = await category.createCont({ module: "cms.cont.event", access: 1 });
-      await shared.title("en", "Shared event");
-      await shared.changeUser(editorId, 2);
-      return { panel, page, category, hidden, shared };
+      return { panel, page, category, hidden };
     });
     const editor = await context(editorId);
     const event = await requestStorage.run(editor, async () => {
-      const result = await api(panel, { create: { parent: category.id, title: "Pottery" } }) as { id: number; url: string };
+      const result = await api(panel, { create: { parent: category.id, title: "Pottery" } }) as { id: number };
       const event = await tree(app).node(result.id);
       assertEquals(event.vs.basis, category.id);
       assertEquals(event.vs.access, 0);
       assertEquals(await event.access(), 3);
-      assertEquals(Boolean(result.url), true);
       await add(event, { start: "2027-07-12", end: "2027-07-13" });
       await assertRejects(() => api(panel, { move: { event: event.id, category: hidden.id } }), AccessError);
-      await assertRejects(() => api(panel, { visibility: { id: shared.id, inherit: false } }), AccessError);
       const denied = new AbortController();
       tree(app).on("module:access", (event) => { event.access = 0; }, { signal: denied.signal });
       try { await assertRejects(() => api(panel, { create: { parent: category.id, title: "Module denied" } }), AccessError); }
@@ -83,7 +78,7 @@ test("event management uses CMS categories, checks both permission levels and pa
       const rendered = String(await categoryPlugin.node.render(category, { ctx: await context() }));
       assertEquals(rendered.includes("Pottery"), false);
     });
-    await requestStorage.run(await context(editorId), () => api(panel, { visibility: { id: event.id, inherit: true } }));
+    await requestStorage.run(await context(editorId), () => event.set("access", null));
     await requestStorage.run(await context(), async () => {
       assertEquals((await entries(await context(), period)).length, 1);
       const html = String(await categoryPlugin.node.render(category, { ctx: await context() }));
@@ -91,7 +86,6 @@ test("event management uses CMS categories, checks both permission levels and pa
       assertStringIncludes(html, 'datetime="2027-07-12"');
     });
     await requestStorage.run(await context(readerId), async () => {
-      await assertRejects(() => api(panel, { visibility: { id: event.id, inherit: false } }), AccessError);
       const rendered = String(await render(panel, { ctx: await context(readerId) }));
       assertStringIncludes(rendered, "Pottery");
       assertEquals(rendered.includes("Private category"), false);
@@ -105,19 +99,19 @@ test("event management uses CMS categories, checks both permission levels and pa
     await requestStorage.run(await context(editorId), async () => {
       await assertRejects(() => api(panel, { create: { parent: hidden.id, title: "Denied" } }), AccessError);
       await assertRejects(() => api(panel, { move: { event: page.id, category: category.id } }));
-      await api(panel, { visibility: { id: event.id, inherit: false } });
+      await event.set("access", 0);
       await assertRejects(() => api(panel, { create: { parent: page.id, title: "Wrong target" } }));
     });
     await requestStorage.run(admin, async () => {
       await api(panel, { move: { event: event.id, category: hidden.id } });
-      await api(panel, { visibility: { id: event.id, inherit: true } });
+      await event.set("access", null);
     });
     await requestStorage.run(await context(), async () => {
       assertEquals(await entries(await context(), period), []);
     });
     await requestStorage.run(admin, async () => {
       const second = await category.parent();
-      const next = await api(panel, { create: { parent: second!.id, title: "Courses", category: true } }) as { id: number };
+      const next = await second!.createCont({ module: "cms.cont.event.category" });
       await api(panel, { move: { event: event.id, category: next.id } });
       assertEquals(Number(event.vs.basis), next.id);
       const title = category.vs.title_id;

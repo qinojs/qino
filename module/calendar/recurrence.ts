@@ -1,6 +1,6 @@
 import { RRuleTemporal } from "rrule-temporal";
 
-import { overlaps } from "./mod.ts";
+import { instant, isDate, overlaps, validateRange } from "./mod.ts";
 
 import type { Period, Range } from "./mod.ts";
 
@@ -8,25 +8,21 @@ export type Schedule = Range & { rrule?: string; timeZone?: string; rdate?: stri
 
 /** Expand only occurrences overlapping the period. Timed DTEND preserves exact duration (RFC 5545). */
 export function occurrences(schedule: Schedule, period: Period): (Range & { recurrenceId: string })[] {
-  overlaps(schedule, schedule);
-  overlaps(period, period, { timeZone: period.timeZone });
+  validateRange(schedule);
+  validateRange(period);
   if (!schedule.rrule && !schedule.rdate?.length && !schedule.exdate?.length)
     return overlaps(schedule, period, { timeZone: period.timeZone }) ? [{ start: schedule.start, end: schedule.end, recurrenceId: schedule.start }] : [];
-  const allDay = !/[Tt ]/.test(schedule.start);
+  const allDay = isDate(schedule.start);
   const zone = allDay ? "UTC" : schedule.timeZone ?? (schedule.start.includes("[") ? Temporal.ZonedDateTime.from(schedule.start).timeZoneId : undefined);
   if (!zone) throw new RangeError("calendar: recurring timed entries require a time zone");
   const zoned = (value: string) => {
-    if (allDay !== !/[Tt ]/.test(value)) throw new RangeError("calendar: recurrence dates must match the start's date type");
-    return allDay ? Temporal.PlainDate.from(value).toZonedDateTime(zone)
-      : (value.includes("[") ? Temporal.ZonedDateTime.from(value).toInstant() : Temporal.Instant.from(value)).toZonedDateTimeISO(zone);
+    if (allDay !== isDate(value)) throw new RangeError("calendar: recurrence dates must match the start's date type");
+    return instant(value, zone).toZonedDateTimeISO(zone);
   };
   const start = zoned(schedule.start), end = zoned(schedule.end);
   const days = allDay ? start.toPlainDate().until(end.toPlainDate()).days : 0;
   const duration = end.epochNanoseconds - start.epochNanoseconds;
-  const from = /[Tt ]/.test(period.start) ? Temporal.Instant.from(period.start)
-    : Temporal.PlainDate.from(period.start).toZonedDateTime(period.timeZone).toInstant();
-  const until = /[Tt ]/.test(period.end) ? Temporal.Instant.from(period.end)
-    : Temporal.PlainDate.from(period.end).toZonedDateTime(period.timeZone).toInstant();
+  const from = instant(period.start, period.timeZone), until = instant(period.end, period.timeZone);
   // Civil dates can occupy 25 hours in the viewer's zone; widen before the final overlap check.
   const lookback = allDay ? BigInt(days + 2) * 86_400_000_000_000n : duration;
   const lower = Temporal.Instant.fromEpochNanoseconds(from.epochNanoseconds - lookback).toZonedDateTimeISO(zone);

@@ -8,18 +8,13 @@ import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t.in("cms.cont.event");
-  const timeZone = String(node.settings.time_zone() ?? "UTC");
-  const settings = node.settings;
+  const t = node.app.t.in("cms.cont.event"), settings = node.settings;
   const blocks = await list(node);
   const location = await node.cms.text(node, "location", { if: true });
   const address = [settings.address_street(), [settings.address_postal_code(), settings.address_locality()].filter(Boolean).join(" "), settings.address_country()].filter(Boolean);
-  const price = settings.price();
-  const currency = String(settings.currency() ?? "");
-  const language = String(settings.language() ?? "");
-  const performer = String(settings.performer() ?? "");
-  const external = String(settings.external_link() ?? "");
-  const link = /^https?:\/\//i.test(external) ? external : "";
+  const price = settings.price(), performer = settings.performer();
+  const currency = String(settings.currency() ?? ""), language = String(settings.language() ?? "");
+  const link = /^https?:\/\//i.test(settings.external_link() ?? "") ? settings.external_link() : "";
   const facts = [
     location || address.length ? html.async`<dt>${t`Location`}</dt><dd>${location}${address.length ? html`<div>${address.map((line) => html`<div>${line}</div>`)}</div>` : ""}</dd>` : "",
     price != null && price !== "" && currency ? html.async`<dt>${t`Price`}</dt><dd>${new Intl.NumberFormat(ctx.lang, { style: "currency", currency }).format(Number(price))}</dd>` : "",
@@ -28,7 +23,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ].filter(Boolean);
   return html.async`<article>
     ${node.cms.text(node, "title", { tag: "h2" })}
-    ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, timeZone).map((date) => html`<li>${date}</li>`)}</ul>` : ""}
+    ${blocks.length ? html`<ul>${formatDates(blocks, ctx.lang, settings.time_zone() ?? "UTC").map((date) => html`<li>${date}</li>`)}</ul>` : ""}
     ${facts.length ? html.async`<dl>${facts}</dl>` : ""}
     ${node.cms.text(node, "main")}
     ${link ? html.async`<p><a href="${link}">${t`External event page`}</a></p>` : ""}

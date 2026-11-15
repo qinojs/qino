@@ -25,6 +25,13 @@ calendar day, including days whose first valid time is later than midnight. No m
 is assumed, and days are not treated as fixed 24-hour durations. An entirely skipped local date
 has no overlap with timed entries.
 
+The building blocks are exported as well, so sources and editors need no parsing of their own:
+`isDate(value)` tells dates from timestamps, `instant(value, timeZone?)` and
+`instants(range, timeZone?)` give exact bounds, `validateRange(range)` throws on a malformed or
+empty range. For editors working in wall time, `exact(value, timeZone)` reads a local date-time
+in a zone (skipped and repeated times throw; dates and exact timestamps pass through) and
+`toLocal(value, timeZone)` is its reverse.
+
 ## Sources
 
 `entries(ctx, { start, end, timeZone })` reads every linked module exporting

@@ -19,6 +19,7 @@ export default async function (panel: Node, id: number, categories: { node: Node
   const langs = panel.app.languages.all, lang = langs.includes(ctx.lang) ? ctx.lang : panel.app.languages.def;
   const texts = await event.texts();
   const ids = [Number(event.vs.title_id ?? 0), ...["location", "main"].flatMap((name) => texts.has(name) ? [texts.get(name)!.id] : [])];
+  // one query primes the text cache for every language
   const rows = await event.db.query`SELECT text_id, lang, text FROM ${sql.id(tableRef("text_lang"))}
     WHERE ${sql.in("text_id", ids)} AND ${sql.in("lang", langs)}`;
   for (const id of ids) for (const lang of langs) event.app.dbTexts.text(id).lang(lang).value = "";

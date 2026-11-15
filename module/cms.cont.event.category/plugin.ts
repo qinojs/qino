@@ -1,5 +1,6 @@
 import { html, sql } from "@qino/qino";
-import { overview, formatDates } from "@qino/qino/cms.cont.event";
+import { formatDates } from "@qino/qino/cms.cont.event";
+import { overview } from "@qino/qino/cms.event";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";

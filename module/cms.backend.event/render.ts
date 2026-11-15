@@ -1,6 +1,7 @@
 import { AccessError, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { overview, formatDates } from "@qino/qino/cms.cont.event";
+import { formatDates } from "@qino/qino/cms.cont.event";
+import { overview } from "@qino/qino/cms.event";
 
 import detail from "./detail.ts";
 
@@ -8,6 +9,19 @@ import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const PER_PAGE = 50;
+
+/** Editors see offline nodes as well. */
+const visible = async (node: Node) => await node.access() >= 2 || await node.isReadable();
+
+/** The visible categories among the rows, with their picker title and whether events may be put there. */
+async function categoriesOf(node: Node, rows: Record<string, string | number>[]) {
+  const result: { node: Node; title: string; write: boolean }[] = [];
+  for (const row of rows) {
+    const item = await node.cms.node(Number(row.id), row);
+    if (await visible(item)) result.push({ node: item, title: (await item.showTitle()).plain(), write: await item.access() >= 2 });
+  }
+  return result;
+}
 
 export default async function render(node: Node, { ctx, vars = {}, listOnly = false }: {
   ctx: Ctx; vars?: Record<string, unknown>; listOnly?: boolean;
@@ -18,20 +32,13 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
     if (vars[key]) url.searchParams.set(key, String(vars[key]));
     else url.searchParams.delete(key);
   }
+  const q = (key: string) => url.searchParams.get(key) ?? "";
   const self = await (await node.page()).url();
-  const eventId = Number(url.searchParams.get("event"));
-  const sort = ["date", "date-desc", "newest"].includes(url.searchParams.get("sort") ?? "") ? url.searchParams.get("sort")! : "date";
-  const search = url.searchParams.get("search") ?? "", category = Number(url.searchParams.get("category")) || 0;
-  const asked = Number(url.searchParams.get("page")), page = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
-  const write = await node.access() >= 2;
-  const categoryRows = await node.db.query`SELECT * FROM page WHERE module = ${"cms.cont.event.category"} ORDER BY id DESC LIMIT ${100}`;
-  const categories: { node: Node; title: string; write: boolean }[] = [];
-  for (const row of categoryRows) {
-    const item = await node.cms.node(Number(row.id), row);
-    const access = await item.access();
-    if (access < 2 && !await item.isReadable()) continue;
-    categories.push({ node: item, title: (await item.showTitle()).plain(), write: access >= 2 });
-  }
+  const eventId = Number(q("event"));
+  const sort = ["date-desc", "newest"].includes(q("sort")) ? q("sort") : "date";
+  const search = q("search"), category = Number(q("category")) || 0;
+  const asked = Number(q("page")), page = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
+  const categories = await categoriesOf(node, await node.db.query`SELECT * FROM page WHERE module = ${"cms.cont.event.category"} ORDER BY id DESC LIMIT ${100}`);
   if (Number.isSafeInteger(eventId) && eventId > 0) return detail(node, eventId, categories, ctx);
   const title = sqlSearch(search, ["tl.text"]).where;
   const order = sort === "newest" ? sql`p.id DESC`
@@ -44,51 +51,40 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
   const rows = await overview(node.db, query, order);
   const items = [];
   for (const entry of rows.slice(0, PER_PAGE)) {
-    const { row } = entry;
-    const item = await node.cms.node(Number(row.id), row);
-    const access = await item.access();
-    if (access < 2 && !await item.isReadable()) continue;
-    items.push({ ...entry, node: item });
+    const item = await node.cms.node(Number(entry.row.id), entry.row);
+    if (await visible(item)) items.push({ ...entry, node: item });
   }
+  // the picker lists a hundred categories; add the ones this page shows beyond those
   const missing = [...new Set([category, ...items.map((item) => Number(item.node.vs.basis))])]
     .filter((id) => id && !categories.some((item) => item.node.id === id));
-  if (missing.length) {
-    const rows = await node.db.query`SELECT * FROM page WHERE module = ${"cms.cont.event.category"} AND ${sql.in("id", missing)}`;
-    for (const row of rows) {
-      const item = await node.cms.node(Number(row.id), row), access = await item.access();
-      if (access < 2 && !await item.isReadable()) continue;
-      categories.push({ node: item, title: (await item.showTitle()).plain(), write: access >= 2 });
-    }
-  }
+  if (missing.length)
+    categories.push(...await categoriesOf(node, await node.db.query`SELECT * FROM page WHERE module = ${"cms.cont.event.category"} AND ${sql.in("id", missing)}`));
   const link = (params: Record<string, unknown>) => backend.toUrl(self, {
     ...(search && { search }), ...(category && { category }), ...(sort !== "date" && { sort }), ...params,
   });
-  const list = html.async`    <div style="padding:0;overflow:auto" tabindex=0 role=region aria-label="${t`Events`}">
-    <table class=u2-table style="padding:0">
-      <thead><tr>
-        <th scope=col>${t`Title`}</th>
-        <th scope=col>${t`Dates`}</th>
-        <th scope=col>${t`Category`}</th>
-        <th scope=col>${t`Visibility`}</th>
-        <th scope=col>${t`Actions`}</th>
-      </tr></thead>
-      <tbody>${items.map(async ({ node: item, period }) => html.async`<tr u2-href>
-        <th scope=row><a href="${link({ event: item.id })}">${item.showTitle()}</a>${item.settings.address_locality() ? html`<br><small>${item.settings.address_locality()}</small>` : ""}</th>
-        <td>${period ? formatDates([period], ctx.lang, String(item.settings.time_zone() ?? "UTC")) : html.async`<span>${t`No date yet`}</span>`}</td>
-        <td>${categories.find((c) => c.node.id === Number(item.vs.basis))?.title || await t`Unassigned`}</td>
-        <td><span data-event-access="${item.id}">${item.vs.access === null ? t`Inherited` : Number(item.vs.access) === 0 ? t`Private` : t`Explicit access`}</span>
-
-        </td>
-        <td><a href="${item.url()}">${t`Open page`}</a></td>
-      </tr>`)}</tbody>
-    </table></div>
+  const list = html.async`<div style="padding:0;overflow:auto" tabindex=0 role=region aria-label="${t`Events`}">
+      <table class=u2-table style="padding:0">
+        <thead><tr>
+          <th scope=col>${t`Title`}
+          <th scope=col>${t`Dates`}
+          <th scope=col>${t`Category`}
+          <th scope=col>${t`Visibility`}
+          <th scope=col>${t`Actions`}
+        <tbody>${items.map(async ({ node: item, period }) => html.async`<tr u2-href>
+          <th scope=row><a href="${link({ event: item.id })}">${item.showTitle()}</a>${item.settings.address_locality() ? html`<br><small>${item.settings.address_locality()}</small>` : ""}</th>
+          <td>${period ? formatDates([period], ctx.lang, String(item.settings.time_zone() ?? "UTC")) : t`No date yet`}
+          <td>${categories.find((c) => c.node.id === Number(item.vs.basis))?.title || t`Unassigned`}
+          <td>${item.vs.access === null ? t`Inherited` : Number(item.vs.access) === 0 ? t`Private` : t`Explicit access`}
+          <td><a href="${item.url()}">${t`Open page`}</a>`)}
+      </table>
+    </div>
     ${!items.length ? html.async`<p>${t`No entries found.`}</p>` : ""}
     <nav aria-label="${t`Result pages`}">
       ${page > 1 ? html.async`<a href="${link({ page: page - 1 })}">${t`Previous`}</a>` : ""}
       ${rows.length > PER_PAGE ? html.async`<a href="${link({ page: page + 1 })}">${t`Next`}</a>` : ""}
     </nav>`;
   if (listOnly) return list;
-  const targets = categories.filter((item) => item.write);
+  const targets = await node.access() >= 2 ? categories.filter((item) => item.write) : [];
   return html.async`<div class="u2-card cms-events" style="flex:0 1 auto">
     <div class=-head>${t`Events`}</div>
     <form data-event-filter method=get action="${self}">${backend.toFields(self)}
@@ -96,7 +92,7 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
       <select name=category aria-label="${t`Category`}"><option value="">${t`All categories`}</option>${categories.map((item) => html`<option value="${item.node.id}" ${category === item.node.id ? html`selected` : ""}>${item.title}</option>`)}</select>
       <select name=sort aria-label="${t`Sort`}">${[["date", t`Date ascending`], ["date-desc", t`Date descending`], ["newest", t`Recently added`]].map(([value, label]) => html.async`<option value="${value}" ${sort === value ? html`selected` : ""}>${label}</option>`)}</select>
     </form>
-    ${write && targets.length ? html.async`<form data-event-create aria-label="${t`Add event`}">
+    ${targets.length ? html.async`<form data-event-create aria-label="${t`Add event`}">
       <select name=parent required aria-label="${t`Category`}">${targets.map((item) => html`<option value="${item.node.id}">${item.title}</option>`)}</select>
       <input name=title required placeholder="${t`Title`}" aria-label="${t`Title`}">
       <button type=submit><u2-ico icon=add>+</u2-ico> ${t`Add event`}</button>

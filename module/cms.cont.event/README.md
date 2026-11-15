@@ -14,9 +14,7 @@ applies there as well. Block management requires edit access, including for unpu
 always scoped to the owning node. This module has no additional database table.
 
 `formatDates(blocks, lang, timeZone)` supplies the shared range display for event details and
-overviews. `overview(db, query, order)` joins a trusted paginated node selection to at most three
-date previews per node, a total block count and an encompassing period. Its SQL ordering references the node alias `p`.
-Callers enforce node permissions before displaying these trusted server-side results.
+overviews.
 
 ## Event details
 

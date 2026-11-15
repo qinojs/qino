@@ -1,7 +1,7 @@
 import { overlaps } from "@qino/qino/calendar";
 import { cms } from "@qino/qino/cms";
 
-import { decode, select } from "./range.ts";
+import { decodeRow, select } from "./range.ts";
 
 import type { Entry, Source } from "@qino/qino/calendar";
 
@@ -22,7 +22,7 @@ export const calendar: Source = {
       }
       const node = nodes.get(id);
       if (!node) continue;
-      const item = { id: String(row.id), ...node, ...decode(row) };
+      const item = { id: String(row.id), ...node, ...decodeRow(row) };
       if (overlaps(item, period, { timeZone: period.timeZone })) result.push(item);
     }
     return result;

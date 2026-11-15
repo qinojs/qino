@@ -63,15 +63,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   </div>`;
 }
 
-async function api(_node: Node, period: Period & { sources?: string[]; save?: boolean }) {
-  const ctx = getCtx();
-  if (period.save) {
-    if (!Array.isArray(period.sources) || period.sources.some((id) => typeof id !== "string"))
-      throw new ApiError(400, "Calendar sources must be an array of source IDs");
-    const selected = new Set(period.sources);
-    await ctx.settings[manifest.name].sources(Object.fromEntries(sources(ctx.app, ctx.lang).map((source) => [source.id, selected.has(source.id)])));
-  }
-  return entries(ctx, { ...period, sources: period.sources ?? selection(ctx) });
+async function api(_node: Node, { save, ...period }: Period & { sources?: string[]; save?: boolean }) {
+  const ctx = getCtx(), selected = period.sources;
+  if (selected !== undefined && (!Array.isArray(selected) || selected.some((id) => typeof id !== "string")))
+    throw new ApiError(400, "Calendar sources must be an array of source IDs");
+  if (save && selected)
+    await ctx.settings[manifest.name].sources(Object.fromEntries(sources(ctx.app, ctx.lang).map((source) => [source.id, selected.includes(source.id)])));
+  return entries(ctx, { ...period, sources: selected ?? selection(ctx) });
 }
 
 export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, api } };

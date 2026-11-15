@@ -21,7 +21,7 @@ cms.initNode("backend.event", (el) => {
     const vars = Object.fromEntries(new FormData(filter)), url = new URL(location.href), snapshot = JSON.stringify(vars);
     if (snapshot === filterValue) return;
     filterValue = snapshot;
-    for (const key of ["view", "schedule", "page"]) url.searchParams.delete(key);
+    url.searchParams.delete("page");
     for (const key of ["search", "category", "sort"])
       vars[key] && !(key === "sort" && vars[key] === "date") ? url.searchParams.set(key, vars[key]) : url.searchParams.delete(key);
     history.replaceState(null, "", url);
@@ -47,7 +47,7 @@ cms.initNode("backend.event", (el) => {
     queue = queue.then(async () => {
       const output = saveState(control);
       if (snapshot && snapshot === states.get(control)) { output.textContent = await t`Saved`; return; }
-      const lock = !input.texts && !input.move;
+      const lock = !!input.create;
       if (lock) control.inert = true;
       try {
         output.textContent = await t`Saving…`;
@@ -55,17 +55,9 @@ cms.initNode("backend.event", (el) => {
         if (input.texts) {
           const title = el.querySelector("[data-event-title]");
           if (title.dataset.lang === input.texts.lang) title.textContent = input.texts.title;
-        }
-        else if (input.move) {
-          const label = el.querySelector(`[data-event-category="${input.move.event}"]`);
-          if (label) label.textContent = control.elements.category.selectedOptions[0].textContent;
-        } else if (result?.id && input.create && !input.create.category) {
+        } else if (input.create) {
           const url = new URL(location.href);
-          url.searchParams.set("event", String(result.id));
-          location.href = url.href;
-        } else if (result?.url) {
-          const url = new URL(result.url, location.href);
-          url.searchParams.set("cms_editmode", "1");
+          url.searchParams.set("event", result.id);
           location.href = url.href;
         }
         if (snapshot) states.set(control, snapshot);
@@ -84,7 +76,7 @@ cms.initNode("backend.event", (el) => {
     const data = values(form), snapshot = JSON.stringify(data);
     if (form.matches("[data-event-texts]")) return change(form, { texts: { ...data, id: Number(data.id) } }, snapshot);
     else if (form.matches("[data-event-move]")) return change(form, { move: { event: Number(data.event), category: Number(data.category) } }, snapshot);
-    else return change(form, { create: { parent: Number(data.parent), title: data.title, category: data.category === "1" } });
+    else return change(form, { create: { parent: Number(data.parent), title: data.title } });
   };
   el.addEventListener("input", (event) => {
     const form = event.target.form;
@@ -102,5 +94,4 @@ cms.initNode("backend.event", (el) => {
     event.preventDefault();
     save(form);
   });
-
 });

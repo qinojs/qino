@@ -25,6 +25,10 @@ offline events, matching the CMS API's editor access; public queries still requi
 `add`, `update(node, id, range)` and `remove(node, id)`; their caller authorizes changes.
 Updates and deletions are scoped to the owning node.
 
+`overview(db, query, order)` joins a trusted paginated node selection to at most three block
+previews per node, a total block count and an encompassing period, in one query. Its SQL ordering
+references the node alias `p`. Callers enforce node permissions before displaying these results.
+
 The calendar source applies the time bounds in SQL before resolving nodes and their rights.
 Unreadable nodes expose no entries, titles or URLs. Repeated node lookups are shared within the
 query; reads never create blocks or missing dates. A later higher-level generator may create
