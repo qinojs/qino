@@ -37,7 +37,7 @@ function fakeTelegram(replies: unknown[] = []) {
   globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {
     calls.push({ method: String(input).split("/").pop()!, params: JSON.parse(String(init?.body ?? "{}")) });
     const reply = replies.shift() ?? { ok: true, result: {} };
-    return Promise.resolve(new Response(JSON.stringify(reply), { headers: { "content-type": "application/json" } }));
+    return Promise.resolve(Response.json(reply));
   };
   return { calls, restore: () => void (globalThis.fetch = original) };
 }

@@ -31,7 +31,7 @@ function stubFetch(reply: unknown[] | null) {
   globalThis.fetch = ((input: string | URL | Request) => {
     calls.push(String(input));
     if (!reply) return Promise.resolve(new Response("", { status: 502 }));
-    return Promise.resolve(new Response(JSON.stringify(reply), { headers: { "content-type": "application/json" } }));
+    return Promise.resolve(Response.json(reply));
   }) as typeof fetch;
   return { calls, restore: () => { globalThis.fetch = original; } };
 }

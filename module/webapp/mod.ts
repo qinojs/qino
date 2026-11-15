@@ -17,15 +17,14 @@ export async function manifest(ctx: Ctx): Promise<Record<string, unknown>> {
   const app = ctx.app;
   const settings = app.settings.webapp;
   const brand = app.settings.identity;
-  const alternateName = await trim(brand.alternateName) || ctx.req.url.host;
-  const name = await trim(brand.name) || alternateName;
-  const description = await trim(brand.description);
-  const display = await trim(settings.display);
-  const orientation = await trim(settings.orientation);
-  const themeColor = await trim(brand.brand.primaryColor);
-  const backgroundColor = await trim(brand.brand.backgroundColor);
-  const categories = categoriesOf(await trim(settings.categories));
-  const icon = await (await identity.file(app, "icon"))?.exists();
+  const [alternate, brandName, description, display, orientation, themeColor, backgroundColor, categoryList, icon] = await Promise.all([
+    trim(brand.alternateName), trim(brand.name), trim(brand.description), trim(settings.display), trim(settings.orientation),
+    trim(brand.brand.primaryColor), trim(brand.brand.backgroundColor), trim(settings.categories),
+    identity.file(app, "icon").then((file) => file?.exists()),
+  ]);
+  const alternateName = alternate || ctx.req.url.host;
+  const name = brandName || alternateName;
+  const categories = categoriesOf(categoryList);
   const icons = icon ? [{
     src: await icon.url({ q: 90 }),
     ...(icon.mime && { type: icon.mime }),
