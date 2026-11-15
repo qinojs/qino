@@ -149,7 +149,7 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
 
   // DS proves the delegation is signed and only ever lives at the parent, never in the zone.
   const tld = root.split(".").at(-1)!;
-  const parent = (await Promise.all((await dnsList(tld, "NS")).slice(0, 2).map((name) => serverIps(name)))).flat();
+  const parent = (await Promise.all((await dnsList(tld, "NS")).slice(0, 2).map(serverIps))).flat();
   const [ds, delegation] = parent.length
     ? await resolve(parent, [{ name: root, type: "DS" }, { name: root, type: "NS" }], signal)
     : [null, null];

@@ -21,7 +21,7 @@ export function keyOf(db: Db, table: string): string | undefined {
 export async function duplicates(db: Db, table: string, same: string[], where = "", limit = 50): Promise<Row[][]> {
   const key = keyOf(db, table);
   if (!key || !same.length) return [];
-  const t = sql.id(table), cols = sql.join(same.map((c) => sql.id(c)));
+  const t = sql.id(table), cols = sql.join(same.map(sql.id));
   // '' only where a column holds text: Postgres refuses to compare a number with it
   const text = (c: string) => /char|text|string/.test(db.table(table).field(c)?.type ?? "");
   const filled = same.map((c) => text(c) ? sql`${sql.id(c)} IS NOT NULL AND ${sql.id(c)} <> ''` : sql`${sql.id(c)} IS NOT NULL`);
