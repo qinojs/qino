@@ -54,6 +54,17 @@ test("cms.backend.users: empty password save is ignored", async () => {
   assertEquals(saved, undefined);
 });
 
+test("cms.backend.users: read access to the page is enough to use it", async () => {
+  let saved: Record<string, unknown> | undefined;
+  const usr = { superuser: false, $set: (values: Record<string, unknown>) => { saved = values; } };
+  const ctx = await testContext();
+  const node = { access: () => 1, app: { db: { table: () => ({ get: () => usr, row: () => usr }) } } };
+
+  await requestStorage.run(ctx, () => nodeApi(node as any, { save: 1, name: "given_name", value: "Ann" }));
+
+  assertEquals(saved, { given_name: "Ann" });
+});
+
 test("a username that is no address is a login handle, not a failure", async () => {
   const db = new Db("sqlite::memory:");
   await db.migrate(contactDbSchema);

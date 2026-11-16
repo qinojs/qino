@@ -7,8 +7,7 @@ import type { Usr } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars:any): Promise<any> {
-  const ctx = getCtx();
-  if (await node.access() < 2) return false;
+  const ctx = getCtx(); // access to the page is the right to use it (node.api runs under nodeRead)
 
   const db = node.app.db;
   const isSuperuser = !!ctx.user?.superuser;
