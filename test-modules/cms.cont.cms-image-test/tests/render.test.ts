@@ -12,7 +12,7 @@ test("cms-image test: every case includes a native image with its own size and l
     const path = dir + "/image.svg";
     await fs.write(path, '<svg viewBox="0 0 400 200"/>');
     const file = {
-      get: (key: string) => ({ mime: "image/svg+xml", name: "image.svg", hpos: 25, vpos: 75 }[key]),
+      get: (key: string) => ({ mime: "image/svg+xml", name: "image.svg", md5: "abc", hpos: 25, vpos: 75 }[key]),
       exists: () => true,
       url: () => "/original.svg",
       transform: () => ({ path }),
