@@ -14,8 +14,6 @@
   & .-num, & .-num input { text-align: right; }
   & [data-off] { opacity: .6; }
   & .-error { color: var(--red); max-width: 28rem; white-space: pre-wrap; }
-  /* fields for another capability: hidden, also where a class sets display (u2-flex) */
-  & [data-for][hidden] { display: none; }
   & .-try > form > output { white-space: pre-wrap; }
   & .-try > form > output img { max-width: 100%; }
 }

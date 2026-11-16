@@ -1,4 +1,0 @@
-[qcms-mod="backend.fin.hosting"] {
-  /* a folded alias stays hidden: the table's row display would show it */
-  tr[hidden] { display: none }
-}

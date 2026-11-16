@@ -17,13 +17,11 @@ cms.initNode("backend.superuser.module", (el) => {
     const state = kept.state;
     const store = kept.store; // "-" stands for everything no store lists
     const all = [...el.querySelectorAll("tr[data-mod]")];
-    for (const { dataset: d, style } of all) {
-      // display, not [hidden]: .u2-table sets display:table-row on every row and would win.
-      style.display = (!state || d.state === state) &&
+    for (const tr of all) {
+      const d = tr.dataset;
+      tr.hidden = !((!state || d.state === state) &&
           (!store || (store === "-" ? !d.store : d.store === store)) &&
-          (!q || d.mod.toLowerCase().includes(q))
-        ? ""
-        : "none";
+          (!q || d.mod.toLowerCase().includes(q)));
     }
     for (const out of el.querySelectorAll("[data-count]")) {
       // "installed from this store / offered by it" — a module another store provided does not count.
