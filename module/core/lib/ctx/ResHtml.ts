@@ -39,8 +39,8 @@ export class ResHtml {
       if (!URL.canParse(url) && !/^[./]/.test(url)) console.warn(`ResHtml: "${url}" is not in the import map`);
       return url;
     };
-    this.scripts = new Set([...this.scripts].map(resolve));
-    this.styles = new Set([...this.styles].map(resolve));
+    this.scripts = new Set(Array.from(this.scripts, resolve));
+    this.styles = new Set(Array.from(this.styles, resolve));
   }
 
   #renderHead() {

@@ -119,7 +119,7 @@ export class LangManager {
   #index(ns: string, lang: string): Promise<Map<string, string>> {
     return this.#indexes.getOrInsertComputed(`${ns}|${lang}`, async () => {
       const order = [lang, ...this.#langs.filter((l) => l !== lang)];
-      const chain = order.includes("en") ? order.slice(0, order.indexOf("en") + 1) : order;
+      const chain = order.slice(0, order.indexOf("en") + 1 || order.length);
       const rows = await this.#app.db.query`SELECT s.original, s.namespace, l.lang, l.text FROM smalltext s
         LEFT JOIN smalltext_lang l ON l.hash = s.hash AND l.namespace = s.namespace AND l.lang IN (${sql.join(chain.map((l) => sql`${l}`))})
         WHERE s.namespace IN (${ns}, '')`;
