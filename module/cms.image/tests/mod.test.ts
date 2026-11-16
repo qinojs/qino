@@ -155,3 +155,9 @@ test("cms.image: cms_image derives alt text from file name", async () => {
     await fs.remove(dir, { recursive: true });
   }
 });
+
+test("cms.image: with `if`, a file row without content renders nothing", async () => {
+  const ctx = await testContext({ app: { modules: { get: () => ({ cache: "/nonexistent/" }) } } });
+  const empty = { exists: () => Promise.resolve(true), get: () => "", url: () => "/dbFile/1/u-/" };
+  assertEquals(String(await requestStorage.run(ctx, () => cms_image(empty as any, { if: 1 }))), "");
+});
