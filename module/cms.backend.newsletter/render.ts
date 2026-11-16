@@ -364,21 +364,27 @@ async function previewCard(app: App, row: Row) {
 async function report(node: Node, ctx: Ctx, row: Row) {
   const app = node.app, t = app.t, db = app.db;
   const id = Number(row.id);
-  const [deliveries, links, to] = await Promise.all([
+  const [deliveries, hits, to, logUrl] = await Promise.all([
     db.query`
-      SELECT d.address, d.sent, d.due, d.error, u.given_name, u.family_name,
-        (SELECT MIN(t.time) FROM message_track t WHERE t.delivery_id = d.id) AS opened,
-        (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.kind = ${"click"}) AS clicks,
+      SELECT d.id, d.address, d.sent, d.due, d.error, u.given_name, u.family_name,
         (SELECT COUNT(*) FROM message_track t WHERE t.delivery_id = d.id AND t.code = ${unsubscribeCode} AND ${offList(row.grp_id)}) AS unsubscribed
       FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id
       WHERE d.message_id = ${id} ORDER BY d.address`,
     db.query`
-      SELECT t.code, COUNT(*) AS clicks, COUNT(DISTINCT t.delivery_id) AS people
+      SELECT t.delivery_id, t.code, t.kind, t.time, t.log_id
       FROM message_track t JOIN message_delivery d ON d.id = t.delivery_id
-      WHERE d.message_id = ${id} AND t.kind = ${"click"}
-      GROUP BY t.code ORDER BY clicks DESC`,
+      WHERE d.message_id = ${id}
+      ORDER BY t.time, t.id`,
     here(node),
+    // each hit links to its request — if the user may see the request log
+    backend.toModuleUrl(node, "cms.backend.superuser.requests.log"),
   ]);
+  // every hit, per recipient; every click, per link
+  const byDelivery = Map.groupBy(hits, (h) => Number(h.delivery_id));
+  const clicks = hits.filter((h) => h.kind === "click");
+  const links = [...Map.groupBy(clicks, (c) => String(c.code))]
+    .map(([code, hits]) => ({ code, clicks: hits.length, people: new Set(hits.map((c) => c.delivery_id)).size }))
+    .sort((a, b) => b.clicks - a.clicks);
   // shorturl knows what a code stands for; without it the code stands for itself
   const codes = links.map((l) => l.code).filter((code) => code !== unsubscribeCode); // that one is ours, not short
   const urls = new Map(codes.length
@@ -387,6 +393,34 @@ async function report(node: Node, ctx: Ctx, row: Row) {
   const scheduled = Number(row.pending) && !Number(row.reached);
   const stat = (label: Promise<string>, value: unknown, note: unknown = "") =>
     html.async`<div><b>${value}</b> ${label} ${note}</div>`;
+  const target = (code: string) => code === unsubscribeCode ? t`Unsubscribe`
+    : urls.has(code) ? html`<a href="${urls.get(code)}" target=_blank rel=noreferrer>${urls.get(code)}</a>` : code;
+  const at = (time: unknown, log: unknown) => {
+    const href = log ? logUrl({ id: log }) : "";
+    return href ? html`<a href="${href}">${u2.el.time(time, { narrow: true })}</a>` : u2.el.time(time, { narrow: true });
+  };
+  // the cell opens the list of its hits, each one at its request; a click also counts as open
+  const list = (key: string, label: Promise<string>, d: Row, shown: unknown, rows: Row[]) => html.async`
+    <button type=button class=u2-unstyle popovertarget="${key}-${d.id}">${shown}</button>
+    <div popover id="${key}-${d.id}" class=u2-card>
+      <div class=-head>${label} ${d.address}</div>
+      <table class=u2-table>
+        <thead><tr>
+          <th>${t`Time`}
+          <th>${t`Link`}
+        <tbody>${rows.map((h) => html.async`<tr>
+          <td>${at(h.time, h.log_id)}
+          <td>${h.kind === "click" ? target(String(h.code)) : t`opened`}`)}
+      </table>
+    </div>`;
+  const opened = (d: Row) => {
+    const all = byDelivery.get(Number(d.id));
+    return all ? list("opened", t`Opened`, d, u2.el.time(all[0].time, { narrow: true }), all) : "";
+  };
+  const clicked = (d: Row) => {
+    const own = byDelivery.get(Number(d.id))?.filter((h) => h.kind === "click");
+    return own?.length ? list("clicks", t`Clicks`, d, own.length, own) : "";
+  };
 
   return html.async`<div class=u2-flex style="flex-basis:100%">
   <div class=u2-card style="flex:0 1 auto">
@@ -416,8 +450,8 @@ async function report(node: Node, ctx: Ctx, row: Row) {
       <tbody>${deliveries.map((d) => html.async`<tr>
         <td>${d.address}
         <td>${[d.given_name, d.family_name].filter(Boolean).join(" ")}
-        <td>${d.opened ? u2.el.time(d.opened, { narrow: true }) : ""}
-        <td>${Number(d.clicks) || ""}
+        <td>${opened(d)}
+        <td>${clicked(d)}
         <td>${d.error
           // the kind in a few words; what the server said stays on the delivery, shown on hover
           ? html.async`<span class=u2-badge style="--color-dark:var(--red)" title="${d.error}">${failureText(app, String(d.error))}</span>`
@@ -434,10 +468,9 @@ async function report(node: Node, ctx: Ctx, row: Row) {
           <th>${t`Clicks`}
           <th>${t`People`}
         <tbody>${links.length ? links.map((l) => html.async`<tr>
-          <td>${l.code === unsubscribeCode ? t`Unsubscribe`
-            : urls.has(l.code) ? html`<a href="${urls.get(l.code)}" target=_blank rel=noreferrer>${urls.get(l.code)}</a>` : l.code}
-          <td>${Number(l.clicks)}
-          <td>${Number(l.people)}`) : html.async`<tr><td colspan=3>${t`No clicks yet.`}`}
+          <td>${target(l.code)}
+          <td>${l.clicks}
+          <td>${l.people}`) : html.async`<tr><td colspan=3>${t`No clicks yet.`}`}
       </table>
     </div>
     ${previewCard(app, row)}

@@ -213,6 +213,12 @@
           "time": {
             "type": "integer",
             "x-index": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "description": "The request that reached it; stamped by core"
           }
         },
         "required": ["id", "delivery_id", "code", "kind", "time"]
