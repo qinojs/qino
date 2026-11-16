@@ -50,7 +50,7 @@ async function htmlValueAsync(v) {
 }
 
 function joinHtml(strings, parts) {
-  return new HtmlString(strings.reduce((out, str, i) => out + str + (parts[i] ?? ""), ""));
+  return new HtmlString(strings.reduce((acc, str, i) => i < parts.length ? acc + str + parts[i] : acc + str, ""));
 }
 
 export function html(strings, ...values) {
