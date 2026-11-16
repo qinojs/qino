@@ -159,11 +159,18 @@ async function loginCard(app: App, id: unknown, page: Node): Promise<{ title: st
 
 export const backendRowWidget = { usr: loginCard };
 
+const settingsSchema = {
+  properties: {
+    allow_login_as: { type: "boolean", description: "Users of this page may log in as another user (superusers always can)." },
+  },
+};
+
 export const cms = {
   node: {
     js: ["pub/main.js"],
     render,
     api,
+    settingsSchema,
     parts: {
       list,
       // the part reload arrives at the api endpoint, so the user travels in vars, not in the query

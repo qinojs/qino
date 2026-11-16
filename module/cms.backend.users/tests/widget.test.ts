@@ -14,6 +14,7 @@ test("cms.backend.users: metadata and cms export are wired", () => {
   assertEquals(name, "cms.backend.users");
   assertEquals(dependencies, ["cms.backend"]);
   assertEquals(typeof cms.node.api, "function");
+  assertEquals(cms.node.settingsSchema.properties.allow_login_as.type, "boolean");
   assertEquals(typeof cms.node.parts.list, "function");
   assertEquals(typeof cms.node.parts.contacts, "function");
 });
