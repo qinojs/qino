@@ -76,15 +76,14 @@ export class LangManager {
     for (const aLang of accepted) {
       const match = aLang.match(/^([a-z]{1,8}(?:-[a-z]{1,8})*)(?:;\s*q=(0(?:\.\d{1,3})?|1(?:\.0{1,3})?))?$/i);
       if (!match) continue;
-      const langCode = match[1].split("-");
       const langQuality = parseFloat(match[2] ?? "1");
+      if (langQuality <= currentQ) continue;
+      const langCode = match[1].split("-");
       while (langCode.length) {
         const code = langCode.join("-").toLowerCase();
         if (this.#langs.includes(code)) {
-          if (langQuality > currentQ) {
-            currentLang = code;
-            currentQ = langQuality;
-          }
+          currentLang = code;
+          currentQ = langQuality;
           break;
         }
         langCode.pop();

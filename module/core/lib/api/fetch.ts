@@ -1,5 +1,6 @@
 import { getCtx, requestStorage } from "../ctx/Ctx.ts";
 import { safeEqual } from "../crypto.ts";
+import { mimeType } from "../fileStream.ts";
 import { errMsg, Output } from "../util.ts";
 import { ApiError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
@@ -28,7 +29,9 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
   const method = req.method.toLowerCase() as Method;
   const isBodyMethod = BODY_METHODS.has(method);
   if (isBodyMethod) {
-    if (!isJsonRequest(req)) throw new Output({ error: "Unsupported Media Type" }, { status: 415 });
+    const type = mimeType(req.header("content-type") ?? "");
+    if (type && type !== "application/json" && !type.endsWith("+json"))
+      throw new Output({ error: "Unsupported Media Type" }, { status: 415 });
     const body = req.body; // parsed in Req.create; invalid JSON already got 400
     if (body && typeof body === "object") Object.assign(input, body);
   }
@@ -48,11 +51,6 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
     const detail = requestStorage.getStore()?.app.dev ? errMsg(e) : "";
     throw new Output({ error: detail || "Internal Server Error" }, { status: 500 });
   }
-}
-
-function isJsonRequest(req: Req) {
-  const type = req.header("content-type")?.split(";")[0].trim().toLowerCase();
-  return !type || type === "application/json" || type.endsWith("+json");
 }
 
 async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestData) {

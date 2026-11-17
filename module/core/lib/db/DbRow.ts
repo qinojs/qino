@@ -93,9 +93,9 @@ export class DbRow {
 
   /** Values from the database; unsaved local changes win. */
   $receive(vs: Record<string, any> | undefined): this {
-    const mine: Record<string, any> = {};
-    for (const name of this.#dirty) mine[name] = this.#vs[name];
-    this.#vs = { ...vs, ...mine };
+    const values = { ...vs };
+    for (const name of this.#dirty) values[name] = this.#vs[name];
+    this.#vs = values;
     // Drivers return DECIMAL as string ("0.0100000000"); convert, so read and written values have
     // the same type.
     for (const name in this.#vs) {

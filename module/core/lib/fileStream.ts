@@ -17,7 +17,7 @@ export type UploadedFile = {
 };
 
 /** Normalized media type, lowercase, no parameters — `Text/HTML; charset=x` → `text/html`. */
-export const mimeType = (raw: string): string => raw.split(";")[0].trim().toLowerCase();
+export const mimeType = (raw: string): string => raw.split(";", 1)[0].trim().toLowerCase();
 
 /** Last path segment of a given name, never empty. */
 const baseName = (raw: string) => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";

@@ -1,4 +1,4 @@
-import { readUploadFile } from "../fileStream.ts";
+import { mimeType, readUploadFile } from "../fileStream.ts";
 import { Output } from "../util.ts";
 
 import type { UploadedFile } from "../fileStream.ts";
@@ -53,7 +53,7 @@ export class ReqBody {
     body.#maxSize = opt.maxSize;
     if (!request.body) return body;
 
-    const type = request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ?? "";
+    const type = mimeType(request.headers.get("content-type") ?? "");
     const isJson = type === "application/json" || type === "application/csp-report" || type.endsWith("+json");
     const isForm = type === "multipart/form-data" || type === "application/x-www-form-urlencoded";
     if (!isJson && !isForm) return body; // other bodies stay untouched, readable via req

@@ -48,21 +48,21 @@ export async function render(ctx: Ctx): Promise<void> {
   // a content with an address of its own: its page renders around it, and it speaks for the page
   const requested = state.mainNode;
   const own = await hasOwnUrl(requested);
-  if (own) state.mainNode = await requested.page();
+  const pageObj = await requested.page();
+  if (own) state.mainNode = pageObj;
   const mainNode = state.mainNode;
-  const pageObj = await mainNode.page();
   const speaker = own ? requested : pageObj;
   const plain = async (name: string) => (await speaker.showText(name)).plain();
   const doc = ctx.res.html;
   doc.title = await plain("_title") || (await speaker.showTitle()).plain();
   doc.meta.description = await plain("_description");
 
-  if (!pageObj.vs.searchable) doc.meta.robots = "noindex, nofollow";
-
-  // hreflang alternates: only meaningful with more than one language, and only for indexable pages
-  const langs = app.languages.all;
-  if (langs.length > 1 && pageObj.vs.searchable)
-    for (const l of langs) doc.link[ctx.req.url.origin + await speaker.url(l)] = { rel: "alternate", hreflang: l };
+  if (pageObj.vs.searchable) {
+    // hreflang alternates: only meaningful with more than one language, and only for indexable pages
+    const langs = app.languages.all;
+    if (langs.length > 1)
+      for (const l of langs) doc.link[ctx.req.url.origin + await speaker.url(l)] = { rel: "alternate", hreflang: l };
+  } else doc.meta.robots = "noindex, nofollow";
 
   doc.content += await mainNode.html();
 
