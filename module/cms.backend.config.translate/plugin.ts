@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 export const own = sql`l.hash = s.hash AND l.namespace = s.namespace`;
 /** How many of `langs` a row `s` has no translation in. */
 export const missing = (langs: string[]) =>
-  sql`(${langs.length} - (SELECT count(*) FROM smalltext_lang l WHERE ${own} AND l.lang IN (${sql.join(langs.map((l) => sql`${l}`))})))`;
+  sql`(${langs.length} - (SELECT count(*) FROM smalltext_lang l WHERE ${own} AND ${sql.in("l.lang", langs)}))`;
 export const key = (row: Row) => `${row.hash}|${row.namespace}`;
 
 /** The translations of `rows`, by key(row): { lang: text }. One query. */
@@ -22,7 +22,7 @@ export async function textsOf(app: App, rows: Row[]): Promise<Map<string, Record
   const out = new Map<string, Record<string, string>>();
   if (!rows.length) return out;
   for (const l of await app.db.query`SELECT hash, namespace, lang, text FROM smalltext_lang
-    WHERE hash IN (${sql.join([...new Set(rows.map((r) => String(r.hash)))].map((h) => sql`${h}`))})`) {
+    WHERE ${sql.in("hash", new Set(rows.map((r) => String(r.hash))))}`) {
     out.getOrInsertComputed(key(l), () => ({}))[String(l.lang)] = String(l.text);
   }
   return out;
