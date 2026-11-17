@@ -52,10 +52,11 @@ const resolved = new WeakMap<App, { policy: Policy; at: number }>();
 export function policyOf(app?: App): Policy {
   if (!app) return policy; // no app: default policy
   const ttl = app.dev ? 0 : 5 * 60 * 1000;
+  const now = performance.now();
   const known = resolved.get(app);
-  if (!known) resolved.set(app, { policy, at: performance.now() });
-  else if (performance.now() - known.at <= ttl) return known.policy;
-  else known.at = performance.now();
+  if (!known) resolved.set(app, { policy, at: now });
+  else if (now - known.at <= ttl) return known.policy;
+  else known.at = now;
   refresh(app).catch(console.error); // for the next call
   return resolved.get(app)!.policy;
 }

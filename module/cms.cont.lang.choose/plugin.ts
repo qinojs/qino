@@ -62,9 +62,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   // links (default)
   const items = await Promise.all(langs.map(async (l) => {
-    if (hideActive && l === ctx.lang) return "";
     const isActive = l === ctx.lang;
-    const cls = [`-${l}`, isActive ? "-active" : ""].filter(Boolean).join(" ");
+    if (hideActive && isActive) return "";
+    const cls = `-${l}${isActive ? " -active" : ""}`;
     const ariaLabel = !longText ? html` aria-label="${LANG_NAMES[l] ?? l}"` : "";
     const ariaCurrent = isActive ? html.raw(" aria-current=page") : "";
     const label = longText ? (LANG_NAMES[l] ?? l) : l;

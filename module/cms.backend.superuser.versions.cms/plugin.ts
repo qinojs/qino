@@ -17,10 +17,10 @@ export async function install({ app }: { app: App }): Promise<void> {
 // "Page title › content label". node.url() points to page + anchor for contents.
 async function nodeAnchor(node: Node, id: number) {
   const page = await node.cms.node(id);
-  const own = (await (await page.title()).string() ?? "").trim();
+  const own = (await (await page.title()).string()).trim();
   let label = own || `#${id}`;
   if (page.vs?.type === "c") {
-    const pageTitle = (await (await (await page.page()).title()).string() ?? "").trim();
+    const pageTitle = (await (await (await page.page()).title()).string()).trim();
     const inner = own || String(page.vs?.module ?? "") || `#${id}`;
     label = pageTitle ? `${pageTitle} › ${inner}` : inner;
   }

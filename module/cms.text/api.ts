@@ -231,7 +231,7 @@ export const api: ApiTree = {
             subpages: s.optional(s.boolean()).describe("Include sub-pages"),
           }),
           execute: ({ page, targetLang, sourceLang, ifNeeded, subpages }: Params, ctx: Ctx) =>
-            service(ctx).translatePage(Number(page), String(targetLang), String(sourceLang ?? "auto"), Boolean(ifNeeded ?? true), Boolean(subpages ?? false)),
+            service(ctx).translatePage(Number(page), String(targetLang), String(sourceLang ?? "auto"), Boolean(ifNeeded ?? true), Boolean(subpages)),
         },
       },
       "translate-all-langs": {
@@ -243,7 +243,7 @@ export const api: ApiTree = {
             subpages: s.optional(s.boolean()).describe("Include sub-pages"),
           }),
           execute: ({ page, ifNeeded, subpages }: Params, ctx: Ctx) =>
-            service(ctx).translatePageAllLangs(Number(page), Boolean(ifNeeded ?? true), Boolean(subpages ?? false)),
+            service(ctx).translatePageAllLangs(Number(page), Boolean(ifNeeded ?? true), Boolean(subpages)),
         },
       },
     },

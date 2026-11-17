@@ -98,7 +98,7 @@ async function search(s_: string, ctx: Ctx) {
     };
     if (page) {
       const title = await page.title();
-      res[md5].pages[String(page.id)] = await title.string() ?? String(page.id);
+      res[md5].pages[String(page.id)] = await title.string();
     }
   }
 
