@@ -64,7 +64,7 @@ export default async function (panel: Node, id: number, picker: () => Promise<{ 
             </tr>
             <tr>
               <th scope=row><label for="event-${id}-category-select">${t`Category`}</label></th>
-              <td colspan="${langs.length}">${!movable ? parent?.showTitle() ?? "" : write ? html`<select id="event-${id}-category-select" name=category form="event-${id}-category" required>${categories.filter((category) => category.write).map((category) => html`<option value="${category.node.id}" ${category.node.id === Number(event.vs.basis) ? html`selected` : ""}>${category.title}</option>`)}</select><output data-save-state role=status form="event-${id}-category"></output>`
+              <td colspan="${langs.length}">${!movable ? parent?.showTitle() : write ? html`<select id="event-${id}-category-select" name=category form="event-${id}-category" required>${categories.filter((category) => category.write).map((category) => html`<option value="${category.node.id}" ${category.node.id === Number(event.vs.basis) ? html`selected` : ""}>${category.title}</option>`)}</select><output data-save-state role=status form="event-${id}-category"></output>`
                 : categories.find((category) => category.node.id === Number(event.vs.basis))?.title || t`Unassigned`}</td>
             </tr>
 

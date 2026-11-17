@@ -75,7 +75,7 @@ export class DbText {
     return newText;
   }
 
-  async string(): Promise<string | null> {
+  async string(): Promise<string> {
     return (await this.orFallback(getCtx().lang)).get();
   }
 
