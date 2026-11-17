@@ -41,7 +41,7 @@ const settingsSchema = {
   },
 };
 
-const terms = (search: string) => search.toLowerCase().split(/\s+/).slice(0, 4);
+const terms = (search: string) => search.toLowerCase().split(/\s+/, 4);
 
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
 function snippet(text: string, words: string[], parts = 7, before = 30, after = 10) {

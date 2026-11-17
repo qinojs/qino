@@ -106,9 +106,8 @@ export class Output extends Error {
   isJson: boolean;
   constructor(body?: unknown, { status = 200, headers = {} }: { status?: number; headers?: HeadersInit } = {}) {
     super("output");
-    const isBody = body instanceof ReadableStream || body instanceof Blob || body instanceof FormData ||
-      body instanceof URLSearchParams || body instanceof ArrayBuffer || ArrayBuffer.isView(body);
-    this.isJson = body !== undefined && typeof body === "object" && !isBody;
+    this.isJson = typeof body === "object" && !(body instanceof ReadableStream || body instanceof Blob ||
+      body instanceof FormData || body instanceof URLSearchParams || body instanceof ArrayBuffer || ArrayBuffer.isView(body));
     this.body = this.isJson ? JSON.stringify(body) : body as BodyInit;
     this.status = status;
     this.headers = headers;
@@ -149,22 +148,21 @@ export function urlize(str: string): string {
  *  prefix hits. Empty input gives neutral fragments. Qualified names ("m.subject") work. */
 export function sqlSearch(input: string, like: string[], opt: { exact?: string[] } = {}): { where: Sql; order: Sql } {
   const trimmed = (input ?? "").trim(), term = trimmed.toLowerCase();
-  const words = term ? term.split(/\s+/).slice(0, 4) : [];
   const exact = opt.exact ?? [];
-  if (!words.length || !(like.length + exact.length)) return { where: sql`${true}`, order: sql.raw("(SELECT NULL)") }; // Postgres refuses a bare constant in ORDER BY
+  if (!term || !(like.length + exact.length)) return { where: sql`${true}`, order: sql.raw("(SELECT NULL)") }; // Postgres refuses a bare constant in ORDER BY
   const id = (name: string) => sql.join(name.split(".").map(sql.id), ".");
   // '!' is a neutral escape char in every dialect's string literals.
-  const esc = (s: string) => s.replace(/[!%_]/g, "!$&");
-  const low = (f: string) => sql`LOWER(${id(f)})`;
+  const words = like.length ? term.split(/\s+/, 4).map((w) => w.replace(/[!%_]/g, "!$&")) : [];
+  const cols = like.map(f => sql`LOWER(${id(f)})`);
 
   const ors = exact.map(f => sql`${id(f)} = ${trimmed}`);
-  if (like.length) ors.unshift(sql.join(words.map(w =>
-    sql`(${sql.join(like.map(f => sql`${low(f)} LIKE ${"%" + esc(w) + "%"} ESCAPE '!'`), " OR ")})`), " AND "));
+  if (cols.length) ors.unshift(sql.join(words.map(w =>
+    sql`(${sql.join(cols.map(f => sql`${f} LIKE ${"%" + w + "%"} ESCAPE '!'`), " OR ")})`), " AND "));
 
   const orders = [
     ...exact.map(f => sql`${id(f)} = ${trimmed} DESC`),
-    ...like.map(f => sql`${low(f)} = ${term} DESC`),
-    ...words.flatMap(w => like.map(f => sql`${low(f)} LIKE ${esc(w) + "%"} ESCAPE '!' DESC`)),
+    ...cols.map(f => sql`${f} = ${term} DESC`),
+    ...words.flatMap(w => cols.map(f => sql`${f} LIKE ${w + "%"} ESCAPE '!' DESC`)),
   ];
   return { where: sql`(${sql.join(ors, " OR ")})`, order: sql.join(orders) };
 }

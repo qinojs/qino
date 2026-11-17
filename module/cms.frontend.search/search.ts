@@ -42,7 +42,7 @@ async function breadcrumb(node: Node, ctx: Ctx) {
 
 /** A plain-text excerpt around a match; markup is added only by the client. */
 async function snippet(node: Node, ctx: Ctx, query: string) {
-  const words = query.toLowerCase().split(/\s+/).slice(0, 4);
+  const words = query.toLowerCase().split(/\s+/, 4);
   const rows = await ctx.app.db.query`SELECT t.text FROM page_text pt JOIN text_lang t ON t.text_id = pt.text_id
     WHERE pt.page_id = ${node.id} AND t.lang = ${ctx.lang} AND pt.name NOT LIKE ${"!_%"} ESCAPE '!' ORDER BY pt.name`;
   let text = "", score = -1;
