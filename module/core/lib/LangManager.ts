@@ -138,8 +138,9 @@ export class LangManager {
    *  index of another language meets it later — in the background. */
   #record(index: Map<string, string>, ns: string, original: string) {
     index.set(original, "");
-    if (this.#recorded.has(ns + "\n" + original)) return;
-    this.#recorded.add(ns + "\n" + original);
+    const k = ns + "\n" + original;
+    if (this.#recorded.has(k)) return;
+    this.#recorded.add(k);
     this.#app.db.table("smalltext").insert({ namespace: ns, hash: md5(original), original }).catch(() => {});
   }
 
