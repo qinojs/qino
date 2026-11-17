@@ -70,7 +70,7 @@ export class Req {
   get query(): Readonly<Record<string, string>> {
     if (!this.#query) {
       const out: Record<string, string> = Object.create(null);
-      for (const [k, v] of this.#nativeUrl.searchParams) out[k] ??= v;
+      this.#nativeUrl.searchParams.forEach((v, k) => out[k] ??= v);
       this.#query = Object.freeze(out);
     }
     return this.#query;
@@ -80,7 +80,7 @@ export class Req {
   get queryAll(): Readonly<Record<string, readonly string[]>> {
     if (!this.#queryAll) {
       const out: Record<string, string[]> = Object.create(null);
-      for (const [k, v] of this.#nativeUrl.searchParams) (out[k] ??= []).push(v);
+      this.#nativeUrl.searchParams.forEach((v, k) => (out[k] ??= []).push(v));
       for (const k in out) Object.freeze(out[k]);
       this.#queryAll = Object.freeze(out);
     }

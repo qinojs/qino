@@ -400,7 +400,7 @@ export class Order extends ShopRow {
   async add(product: Product, { variant, quantity = 1, data = null }: { variant?: Variant; quantity?: number; data?: unknown } = {}): Promise<Line> {
     const encoded = JSON.stringify(data);
     let line = (await this.lines()).find((l) =>
-      String(l.product_id) === product.$id && String(l.variant_id ?? "") === String(variant?.$id ?? "") && l.data === encoded);
+      String(l.product_id) === product.$id && String(l.variant_id ?? "") === (variant?.$id ?? "") && l.data === encoded);
     if (!line) {
       line = await this.$table.db.table("shop_order_line").add<Line>({
         order_id: this.$id,

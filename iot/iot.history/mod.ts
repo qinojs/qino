@@ -49,15 +49,20 @@ export async function history(app: App, id: number, period: Period): Promise<{ d
   const step = Math.ceil((end - start) / width), buckets = new Map<number, Sample[]>();
   for (const sample of measured) {
     const time = start + Math.floor((sample.time - start) / step) * step;
-    buckets.getOrInsert(time, []).push(sample);
+    buckets.getOrInsertComputed(time, () => []).push(sample);
   }
   return { datapoint: point, samples: [...buckets].map(([time, samples]) => {
-    const numbers = samples.map((sample) => sample.value).filter((value) => value !== null);
-    const sum = numbers.reduce((sum, value) => sum + value, 0);
-    const mean = numbers.length ? sum / numbers.length : null;
-    const value = consumption ? numbers.length ? sum : null : point.type === "state" ? samples.at(-1)!.value : mean;
-    return { time, value, count: numbers.length, gap: samples.some((sample) => sample.gap || sample.value === null),
-      ...(numbers.length ? { min: Math.min(...numbers), max: Math.max(...numbers) } : {}) };
+    let count = 0, sum = 0, min = Infinity, max = -Infinity;
+    for (const { value } of samples) {
+      if (value === null) continue;
+      count++;
+      sum += value;
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+    const mean = count ? sum / count : null;
+    const value = consumption ? count ? sum : null : point.type === "state" ? samples.at(-1)!.value : mean;
+    return { time, value, count, gap: samples.some((s) => s.gap || s.value === null), ...(count ? { min, max } : {}) };
   }) };
 }
 

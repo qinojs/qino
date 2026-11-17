@@ -8,7 +8,7 @@ async function render(node: Node) {
   const child = node.cms.requestedChild(node);
   if (child) return html.async`<div>${child}</div>`;
   const conts = [...(await node.children()).values()].filter((c) => c.vs.type === "c");
-  const ids = conts.length ? new Set((await node.app.db.col`SELECT id FROM shop_product WHERE id IN (${sql.join(conts.map((c) => sql`${c.id}`), ", ")})`).map(Number)) : new Set();
+  const ids = conts.length ? new Set((await node.app.db.col`SELECT id FROM shop_product WHERE ${sql.in("id", conts.map((c) => c.id))}`).map(Number)) : new Set();
   const products = [];
   for (const child of conts) if (ids.has(child.id) && await child.isReadable()) products.push(child.html());
   return html.async`<div>

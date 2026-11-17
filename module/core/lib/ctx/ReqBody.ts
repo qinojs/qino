@@ -14,16 +14,15 @@ export class ReqBody {
   // deno-lint-ignore no-explicit-any
   get value(): any { return this.#value; }
 
-  #files: Record<string, Promise<UploadedFile> | undefined>;
-  get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#files; }
+  #files?: Record<string, Promise<UploadedFile> | undefined>;
   /** tmp files written so far — removed in Ctx.cleanup() */
   tmpPaths: string[] = [];
   #rawFiles: Record<string, File> = Object.create(null);
   #spooled: Record<string, Promise<UploadedFile>> = Object.create(null);
   #maxSize = 0; // set by parse(); only parse() can add files
 
-  constructor() {
-    this.#files = new Proxy(Object.create(null), {
+  get files(): Record<string, Promise<UploadedFile> | undefined> {
+    return this.#files ??= new Proxy(Object.create(null), {
       get: (_, key) => typeof key === "string" && this.#rawFiles[key] ? this.#spool(key) : undefined,
       has: (_, key) => typeof key === "string" && key in this.#rawFiles,
       ownKeys: () => Object.keys(this.#rawFiles),

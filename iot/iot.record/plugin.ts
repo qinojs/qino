@@ -16,12 +16,12 @@ const key = (provider: number, entity: string) => `${provider} ${entity}`;
 const updated = (entity: Entity | null) => entity?.updated === undefined ? Date.now() : Date.parse(entity.updated);
 
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
-  let recorded = new Map<string, Datapoint[]>();
+  const recorded = new Map<string, Datapoint[]>();
   const load = async () => {
-    recorded = new Map();
-    for (const point of await datapoints(app)) {
-      const at = key(point.provider, point.entity);
-      if (point.record) recorded.getOrInsert(at, []).push(point);
+    const points = await datapoints(app);
+    recorded.clear();
+    for (const p of points) {
+      if (p.record) recorded.getOrInsertComputed(key(p.provider, p.entity), () => []).push(p);
     }
   };
   const capture = (point: Datapoint, entity: Entity | null, time: number, reported = false) => {
@@ -52,10 +52,11 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     for (const point of recorded.get(key(provider, id)) ?? []) await capture(point, entity, time, true);
   }, { signal });
   app.on("iot:datapoint", async ({ id }) => {
-    const known = [...recorded.values()].flat().some((point) => point.id === id);
+    const find = () => recorded.values().flatMap((points) => points).find((p) => p.id === id);
+    const known = find();
     await load();
-    const point = [...recorded.values()].flat().find((point) => point.id === id);
-    if (point && !known) snapshot([point]).catch((error) => console.error("iot.record:", error));
+    const point = !known && find();
+    if (point) snapshot([point]).catch((error) => console.error("iot.record:", error));
   }, { signal });
   app.on("iot.history:read", (request) => read(app, request), { signal });
   snapshot([...recorded.values()].flat()).catch((error) => console.error("iot.record:", error));
