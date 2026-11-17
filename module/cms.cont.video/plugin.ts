@@ -20,23 +20,20 @@ async function render(node: Node) {
   if (!video) return html.async`<div>${await node.edit() ? html.async`<p>${node.app.t`Drop a video file here.`}</p>` : ""}</div>`;
 
   const { settings } = node;
-  const autoplay = !!settings.autoplay();
   const flags = {
     controls: settings.controls() ?? true,
-    autoplay,
-    muted: autoplay || !!settings.muted(),
-    loop: !!settings.loop(),
+    autoplay: settings.autoplay(),
+    muted: settings.autoplay() || settings.muted(),
+    loop: settings.loop(),
   };
-  const attrs = Object.keys(flags).filter((k) => flags[k as keyof typeof flags]).map((k) => " " + k).join("");
+  const attrs = Object.entries(flags).filter(([, on]) => on).map(([k]) => " " + k).join("");
   // without an image of its own, the poster is the video's first frame — if ffmpeg is there to cut it
   const image = first("image/");
   const poster = image ? await image.url()
     : await FileTransformer.capabilities.ffmpeg ? await video.url({ fmt: "jpg", frame: 1 }) : "";
 
   return html.async`<div>
-  <video${html.raw(attrs)} playsinline preload=${autoplay ? "auto" : "metadata"}${poster ? html` poster="${poster}"` : ""}>
-    <source src="${await video.url()}" type="${video.mime}">
-  </video>
+  <video src="${await video.url()}"${html.raw(attrs)} playsinline preload=metadata${poster ? html` poster="${poster}"` : ""}></video>
 </div>`;
 }
 

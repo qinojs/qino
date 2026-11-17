@@ -15,14 +15,13 @@ const render = async (node: never) => String(await cms.node.render(node));
 
 test("cms.cont.video: the first video plays, the first image is the poster", async () => {
   const out = await render(fake([file("image/jpeg", "p.jpg"), file("video/mp4", "a.mp4"), file("video/mp4", "b.mp4")]));
-  assertStringIncludes(out, `<video controls playsinline preload=metadata poster="p.jpg">`);
-  assertStringIncludes(out, `<source src="a.mp4" type="video/mp4">`);
+  assertStringIncludes(out, `<video src="a.mp4" controls playsinline preload=metadata poster="p.jpg"></video>`);
   assert(!out.includes("b.mp4"));
 });
 
-test("cms.cont.video: autoplay is always muted and preloads", async () => {
+test("cms.cont.video: autoplay is always muted", async () => {
   const out = await render(fake([file("video/webm", "a.webm")], { autoplay: true, controls: false, loop: true }));
-  assertStringIncludes(out, "<video autoplay muted loop playsinline preload=auto");
+  assertStringIncludes(out, `<video src="a.webm" autoplay muted loop playsinline`);
 });
 
 test("cms.cont.video: without an image the first frame is the poster, if ffmpeg can cut it", async () => {

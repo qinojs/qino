@@ -5,4 +5,4 @@ first image is the poster — without one, the video's first frame (if ffmpeg is
 clips short and web-ready (MP4/H.264 or WebM).
 
 Settings: `controls` (on by default), `autoplay` (always muted, browsers allow nothing else),
-`muted`, `loop`. Without autoplay only the metadata is preloaded.
+`muted`, `loop`. Only the metadata is preloaded — autoplay loads the rest anyway.
