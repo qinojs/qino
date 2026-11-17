@@ -160,7 +160,7 @@ async function historyRows(node: Node, ids: number[]) {
       <td data-value="${r.time}">${u2.el.time(r.time)}
       <td>${who}
       <td class=-where>${await backend.breadcrumb(node, Number(r.node_id))}
-      <td>${Array.from(labels, (l) => html`<div>${html.raw(l)}</div>`)}`);
+      <td>${[...labels].map((l) => html`<div>${html.raw(l)}</div>`)}`);
   }
   return out;
 }

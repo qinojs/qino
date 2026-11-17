@@ -105,7 +105,7 @@ export abstract class Page {
         clip: { ...area, scale },
         captureBeyondViewport: true,
       });
-      return Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+      return Uint8Array.fromBase64(data);
     } finally {
       session.detach().catch(() => {});
     }

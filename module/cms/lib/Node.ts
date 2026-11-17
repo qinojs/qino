@@ -210,7 +210,7 @@ export class Node {
             const mod = this.module;
             if (!mod) throw new Error(`Module "${this.vs.module}" is not imported`);
             let render = mod.plugin.cms?.node?.render;
-            render ??= (await this.cms.fire("node:render-fallback", { node: this, render: null })).render ?? undefined;
+            render ??= (await this.cms.fire("node:render-fallback", { node: this, render: null })).render;
             if (!render) throw new Error(`No render function for module "${this.vs.module}"`);
             return render(this, {ctx:getCtx(), vars});
         });

@@ -84,7 +84,7 @@ async function stop(s) {
   s.abort = null;
   const cleanup = s.cleanup;
   s.cleanup = null;
-  await Promise.resolve(cleanup?.()).catch((err) => console.error('widget cleanup failed', s.src, err));
+  try { await cleanup?.(); } catch (err) { console.error('widget cleanup failed', s.src, err); }
 }
 
 async function run(s) {

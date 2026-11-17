@@ -139,7 +139,7 @@ export class ModuleManager {
   linked(): Module[];
   linked(name: string): Module | undefined;
   linked(name?: string): Module[] | Module | undefined {
-    if (name === undefined) return Array.from(this.#linked, (n) => this.#modules.get(n)!);
+    if (name === undefined) return [...this.#linked].map((n) => this.#modules.get(n)!);
     if (this.#linked.has(name)) return this.#modules.get(name);
   }
 
