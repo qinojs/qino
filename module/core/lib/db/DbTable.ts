@@ -116,11 +116,8 @@ export class DbTable {
   }
 
   async selectByID(id: any): Promise<Record<string, any> | undefined> {
-    const values = this.entryIdValues(id);
-    if (!values) return;
-    const where = this.valuesToFragment(values);
-    if (!where.parts.length) return;
-    return this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
+    const where = this.entryIdToFragment(id);
+    if (where) return this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
   }
   async select(where: Sql = sql`TRUE`): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
@@ -186,20 +183,17 @@ export class DbTable {
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const set = this.valuesToFragment(values!, undefined, true);
     if (!set.parts.length) return;
-    const whereValues = this.entryIdValues(id);
-    if (!whereValues) return;
-    const where = this.valuesToFragment(whereValues);
-    if (!where.parts.length) return;
-    const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
-    if (!rows.affectedRows) return; // no row matched (drivers report matched, not changed rows)
+    const where = this.entryIdToFragment(id);
+    if (!where) return;
+    const res = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
+    if (!res.affectedRows) return; // no row matched (drivers report matched, not changed rows)
     await this.#db.fire("table:update-after", { table: this, id, data: values! });
     return this.entryId(id);
   }
 
   async ensure(values: Record<string, any> = {}): Promise<string | undefined> {
-    const whereValues = this.entryIdValues(values);
-    const where = whereValues ? this.valuesToFragment(whereValues) : null;
-    return where?.parts.length && await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`
+    const where = this.entryIdToFragment(values);
+    return where && await this.#db.row`SELECT 1 FROM ${sql.id(this)} WHERE ${where}`
       ? this.update(values)
       : this.insert(values);
   }
@@ -246,8 +240,8 @@ export class DbTable {
     const cascades = this.children.filter((f) => f.onParentDelete === "cascade");
     const setnulls = this.children.filter((f) => f.onParentDelete === "setnull");
     const row = cascades.length || setnulls.length ? await this.selectByID(id) : undefined; // read before the DELETE
-    const rows = await this.#db.exec`DELETE FROM ${sql.id(this)} WHERE ${where}`;
-    if (!rows.affectedRows) return false; // no row matched
+    const res = await this.#db.exec`DELETE FROM ${sql.id(this)} WHERE ${where}`;
+    if (!res.affectedRows) return false; // no row matched
     await this.#db.fire("table:delete-after", { table: this, data: values, id });
     for (const field of cascades) {
       const pField = field.parentField();

@@ -2,10 +2,13 @@ import type { CMS } from "./CMS.ts";
 
 /** `links`: also resolve `cmspid://`. Off in edit mode, since the editor saves the html back and a
  *  fixed url would break when the page url changes. File urls are always resolved. */
-export async function resolveText(cms: CMS, value: string, links = true): Promise<string> {
-  if (links) value = await replaceAsync(value, /cmspid:\/\/(\d+)/g, (_, pid) => replaceLinks(cms, pid));
-  value = await replaceAsync(value, /\/dbFile\/(\d+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(cms, id));
-  return value;
+export async function resolveText(cms: CMS, text: string, links = true): Promise<string> {
+  if (links && text.includes("cmspid://")) {
+    text = await replaceAsync(text, /cmspid:\/\/(\d+)/g, pid => replaceLinks(cms, pid));
+  }
+  return text.includes("/dbFile/")
+    ? replaceAsync(text, /\/dbFile\/(\d+)\/(?:u-[^/]+\/)?/g, id => replaceFileUrls(cms, id))
+    : text;
 }
 
 async function replaceLinks(cms: CMS, pid: string) {
@@ -24,11 +27,11 @@ async function replaceFileUrls(cms: CMS, id: string) {
   return `/dbFile/${id}/`;
 }
 
-async function replaceAsync(str: string, regex: RegExp, fn: (match: string, ...groups: string[]) => Promise<string>) {
-  let result = "", last = 0;
+async function replaceAsync(str: string, regex: RegExp, fn: (id: string) => Promise<string>) {
+  let out = "", last = 0;
   for (const m of str.matchAll(regex)) {
-    result += str.slice(last, m.index) + await fn(m[0], ...m.slice(1));
+    out += str.slice(last, m.index) + await fn(m[1]);
     last = m.index + m[0].length;
   }
-  return result + str.slice(last);
+  return out + str.slice(last);
 }
