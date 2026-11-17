@@ -53,7 +53,7 @@ export class ReqBody {
     body.#maxSize = opt.maxSize;
     if (!request.body) return body;
 
-    const type = request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() ?? "";
+    const type = request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ?? "";
     const isJson = type === "application/json" || type === "application/csp-report" || type.endsWith("+json");
     const isForm = type === "multipart/form-data" || type === "application/x-www-form-urlencoded";
     if (!isJson && !isForm) return body; // other bodies stay untouched, readable via req

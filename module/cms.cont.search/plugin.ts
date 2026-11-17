@@ -41,7 +41,7 @@ const settingsSchema = {
   },
 };
 
-const terms = (search: string) => search.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 4);
+const terms = (search: string) => search.toLowerCase().split(/\s+/).slice(0, 4);
 
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
 function snippet(text: string, words: string[], parts = 7, before = 30, after = 10) {
@@ -64,9 +64,8 @@ async function section(hit: Node): Promise<Node> {
 
 /** Matching pages, best first. A hit on a content counts for the page that carries it, or for its
  *  section when grouped by contents. */
-async function hits(node: Node, ctx: Ctx, search: string) {
+async function hits(node: Node, ctx: Ctx, search: string, words: string[]) {
   const db = ctx.app.db;
-  const words = terms(search);
   const { where } = sqlSearch(search, ["t.text"]);
   const pattern = String(node.settings.module() ?? "");
   const scope = pattern ? sql`AND p.module LIKE ${pattern}` : sql``;
@@ -147,9 +146,9 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
 /** The results for a term; also rendered alone as the part "hits" while the visitor types. */
 async function results(node: Node, ctx: Ctx, search: string, vars: Record<string, unknown> = {}) {
   if (!search) return "";
-  const found = await hits(node, ctx, search);
-  const entry = await record(node, ctx, search, found.length, vars);
   const words = terms(search);
+  const found = await hits(node, ctx, search, words);
+  const entry = await record(node, ctx, search, found.length, vars);
   const list = found.length
     ? html.async`<ol>${found.map((r) => item(node, r.page, r.text, words))}</ol>`
     : html.async`<p class=-empty>${ctx.app.t`No results found`}</p>`;

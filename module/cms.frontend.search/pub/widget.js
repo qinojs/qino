@@ -54,7 +54,7 @@ export default async function (widget, { node, signal }) {
       const found = await api['cms.frontend.search'].search.get({ pid: node.id, search }, { signal: requestSignal });
       const titles = { pages: t`Pages`, contents: t`Contents`, files: t`Files`, users: t`Users` };
       const groups = Object.keys(titles).filter((name) => found[name]?.length);
-      const words = search.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 4);
+      const words = search ? search.toLowerCase().split(/\s+/).slice(0, 4) : [];
       const result = groups.length
         ? await html.async`${groups.map((name) => {
           const rows = found[name];

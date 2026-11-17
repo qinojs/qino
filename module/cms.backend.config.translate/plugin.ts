@@ -57,7 +57,7 @@ async function table(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string
   const langTh = langs.map(l => html`<th data-sort="${l}" data-dir="${nextDir(l)}">${l}${sortMark(l)}`);
 
   const rowsHtml = rows.map((row) => {
-    const langTds = langs.map(l => html`<td><textarea data-lang="${l}">${texts.get(key(row))?.[l] ?? ""}</textarea>`);
+    const langTds = langs.map(l => html`<td><textarea data-lang="${l}">${texts.get(key(row))?.[l]}</textarea>`);
     return html`<tr data-hash="${row.hash}" data-ns="${row.namespace}">
       <td class=-namespace>${row.namespace}
       <td><div class=-original>${row.original}</div>

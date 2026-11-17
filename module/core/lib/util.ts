@@ -149,7 +149,7 @@ export function urlize(str: string): string {
  *  prefix hits. Empty input gives neutral fragments. Qualified names ("m.subject") work. */
 export function sqlSearch(input: string, like: string[], opt: { exact?: string[] } = {}): { where: Sql; order: Sql } {
   const trimmed = (input ?? "").trim(), term = trimmed.toLowerCase();
-  const words = term.split(/\s+/).slice(0, 4).filter(Boolean);
+  const words = term ? term.split(/\s+/).slice(0, 4) : [];
   const exact = opt.exact ?? [];
   if (!words.length || !(like.length + exact.length)) return { where: sql`${true}`, order: sql.raw("(SELECT NULL)") }; // Postgres refuses a bare constant in ORDER BY
   const id = (name: string) => sql.join(name.split(".").map(sql.id), ".");

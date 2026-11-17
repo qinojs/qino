@@ -36,7 +36,7 @@ function parse(declared: string, deep = false) {
   for (const group of declared.split(",")) {
     const match = group.trim().match(/^([a-z][a-z\d-]*)\s*\((.*)\)$/s);
     const inner = (match ? match[2] : group).trim();
-    if (!deep) result[match ? match[1] : "*"] = inner.split(/\s+/).filter(Boolean);
+    if (!deep) result[match ? match[1] : "*"] = inner ? inner.split(/\s+/) : [];
     else {
       const [attribute, ...rest] = inner.split(":");
       result[match ? match[1] : "*"] = { [attribute.trim()]: rest.join(":").split(/\s+/).filter(Boolean) };
