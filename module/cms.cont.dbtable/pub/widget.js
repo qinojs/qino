@@ -98,14 +98,14 @@ export const setup = ({ flags, list = true } = {}) => async function (widget, { 
       <div class=-more>
         <label>${t`Label`} (${lang}):<input value="${unhee(title.value)}" cmstxt=${title.id} cmslang=${lang}></label>
         <label>${t`Column`}:<input value="${pathOf(name)}" readonly></label>
-        <label>${t`Default value`} <small>({user}, {id})</small>:<input setting="fields.${name}.default" value="${set.default ?? ''}"></label>
-        ${list ? html.async`<label>${t`Width`}:<input setting="fields.${name}.width" value="${set.width ?? ''}" placeholder="120"></label>` : ''}
-        <label>${t`Link to page`} (id/URL):<input setting="fields.${name}.link" value="${set.link ?? ''}"></label>
-        <label class=-choices>${t`Choices, one per line (value=Label)`}:<textarea setting="fields.${name}.choices">${set.choices ?? ''}</textarea></label>
-        <label class=-ref>${t`Label of the row pointed to`} (SQL):<input setting="fields.${name}.ref_label" value="${set.ref_label ?? ''}" placeholder="name"></label>
-        <label class=-ref>${t`Rows offered`} (SQL WHERE):<input setting="fields.${name}.ref_where" value="${set.ref_where ?? ''}"></label>
-        <label class=-size>${t`Size`}:<input setting="fields.${name}.size" value="${set.size ?? ''}" placeholder="30x20"></label>
-        ${list ? html.async`<label class=-cut>${t`Characters in the list`}:<input type=number setting="fields.${name}.cut" value="${set.cut ?? ''}"></label>` : ''}
+        <label>${t`Default value`} <small>({user}, {id})</small>:<input setting="fields.${name}.default" value="${set.default}"></label>
+        ${list ? html.async`<label>${t`Width`}:<input setting="fields.${name}.width" value="${set.width}" placeholder="120"></label>` : ''}
+        <label>${t`Link to page`} (id/URL):<input setting="fields.${name}.link" value="${set.link}"></label>
+        <label class=-choices>${t`Choices, one per line (value=Label)`}:<textarea setting="fields.${name}.choices">${set.choices}</textarea></label>
+        <label class=-ref>${t`Label of the row pointed to`} (SQL):<input setting="fields.${name}.ref_label" value="${set.ref_label}" placeholder="name"></label>
+        <label class=-ref>${t`Rows offered`} (SQL WHERE):<input setting="fields.${name}.ref_where" value="${set.ref_where}"></label>
+        <label class=-size>${t`Size`}:<input setting="fields.${name}.size" value="${set.size}" placeholder="30x20"></label>
+        ${list ? html.async`<label class=-cut>${t`Characters in the list`}:<input type=number setting="fields.${name}.cut" value="${set.cut}"></label>` : ''}
         <button type=button class=-remove>${t`Remove field`}</button>
       </div>
     </div>`;
@@ -125,16 +125,16 @@ export const setup = ({ flags, list = true } = {}) => async function (widget, { 
       </details>
       ${list ? html.async`<details><summary>${t`List`}</summary>
         <label>${t`Rows per page`}:<input type=number setting=limit value="${settings.limit ?? 20}" min=1></label>
-        <label>${t`Order`}:<input setting=order value="${settings.order ?? ''}" placeholder="name, date DESC" list=dbtable-fields></label>
-        <label>${t`Search text to start with`}:<input setting=search value="${settings.search ?? ''}"></label>
+        <label>${t`Order`}:<input setting=order value="${settings.order}" placeholder="name, date DESC" list=dbtable-fields></label>
+        <label>${t`Search text to start with`}:<input setting=search value="${settings.search}"></label>
         <label><input type=checkbox setting=search_reset ${checked(settings.search_reset)}> ${t`Each visit starts with it`}</label>
         <label><input type=checkbox setting=delete ${checked(settings.delete)}> ${t`Rows can be deleted`}</label>
         <label><input type=checkbox setting=copy ${checked(settings.copy)}> ${t`Rows can be copied`}</label>
         <label><input type=checkbox setting=export ${checked(settings.export)}> ${t`CSV export`}</label>
-        <label>${t`Detail page of a row`} (id/URL):<input setting=detail_page value="${settings.detail_page ?? ''}"></label>
-        <label>${t`Only rows where`} (SQL):<textarea setting=where>${settings.where ?? ''}</textarea></label>
+        <label>${t`Detail page of a row`} (id/URL):<input setting=detail_page value="${settings.detail_page}"></label>
+        <label>${t`Only rows where`} (SQL):<textarea setting=where>${settings.where}</textarea></label>
         <datalist id=dbtable-fields>${names.map((n) => html`<option value="${n}">`)}</datalist>
-      </details>` : html.async`<label>${t`Only rows where`} (SQL):<textarea setting=where>${settings.where ?? ''}</textarea></label>`}
+      </details>` : html.async`<label>${t`Only rows where`} (SQL):<textarea setting=where>${settings.where}</textarea></label>`}
       <details class=-sqlBox><summary>SQL</summary><pre class=-sql></pre></details>` : ''}
   </div>`;
 

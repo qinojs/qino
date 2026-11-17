@@ -22,17 +22,17 @@ export default async function (widget, {
   // all-day ends show the last included day, a moment no end; the row without a date adds one
   const row = (item = {}) => {
     const type = item.allDay ? "date" : "datetime-local";
-    return html.async`<tr data-date="${item.id ?? ""}">
+    return html.async`<tr data-date="${item.id}">
       <td><input type=checkbox name=allDay ${item.allDay ? html`checked` : ""} aria-label="${t`All day`}">
-      <td><input name=start type="${type}" step=1 value="${item.localStart ?? ""}" required aria-label="${t`Start`}">
-      <td><input name=end type="${type}" step=1 value="${item.allDay ? shiftDate(item.localEnd, -1) : item.localEnd === item.localStart ? "" : item.localEnd ?? ""}" aria-label="${t`End`}">
-      <td><input name=name value="${item.name ?? ""}" size=12 aria-label="${t`Name`}">
-      <td><input name=price type=number min=0 step=any size=6 value="${item.price ?? ""}" aria-label="${t`Own price`}">
+      <td><input name=start type="${type}" step=1 value="${item.localStart}" required aria-label="${t`Start`}">
+      <td><input name=end type="${type}" step=1 value="${item.allDay ? shiftDate(item.localEnd, -1) : item.localEnd === item.localStart ? "" : item.localEnd}" aria-label="${t`End`}">
+      <td><input name=name value="${item.name}" size=12 aria-label="${t`Name`}">
+      <td><input name=price type=number min=0 step=any size=6 value="${item.price}" aria-label="${t`Own price`}">
       <td>${item.id ? html.async`<button type=button class=u2-unstyle data-remove aria-label="${t`Delete date`}" title="${t`Delete date`}"><u2-ico icon=delete>✕</u2-ico></button>` : ""}
     </tr>`;
   };
   const field = (name, label, attributes = "") => html.async`<label for="${prefix}-${name}">${label}</label>
-    <input id="${prefix}-${name}" name="${name}" data-event-field value="${event[name] ?? ""}" ${attributes}>`;
+    <input id="${prefix}-${name}" name="${name}" data-event-field value="${event[name]}" ${attributes}>`;
   await widget.html`<div class="cms-event-editor ${cards ? "u2-flex" : ""}">
     <section class="${cards ? "u2-card" : ""}" style="flex:0 1 auto">
       <div class="${cards ? "-head" : ""}">${t`Dates`} (${dates.length})</div>
