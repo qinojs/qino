@@ -188,9 +188,8 @@ export class Node {
         const ctx = getCtx();
         let str = (await this.htmlRaw(vars) ?? "").trim();
         str ||= "<div></div>";
-        let attr = "";
         const moduleName = this.module?.name ?? "";
-        attr += ` qcms-id=${this.id} qcms-mod="${hee(moduleName.replace(/^cms\./, ""))}"`;
+        let attr = ` qcms-id=${this.id} qcms-mod="${hee(moduleName.replace(/^cms\./, ""))}"`;
         if (await this.edit()) {
             attr += " qcms-edit";
             if (moduleName.startsWith("cms.cont.flexible")) attr += " qcms-drop";

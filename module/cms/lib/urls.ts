@@ -13,7 +13,7 @@ export async function generate(node: Node, lang: string): Promise<string> {
   if (node.vs.type === "c" && !await hasOwnUrl(node)) return "";
   const parent = node.vs.type === "c" ? await node.page() : await node.parent();
   const parentUrl = !parent || String(parent) === "1" ? lang : await parent.urlSeo(lang) || await generate(parent, lang);
-  const title = await (await node.title()).orFallback(lang).then((t: any) => t.get()) ?? "";
+  const title = await (await node.title()).orFallback(lang).then((t: any) => t.get());
   let url = parentUrl.replace(/\/?$/, "/") + (urlize(title) || (node.vs.type === "c" ? String(node.id) : ""));
   const taken = await node.app.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url} AND NOT (page_id = ${node.id} AND lang = ${lang})`;
   if (taken || await fs.stat(node.app.dir + url)) url += "-" + lang + node;

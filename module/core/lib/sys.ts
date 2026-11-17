@@ -62,10 +62,9 @@ function nodeServe({ port, hostname, signal }: ServeOptions, handler: ServeHandl
       duplex: "half",
     } as RequestInit);
     const info = { remoteAddr: { hostname: req.socket.remoteAddress ?? "" } };
-    const response = await Promise.resolve(handler(request, info)).catch((e) => {
-      console.error(e);
-      return new Response("Internal Server Error", { status: 500 });
-    });
+    let response;
+    try { response = await handler(request, info); }
+    catch (e) { console.error(e); response = new Response("Internal Server Error", { status: 500 }); }
     res.writeHead(response.status, response.statusText, [...response.headers].flat());
     // pipeline destroys both ends, so a closed connection cancels the body (e.g. a stream that never ends)
     if (response.body && req.method !== "HEAD") pipeline(Readable.fromWeb(response.body), res, () => {});
