@@ -13,7 +13,8 @@ export type Period = Range & { timeZone: string };
 export type Entry = Range & { id: string; title: string; url?: string; editUrl?: string; status?: "TENTATIVE" | "CONFIRMED" | "CANCELLED" };
 export type Source = { title?: string | Record<string, string>; color?: string; query(ctx: Ctx, period: Period): Promise<Entry[]> };
 
-const linked = (app: App) => app.modules.linked().filter((mod) => typeof mod.plugin.calendar?.query === "function");
+const linked = (app: App, ids?: string[]) => app.modules.linked().filter((m) =>
+  typeof m.plugin.calendar?.query === "function" && (!ids || ids.includes(m.name)));
 
 /** Available sources; choosing one never bypasses the source's own permissions. */
 export function sources(app: App, lang = app.languages.def): { id: string; title: string; color?: string }[] {
@@ -35,10 +36,10 @@ export function dateRange(period: Period): Range {
 
 /** Read linked sources in the caller's context; failures propagate instead of hiding missing entries. */
 export async function entries(ctx: Ctx, period: Period & { sources?: string[] }): Promise<(Entry & { source: string })[]> {
-  const { timeZone, sources: selected } = period, [start, end] = instants(period, timeZone);
+  const { timeZone, sources: ids } = period, [start, end] = instants(period, timeZone);
   start.toZonedDateTimeISO(timeZone); // rejects an unknown time zone
   const range = { start: start.toString(), end: end.toString(), timeZone };
-  const mods = linked(ctx.app).filter((mod) => !selected || selected.includes(mod.name));
+  const mods = linked(ctx.app, ids);
   return (await Promise.all(mods.map(async (mod) => {
     const items = await (mod.plugin.calendar as Source).query(ctx, range);
     return items.filter((item) => overlaps(item, range, { timeZone })).map((item) => ({ ...item, source: mod.name }));

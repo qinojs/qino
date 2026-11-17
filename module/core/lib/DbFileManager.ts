@@ -77,8 +77,8 @@ export class DbFileManager {
 
     const params: Record<string, string | true> = {};
     for (const part of parts) {
-      const pair = part.split("-");
-      params[pair[0]] = pair[1] ?? true;
+      const [k, v] = part.split("-", 2);
+      params[k] = v ?? true;
     }
 
     const f = await this.file(id);
@@ -95,8 +95,8 @@ export class DbFileManager {
 
     const headers = new Headers();
 
-    const mtime = await f.mtime();
-    if (mtime !== undefined) headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
+    const mtime = (await fs.stat(f.path))?.mtime;
+    if (mtime) headers.set("Last-Modified", mtime.toUTCString());
     headers.set("Cache-Control", `max-age=${60 * 60 * 24 * 180}, private, immutable`);
 
     // The format may depend on the Accept header, so caches must key on it.

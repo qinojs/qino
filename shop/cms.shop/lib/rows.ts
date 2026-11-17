@@ -494,8 +494,8 @@ export class Order extends ShopRow {
 
   /** A method as the shop labels it in the order's language; `fallback` else, its name without one. */
   async label(name: string, fallback = name): Promise<string> {
-    const labels = settingsOf(this.$app).labels, lang = this.lang || this.$app.languages.def;
-    return String(await labels[name]?.[lang] || await labels[name]?.[this.$app.languages.def] || fallback);
+    const label = settingsOf(this.$app).labels[name], def = this.$app.languages.def, lang = this.lang || def;
+    return String(await label?.[lang] || (lang !== def && await label?.[def]) || fallback);
   }
   #labelled(methods: Method[]): Promise<Method[]> {
     return Promise.all(methods.map(async (m) => ({ ...m, label: await this.label(m.name, m.label) })));

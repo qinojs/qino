@@ -8,10 +8,10 @@ export type Schedule = Range & { rrule?: string; timeZone?: string; rdate?: stri
 
 /** Expand only occurrences overlapping the period. Timed DTEND preserves exact duration (RFC 5545). */
 export function occurrences(schedule: Schedule, period: Period): (Range & { recurrenceId: string })[] {
-  validateRange(schedule);
-  validateRange(period);
   if (!schedule.rrule && !schedule.rdate?.length && !schedule.exdate?.length)
     return overlaps(schedule, period, { timeZone: period.timeZone }) ? [{ start: schedule.start, end: schedule.end, recurrenceId: schedule.start }] : [];
+  validateRange(schedule);
+  validateRange(period);
   const allDay = isDate(schedule.start);
   const zone = allDay ? "UTC" : schedule.timeZone ?? (schedule.start.includes("[") ? Temporal.ZonedDateTime.from(schedule.start).timeZoneId : undefined);
   if (!zone) throw new RangeError("calendar: recurring timed entries require a time zone");
