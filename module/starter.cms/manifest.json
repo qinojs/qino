@@ -28,6 +28,7 @@
     "cms.cont.items",
     "cms.cont.image",
     "cms.cont.gallery.masonry",
+    "cms.cont.video",
     "cms.cont.nav",
     "cms.cont.table",
     "cms.cont.lang.choose",
