@@ -24,6 +24,7 @@ export const renamedModules: Record<string, string> = {
   "cms.cont.login4": "cms.cont.login.password",
   "cms.cont.login6": "cms.cont.login.password", // lost pw page, placeholder, logout_redirect fall back
   "cms.cont.youtubevideo": "cms.cont.video.youtube2",
+  "cms.cont.video.nativ1": "cms.cont.video", // plays the first video of the files, its «Video mp4» too; same flags
   "cms.backendLayout": "cms.layout.backend",
   "cms.backend.struct": "cms.backend.cms.tree",
   "cms.backend.struct.grpaccess": "cms.backend.cms.tree.access",

@@ -1,6 +1,7 @@
 import { fs } from "@qino/qino";
 
 import { currentModule } from "./renamedModules.ts";
+import { dataDir } from "./moveFiles.ts";
 
 import type { App } from "@qino/qino";
 
@@ -29,7 +30,7 @@ export async function migrateCss(app: App): Promise<void> {
     }
     after = after.replaceAll(/\.-pid(\d+)(?![\w-])/g, '[qcms-id="$1"]');
     after = after.replaceAll(/\/qg\/([A-Za-z0-9._-]+)\//g, (_match, module) =>
-      relativeDir(path, `${app.dir}data/${module}/`)
+      relativeDir(path, `${app.dir}data/${dataDir(module)}/`)
     );
     if (after === before) continue;
     hits += before.match(/\.-m-|\.-pid\d+(?![\w-])|\/qg\/[A-Za-z0-9._-]+\//g)?.length ?? 0;

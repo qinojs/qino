@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { fs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
-import { dirNames, moveMerge } from "./moveFiles.ts";
+import { dataDir, dirNames, moveMerge } from "./moveFiles.ts";
 
 const read = (path: string) => fs.text(path).catch(() => null);
 
@@ -50,4 +50,10 @@ test("moveMerge: a second run is a no-op, dirNames ignores a missing dir", async
   assertEquals(await read(dir + "data/core/file/abc123"), "upload");
   assertEquals(await dirNames(dir + "nothing/"), []);
   await fs.remove(dir, { recursive: true });
+});
+
+test("dataDir: uploads go to core, a renamed module's files to its successor", () => {
+  assertEquals(dataDir("file"), "core/file");
+  assertEquals(dataDir("cms.cont.nav3"), "cms.cont.nav"); // qino loads the site css from data/<module>/
+  assertEquals(dataDir("cms.cont.section3"), "cms.cont.section3"); // a port keeps its name
 });

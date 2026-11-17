@@ -1,15 +1,21 @@
 import { fs } from "@qino/qino";
 
+import { currentModule } from "./renamedModules.ts";
+
 import type { App } from "@qino/qino";
 
-/** PHP kept files in qg/ and uploads in qg/file/; now data/<module>/ (uploads belong to core). Names
- *  stay, so references keep working. */
+/** Where qg/<name>/ lives now, below data/: uploads belong to core, a renamed module's files to its
+ *  successor — qino loads a node's site css from data/<its module>/. */
+// "file" is not a module — the uploads are core's
+export const dataDir =(name: string): string => name === "file" ? "core/file" : currentModule(name);
+
+/** PHP kept files in qg/ and uploads in qg/file/; now data/<module>/ (see dataDir). File names stay,
+ *  so references keep working. */
 export async function migrateFiles(app: App): Promise<void> {
   const legacy = app.dir + "qg/";
   let moved = 0, kept = 0;
   for (const name of await dirNames(legacy)) {
-    // "file" is not a module — the uploads are core's
-    const [m, k] = await moveMerge(legacy + name + "/", app.dir + (name === "file" ? "data/core/file/" : `data/${name}/`));
+    const [m, k] = await moveMerge(legacy + name + "/", `${app.dir}data/${dataDir(name)}/`);
     moved += m;
     kept += k;
   }

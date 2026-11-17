@@ -39,7 +39,6 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.cont.c1_box` | — | ported box with a title bar |
 | `cms.cont.flexible.plus1` | — | ported flex/grid content area |
 | `cms.cont.parallax2` | — | ported parallax section shell |
-| `cms.cont.video.nativ1` | — | ported native video player |
 | `cms.cont.video.youtube2` | — | ported privacy-aware YouTube embed |
 | `cms.cont.overview.cd` | — | ported linked page overview |
 | `cms.cont.privacy_policy1` | — | ported generated privacy policy |

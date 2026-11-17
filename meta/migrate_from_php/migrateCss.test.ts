@@ -29,3 +29,12 @@ test("migrateCss: a file inside the folder it names keeps a clean path", async (
   await migrateCss({ dir, db: { col: () => Promise.resolve([]) } } as unknown as App);
   assertEquals(await fs.text(path), "a { background:url(../pub/img/a.svg) }");
 });
+
+test("migrateCss: /qg/ paths follow the files to where they moved", async () => {
+  const dir = await fs.tempDir() + "/";
+  await fs.mkdir(dir + "data/site");
+  const path = dir + "data/site/main.css";
+  await fs.write(path, "a { background:url(/qg/cms.cont.nav3/pub/a.svg) } b { background:url(/qg/file/x) }");
+  await migrateCss({ dir, db: { col: () => Promise.resolve([]) } } as unknown as App);
+  assertEquals(await fs.text(path), "a { background:url(../cms.cont.nav/pub/a.svg) } b { background:url(../core/file/x) }");
+});

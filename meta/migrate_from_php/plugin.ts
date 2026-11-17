@@ -188,19 +188,19 @@ async function moveNodeCode(app: App): Promise<void> {
     console.log(`[migrate_from_php] ${files.length} cmsPhpFiles → data/cms.cont.ts/ (still PHP, port by hand)`);
   }
 
-  const dir1 = app.dir + "data/cms.cont.phpfile1/";
-  const nodes = (await fs.list(dir1).catch(() => [])).filter((e) => e.isDirectory && /^\d+$/.test(e.name));
+  // qg/cms.cont.phpfile1/<id>/ arrived as data/cms.cont.ts/<id>/ (see dataDir)
+  const nodes = (await fs.list(to).catch(() => [])).filter((e) => e.isDirectory && /^\d+$/.test(e.name));
   if (!nodes.length) return;
   await fs.mkdir(to + "pub/");
   for (const { name: id } of nodes) {
     // a ported file already in place wins over its legacy source
     const move = async (src: string, dst: string) =>
-      await fs.stat(to + dst, { ttl: 0 }) || await fs.rename(dir1 + id + "/" + src, to + dst).catch(() => {});
+      await fs.stat(to + dst, { ttl: 0 }) || await fs.rename(to + id + "/" + src, to + dst).catch(() => {});
     await move("index.php", id + ".php");
     await move("pub/main.css", "pub/" + id + ".css");
     await move("pub/main.js", "pub/" + id + ".js");
+    await fs.remove(to + id, { recursive: true }).catch(() => {});
   }
-  await fs.remove(dir1, { recursive: true }).catch(() => {});
   console.log(`[migrate_from_php] ${nodes.length} cms.cont.phpfile1 nodes → data/cms.cont.ts/ (still PHP, port by hand)`);
 }
 
