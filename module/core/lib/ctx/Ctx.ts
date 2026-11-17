@@ -104,18 +104,17 @@ export function urlToLocalPath(url: string | URL, appUrl: string, app: App): str
   return null;
 }
 
-// the module/data segment must be a plain name, never "."/".."
-const safeSeg = (s: string) => s !== "." && s !== ".." ? s : null;
-
 function appRequestPathToLocalPath(appRequestPath: string, app: App) {
-  const matchM = appRequestPath.match(/^m(?:\.\w+)?\/([^/]+)\/pub\/(.*)/);
-  if (matchM && safeSeg(matchM[1])) {
-    const mod = app.modules.get(matchM[1]);
+  const match = appRequestPath.match(/^([md])(?:\.\w+)?\/([^/]+)\/pub\/(.*)/);
+  if (!match) return null;
+  const [, kind, name, file] = match;
+  // the module/data segment must be a plain name, never "."/".."
+  if (name === "." || name === "..") return null;
+  if (kind === "m") {
     // Not registered yet: its mirror is where import() put it (same layout as Module.pubDir).
-    return pubPath(mod?.pubDir ?? `${app.dir}cache/${matchM[1]}/remote/pub`, matchM[2]);
+    return pubPath(app.modules.get(name)?.pubDir ?? `${app.dir}cache/${name}/remote/pub`, file);
   }
-  const matchD = appRequestPath.match(/^d(?:\.\w+)?\/([^/]+)\/pub\/(.*)/);
-  return matchD && safeSeg(matchD[1]) ? pubPath(`${app.dir}data/${matchD[1]}/pub`, matchD[2]) : null;
+  return pubPath(`${app.dir}data/${name}/pub`, file);
 }
 
 function pubPath(root: string, file: string) {

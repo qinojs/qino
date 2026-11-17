@@ -684,12 +684,11 @@ export class Node {
         let sort: number | null = null;
         let i = 1;
         for (const child of (await this.children({ type })).values()) {
-            if (String(page) === String(child)) continue;
-            if (beforePage && String(beforePage) === String(child)) sort = i++;
+            if (page.id === child.id) continue;
+            if (beforePage?.id === child.id) sort = i++;
             await child.set("sort", i++);
         }
-        sort ??= i++;
-        await page.set({ basis: this.id, sort });
+        await page.set({ basis: this.id, sort: sort ?? i });
 
         this.#clearTreeCache();
 

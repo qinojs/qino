@@ -115,8 +115,8 @@ function decodeSegment(s: string) {
 
 export function coerce(raw: unknown, schema: StandardSchema): unknown {
   if (raw == null) return raw;
-  const kind = schema.kind === "optional" ? schema.inner?.kind : schema.kind;
-  const inner = schema.kind === "optional" ? schema.inner?.inner : schema.inner;
+  if (schema.kind === "optional" && schema.inner) schema = schema.inner;
+  const { kind, inner } = schema;
   if (kind === "array" && Array.isArray(raw) && inner) return raw.map((v) => coerce(v, inner));
   if (kind === "number" && typeof raw === "string") {
     const s = raw.trim();
