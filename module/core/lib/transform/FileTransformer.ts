@@ -121,14 +121,14 @@ export class FileTransformer {
     accept?: string, // the client's `Accept` header; omitted = no constraint
   ): Promise<TransformResult> {
     const opts = { ...options };
-    if (opts.dpr && opts.dpr > 1) {
-      opts.w &&= Math.round(opts.w * opts.dpr);
-      opts.h &&= Math.round(opts.h * opts.dpr);
+    const dpr = opts.dpr;
+    if (dpr && dpr > 1) {
+      opts.w &&= Math.round(opts.w * dpr);
+      opts.h &&= Math.round(opts.h * dpr);
     }
     delete opts.dpr;
 
-    const ext = nodePath.extname(sourcePath).slice(1).toLowerCase();
-    const mime = knownMime || mimeTypes.lookup(ext) || 'application/octet-stream';
+    const mime = knownMime || mimeTypes.lookup(nodePath.extname(sourcePath)) || 'application/octet-stream';
 
     // Cache key: source path + size + options used by any transformer + toolchain
     // (no mtime: touched for LRU; no mime: follows from path/content).
@@ -136,10 +136,11 @@ export class FileTransformer {
     const stat = await fs.stat(sourcePath);
     if (!stat) throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
 
-    const fingerprint = `${sourcePath}-${stat.size}`;
-    const knownProps = new Set(this.#transformers.flatMap((t) => t.props));
-    const optParts = [...knownProps].sort().flatMap((k) => opts[k] !== undefined ? `${k}=${opts[k]}` : []);
-    const cacheKey = await hashKey([fingerprint, ...optParts, await this.#toolchain(), accepts(accept, opts)]);
+    const parts = [`${sourcePath}-${stat.size}`];
+    const props = new Set(this.#transformers.flatMap((t) => t.props));
+    for (const k of [...props].sort()) if (opts[k] !== undefined) parts.push(`${k}=${opts[k]}`);
+    parts.push(await this.#toolchain(), accepts(accept, opts));
+    const cacheKey = await hashKey(parts);
     const run = async (): Promise<TransformResult> => {
       const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
       const metaPath = `${cachePath}.mime`;
