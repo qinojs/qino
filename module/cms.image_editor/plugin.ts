@@ -78,7 +78,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     const upload = await ctx.req.files.editedImage;
     if (!upload) return;
 
-    const fileId = Number(ctx.req.query.file_id ?? "0");
+    const fileId = Number(ctx.req.query.file_id ?? 0);
     const page = isTrustedOrigin(ctx.req) && await writablePage(ctx, fileId);
     if (!page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 

@@ -134,7 +134,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
         if (vs.log) {
-            const pid = Number(ctx.req.query.cms_versions_page ?? "0");
+            const pid = Number(ctx.req.query.cms_versions_page ?? 0);
 
             // Stopgap: the views are built up front, so without this check anyone could make the
             // database create and drop them. Per-node views would need an async tableRef().

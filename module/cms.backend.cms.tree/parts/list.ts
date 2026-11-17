@@ -114,7 +114,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     if (access <= 2) return html`<span style="color:#8a8">${date}</span>${badge}`;
 
     const now = unixTime();
-    const endTs = Number(onlineEnd ?? "0");
+    const endTs = Number(onlineEnd ?? 0);
     const maxSec = 60 * 60 * 24 * 7;
     const diff = Math.min(Math.max(endTs - now, 0), maxSec);
     const r = onlineEnd ? 256 - Math.floor(256 * diff / maxSec) : 0;

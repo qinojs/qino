@@ -63,7 +63,7 @@ export class DbFileManager {
   }
 
   async add(source?: string | globalThis.File): Promise<DbFile> {
-    const id = Number(await this.db.table("file").insert({}) ?? "0");
+    const id = Number(await this.db.table("file").insert({}) ?? 0);
     const f = await this.file(id);
     if (typeof source === "string") await f.replaceBy(source);
     else if (source) await f.replaceFromUpload(await readUploadFile(source));
@@ -272,7 +272,7 @@ export class DbFile extends File {
     const data = { ...await this.ensureVs() };
     if (to == null) {
       delete data.id;
-      const id = Number(await this.#manager.db.table("file").insert(data) ?? "0");
+      const id = Number(await this.#manager.db.table("file").insert(data) ?? 0);
       return this.#manager.file(id);
     }
     data.id = String(to);

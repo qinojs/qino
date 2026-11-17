@@ -31,7 +31,7 @@ export async function store(app: App, usrId: number, type: string, data: unknown
 export async function drop(app: App, usrId: number, type: string, id?: number): Promise<number> {
   const one = id == null ? sql`` : sql`AND id = ${id}`;
   const res = await app.db.exec`DELETE FROM usr_auth_factor WHERE usr_id = ${usrId} AND type = ${type} ${one}`;
-  return Number(res?.affectedRows ?? 0);
+  return res.affectedRows;
 }
 
 // ─── What a session was shown ─────────────────────────────────────────────────

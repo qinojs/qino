@@ -261,7 +261,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
       qino.cms.editmode = cmsCtx(ctx).editmode;
 
       if (cmsCtx(ctx).editmode) {
-        qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
+        qino.cms.clipboard = Number(settings.cms.clipboard() ?? 0);
         qino.cms.ui = await settings[name].ui ?? {};
         qino.cms.tourSeen = !!await settings[name].tour_seen;
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);

@@ -61,6 +61,6 @@ export async function redeem(app: App, handle: string, purpose?: string, input?:
   // one statement, so parallel redemptions can't both pass; before the handler, so a throwing
   // handler still uses up the ticket
   const spent = await app.db.exec`UPDATE ticket SET used = used + 1 WHERE hash = ${await sha256b64url(handle)} AND used < uses`;
-  if (!spent?.affectedRows) throw new ApiError(404, "Nothing to redeem");
+  if (!spent.affectedRows) throw new ApiError(404, "Nothing to redeem");
   return await kindOf(app, ticket.purpose).redeem?.(app, ticket, input) ?? ticket;
 }

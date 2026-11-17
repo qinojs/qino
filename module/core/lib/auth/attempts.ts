@@ -58,7 +58,7 @@ export async function proofFailed(app: App, usrId: number): Promise<void> {
   await app.db.exec`DELETE FROM usr_auth_attempt WHERE last < ${now - FORGET}`; // cleanup, no cron needed
   const bumped = await app.db.exec`UPDATE usr_auth_attempt SET fails = fails + 1, last = ${now} WHERE usr_id = ${usrId}`;
   // a parallel first try may have inserted the row meanwhile
-  if (!bumped?.affectedRows) await app.db.table("usr_auth_attempt").insert({ usr_id: usrId, fails: 1, last: now }).catch(() => {});
+  if (!bumped.affectedRows) await app.db.table("usr_auth_attempt").insert({ usr_id: usrId, fails: 1, last: now }).catch(() => {});
 }
 
 /** A correct proof resets the count. */

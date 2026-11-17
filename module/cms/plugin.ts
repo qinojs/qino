@@ -86,7 +86,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // File upload
         const cmsPageFile = await ctx.req.files.cmsPageFile;
         if (cmsPageFile) {
-            const cmspid = Number(query.cmspid ?? "0");
+            const cmspid = Number(query.cmspid ?? 0);
             const page = await cms(app).node(cmspid);
             if (isTrustedOrigin(ctx.req) && await page.access() > 1) {
                 const replace = query.replace;

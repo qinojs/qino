@@ -191,7 +191,7 @@ export class DbTable {
     const where = this.valuesToFragment(whereValues);
     if (!where.parts.length) return;
     const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
-    if (!rows?.affectedRows) return; // no row matched (drivers report matched, not changed rows)
+    if (!rows.affectedRows) return; // no row matched (drivers report matched, not changed rows)
     await this.#db.fire("table:update-after", { table: this, id, data: values! });
     return this.entryId(id);
   }
@@ -247,7 +247,7 @@ export class DbTable {
     const setnulls = this.children.filter((f) => f.onParentDelete === "setnull");
     const row = cascades.length || setnulls.length ? await this.selectByID(id) : undefined; // read before the DELETE
     const rows = await this.#db.exec`DELETE FROM ${sql.id(this)} WHERE ${where}`;
-    if (!rows?.affectedRows) return false; // no row matched
+    if (!rows.affectedRows) return false; // no row matched
     await this.#db.fire("table:delete-after", { table: this, data: values, id });
     for (const field of cascades) {
       const pField = field.parentField();

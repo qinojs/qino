@@ -132,7 +132,7 @@ export class Node {
 
         if (user?.superuser) return 3;
 
-        const nodeLevel = this.vs.access === null ? null : Number(this.vs.access ?? "0");
+        const nodeLevel = this.vs.access === null ? null : Number(this.vs.access ?? 0);
 
         // inherited (or explicit user) access level
         const parent = nodeLevel === null ? await this.parent() : undefined;
@@ -240,11 +240,11 @@ export class Node {
     /* Online state */
     async onlineStart(): Promise<number> {
         const p = this.vs.online_start === null ? await this.parent() : undefined;
-        return p ? p.onlineStart() : Number(this.vs.online_start ?? "0");
+        return p ? p.onlineStart() : Number(this.vs.online_start ?? 0);
     }
     async onlineEnd(): Promise<number> {
         const p = this.vs.online_end === null ? await this.parent() : undefined;
-        return p ? p.onlineEnd() : Number(this.vs.online_end ?? "0");
+        return p ? p.onlineEnd() : Number(this.vs.online_end ?? 0);
     }
     async isOnline(): Promise<boolean> {
         const [start, end] = await Promise.all([this.onlineStart(), this.onlineEnd()]);
@@ -397,7 +397,7 @@ export class Node {
     }
 
     async title(lang?: string | null, value?: any): Promise<any> {
-        this.#title ??= this.app.dbTexts.text(Number(this.vs.title_id ?? "0"));
+        this.#title ??= this.app.dbTexts.text(Number(this.vs.title_id ?? 0));
         if (lang == null) return this.#title;
         const textLang = this.#title.lang(lang);
         if (value === undefined) return textLang.get();
@@ -555,7 +555,7 @@ export class Node {
         if (fields.settings && typeof fields.settings === "object") fields.settings = JSON.stringify(fields.settings);
         fields.sort ??= Number(await this.db.one`SELECT max(sort) FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} AND type = ${fields.type}`) + 1;
         const id = await this.db.table("page").insert(fields);
-        const page = await this.cms.node(Number(id ?? "0"));
+        const page = await this.cms.node(Number(id ?? 0));
         if (!id) return page;
 
         const accessUsrs = await this.db.query`SELECT * FROM page_access_usr WHERE page_id = ${this.id}`;
@@ -618,7 +618,7 @@ export class Node {
 
         const row: Record<string, any> = { ...this.vs };
         delete row.id;
-        const newId = Number(await this.db.table("page").insert(row) ?? "0");
+        const newId = Number(await this.db.table("page").insert(row) ?? 0);
         if (!newId) return;
         const page = await this.cms.node(newId);
 

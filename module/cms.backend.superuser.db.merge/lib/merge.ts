@@ -75,7 +75,7 @@ export function merge(db: Db, table: string, into: unknown, from: unknown): Prom
       const keys = uniqueKeys(field);
       let moved = 0;
       if (!keys.length) {
-        moved = Number((await db.exec`UPDATE ${child} SET ${ref} = ${into} WHERE ${ref} = ${from}`)?.affectedRows ?? 0);
+        moved = (await db.exec`UPDATE ${child} SET ${ref} = ${into} WHERE ${ref} = ${from}`).affectedRows;
       } else {
         // row by row: one that would repeat a unique key `into` already holds is a duplicate — it goes
         for (const row of await db.query`SELECT * FROM ${child} WHERE ${ref} = ${from}`) {

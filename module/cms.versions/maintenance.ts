@@ -49,9 +49,9 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
     if (dryRun) {
       count += Number(await db.one`SELECT COUNT(*) FROM (SELECT DISTINCT ${cols} ${body}) doomed`);
     } else if (db.dialect === "mysql") {
-      count += Number((await db.exec`DELETE m ${body}`).affectedRows ?? 0);
+      count += (await db.exec`DELETE m ${body}`).affectedRows;
     } else {
-      count += Number((await db.exec`DELETE FROM ${sql.id(versTable)} WHERE (${sql.join(ids.map(sql.id))}) IN (SELECT ${cols} ${body})`).affectedRows ?? 0);
+      count += (await db.exec`DELETE FROM ${sql.id(versTable)} WHERE (${sql.join(ids.map(sql.id))}) IN (SELECT ${cols} ${body})`).affectedRows;
     }
   }
   return count;
