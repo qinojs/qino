@@ -18,7 +18,7 @@ test("passkey form submits without navigating away and restores its button on fa
     },
   };
   runInNewContext(source.replace(/^import .*;\n/gm, ""), {
-    cms: { initNode: (_name: string, init: (root: unknown) => void) => init(root) },
+    initNode: (_name: string, init: (root: unknown) => void) => init(root),
     t: fakeT,
     console,
     WebAuthn: class {

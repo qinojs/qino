@@ -12,9 +12,9 @@ test("API key backend: an empty node initializes and later handles its user filt
     addEventListener: (type: string, handler: (event: unknown) => Promise<void>) => handlers.set(type, handler),
     querySelector: () => null as unknown,
   };
-  runInNewContext(source.replace(/^import .*;\n/gm, ""), { cms: {
+  const initNode = (_name: string, init: (el: typeof root) => void) => init(root);
+  runInNewContext(source.replace(/^import .*;\n/gm, ""), { initNode, cms: {
     el: { nid: () => 42 },
-    initNode: (_name: string, init: (el: typeof root) => void) => init(root),
     reloadPart: (...args: unknown[]) => calls.push(args),
   } });
   const unrelated = { target: { closest: () => null } };
@@ -55,9 +55,9 @@ test("API key backend: creation uses the action route and keeps the returned key
       calls.push([id, data]);
       return { token: "qk_test" };
     } } }) } },
+    initNode: (_name: string, init: (el: typeof root) => void) => init(root),
     cms: {
       el: { nid: () => 42 },
-      initNode: (_name: string, init: (el: typeof root) => void) => init(root),
       reloadPart: () => {
         assertEquals(code.textContent, "qk_test");
         assertEquals(token.hidden, false);

@@ -32,8 +32,8 @@ test("iot backend submits once from the form, parses typed data and displays fai
   const helper = await fs.text(import.meta.dirname + "/../../../module/cms.backend/pub/js/node.mjs");
   const nodePanel = new Function("api", "cms", "show", helper.replace(/^import[^\n]*\n/, "").replace("export function", "function")
     .replace(/const alert = async[^\n]*/, "const alert = show;") + "\nreturn nodePanel;")(api, cms, (message: string) => { messages.push(message); });
-  new Function("cms", "nodePanel", "dataOf", "read", "location", source.replace(/^import[^\n]*\n/gm, ""))(
-    cms, nodePanel, dataOf, read, "https://example.test/backend?show=live",
+  new Function("cms", "initNode", "nodePanel", "dataOf", "read", "location", source.replace(/^import[^\n]*\n/gm, ""))(
+    cms, cms.initNode, nodePanel, dataOf, read, "https://example.test/backend?show=live",
   );
   let target: unknown = form;
   const event = { target: { closest: () => target }, preventDefault: () => { prevented++; } };

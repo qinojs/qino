@@ -3,7 +3,7 @@ import { fs } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
 test("chart period controls convert local time to ISO and prevent overlapping reloads", async () => {
-  const source = (await fs.text(import.meta.dirname + "/../pub/main.js")).replace(/^import[^\n]*\n/, "");
+  const source = (await fs.text(import.meta.dirname + "/../pub/main.js")).replace(/^import[^\n]*\n/gm, "");
   const listeners: Record<string, (event: unknown) => unknown> = {}, calls: unknown[][] = [];
   const start = "2026-01-01T00:00:00.000Z", end = "2026-01-02T00:00:00.000Z";
   const form = { dataset: { start, end }, elements: { start: { value: "" }, end: { value: "" } } };
@@ -13,7 +13,7 @@ test("chart period controls convert local time to ISO and prevent overlapping re
     initNode: (_name: string, init: (el: unknown) => void) => init(root), el: { nid: () => "42" },
     reloadPart: (...args: unknown[]) => { calls.push(args); return new Promise<void>((resolve) => { release = resolve; }); },
   };
-  new Function("cms", source)(cms);
+  new Function("cms", "initNode", source)(cms, cms.initNode);
   assertEquals(new Date(form.elements.start.value).toISOString(), start);
   const click = (dataset: Record<string, string>) => listeners.click({ target: { closest: () => ({ dataset, form }) } });
   const first = click({ shift: "-1" });
