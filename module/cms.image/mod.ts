@@ -27,7 +27,7 @@ async function imageHtml(dbFile: DbFile, options: Record<string, any>, cacheDir:
   const { vpos, hpos } = data;
   const position = Number(hpos) === 50 && Number(vpos) === 50 ? "" : `${hpos}% ${vpos}%`;
 
-  const alt = String(options.alt ?? "").trim() || name2alt(String(await dbFile.get("name") ?? ""));
+  const alt = String(options.alt ?? "").trim() || name2alt(dbFile.name);
 
   const styles: Record<string, string> = { ...(options.css ?? {}) };
   styles["--image-width"] ||= w + "px";

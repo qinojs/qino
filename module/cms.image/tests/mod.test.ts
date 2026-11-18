@@ -36,7 +36,8 @@ test("cms.image: finished SVGs use the requested quality inline and across displ
     const ctx = await testContext({ app: { modules: { get: () => ({ cache: dir + "/cache/" }) } } });
     const file = {
       path: dir + "/image.svg",
-      get: (key: string) => ({ mime: "image/svg+xml", name: "logo.svg", md5: "svg" }[key]),
+      name: "logo.svg",
+      get: (key: string) => ({ mime: "image/svg+xml", md5: "svg" }[key]),
       url: (params?: unknown) => {
         assertEquals(params, { q: 37 });
         return "/dbFile/1/u-svg/q-37/logo.svg";
@@ -134,11 +135,11 @@ test("cms.image: cms_image derives alt text from file name", async () => {
     const ctx = await testContext({ app: { modules: { get: () => ({ cache: dir + "/cache/cms.image/" }) } } });
     const dbFile = {
       path: dir + "/image.jpg",
+      name: "product_photo.webp",
       get: (key: string) => ({
         md5,
         vpos: 50,
         hpos: 50,
-        name: "product_photo.webp",
       }[key]),
       url: (params: Record<string, unknown>) => "/dbFile?" + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString(),
     };
