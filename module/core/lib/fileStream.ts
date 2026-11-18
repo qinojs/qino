@@ -20,7 +20,7 @@ export type UploadedFile = {
 export const mimeType = (raw: string): string => raw.split(";", 1)[0].trim().toLowerCase();
 
 /** Last path segment of a given name, never empty. */
-const baseName = (raw: string) => raw.replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
+const baseName = (raw: string) => raw.replace(/\?.*/, "").replace(/^.*[\\/]/s, "") || "file";
 
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
   const tmp = await saveStream(file.stream(), opt);

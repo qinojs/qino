@@ -314,7 +314,7 @@ export class Node {
 
     async path(): Promise<Map<number, Node>> {
         const parent = await this.parent();
-        const path = parent ? new Map(await parent.path()) : new Map();
+        const path = new Map(parent && await parent.path());
         path.set(this.id, this);
         return path;
     }
