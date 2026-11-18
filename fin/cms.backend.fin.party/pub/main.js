@@ -1,6 +1,7 @@
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.fin.party", (el) => {
+initNode("backend.fin.party", (el) => {
   const { execute, fields } = finPanel(el);
 
   el.addEventListener("submit", (e) => {

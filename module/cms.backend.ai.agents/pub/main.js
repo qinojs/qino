@@ -2,6 +2,7 @@ import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { images } from "@qino/m/cms.backend.ai/pub/images.js";
 import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 /** The answers in `box` as markdown. */
 const render = async (box) => {
@@ -11,7 +12,7 @@ const render = async (box) => {
 // The tables follow what is going on, every few seconds while the page is open: the list of agents and
 // all sessions, or an agent's page (`?agent=`). On a session's page (`?session=`) only its conversation
 // follows along.
-cms.initNode("backend.ai.agents", (el) => {
+initNode("backend.ai.agents", (el) => {
   const nid = Number(cms.el.nid(el));
   const agents = api["ai.agent"], node = api.cms.node(nid);
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);

@@ -1,4 +1,6 @@
-cms.initNode("backend.superuser.shorturl", (el) => {
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("backend.superuser.shorturl", (el) => {
   const nid = Number(cms.el.nid(el));
   const search = el.querySelector("[data-search]");
   let sort = "", dir = "desc", page = 0, timer;

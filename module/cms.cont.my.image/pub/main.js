@@ -1,9 +1,10 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const userImage = api["user.image"];
 
-cms.initNode("cont.my.image", async (el) => {
+initNode("cont.my.image", async (el) => {
   const upload = el.querySelector("[data-upload]");
   if (!upload) return;
   const msg = el.querySelector(".-msg");

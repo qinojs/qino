@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.cms.history", (el) => {
+initNode("backend.cms.history", (el) => {
   const nid = Number(cms.el.nid(el));
   const form = el.querySelector(".-filter");
   const list = el.querySelector("[cms-part=history]");

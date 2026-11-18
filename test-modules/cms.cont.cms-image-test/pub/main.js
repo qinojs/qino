@@ -1,4 +1,5 @@
 import { api } from "@qino/pub/api.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 function init(root) {
   initCases(root);
@@ -175,7 +176,7 @@ function debounce(fn, ms) {
   };
 }
 
-if (globalThis.cms?.initNode) cms.initNode("cont.cms-image-test", init);
+if (globalThis.cms?.initNode) initNode("cont.cms-image-test", init);
 else {
   document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(".cms-image-test").forEach(init));
   document.querySelectorAll(".cms-image-test").forEach(init);

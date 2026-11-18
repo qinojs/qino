@@ -27,5 +27,5 @@ test("cms.layout.system: render adds assets and wraps the main cont", async () =
   ctx.res.html.resolve(); // as the request does before html-ready
   assertEquals(ctx.res.html.styles.has(u2Root + "css/norm/norm.css"), true);
   assertEquals(ctx.res.html.styles.has("/m/cms/pub/css/ui.css"), true);
-  assertEquals(ctx.res.html.scripts.has("/m/cms/pub/js/cms.mjs"), true);
+  assertEquals(ctx.res.html.scripts.has("/m/cms/pub/js/cms.js"), true);
 });

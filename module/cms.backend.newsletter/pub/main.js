@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.newsletter", (el) => {
+initNode("backend.newsletter", (el) => {
   const form = el.querySelector("form[data-issue]");
   if (!form) return; // only the draft editor previews and schedules
   const { node, alert } = nodePanel(el);

@@ -8,7 +8,7 @@ export const cms = {};
 
 cms.modConnected = {};
 
-cms.initNode = function(module, fn) {
+export function initNode(module, fn) {
   if (cms.modConnected[module]) return;
   cms.modConnected[module] = fn;
   for (const el of document.querySelectorAll('[qcms-mod="'+module+'"]')) {
@@ -16,6 +16,14 @@ cms.initNode = function(module, fn) {
     fn(el);
     el.__cms_initialized = true;
   }
+}
+
+/** Settings widgets: bind every `[setting]` field (its path in the node's settings) to
+ *  `api.cms.node(id).settings`; one listener saves all. */
+export const bindSettings = (el, ref) => {
+  const at = (path) => path.split('.').reduce((r, key) => r[key], ref.settings);
+  el.on('input', '[setting]', (inp) =>
+    at(inp.getAttribute('setting')).put({ value: inp.type === 'checkbox' ? inp.checked : inp.value }));
 };
 
 cms.el = {

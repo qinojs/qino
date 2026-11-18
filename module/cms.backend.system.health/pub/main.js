@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.system.health", (el) => {
+initNode("backend.system.health", (el) => {
   const { node, refresh, alert } = nodePanel(el, ["table"]);
 
   const loadRow = async (row) => {

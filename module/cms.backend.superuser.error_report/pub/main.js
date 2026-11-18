@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.error_report", (el) => {
+initNode("backend.superuser.error_report", (el) => {
   const pid = Number(cms.el.nid(el));
 
   const form = el.querySelector("form");

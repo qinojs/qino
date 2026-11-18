@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.db.cleanup", (el) => {
+initNode("backend.superuser.db.cleanup", (el) => {
   const nid = Number(cms.el.nid(el));
   const search = el.querySelector("[data-table-search]");
   const dialogs = () => import("@qino/u2/js/dialog/dialog.js");

@@ -1,7 +1,8 @@
 import "@qino/m/core/pub/js/SettingsEditor.mjs";
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.fin.payment", (el) => {
+initNode("backend.fin.payment", (el) => {
   const { execute, fields } = finPanel(el);
 
   el.addEventListener("submit", (e) => {

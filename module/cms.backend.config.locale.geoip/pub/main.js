@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.config.locale.geoip", (el) => {
+initNode("backend.config.locale.geoip", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
 

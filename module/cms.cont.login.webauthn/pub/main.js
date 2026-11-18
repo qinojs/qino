@@ -1,8 +1,9 @@
 import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
 import { stepUp } from "@qino/pub/stepUpDialog.js";
 import { t } from "@qino/pub/t.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("cont.login.webauthn", (el) => {
+initNode("cont.login.webauthn", (el) => {
   const { apiBase, redirectUrl } = el.dataset;
   const wa = new WebAuthn({ apiBase });
   const msg = el.querySelector(".-msg");

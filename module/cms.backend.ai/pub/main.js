@@ -1,7 +1,8 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.ai", (el) => {
+initNode("backend.ai", (el) => {
   const { node, alert } = nodePanel(el, []);
   const nid = Number(cms.el.nid(el));
   const row = (target) => target.closest("[data-row]");

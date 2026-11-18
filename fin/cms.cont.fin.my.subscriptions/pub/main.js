@@ -1,4 +1,4 @@
-import { cms } from "@qino/m/cms/pub/js/cms.mjs";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
@@ -7,7 +7,7 @@ import { day, money } from "../../fin/pub/money.js";
 
 const subscriptions = api["fin.subscription"];
 
-cms.initNode("cont.fin.my.subscriptions", async (el) => {
+initNode("cont.fin.my.subscriptions", async (el) => {
   const list = el.querySelector("[data-subscriptions]");
   const msg = el.querySelector(".-msg");
   const labels = {

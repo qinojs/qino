@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.messaging.telegram", (el) => {
+initNode("backend.superuser.messaging.telegram", (el) => {
   const { execute } = nodePanel(el, ["bot", "send", "chats"]);
 
   el.addEventListener("submit", (event) => {

@@ -1,4 +1,6 @@
-cms.initNode("cont.slideshow.schwups2", (el) => {
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("cont.slideshow.schwups2", (el) => {
   const track = el.querySelector(".b1_slideshow > .-slides");
   const slides = [...track.children];
   if (slides.length < 2) return;

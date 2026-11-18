@@ -3,7 +3,7 @@ import { api } from "@qino/pub/api.js";
 import { t as translate } from "@qino/pub/t.js";
 import { confirm } from "@qino/u2/js/dialog/dialog.js";
 
-import { bindSettings } from "../../cms/pub/js/settings.js";
+import { bindSettings } from "@qino/m/cms/pub/js/cms.js";
 
 const t = translate.in("cms.cont.booking");
 

@@ -30,7 +30,7 @@ const showDialog = async (parts, style = '') => {
   return dialog;
 };
 
-// like typing: cms.mjs saves it and mirrors it into the page
+// like typing: cms.js saves it and mirrors it into the page
 const setText = (field, text) => {
   if ('value' in field) field.value = unhee(text);
   else field.innerHTML = text;

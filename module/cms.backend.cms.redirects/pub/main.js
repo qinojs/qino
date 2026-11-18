@@ -1,4 +1,6 @@
-cms.initNode("backend.cms.redirects", (el) => {
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("backend.cms.redirects", (el) => {
   const nid = Number(cms.el.nid(el));
   const search = el.querySelector("[data-search]");
   let sort = "", dir = "desc", broken = false, timer;

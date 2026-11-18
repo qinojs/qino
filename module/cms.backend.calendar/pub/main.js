@@ -3,10 +3,11 @@ import { api } from "@qino/pub/api.js";
 import { t as translate } from "@qino/pub/t.js";
 
 import { colors } from "./sources.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const t = translate.in("cms.backend.calendar");
 
-cms.initNode("backend.calendar", (el) => {
+initNode("backend.calendar", (el) => {
   const calendar = el.querySelector("u2-calendar"), status = el.querySelector("[role=status]");
   const node = api.cms.node(Number(cms.el.nid(el)));
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;

@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
 import { images } from "@qino/m/cms.backend.ai/pub/images.js";
 import { markdown } from "@qino/m/cms.backend.ai/pub/markdown.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const KEY = "ai.chat:session"; // the session to go on with after a reload
 const SHORT = 80; // characters of a first message in the list of sessions
@@ -42,7 +43,7 @@ async function entry({ role, content, time: at }) {
   return div;
 }
 
-cms.initNode("backend.ai.chat", (el) => {
+initNode("backend.ai.chat", (el) => {
   const agents = api["ai.agent"];
   const ask = el.querySelector("[data-ask]"), log = el.querySelector("[data-log]"), title = el.querySelector("[data-title]");
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);

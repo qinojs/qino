@@ -1,4 +1,4 @@
-// Delegated on document: frontend layouts have no cms.mjs. Every change is stored right away (typing
+// Delegated on document. Every change is stored right away (typing
 // after a pause); the delivery address opens with its checkbox, and only then are its fields required.
 import { setParty } from "../../cms.shop/pub/shop.js";
 

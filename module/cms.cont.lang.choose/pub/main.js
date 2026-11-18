@@ -1,5 +1,4 @@
-// Keep the URL fragment when switching language (the server never sees it). Delegated on document,
-// since frontend layouts have no cms.mjs.
+// Keep the URL fragment when switching language (the server never sees it). Delegated on document.
 const root = "[qcms-mod='cont.lang.choose'] ";
 
 document.addEventListener("click", (e) => {

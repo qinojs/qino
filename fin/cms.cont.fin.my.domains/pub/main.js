@@ -1,11 +1,11 @@
-import { cms } from "@qino/m/cms/pub/js/cms.mjs";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
 
 import { day, money } from "../../fin/pub/money.js";
 
-cms.initNode("cont.fin.my.domains", async (el) => {
+initNode("cont.fin.my.domains", async (el) => {
   const list = el.querySelector("[data-domains]");
   const labels = {
     domain: await t`Domain`,

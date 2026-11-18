@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.config.translate", (el) => {
+initNode("backend.config.translate", (el) => {
   const nid = cms.el.nid(el);
   const node = api.cms.node(nid);
   const post = (vars) => node.html.post({ vars }).then((html) => { el.outerHTML = html; });

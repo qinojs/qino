@@ -70,9 +70,6 @@ Elixan. Nichts davon ist angefasst, es sind Vorschläge. Stand 09.11.2026.
     `order/:id/pay` und „Jetzt bezahlen“ in `cms.cont.shop.my.orders` versuchen es erneut.
 23. **migrate_from_php/accounting (16) bei Elixan:** 305 alte Rechnungen liegen weiter nur in
     `accounting1_*`. Die Bestellung kennt ihre Nummer (`data.accounting1`).
-24. **`cms.cont.my.*` brauchen `cms.mjs`.** Sie rufen `cms.initNode`, laden es aber nicht. Eine Site-Layout
-    ohne `cms.mjs` wirft auf der Kontoseite `cms is not defined`, die Bausteine bleiben tot. Elixans Layout
-    lädt es deshalb selbst. Vorschlag: Die Bausteine nennen `cms.mjs` in ihren eigenen `js`.
 25. **`usr.ship_*`:** `user.profile` kennt nur eine Adresse. Für eine gespeicherte Lieferadresse
     bräuchte es eine zweite, oder Bestellungen merken sich die letzte.
 

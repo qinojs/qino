@@ -1,9 +1,10 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const profile = api["user.profile"];
 
-cms.initNode("cont.my.address", async (el) => {
+initNode("cont.my.address", async (el) => {
   const form = el.matches("form") ? el : el.querySelector("form");
   if (!form) return;
   const msg = form.querySelector(".-msg");

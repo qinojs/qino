@@ -1,7 +1,8 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.cms.form", (el) => {
+initNode("backend.cms.form", (el) => {
   const nid = Number(cms.el.nid(el));
   const search = el.querySelector("[data-search]");
   const spam = el.querySelector("[data-spam]");

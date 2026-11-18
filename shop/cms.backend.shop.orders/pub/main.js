@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.shop.orders", (el) => {
+initNode("backend.shop.orders", (el) => {
   const nid = Number(cms.el.nid(el));
   el.addEventListener("click", async (e) => {
     const button = e.target.closest("[data-status]");

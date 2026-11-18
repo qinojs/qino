@@ -1,6 +1,7 @@
-// Delegated on document: frontend layouts have no cms.mjs. As buy1: the form is checked (terms),
+// Delegated on document. As buy1: the form is checked (terms),
 // then the order tried; what blocks it comes as a message.
-import { order, pay, reload } from "../../cms.shop/pub/shop.js";
+import { order, pay } from "../../cms.shop/pub/shop.js";
+import { cms } from "@qino/m/cms/pub/js/cms.js";
 
 const root = "[qcms-mod='cont.shop.buy']";
 
@@ -23,5 +24,5 @@ document.addEventListener("submit", async (e) => {
   while (started.paymentFailed && confirm(form.dataset.paymentFailed)) started = await pay(res.order, done);
   if (started.redirect) location.href = started.redirect;
   else if (res.ok) location.href = done;
-  else reload(form);
+  else cms.reloadNode(cms.el.nid(form));
 });

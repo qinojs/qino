@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.versions", (el) => {
+initNode("backend.superuser.versions", (el) => {
   const nid = cms.el.nid(el);
   const alert = async (t) => (await import("@qino/u2/js/dialog/dialog.js")).alert(t);
 

@@ -1,10 +1,11 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const totp = api["auth.totp"];
 
-cms.initNode("cont.my.totp", async (el) => {
+initNode("cont.my.totp", async (el) => {
   const list = el.querySelector("[data-apps]");
   const setup = el.querySelector("[data-setup]");
   const start = el.querySelector("[data-start]");

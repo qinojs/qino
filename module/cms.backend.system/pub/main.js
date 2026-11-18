@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.system", (el) => {
+initNode("backend.system", (el) => {
   const d = new Date();
   const off = -d.getTimezoneOffset() / 60;
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);

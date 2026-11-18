@@ -1,6 +1,7 @@
 import { t } from "@qino/pub/t.js";
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { EmailClientSimulator, clients } from "./emailClientSimulator.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const rank = { error: 0, warn: 1, info: 2 };
 const store = "qino.mailClient";
@@ -27,7 +28,7 @@ function report(el, entries) {
   return seen.size;
 }
 
-cms.initNode("backend.superuser.messaging.templates", (el) => {
+initNode("backend.superuser.messaging.templates", (el) => {
   el.addEventListener("click", (event) => { // a placeholder is meant to be pasted into the template
     const code = event.target.closest("code[data-copy]");
     if (!code) return;

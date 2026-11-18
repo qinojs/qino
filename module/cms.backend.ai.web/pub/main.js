@@ -1,7 +1,8 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // Choose the reader, set a key, try a search or a read, find and remove pages.
-cms.initNode("backend.ai.web", (el) => {
+initNode("backend.ai.web", (el) => {
   const { node, alert } = nodePanel(el);
   const post = async (data) => {
     const res = await node.api.post(data).catch((e) => ({ ok: false, message: e.message }));

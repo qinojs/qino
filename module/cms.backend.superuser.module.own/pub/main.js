@@ -1,7 +1,8 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.module.own", (el) => {
+initNode("backend.superuser.module.own", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
 

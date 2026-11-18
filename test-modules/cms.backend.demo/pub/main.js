@@ -1,7 +1,8 @@
 // @ts-expect-error Browser imports resolve in the flattened /m/<module>/ namespace.
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.demo", (el) => {
+initNode("backend.demo", (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));
   const part = el.querySelector("[cms-part=status]");
   const show = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);

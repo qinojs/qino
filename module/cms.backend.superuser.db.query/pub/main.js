@@ -1,4 +1,6 @@
-cms.initNode("backend.superuser.db.query", (el) => {
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("backend.superuser.db.query", (el) => {
   const editor = el.querySelector(".-editor");
   const schema = JSON.parse(el.querySelector(".-schema").textContent);
   const vocab = [...new Set([...schema.keywords, ...schema.tables.map(t => t.name), ...schema.tables.flatMap(t => t.fields.map(f => f.name))])];

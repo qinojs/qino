@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.users", (el) => {
+initNode("backend.users", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
   const itemId = (target) => target.closest("[itemid]")?.getAttribute("itemid");

@@ -3,6 +3,7 @@ import { unhee } from "@qino/pub/html.js";
 import { t } from "@qino/pub/t.js";
 
 import { qgfileUpload } from "../../cms/pub/js/fileHelpers.mjs";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // the edited texts, in column order (their labels are the column heads); the image follows them
 const NAMES = ["_title", "_description", "_share_title", "_share_description"];
@@ -13,7 +14,7 @@ const upload = (pid, file) => new Promise((ok, fail) => qgfileUpload(file, "cmsP
   complete: (res) => { res = JSON.parse(res); res.error ? fail(new Error(res.error)) : ok(res); },
 }));
 
-cms.initNode("backend.cms.tree.seo", (el) => {
+initNode("backend.cms.tree.seo", (el) => {
   const reload = (vars = {}) => cms.reloadPart(cms.el.nid(el), "list", vars);
 
   el.querySelector(".cmsBeTree")?.addEventListener("click", async (e) => {

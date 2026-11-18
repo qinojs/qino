@@ -37,7 +37,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const styles = ctx.res.html.styles;
   const mainCss = node.module!.modUrl + "pub/main.css";
   if (styles.delete(mainCss)) styles.add(mainCss);
-  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.js");
   for (const css of [await u2.identityCss(node.app), themeCss(layout.settings.design())])
     if (css) ctx.res.html.inlineStyles.add(css);
   if (await node.edit()) await codeFiles(node).create();

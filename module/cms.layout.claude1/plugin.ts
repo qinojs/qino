@@ -29,7 +29,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.pin(ctx, U2_VERSION);
   u2.assets(ctx, U2_CSS);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
-  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.js");
 
   const layoutPage = await node.cms.layoutPage(String(node.vs.module));
 

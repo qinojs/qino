@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.messaging.sms", (el) => {
+initNode("backend.superuser.messaging.sms", (el) => {
   const panel = nodePanel(el, ["provider", "send", "phones"]);
   // re-rendered parts lose the shown/hidden state of the provider fields
   const providerFields = () => {

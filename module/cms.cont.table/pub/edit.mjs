@@ -1,6 +1,7 @@
 import { api } from '@qino/pub/api.js';
 import { dom } from '@qino/pub/c1.js';
 import { TableHandles } from '@qino/pub/c1/tableHandles.mjs';
+import { cms, initNode } from '@qino/m/cms/pub/js/cms.js';
 
 // Pasted tables (Word, Excel, web pages) need the cleaner (10 KB), loaded on first paste.
 const FOREIGN_CONTENT = {
@@ -37,7 +38,7 @@ for (const [key, data] of Object.entries(ACTIONS)) {
   });
 }
 
-cms.initNode('cont.table', function(el) {
+initNode('cont.table', function(el) {
   el.addEventListener('paste', e => {
     if (!e.clipboardData.types.includes('text/html')) return;
     let html = e.clipboardData.getData('text/html');

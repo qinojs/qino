@@ -2,11 +2,12 @@
 // dialog, copy, delete, uploads.
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
+import { cms, initNode } from '@qino/m/cms/pub/js/cms.js';
 
 const debounce = (fn, ms) => { let timer; return (...a) => { clearTimeout(timer); timer = setTimeout(() => fn(...a), ms); }; };
 const dialogs = () => import('@qino/u2/js/dialog/dialog.js');
 
-cms.initNode('cont.dbtable', init); // also wires nodes replaced by cms.reloadNode
+initNode('cont.dbtable', init); // also wires nodes replaced by cms.reloadNode
 
 /** Wires a node rendered like the list: its part (`cms-part`) reloads after uploads and row actions. */
 export function init(root) {

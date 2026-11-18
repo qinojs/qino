@@ -267,7 +267,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         html.content += String(await app.t.with("cms", () => panel.default?.()) ?? "");
 
-        html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
+        html.scripts.add(moduleUrl + "cms/pub/js/cms.js");
         html.styles.add(moduleUrl + "cms/pub/css/ui.css");
 
         html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree

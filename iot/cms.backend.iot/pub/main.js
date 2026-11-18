@@ -1,8 +1,9 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { t } from "@qino/pub/t.js";
 import { dataOf, describe, fill, read } from "./action.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.iot", (el) => {
+initNode("backend.iot", (el) => {
   // The current view is the page's one cms-part, reloaded with the filter in the address.
   const nid = Number(cms.el.nid(el)), part = el.querySelector("[cms-part]").getAttribute("cms-part");
   const refresh = () => cms.reloadPart(nid, part, Object.fromEntries(new URL(location).searchParams));

@@ -1,10 +1,11 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const sms = api["messaging.sms"];
 
-cms.initNode("cont.my.phones", async (el) => {
+initNode("cont.my.phones", async (el) => {
   const list = el.querySelector("[data-phones]");
   const form = el.querySelector("[data-add]");
   const msg = el.querySelector(".-msg");

@@ -1,5 +1,5 @@
-import { cms } from '../../cms/pub/js/cms.mjs';
+import { cms, initNode } from '@qino/m/cms/pub/js/cms.js';
 
 import { init } from '../../cms.layout.houdini/pub/main.js';
 
-cms.initNode('layout.houdini.2', init);
+initNode('layout.houdini.2', init);

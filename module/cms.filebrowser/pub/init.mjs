@@ -2,7 +2,7 @@ import { debounce, Eventer, dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
-import { cms } from '../../cms/pub/js/cms.mjs';
+import { cms } from '@qino/m/cms/pub/js/cms.js';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 

@@ -1,4 +1,6 @@
-cms.initNode("cont.slider.nivoSlider", (el) => {
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("cont.slider.nivoSlider", (el) => {
   const slides = [...el.querySelectorAll(":scope > .-slides > .-slide")];
   if (!slides.length) return;
   const controls = [...el.querySelectorAll(":scope > .-controls > button")];

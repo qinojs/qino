@@ -1,7 +1,7 @@
-// Delegated on document: frontend layouts have no cms.mjs.
+// Delegated on document.
 import { api } from "@qino/pub/api.js";
 
-import { reload } from "../../cms.shop/pub/shop.js";
+import { cms } from "@qino/m/cms/pub/js/cms.js";
 
 const root = "[qcms-mod='cont.shop.next']";
 
@@ -15,4 +15,4 @@ document.addEventListener("click", (e) => {
 });
 
 // what blocks going on follows the cart
-api.on("POST|PUT|DELETE cms.shop/cart/*", () => document.querySelectorAll(root).forEach(reload));
+api.on("POST|PUT|DELETE cms.shop/cart/*", () => document.querySelectorAll(root).forEach((el) => cms.reloadNode(cms.el.nid(el))));

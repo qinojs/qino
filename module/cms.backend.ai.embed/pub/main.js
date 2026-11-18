@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.ai.embed", (el) => {
+initNode("backend.ai.embed", (el) => {
   const { node, alert } = nodePanel(el, []);
   const post = async (data) => {
     const res = await node.api.post(data).catch((e) => ({ ok: false, message: e.message }));

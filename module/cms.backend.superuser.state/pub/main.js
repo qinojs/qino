@@ -3,13 +3,14 @@
 import { ctx } from "@qino/pub/qino.js";
 import { html } from "@qino/pub/html.js";
 import { dump } from "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@v1.5.2/mod.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const safeRender = (value) =>
   typeof value === "function"
     ? String(html`<function>function <b>${value.name}</b>(${value.length})</function>`)
     : undefined;
 
-cms.initNode("backend.superuser.state", (el) => {
+initNode("backend.superuser.state", (el) => {
   // the box lives in the reloadable part, so it is filled again after every reload
   const fill = () => {
     const mount = el.querySelector("[data-client-ctx]");

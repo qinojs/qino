@@ -1,4 +1,4 @@
-import { cms } from "@qino/m/cms/pub/js/cms.mjs";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
@@ -7,7 +7,7 @@ import { money } from "../../fin/pub/money.js";
 
 const credit = api["fin.payment.credit"];
 
-cms.initNode("cont.fin.my.credit", async (el) => {
+initNode("cont.fin.my.credit", async (el) => {
   const box = el.querySelector("[data-credit]");
   const msg = el.querySelector(".-msg");
   const labels = {

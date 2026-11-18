@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.hosting", (el) => {
+initNode("backend.hosting", (el) => {
   const { node, refresh, alert: show } = nodePanel(el, ["list"]);
   let busy = false;
 

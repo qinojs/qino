@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.reporting_server", (el) => {
+initNode("backend.reporting_server", (el) => {
   const { node, refresh, alert: show } = nodePanel(el, ["instances", "errors"]);
   const run = (promise) => promise.then(refresh).catch((e) => show(e?.message || String(e)));
 

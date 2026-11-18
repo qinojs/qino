@@ -1,10 +1,11 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // A reload replaces the whole node, the chosen filter should outlive it.
 const kept = {};
 
-cms.initNode("backend.superuser.module", (el) => {
+initNode("backend.superuser.module", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
   const dialog = () => import("@qino/u2/js/dialog/dialog.js");

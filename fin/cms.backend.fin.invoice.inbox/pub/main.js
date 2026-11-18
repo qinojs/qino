@@ -1,6 +1,7 @@
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.fin.invoice.inbox", (el) => {
+initNode("backend.fin.invoice.inbox", (el) => {
   const { execute, files } = finPanel(el);
 
   el.addEventListener("click", (e) => {

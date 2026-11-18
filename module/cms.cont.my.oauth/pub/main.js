@@ -1,10 +1,11 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const oauth = api["auth.oauth"];
 
-cms.initNode("cont.my.oauth", async (el) => {
+initNode("cont.my.oauth", async (el) => {
   const list = el.querySelector("[data-links]");
   const msg = el.querySelector(".-msg");
   const labels = {

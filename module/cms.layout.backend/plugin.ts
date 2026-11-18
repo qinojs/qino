@@ -14,7 +14,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
   const resHtml = ctx.res.html;
   
   resHtml.class.add("qgCMS");
-  resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
+  resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.js");
 
   u2.assets(ctx, [
     "css/norm/norm.css",

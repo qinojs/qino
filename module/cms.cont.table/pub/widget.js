@@ -3,7 +3,7 @@ import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
-import { bindSettings } from '../../cms/pub/js/settings.js';
+import { bindSettings } from '@qino/m/cms/pub/js/cms.js';
 
 export const css = `
 .-table .-widths { display:flex; margin-top:calc(var(--rem) * .8); }

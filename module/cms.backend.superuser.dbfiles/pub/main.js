@@ -1,8 +1,9 @@
 import { api } from "@qino/pub/api.js";
 import { alert } from "@qino/u2/js/dialog/dialog.js";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.dbfiles", (el) => {
+initNode("backend.superuser.dbfiles", (el) => {
   const nid = Number(cms.el.nid(el));
 
   // live search/order → reload only the list part

@@ -11,7 +11,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css", "u2/auto.js"]);
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
-  resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
+  resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.js");
   resHtml.class.add("qgCMS");
 
   return html.async`

@@ -4,7 +4,7 @@
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
 
-import { bindSettings } from '../../cms/pub/js/settings.js';
+import { bindSettings } from '@qino/m/cms/pub/js/cms.js';
 
 export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);

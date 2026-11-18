@@ -1,6 +1,7 @@
 import { settings } from "@qino/pub/settings.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.cms.module", (el) => {
+initNode("backend.cms.module", (el) => {
   const nid = Number(cms.el.nid(el));
 
   // overview: search + type filter, client-side — every module is already rendered

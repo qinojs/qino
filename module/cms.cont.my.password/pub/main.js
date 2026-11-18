@@ -1,8 +1,9 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // core asks for a fresh proof (step-up) itself before it takes the new password
-cms.initNode("cont.my.password", async (el) => {
+initNode("cont.my.password", async (el) => {
   const form = el.querySelector("form");
   if (!form) return;
   const msg = form.querySelector(".-msg");

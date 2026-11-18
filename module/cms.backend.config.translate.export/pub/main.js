@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.config.translate.export", (el) => {
+initNode("backend.config.translate.export", (el) => {
   const node = api.cms.node(cms.el.nid(el));
   const result = el.querySelector("[data-result]");
 

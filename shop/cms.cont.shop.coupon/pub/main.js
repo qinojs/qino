@@ -1,4 +1,4 @@
-// Delegated on document: frontend layouts have no cms.mjs.
+// Delegated on document.
 import { api } from "@qino/pub/api.js";
 
 document.addEventListener("submit", async (e) => {

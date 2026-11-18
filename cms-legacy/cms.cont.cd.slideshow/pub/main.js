@@ -1,4 +1,6 @@
-cms.initNode("cont.cd.slideshow", (el) => {
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("cont.cd.slideshow", (el) => {
   const slides = [...el.querySelectorAll(".b1_slideshow > .-slides > *")];
   if (slides.length < 2) return;
 

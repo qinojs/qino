@@ -1,8 +1,9 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // Let an agent sleep now, carry out a sleep's plan; the tables follow along every few seconds.
-cms.initNode("backend.ai.agents.sleep", (el) => {
+initNode("backend.ai.agents.sleep", (el) => {
   const nid = Number(cms.el.nid(el));
   const post = (data) => api.cms.node(nid).api.post(data).catch((err) => ({ message: err.message }));
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);

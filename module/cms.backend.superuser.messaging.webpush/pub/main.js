@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.messaging.webpush", (el) => {
+initNode("backend.superuser.messaging.webpush", (el) => {
   const { execute } = nodePanel(el, ["channels", "send", "subscriptions"]);
 
   el.addEventListener("submit", (event) => {

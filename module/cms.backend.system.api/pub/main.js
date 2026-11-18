@@ -1,7 +1,9 @@
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
 const apiHeaders = (method = "POST") =>
   ({ "Content-Type": "application/json", ...(method === "GET" || !globalThis.qino?.csrfToken ? {} : { "X-CSRF-Token": globalThis.qino.csrfToken }) });
 
-cms.initNode("backend.system.api", (el) => {
+initNode("backend.system.api", (el) => {
   const routes = JSON.parse(el.dataset.routes);
   const appUrl = el.dataset.appUrl;
 

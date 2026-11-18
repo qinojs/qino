@@ -1,10 +1,11 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const codes = api["auth.backup_codes"];
 
-cms.initNode("cont.my.backup_codes", async (el) => {
+initNode("cont.my.backup_codes", async (el) => {
   const state = el.querySelector("[data-state]");
   const shown = el.querySelector("[data-codes]");
   const button = el.querySelector("[data-generate]");

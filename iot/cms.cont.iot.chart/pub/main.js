@@ -1,4 +1,5 @@
 import "@qino/u2/el/time/time.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // datetime-local holds the browser's local time; the server speaks ISO with timezone.
 const local = (iso) => {
@@ -6,7 +7,7 @@ const local = (iso) => {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 };
 
-cms.initNode("cont.iot.chart", (el) => {
+initNode("cont.iot.chart", (el) => {
   let busy = false;
   const fill = () => {
     const form = el.querySelector("form[data-period]");

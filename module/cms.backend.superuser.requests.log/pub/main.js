@@ -1,4 +1,6 @@
-cms.initNode("backend.superuser.requests.log", (el) => {
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("backend.superuser.requests.log", (el) => {
   const nid = Number(cms.el.nid(el));
 
   // live filter → reload only the list part

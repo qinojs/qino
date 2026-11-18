@@ -1,7 +1,8 @@
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
 import { t } from "@qino/pub/t.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.fin.invoice", (el) => {
+initNode("backend.fin.invoice", (el) => {
   const { node, execute, fields, files, filter } = finPanel(el);
   const form = el.querySelector("[data-edit]");
   const filterForm = el.querySelector("[data-filter]");

@@ -1,4 +1,6 @@
-cms.initNode("cont.text_and_slider.cd", (el) => {
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("cont.text_and_slider.cd", (el) => {
   const slides = [...el.querySelectorAll(".-slides > [data-id]")];
   const texts = [...el.querySelectorAll(".-content > [data-id]")];
   if (!slides.length) return;

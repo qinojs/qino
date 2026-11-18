@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.cms.tree.urls", (el) => {
+initNode("backend.cms.tree.urls", (el) => {
   const reload = (vars = {}) => cms.reloadPart(cms.el.nid(el), "list", vars);
 
   el.querySelector(".cmsBeTree")?.addEventListener("click", async (e) => {

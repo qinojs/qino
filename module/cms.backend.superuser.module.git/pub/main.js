@@ -1,5 +1,6 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 /** Wait for the restart: requests fail until the new process is up, so a failure means "not yet". */
 async function untilBack(tries = 60) {
@@ -10,7 +11,7 @@ async function untilBack(tries = 60) {
   return false;
 }
 
-cms.initNode("backend.superuser.module.git", (el) => {
+initNode("backend.superuser.module.git", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
 

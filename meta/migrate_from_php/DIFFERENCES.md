@@ -202,7 +202,7 @@ Konsequenzen für Consumer (Scripts/Styles):
   Content-Blöcke = alles andere mit `qcms-id`. JS braucht die Unterscheidung
   meist nicht (`closest('[qcms-id]')` liefert den innersten Knoten); CSS nutzt
   sie nur für Hover-Outlines (`[qcms-edit]:not([qcms-mod^="layout."])`).
-- Client-Helper `cms.el` (in `cms/pub/js/cms.mjs`) liest jetzt Attribute:
+- Client-Helper `cms.el` (in `cms/pub/js/cms.js`) liest jetzt Attribute:
   `nid(el)=closest('[qcms-id]').getAttribute('qcms-id')` (Node-Id, früher `pid`),
   `module(el)=getAttribute('qcms-mod')` (nackter Name, z.B. `backend.system.api`).
 - Module rendern weder Modul-Marker (`-m-`-Klasse) noch eigene Node-Id

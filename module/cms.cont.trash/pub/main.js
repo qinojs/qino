@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("cont.trash", (el) => {
+initNode("cont.trash", (el) => {
 
   const dialog = el.querySelector('.-preview');
   const iframe = dialog.querySelector('iframe');

@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.iot.virtual", (el) => {
+initNode("backend.iot.virtual", (el) => {
   const { execute, alert } = nodePanel(el, ["list"]);
 
   el.addEventListener("click", (event) => {

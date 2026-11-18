@@ -1,8 +1,9 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import "@qino/u2/el/rte/rte.js";
 import "@qino/u2/js/rte/blocks.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.messaging.email", (el) => {
+initNode("backend.superuser.messaging.email", (el) => {
   const panel = nodePanel(el, ["sending", "inbound", "send", "contacts", "journal"]);
   let saves = Promise.resolve();
   // re-rendered parts lose the shown/hidden state of the transport fields

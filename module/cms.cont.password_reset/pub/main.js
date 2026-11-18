@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("cont.password_reset", (el) => {
+initNode("cont.password_reset", (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));
 
   el.addEventListener("submit", async (event) => {

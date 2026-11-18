@@ -1,6 +1,7 @@
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.fin.accounting.export", (el) => {
+initNode("backend.fin.accounting.export", (el) => {
   const { node, fields } = finPanel(el);
 
   // the books of the period, saved as a ZIP

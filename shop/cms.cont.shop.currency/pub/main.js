@@ -1,4 +1,4 @@
-// Delegated on document: frontend layouts have no cms.mjs.
+// Delegated on document.
 import { setCurrency } from "../../cms.shop/pub/shop.js";
 
 document.addEventListener("change", async (e) => {

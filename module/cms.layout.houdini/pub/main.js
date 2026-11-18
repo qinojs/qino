@@ -1,4 +1,4 @@
-import { cms } from '../../cms/pub/js/cms.mjs';
+import { cms, initNode } from '@qino/m/cms/pub/js/cms.js';
 
 /* Native popovertarget exposes the open state to assistive technology, including light dismiss and Escape. */
 export function init(el) {
@@ -34,4 +34,4 @@ if (typeof HTMLElement.prototype.hidePopover === 'function') document.addEventLi
   }
 });
 
-cms.initNode('layout.houdini', init);
+initNode('layout.houdini', init);

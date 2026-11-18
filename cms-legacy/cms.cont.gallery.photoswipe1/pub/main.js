@@ -1,4 +1,6 @@
-cms.initNode("cont.gallery.photoswipe1", (el) => {
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
+initNode("cont.gallery.photoswipe1", (el) => {
   const figures = [...el.querySelectorAll("figure")];
   const root = el.querySelector(".pswp");
   const items = figures.map((figure) => {

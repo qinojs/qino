@@ -1,10 +1,11 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const telegram = api["messaging.telegram"];
 
-cms.initNode("cont.my.telegram", async (el) => {
+initNode("cont.my.telegram", async (el) => {
   const state = el.querySelector("[data-state]");
   const msg = el.querySelector(".-msg");
 

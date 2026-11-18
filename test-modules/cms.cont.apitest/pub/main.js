@@ -1,3 +1,5 @@
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
+
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const MUTATION = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -19,7 +21,7 @@ async function pool(items, limit, fn) {
   }));
 }
 
-cms.initNode("cont.apitest", (root) => {
+initNode("cont.apitest", (root) => {
   const appUrl = root.dataset.appUrl;
   const csrf = globalThis.qino?.csrfToken;
   const rows = [...root.querySelectorAll("tbody tr[data-method]")];

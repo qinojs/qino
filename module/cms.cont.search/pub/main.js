@@ -1,7 +1,7 @@
 import { api } from '@qino/pub/api.js';
 
 // Results while typing: only the part "hits" renders again, and the url keeps the term.
-// Delegated on document, since frontend layouts have no cms.mjs.
+// Delegated on document.
 const QUERY = 'cms_search';
 const searches = new WeakMap();
 

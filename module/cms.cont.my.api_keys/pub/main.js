@@ -1,11 +1,12 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const apiKeys = api["auth.api_keys"];
 
 
-cms.initNode("cont.my.api_keys", async (el) => {
+initNode("cont.my.api_keys", async (el) => {
   const list  = el.querySelector("[data-list]");
   const form  = el.querySelector("[data-create]");
   const name  = el.querySelector("[data-name]");

@@ -36,7 +36,7 @@ return `<div class=u2-flex><style>…</style>…</div>`;
 ## Parts and client wiring
 
 Reloadable fragments go into `parts`, wrapped in `<div cms-part="name">…</div>`. In the
-client, use the helpers from `pub/js/cms.mjs` instead of calling `api` directly:
+client, use the helpers from `pub/js/cms.js` instead of calling `api` directly:
 
 ```js
 cms.initNode("backend.superuser.requests.log", (el) => {

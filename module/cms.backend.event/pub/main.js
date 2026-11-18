@@ -1,10 +1,11 @@
 import { api } from "@qino/pub/api.js";
 import { t as translate } from "@qino/pub/t.js";
 import { widget } from "@qino/m/cms.frontend/pub/panel/widget.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const t = translate.in("cms.backend.event");
 
-cms.initNode("backend.event", (el) => {
+initNode("backend.event", (el) => {
   const ref = api.cms.node(Number(cms.el.nid(el))), status = el.querySelector("[role=status]");
   // through this page's api: the event may be shown by any module, whose own api knows nothing of it
   for (const target of el.querySelectorAll("[data-event-widget]")) {

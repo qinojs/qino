@@ -28,7 +28,7 @@ const U2_ASSETS = [
 ];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.js");
   if (await node.edit()) await codeFiles(node).create();
 
   u2.pin(ctx, u2Version(await node.cms.layoutPage(node.module!.name)));

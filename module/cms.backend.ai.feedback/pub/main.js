@@ -1,7 +1,8 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // Mark a report done, open it again or remove it; the lists follow.
-cms.initNode("backend.ai.feedback", (el) => {
+initNode("backend.ai.feedback", (el) => {
   const nid = Number(cms.el.nid(el));
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
 

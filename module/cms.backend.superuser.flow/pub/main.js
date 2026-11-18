@@ -1,6 +1,7 @@
 import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.superuser.flow", (el) => {
+initNode("backend.superuser.flow", (el) => {
   const { node, execute, alert: show } = nodePanel(el, ["list"]);
   let flow = 0;
 

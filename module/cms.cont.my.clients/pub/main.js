@@ -1,7 +1,8 @@
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("cont.my.clients", async (el) => {
+initNode("cont.my.clients", async (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));
   const labels = {
     other: await t`Log out this device?`,

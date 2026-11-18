@@ -4,7 +4,7 @@ import { html, unhee } from '@qino/pub/html.js';
 import { t } from '@qino/pub/t.js';
 import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
 
-import { cms } from '../../cms/pub/js/cms.mjs';
+import { cms } from '@qino/m/cms/pub/js/cms.js';
 
 const NAMES = '_title,_description,_share_title,_share_description';
 

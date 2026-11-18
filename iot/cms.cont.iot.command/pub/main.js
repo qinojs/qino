@@ -1,6 +1,7 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("cont.iot.command", (el) => {
+initNode("cont.iot.command", (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
 

@@ -1,6 +1,7 @@
 import { finPanel } from "../../cms.backend.fin/pub/panel.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-cms.initNode("backend.fin.hosting", (el) => {
+initNode("backend.fin.hosting", (el) => {
   const { execute, fields } = finPanel(el);
 
   /** A source's fields (the `<template>` after the button) in a dialog; saved on OK. */

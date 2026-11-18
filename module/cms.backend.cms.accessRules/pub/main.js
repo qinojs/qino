@@ -1,11 +1,12 @@
 import { api } from "@qino/pub/api.js";
+import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // deny (0) only exists on the standard column (module off); caps/overrides cycle 1..max
 const nextCap = (v) => (v === "1" ? "2" : v === "2" ? "3" : "1");                    // grp cap: 1→2→3→1
 const nextStd = (v) => (v === "" ? "0" : v === "3" ? "" : String(Number(v) + 1));   // standard: ""→0→1→2→3→""
 const nextUpTo = (v, max) => (v === "" ? "1" : Number(v) + 1 > max ? "" : String(Number(v) + 1)); // override: ""→1..max→""
 
-cms.initNode("backend.cms.accessRules", (el) => {
+initNode("backend.cms.accessRules", (el) => {
   const nid = Number(cms.el.nid(el));
   const post = (vars) => api.cms.node(nid).html.post({ vars });
   const labels = JSON.parse(el.dataset.labels || "{}");
