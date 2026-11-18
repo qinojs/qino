@@ -120,7 +120,8 @@ test("cms.text: a text is translated through ai as html", async () => {
     languages: { all: ["de", "en"] },
     api: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
     cms: { node: () => ({ access: () => 3 }) },
-    db: { ...ai.db, one: () => "Hallo", table: () => ({ row: () => ({ id: 1 }), ensure: (value: unknown) => writes.push(value) }) },
+    db: { ...ai.db, one: () => "Hallo", table: () => ({ row: () => ({ id: 1 }) }) },
+    dbTexts: { text: (id: number) => ({ lang: (lang: string) => ({ set: (text: string) => writes.push({ text_id: id, lang, text }) }) }) },
   });
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "POST", "/text/7/translate", { targetLang: "en", sourceLang: "de" }), true);

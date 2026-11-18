@@ -6,6 +6,7 @@ import { Hono } from "hono";
 
 import { assertEquals } from "./deps.ts";
 import { App } from "../lib/App.ts";
+import { Access } from "../lib/api/mod.ts";
 import { fs } from "../lib/fs.ts";
 import { honoAdapter } from "../lib/hono.ts";
 import { sys } from "../lib/sys.ts";
@@ -76,6 +77,22 @@ test("App.handle: only Deno drops the context around a request", async () => {
     await als.run("caller", () => app.handle(new Request("http://qino.test/m/none/pub/x.js")));
     assertEquals(seen, "Deno" in globalThis ? undefined : "caller");
   } finally {
+    await app.db.close();
+    await fs.remove(dir, { recursive: true });
+  }
+});
+
+test("App.handle: an api path is decoded once, per segment", async () => {
+  const dir = await fs.tempDir({ prefix: "qino-handle-" }) + "/";
+  const app = new App({ db: "sqlite::memory:", dir });
+  await app.init();
+  app.apiTree.echo = { ":v": { get: { access: Access.PUBLIC, execute: ({ v }: { v: string }) => v } } };
+  try {
+    const get = (path: string) => app.handle(new Request("http://qino.test/api/echo/" + path)).then(async (r) => [r.status, await r.json()]);
+    assertEquals(await get("a%2Fb"), [200, "a/b"]);
+    assertEquals(await get("a%252Fb"), [200, "a%2Fb"]);
+  } finally {
+    await new Promise((resolve) => setTimeout(resolve, 100)); // background writes of the request
     await app.db.close();
     await fs.remove(dir, { recursive: true });
   }

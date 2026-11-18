@@ -91,7 +91,8 @@ export const paymentProvider: Provider = {
       },
     });
     const approve = order.links?.find((link: { rel: string }) => link.rel === "payer-action" || link.rel === "approve");
-    return { redirect: approve?.href, externalId: order.id };
+    if (!approve?.href) throw new Error(`PayPal: no approval link for order ${order.id}`);
+    return { redirect: approve.href, externalId: order.id };
   },
 
   // approved by the payer: captured now. A sync after that reads the capture.

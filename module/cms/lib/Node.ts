@@ -200,7 +200,7 @@ export class Node {
             attr += ` id="${hee(url.startsWith("#") ? url.slice(1) : "cmspid" + this)}"`;
         }
         if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
-        const rendered = str.replace(/^<([^\s>]+)(\s?)/, `<$1${attr}$2`);
+        const rendered = str.replace(/^<([^\s>]+)(\s?)/, (_m, tag, sp) => `<${tag}${attr}${sp}`); // a function: no $-patterns in attr
         return html.raw(rendered !== str ? rendered : `<div${attr}>${str}</div>`);
     }
 

@@ -1,6 +1,6 @@
 import { s, Access, ApiError, sql } from "@qino/qino";
 import { AiError, translate } from "@qino/qino/ai";
-import { cms, sanitizeHtml } from "@qino/qino/cms";
+import { cms, policyOf, sanitizeHtml } from "@qino/qino/cms";
 
 import type { ApiTree, Params, Ctx } from "@qino/qino";
 import type { TranslateInput } from "@qino/qino/ai";
@@ -36,7 +36,7 @@ class CmsTextService {
       const text = await this.#app.db.one`SELECT text FROM text_lang WHERE text_id = ${textId} AND lang = ${lang}`;
       results.push({
         lang,
-        text: !text ? false : sanitizeHtml(String(text)),
+        text: !text ? false : sanitizeHtml(String(text), policyOf(this.#app)),
       });
     }
     return results;
@@ -54,7 +54,7 @@ class CmsTextService {
 
     if (/^[A-Z]/.test(input)) output = output.charAt(0).toUpperCase() + output.slice(1);
 
-    await db.table("text_lang").ensure({ text_id: textId, lang: targetLang, text: output });
+    await this.#app.dbTexts.text(textId).lang(targetLang).set(output); // drops the cached value too
     return true;
   }
 
@@ -156,7 +156,7 @@ class CmsTextService {
         AND text._vers_space = ${SPACE}
       ORDER BY text._vers_log DESC
       LIMIT 100`;
-    for (const row of rows) if (row.text) row.text = sanitizeHtml(row.text); // dialog renders it via innerHTML
+    for (const row of rows) if (row.text) row.text = sanitizeHtml(row.text, policyOf(this.#app)); // dialog renders it via innerHTML
     return rows;
   }
 
