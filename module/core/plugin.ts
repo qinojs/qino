@@ -153,9 +153,9 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // a pending login asks for the next factor on any page, not only the login page
         if (pendingLogin(ctx)) ctx.res.html.scripts.add(moduleUrl + "core/pub/js/finishLogin.mjs");
         
-        // Must be here, not in the u2 module: `deno publish` doesn't touch pub/, so browser files keep
-        // their bare specifiers and only this map resolves them; `@qino/u2/` is used by backend and
-        // editor modules, not only via `u2.assets()`.
+        // Must be here, not in the u2 module: in a checkout browser files keep their bare specifiers and
+        // only this map resolves them; `@qino/u2/` is used by backend and editor modules, not only via
+        // `u2.assets()`.
         // Open: pages without u2 still get the entry and the wider csp.
         const importMap = ctx.res.html.importMap;
         importMap.set("@qino/u2/", u2Root);
@@ -164,8 +164,9 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // browser only: core's client api and module pub files — relative paths break across stores
         importMap.set("@qino/pub/", moduleUrl + "core/pub/js/");
         importMap.set("@qino/m/", moduleUrl); // core's own files use @qino/pub/
-        // For files importing a cdn url directly (modules of other stores may). Mapping a url to itself
-        // does nothing by itself, but uncdn rewrites map values, so the browser then loads it via the proxy.
+        // `deno publish` rewrites the bare specifiers of pub/ files too, by deno.json: a published file
+        // imports `u2Root`/`itemRoot` outright (modules of other stores may as well). Mapping a url to
+        // itself does nothing by itself, but uncdn rewrites map values, so the browser then loads it via the proxy.
         importMap.set(itemRoot, itemRoot);
         importMap.set(u2Root, u2Root);
         // What the map points to must be allowed by the csp.

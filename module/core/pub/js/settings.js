@@ -7,8 +7,8 @@
 // A separate module, not part of `ctx`: in the browser there is one visitor per tab. It also keeps
 // item.js (core's largest browser dependency) out of pages that only need `api` or `t`.
 //
-// `@qino/item-cdn/`, not `@qino/item/`: browsers can't load `jsr:` urls. `deno publish` leaves pub/
-// untouched, so core's import map resolves it. Versions are in deno.json.
+// `@qino/item-cdn/`, not `@qino/item/`: `deno publish` rewrites pub/ specifiers by deno.json too, and
+// `@qino/item/` would become a `jsr:` url no browser can load. Versions are in deno.json.
 import { Item, item } from "@qino/item-cdn/item.js";
 export { item }; // for those who need the factory
 

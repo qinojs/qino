@@ -106,7 +106,8 @@ class InlineScripts extends Map<string, Record<string, string>> {
 const attrs = (o: Record<string, string>) =>
   Object.keys(o).map((k) => /^[a-zA-Z][\w-]*$/.test(k) ? ` ${k}="${hee(o[k])}"` : "").join("");
 
-/** JSON serialized safely for inlining into a <script> element (escapes `<` so `</script>` can't break out). */
+/** JSON serialized safely for inlining into a <script> element (escapes `<` so `</script>` can't break out).
+ *  Indented, to read it in the page source; compression takes back the whitespace. */
 function jsonScript(value: unknown) {
-  return JSON.stringify(value).replace(/</g, "\\u003c");
+  return JSON.stringify(value, null, 2).replace(/</g, "\\u003c");
 }
