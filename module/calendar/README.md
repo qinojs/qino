@@ -58,7 +58,7 @@ empty calendar. This abstraction has no dependency on the CMS, backend or a part
 `ics(entries, { host, organizer })` writes entries as an iCalendar object (RFC 5545) for a
 download, a feed or a mail attachment. Whole days become `VALUE=DATE` with the exclusive end the
 standard asks for, timed entries UTC timestamps, a moment a `DTSTART` alone. Entries may carry a
-`description`, a `location` and a `status` (`TENTATIVE`, `CONFIRMED`, `CANCELLED`); `host` makes
+`description`, a `location`, an `image` URL (`IMAGE`, RFC 7986) and a `status` (`TENTATIVE`, `CONFIRMED`, `CANCELLED`); `host` makes
 their `id` a globally unique `UID`. `organizer` (`{ name, email }`) becomes `ORGANIZER`; the
 standard wants an address for it, so without one there is none.
 

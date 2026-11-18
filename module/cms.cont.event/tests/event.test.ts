@@ -18,6 +18,7 @@ test("event content is an event: renders its texts, details and dates, checks wh
     await admin.initSettings();
     await viewer.initSettings();
     const root = await tree(app).node(1);
+    const photo = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "photo.png", { type: "image/png" }));
     const [event, hidden, other] = await requestStorage.run(admin, async () => {
       const create = (access: number) => root.createChild({ module: "cms.cont.event", access, online_start: 0, online_end: 0 });
       return Promise.all([create(1), create(0), create(1)]);
@@ -94,7 +95,6 @@ test("event content is an event: renders its texts, details and dates, checks wh
       // schema.org Event per date, only where the event is what the page is about
       assertEquals(viewer.res.html.head.includes('"@type":"Event"'), false);
       cmsCtx(viewer).requestedNode = event;
-      const photo = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "photo.png", { type: "image/png" }));
       await event.addFile(photo, "image");
       assertStringIncludes(String(await cms.node.render(event, { ctx: viewer })), "<cms-image");
       const data = [...viewer.res.html.head.matchAll(/<script type=application\/ld\+json>(.*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
@@ -111,6 +111,7 @@ test("event content is an event: renders its texts, details and dates, checks wh
       assertStringIncludes(body, "DTSTART:20270710T070030Z\r\nDTEND:20270710T090045Z\r\n");
       assertStringIncludes(body, "DTSTART;VALUE=DATE:20270712\r\nDTEND;VALUE=DATE:20270713\r\n");
       assertStringIncludes(body, "LOCATION:Hall & garden\\, Main Street 1\\, 01234 Town\\, CH\r\n");
+      assertStringIncludes(body, `IMAGE;VALUE=URI:http://qino.test/dbFile/${photo.id}/`);
     });
     // cancelled, online as well, a named date with its own price; the organizer is the site's
     await requestStorage.run(admin, async () => {

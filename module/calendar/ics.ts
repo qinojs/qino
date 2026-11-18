@@ -19,7 +19,7 @@ function fold(line: string) {
 
 /** Entries as an iCalendar object (RFC 5545): whole days as dates, the rest in UTC, a moment without an end.
  *  `organizer` names who holds them; RFC 5545 needs an address for it, so without one there is none. */
-export function ics(entries: (Entry & { location?: string; description?: string })[], { host, organizer }: {
+export function ics(entries: (Entry & { location?: string; description?: string; image?: string })[], { host, organizer }: {
   host: string; organizer?: { name?: string; email?: string };
 }): string {
   const now = stamp(Temporal.Now.instant());
@@ -36,6 +36,7 @@ export function ics(entries: (Entry & { location?: string; description?: string 
       ...(entry.description ? [`DESCRIPTION:${text(entry.description)}`] : []),
       ...(entry.location ? [`LOCATION:${text(entry.location)}`] : []),
       ...(entry.url ? [`URL:${entry.url}`] : []),
+      ...(entry.image ? [`IMAGE;VALUE=URI:${entry.image}`] : []), // RFC 7986
       ...(entry.status ? [`STATUS:${entry.status}`] : []),
       ...(by ? [by] : []),
       "END:VEVENT",

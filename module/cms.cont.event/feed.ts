@@ -24,14 +24,15 @@ export async function place(node: Node, event: Row) {
 }
 
 /** The event's dates as calendar entries, with title, place and description. */
-async function entries(node: Node, ctx: Ctx): Promise<(Entry & { location: string; description: string })[]> {
+async function entries(node: Node, ctx: Ctx): Promise<(Entry & { location: string; description: string; image?: string })[]> {
   const event = await get(node);
   if (!event) return [];
   const venue = await place(node, event), url = new URL(await node.url(), ctx.req.url.href).href;
   const title = (await node.showTitle()).plain(), description = (await node.showText("main")).plain();
   const location = [venue.name, venue.street, venue.locality, venue.country].filter(Boolean).join(", ") || String(event.online_url ?? "");
-  const status = icalStatus(event.status);
-  return (await list(node)).map(({ name, price: _, ...date }) => ({ ...date, id: `cms.event-${date.id}`, title: titled(title, { name }), url, location, description, status }));
+  const status = icalStatus(event.status), file = await node.cms.image(node);
+  const image = file && new URL(await file.url(), ctx.req.url.href).href;
+  return (await list(node)).map(({ name, price: _, ...date }) => ({ ...date, id: `cms.event-${date.id}`, title: titled(title, { name }), url, location, description, status, ...(image && { image }) }));
 }
 
 /** Who holds the site's events: its organization, else its name, with its public contact address. */
