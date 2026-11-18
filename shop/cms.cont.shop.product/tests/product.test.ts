@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { cms as cmsOf, cmsCtx } from "@qino/qino/cms";
-import { assert, assertEquals } from "@qino/qino/tests";
+import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 import { cms } from "../plugin.ts";
 import { asVisitor, withShop } from "../../tests/app.ts";
@@ -31,4 +31,24 @@ test("a product tells search engines the price it shows, only where the page is 
       await cms.node.render(cup, { ctx });
       assertEquals(structured(ctx.res.html.head)?.offers[0].price ?? null, told);
     });
+  }));
+
+test("product image prefers the named slot and keeps legacy attachments visible", () =>
+  withShop(["cms.cont.shop.product"], async (app) => {
+    const node = await cmsOf(app).node(10);
+    const file = (name: string) => app.dbFiles.add(new File([`<svg xmlns="http://www.w3.org/2000/svg" id="${name}"/>`], `${name}.svg`, { type: "image/svg+xml" }));
+    const old = await file("legacy"), main = await file("main");
+    await node.title("en", "Cup & saucer");
+    await node.addFile(old, "old-gallery-key");
+    for (const image of [old, main]) {
+      if (image === main) await node.addFile(main, "image");
+      await asVisitor(app, async (ctx) => {
+        cmsCtx(ctx).requestedNode = node;
+        const out = String(await cms.node.render(node, { ctx }));
+        assertStringIncludes(out, `/dbFile/${image.id}/`);
+        assertStringIncludes(out, 'alt="Cup &amp; saucer"');
+        assertStringIncludes(structured(ctx.res.html.head).image, `http://shop.test/dbFile/${image.id}/`);
+      });
+    }
+    assertEquals([...(await node.files()).keys()].sort(), ["image", "old-gallery-key"]);
   }));

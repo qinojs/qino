@@ -22,13 +22,23 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const settings = node.settings;
 
-  // "image <lang>" (fileLang creates the placeholders to upload into), else the first image of the node
-  const img = await node.cms.fileLang(node, "image", ctx.lang)
-    ?? (await node.files()).values().find((f) => f.mime.startsWith("image/"))
-    ?? await node.file("image " + ctx.lang);
+  // Use this language's image, then the shared image (which can have an unnamed upload's key).
+  const name = "image " + ctx.lang;
+  const files = await node.files();
+  let img = [files.get(name), files.get("image")].find((file) => file?.mime.startsWith("image/"))
+    ?? files.entries().find(([key, file]) => !key.startsWith("image ") && file.mime.startsWith("image/"))?.[1];
+  const edit = await node.edit();
+  if (edit) {
+    // Create the localized placeholders for the editor's upload controls.
+    for (const lang of node.app.languages.all) {
+      const key = "image " + lang;
+      const slot = await node.file(key);
+      if (key === name) img ??= slot;
+    }
+    img ??= await node.file(name);
+  }
   const url = await node.cms.url(settings["url_" + ctx.lang]()) || await node.cms.url(settings.url());
 
-  const edit = await node.edit();
   const tag = !edit && url ? "a" : "div";
   const hrefAttr = url ? html` href="${url}"` : "";
 
@@ -48,10 +58,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     if: 1,
     style,
     quality: Number(await settings.quality) || null,
-    editable: edit ? await img.url() : null,
+    editable: edit ? await img?.url() : null,
   };
 
-  const imgHtml = cms_image(img, options);
+  const imgHtml = img ? cms_image(img, options) : "";
 
   const editHtml = edit ? html.async`
         <div class="-alt-edit qgCMS">

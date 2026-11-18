@@ -22,7 +22,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const order = await cart(ctx, false);
   const currency = await order?.currencyRow() ?? await mainCurrency(app);
   const where = order?.country ?? await country(app);
-  const variants = await product.variants();
+  // shp3 kept attachments under arbitrary names and used the first image in file order.
+  const [variants, file] = await Promise.all([product.variants(), node.cms.image(node, { orFirst: true })]);
+  const src = file && await file.url({ w: 500, max: true });
   const cartId = Number(await node.settings.cart || 0);
   const action = cartId ? await (await node.cms.node(cartId)).url() : "";
 
@@ -46,14 +48,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // where the product is what the page is about: at its own address if it has one (in a category,
   // whose list says nothing), else on its page
   const about = await hasOwnUrl(node) ? node : await node.page();
-  if (offers.length && cmsCtx(ctx).requestedNode?.id === about.id) jsonLd(ctx, {
-    "@type": "Product", name: await product.title(ctx.lang),
+  const own = cmsCtx(ctx).requestedNode?.id === about.id;
+  const title = src || own && offers.length ? await product.title(ctx.lang) : "";
+  if (offers.length && own) jsonLd(ctx, {
+    "@type": "Product", name: title,
+    ...(src && { image: new URL(src, ctx.req.url.href).href }),
     ...(product.sku && { sku: product.sku }), ...(product.gtin && { gtin: product.gtin }),
     ...(product.brand && { brand: { "@type": "Brand", name: product.brand } }),
     offers,
   });
   return html.async`<div>
   ${node.cms.text(node, "title", { tag: "h2", class: "-title" })}
+  ${src ? html`<img src="${src}" alt="${title}" ${own ? "" : "loading=lazy"}>` : ""}
   ${node.cms.text(node, "main", { class: "-text", if: true })}
   <form shop-add ${action ? html`action=${action}` : ""} class=-buy>
     <input type=hidden name=product value="${product.id}">

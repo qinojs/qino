@@ -30,6 +30,9 @@ Amounts become minor units; legacy line prices were net, so migrated orders keep
 false. The charged total (`cost`) is kept as it was, even where the lines would round differently.
 Payments of old orders are not recreated in fin.payment — the status (`paid`) is.
 
+Product attachments keep their keys and order on the original node. The shop uses `image` when
+present, otherwise the first attached image in file order, as shp3 did with arbitrary file keys.
+
 ## Tools
 
 Throwaway helpers for test migrations, run from a site's folder. `tools/dump2sqlite.py` makes SQLite

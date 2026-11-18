@@ -21,9 +21,10 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
   await backend.uninstall(app, name);
 }
 
-/** Its first image; an offline product's would be refused. */
+/** Its main image, or the first attached image as in shp3; an offline product's would be refused. */
 async function thumbnail(node: Node) {
-  const file = await node.isReadable() ? (await node.files()).values().find((f) => String(f.vs?.mime ?? "").startsWith("image/")) : undefined;
+  if (!await node.isReadable()) return "";
+  const file = await node.cms.image(node, { orFirst: true });
   return file ? html`<img src="${await file.url({ w: 60, h: 40, max: true })}" width=60 alt="" loading=lazy>` : "";
 }
 
