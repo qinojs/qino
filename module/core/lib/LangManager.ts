@@ -123,7 +123,7 @@ export class LangManager {
         WHERE s.namespace IN (${ns}, '')`;
       const index = new Map<string, string>(), rank = new Map<string, number>();
       for (const { original, namespace, lang: l, text } of rows) {
-        if (!index.has(original)) index.set(original, "");
+        index.getOrInsert(original, "");
         if (!text) continue;
         const r = chain.indexOf(l) * 2 + (namespace === ns ? 0 : 1);
         if (r < (rank.get(original) ?? Infinity)) rank.set(original, r), index.set(original, text);
