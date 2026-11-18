@@ -3,6 +3,7 @@
   "description": "A product: its page is the product. Price, variants, add to cart, structured data.",
   "dependencies": [
     "cms",
+    "cms.image",
     "cms.shop",
     "seo"
   ],

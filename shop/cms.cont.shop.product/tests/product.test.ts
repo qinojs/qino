@@ -40,12 +40,12 @@ test("product image prefers the named slot and keeps legacy attachments visible"
     const old = await file("legacy"), main = await file("main");
     await node.title("en", "Cup & saucer");
     await node.addFile(old, "old-gallery-key");
-    for (const image of [old, main]) {
+    for (const [image, id] of [[old, "legacy"], [main, "main"]] as const) {
       if (image === main) await node.addFile(main, "image");
       await asVisitor(app, async (ctx) => {
         cmsCtx(ctx).requestedNode = node;
         const out = String(await cms.node.render(node, { ctx }));
-        assertStringIncludes(out, `/dbFile/${image.id}/`);
+        assertStringIncludes(out, `id%3D%22${id}%22`); // cms-image inlines small SVGs
         assertStringIncludes(out, 'alt="Cup &amp; saucer"');
         assertStringIncludes(structured(ctx.res.html.head).image, `http://shop.test/dbFile/${image.id}/`);
       });

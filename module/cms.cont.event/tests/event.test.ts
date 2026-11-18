@@ -94,11 +94,14 @@ test("event content is an event: renders its texts, details and dates, checks wh
       // schema.org Event per date, only where the event is what the page is about
       assertEquals(viewer.res.html.head.includes('"@type":"Event"'), false);
       cmsCtx(viewer).requestedNode = event;
-      await cms.node.render(event, { ctx: viewer });
+      const photo = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "photo.png", { type: "image/png" }));
+      await event.addFile(photo, "image");
+      assertStringIncludes(String(await cms.node.render(event, { ctx: viewer })), "<cms-image");
       const data = [...viewer.res.html.head.matchAll(/<script type=application\/ld\+json>(.*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
       assertEquals(data.map((d) => [d.startDate, d.endDate]), [["2027-07-10T09:00:30+02:00", "2027-07-10T11:00:45+02:00"], ["2027-07-12", "2027-07-12"]]);
       assertEquals(data[0].location.address.postalCode, "01234");
       assertEquals(data[0].offers, { "@type": "Offer", price: "12.5", priceCurrency: "CHF", url: data[0].url });
+      assertStringIncludes(data[0].image, `/dbFile/${photo.id}/`);
     });
     const download = await testContext({ app, url: `http://qino.test/?cms_event_ics=${event.id}`, set: { app } });
     await requestStorage.run(download, async () => {

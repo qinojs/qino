@@ -22,19 +22,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const settings = node.settings;
 
-  // Use this language's image, then the shared image (which can have an unnamed upload's key).
+  // this language's image, else the shared "image", else the first one (another language's too)
   const name = "image " + ctx.lang;
-  const files = await node.files();
-  let img = [files.get(name), files.get("image")].find((file) => file?.mime.startsWith("image/"))
-    ?? files.entries().find(([key, file]) => !key.startsWith("image ") && file.mime.startsWith("image/"))?.[1];
+  let img = await node.cms.image(node, { use: name, orFirst: true });
   const edit = await node.edit();
   if (edit) {
-    // Create the localized placeholders for the editor's upload controls.
-    for (const lang of node.app.languages.all) {
-      const key = "image " + lang;
-      const slot = await node.file(key);
-      if (key === name) img ??= slot;
-    }
+    // the localized placeholders for the editor's upload controls
+    for (const lang of node.app.languages.all) await node.file("image " + lang);
     img ??= await node.file(name);
   }
   const url = await node.cms.url(settings["url_" + ctx.lang]()) || await node.cms.url(settings.url());

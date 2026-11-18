@@ -1,6 +1,7 @@
 import { html } from "@qino/qino";
 import { instant, isDate } from "@qino/qino/calendar";
 import { cmsCtx } from "@qino/qino/cms";
+import { cms_image } from "@qino/qino/cms.image";
 import { get, list, titled, zoneOf } from "@qino/qino/cms.event";
 import { jsonLd } from "@qino/qino/seo";
 
@@ -31,8 +32,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     event.language ? html.async`<dt>${t`Event language`}</dt><dd>${new Intl.DisplayNames(ctx.lang, { type: "language" }).of(String(event.language))}</dd>` : "",
   ].filter(Boolean);
   const times = formatDates(dates, ctx.lang, zone);
+  // its "image"; in edit mode an empty one to upload into
+  const edit = await node.edit();
+  const image = await node.cms.image(node) ?? (edit ? await node.file("image") : undefined);
   return html.async`<article>
     ${node.cms.text(node, "title", { tag: "h2" })}
+    ${image ? cms_image(image, { alt: (await node.showTitle()).plain(), width: 1200, if: 1, editable: edit ? await image.url() : null }) : ""}
     ${status ? html.async`<p><strong>${status}</strong></p>` : ""}
     ${dates.length ? html`<ul>${dates.map((date, i) => html`<li>${times[i]}${date.price != null ? ` · ${money(date.price)}` : ""}</li>`)}</ul>` : ""}
     ${facts.length ? html.async`<dl>${facts}</dl>` : ""}
@@ -47,6 +52,7 @@ async function structured(node: Node, ctx: Ctx, event: Row, dates: Awaited<Retur
   const venue = await place(node, event), holder = await organizer(node);
   const url = new URL(await node.url(), ctx.req.url.href).href, name = (await node.showTitle()).plain();
   const description = (await node.showText("main")).plain().slice(0, 500);
+  const file = await node.cms.image(node), image = file && new URL(await file.url(), ctx.req.url.href).href; // the original: search engines want them large
   // dates stay dates; times keep the offset of the event's zone
   const time = (value: string) => isDate(value) ? value : instant(value).toZonedDateTimeISO(zone).toString({ timeZoneName: "never", smallestUnit: "second" });
   const physical = venue.name || venue.locality ? { "@type": "Place", name: venue.name || venue.locality, address: {
@@ -59,6 +65,7 @@ async function structured(node: Node, ctx: Ctx, event: Row, dates: Awaited<Retur
     const price = date.price ?? event.price;
     jsonLd(ctx, {
       "@type": "Event", name: titled(name, date), url, ...(description && { description }),
+      ...(image && { image }),
       startDate: time(date.start), ...(date.end !== date.start && { endDate: time(isDate(date.end) ? Temporal.PlainDate.from(date.end).subtract({ days: 1 }).toString() : date.end) }),
       eventStatus: `https://schema.org/${STATUS[String(event.status)] ?? "EventScheduled"}`,
       eventAttendanceMode: `https://schema.org/${mode}EventAttendanceMode`,
