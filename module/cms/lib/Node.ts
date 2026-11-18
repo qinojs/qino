@@ -63,7 +63,7 @@ export class Node {
         this.settings = bildJsonItem(
             this.vs.settings as string | null | undefined,
             async (json: string) => {
-                this.vs.settings = json;
+                this.vs = { ...this.vs, settings: json };
                 await this.db.table("page").update(this.id, { settings: json });
             },
         ).proxy;
