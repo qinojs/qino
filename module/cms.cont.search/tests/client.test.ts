@@ -11,18 +11,19 @@ test("cms.cont.search: live requests keep their entry in input order, including 
   let timer = 0;
   const output = { innerHTML: "" };
   const box = {
+    addEventListener: (name: string, fn: (event: unknown) => void) => handlers.set(name, fn),
     getAttribute: () => "42",
     querySelector: (selector: string) => selector === "[cms-part=hits]" ? output : null,
   };
   const input = { value: "", closest: () => box };
   const document = {
-    addEventListener: (name: string, fn: (event: unknown) => void) => handlers.set(name, fn),
     createElement: () => {
       const template = { innerHTML: "", content: { querySelector: () => ({ dataset: { searchEntry: template.innerHTML } }) } };
       return template;
     },
   };
   runInNewContext(source.replace(/^import .*;\n/gm, ""), {
+    initNode: (_name: string, init: (el: typeof box) => void) => init(box),
     document, URL, console, location: { href: "http://qino.test/" }, history: { replaceState() {} },
     setTimeout: (fn: () => void) => (timers.set(++timer, fn), timer),
     clearTimeout: (id: number) => timers.delete(id),

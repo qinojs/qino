@@ -1,6 +1,5 @@
 import { debounce } from '@qino/pub/c1.js';
 import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.js';
-import { Combobox } from '@qino/pub/qg/combobox.js';
 import { api } from '@qino/pub/api.js';
 
 export const cms = {};
@@ -32,8 +31,9 @@ cms.el = {
   module(el) { return el.closest('[qcms-mod]')?.getAttribute('qcms-mod') ?? null; },
 };
 
-// api: special inputs
-function abortableCombobox(input, apiFn) {
+// api: special inputs — the combobox loads on first use, pages without such inputs never fetch it
+async function abortableCombobox(input, apiFn) {
+  const { Combobox } = await import('@qino/pub/qg/combobox.js');
   const box = new Combobox(input);
   let last;
   box.searchOptions = () => {
@@ -44,12 +44,12 @@ function abortableCombobox(input, apiFn) {
   return box;
 }
 
-document.addEventListener('focus', e => {
+document.addEventListener('focus', async e => {
   const input = e.composedPath()[0];
   if (input.tagName !== 'INPUT') return;
   let box;
-  if (input.getAttribute('type') === 'qgcms-page') box = abortableCombobox(input, api.cms.nodes.get.bind(api.cms.nodes));
-  if (input.getAttribute('type') === 'qgcms-file') box = abortableCombobox(input, api.cms.files.get.bind(api.cms.files));
+  if (input.getAttribute('type') === 'qgcms-page') box = await abortableCombobox(input, api.cms.nodes.get.bind(api.cms.nodes));
+  if (input.getAttribute('type') === 'qgcms-file') box = await abortableCombobox(input, api.cms.files.get.bind(api.cms.files));
   box?.onfocus?.(e);
 }, true);
 
