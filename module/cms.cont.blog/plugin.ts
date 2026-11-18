@@ -120,7 +120,9 @@ async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {
   const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
   const entries = [];
   for (const post of await posts(node, true, { dated: true })) {
+    const file = await post.node.cms.image(post.node);
     entries.push({
+      image: file && { url: new URL(await file.url(), await node.app.url()).href, type: file.mime, length: Number(file.vs?.size) || 0 },
       title: post.title,
       url: new URL(ctx.req.appUrl + await post.node.urlSeo(ctx.lang), await node.app.url()).href,
       summary: await descriptionOf(post.node),
@@ -132,7 +134,7 @@ async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {
     const updated = entries[0]?.date ?? new Date(Number(page.vs.online_start) * 1000 || 0).toISOString();
     const items = entries.map((entry) => `<entry>
       <title>${hee(entry.title)}</title><id>${hee(entry.url)}</id>
-      <link href="${hee(entry.url)}"/><published>${entry.date}</published><updated>${entry.date}</updated>
+      <link href="${hee(entry.url)}"/>${entry.image ? `<link rel="enclosure" href="${hee(entry.image.url)}" type="${hee(entry.image.type)}" length="${entry.image.length}"/>` : ""}<published>${entry.date}</published><updated>${entry.date}</updated>
       <summary>${hee(entry.summary)}</summary>
     </entry>`).join("");
     body = `<?xml version="1.0" encoding="utf-8"?>
@@ -147,7 +149,8 @@ async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {
       <title>${hee(entry.title)}</title><link>${hee(entry.url)}</link>
       <guid isPermaLink="true">${hee(entry.url)}</guid>
       <pubDate>${new Date(entry.date).toUTCString()}</pubDate>
-      <description>${hee(entry.summary)}</description>
+      <description>${hee(entry.summary)}</description>${entry.image ? `
+      <enclosure url="${hee(entry.image.url)}" type="${hee(entry.image.type)}" length="${entry.image.length}"/>` : ""}
     </item>`).join("");
     body = `<?xml version="1.0" encoding="utf-8"?>
       <rss version="2.0"><channel>

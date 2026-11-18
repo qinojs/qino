@@ -50,6 +50,7 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
     const atom = await app.fetch(new Request(url + `?cms_blog=${blog.id}`));
     assertEquals(atom.headers.get("content-type"), "application/atom+xml; charset=utf-8");
     const xml = await atom.text();
+    assertStringIncludes(xml, `<link rel="enclosure" href="https://qino.test/dbFile/${picture.id}/`);
     assertStringIncludes(xml, "Coffee &lt; tea");
     assertStringIncludes(xml, "A short &amp; useful post");
     assertStringIncludes(xml, "<author><name>News &amp; notes</name></author>");
@@ -59,7 +60,9 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
 
     const rss = await app.fetch(new Request(url + `?cms_blog=${blog.id}&cms_blog_format=rss`));
     assertEquals(rss.headers.get("content-type"), "application/rss+xml; charset=utf-8");
-    assertStringIncludes(await rss.text(), "<rss version=\"2.0\">");
+    const channel = await rss.text();
+    assertStringIncludes(channel, "<rss version=\"2.0\">");
+    assertStringIncludes(channel, `<enclosure url="https://qino.test/dbFile/${picture.id}/`);
 
     const deUrl = "https://qino.test/" + await page.urlSeo("de");
     const deFeed = await app.fetch(new Request(deUrl + `?cms_blog=${blog.id}`));

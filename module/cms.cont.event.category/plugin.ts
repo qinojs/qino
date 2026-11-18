@@ -1,4 +1,5 @@
 import { html, sql } from "@qino/qino";
+import { cms_image } from "@qino/qino/cms.image";
 import { answer, feedUrl, formatDates, statusText } from "@qino/qino/cms.cont.event";
 import { ahead, overview, zoneOf } from "@qino/qino/cms.event";
 
@@ -32,7 +33,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const { row, event, dates, count } of rows.slice(0, PER_PAGE)) {
     const item = await node.cms.node(Number(row.id), row);
     if (!await item.isReadable()) continue;
+    const image = await item.cms.image(item);
     events.push(html.async`<li><article>
+      ${image ? cms_image(image, { alt: (await item.showTitle()).plain(), width: 600, if: 1 }) : ""}
       <h3><a href="${item.url()}">${item.showTitle()}</a></h3>
       ${event.status ? html.async`<p><strong>${statusText(node.app, event.status)}</strong></p>` : ""}
       <ul>${formatDates(dates, ctx.lang, await zoneOf(node.app, event)).map((date) => html`<li>${date}</li>`)}</ul>

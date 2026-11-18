@@ -32,7 +32,7 @@ const settingsSchema = {
     },
     "preview image": {
       type: "boolean",
-      description: "Shows the first image attached to a result.",
+      description: "Shows the image of a result: its \"image\", else the first one attached.",
     },
     "group by": {
       enum: ["pages", "contents"], default: "pages",
@@ -120,7 +120,7 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
 
   let image: HtmlString | string = "";
   if (await node.settings["preview image"]) {
-    const file = (await page.files()).values().find((f) => f.mime.startsWith("image/"));
+    const file = await page.cms.image(page, { orFirst: true });
     if (file) image = html`<img src="${await file.url({ w: 120, h: 400, max: true })}" alt="" loading=lazy>`;
   }
 

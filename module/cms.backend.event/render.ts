@@ -11,6 +11,12 @@ import type { Node } from "@qino/qino/cms";
 const PER_PAGE = 50;
 const CATEGORY = "cms.cont.event.category";
 
+/** Its image, small. */
+async function thumbnail(node: Node) {
+  const file = await node.cms.image(node);
+  return file ? html`<img src="${await file.url({ w: 60, h: 40, max: true })}" width=60 alt="" loading=lazy>` : "";
+}
+
 /** Editors see offline nodes as well. */
 const visible = async (node: Node) => await node.access() >= 2 || await node.isReadable();
 
@@ -69,12 +75,14 @@ export default async function render(node: Node, { ctx, vars = {}, listOnly = fa
   const list = html.async`<div style="padding:0;overflow:auto" tabindex=0 role=region aria-label="${t`Events`}">
       <table class=u2-table style="padding:0">
         <thead><tr>
+          <th scope=col>
           <th scope=col>${t`Title`}
           <th scope=col>${t`Dates`}
           <th scope=col>${t`Category`}
           <th scope=col>${t`Visibility`}
           <th scope=col>${t`Actions`}
         <tbody>${items.map(async ({ node: item, event, period }) => html.async`<tr u2-href>
+          <td>${thumbnail(item)}
           <th scope=row><a href="${link({ id: item.id })}">${item.showTitle()}</a>${event.address_locality ? html`<br><small>${event.address_locality}</small>` : ""}</th>
           <td>${period ? formatDates([period], ctx.lang, await zoneOf(node.app, event)) : t`No date yet`}
           <td>${categories.find((c) => c.node.id === Number(item.vs.basis))?.title || t`Unassigned`}
