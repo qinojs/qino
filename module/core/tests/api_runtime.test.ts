@@ -81,6 +81,8 @@ function withCtx<T>(fn: () => T) {
 test("api: invoke resolves path params and validates output", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "GET", "/thing/1"), { id: 1, title: "One" });
+    for (const path of ["/thing/:thing", "/thing/%3Athing"])
+      await assertRejects(() => invoke(api, "GET", path), ValidationError);
   });
 });
 

@@ -86,8 +86,7 @@ function imageSize(ow: number, oh: number, options: Record<string, any>) {
 const INLINE_LIMIT = 350;
 
 function length(value = "") {
-  const match = value.trim().match(/^(\+?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(?:px)?$/i);
-  const size = match ? Number(match[1]) : 0;
+  const size = Number(value.trim().match(/^(\+?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(?:px)?$/i)?.[1]);
   return Number.isFinite(size) ? size : 0;
 }
 
@@ -103,8 +102,9 @@ async function vectorData(file: DbFile, options: Record<string, any>) {
   } }, { xmlMode: true });
   parser.end(source);
 
-  const box = (attrs.viewBox ?? "").trim().split(/[\s,]+/).map(Number);
-  const ratio = box.length === 4 && box.every(Number.isFinite) && box[2] > 0 && box[3] > 0 ? box[2] / box[3] : 0;
+  const SIZE = 4;
+  const box = (attrs.viewBox ?? "").trim().split(/[\s,]+/, SIZE + 1).map(Number);
+  const ratio = box.length === SIZE && box.every(Number.isFinite) && box[2] > 0 && box[3] > 0 ? box[2] / box[3] : 0;
   let ow = length(attrs.width), oh = length(attrs.height);
   if (ratio) {
     ow ||= oh ? oh * ratio : box[2];

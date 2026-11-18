@@ -145,11 +145,10 @@ export async function release(app: App, id: number, due: number = unixTime()): P
   if (!c) throw new Error(`messaging: message ${id} is no draft of a linked channel`);
   const recipients = await c.recipients(app, JSON.parse(String(row.data ?? "null"))?.to ?? {});
   const time = unixTime();
-  let ids: number[] = [];
-  await app.db.transaction(async () => {
-    if (await app.db.one`SELECT id FROM message_delivery WHERE message_id = ${id} LIMIT 1`) throw new Error(`messaging: message ${id} was released already`);
+  const ids = await app.db.transaction(async () => {
+    if (await app.db.one`SELECT 1 FROM message_delivery WHERE message_id = ${id} LIMIT 1`) throw new Error(`messaging: message ${id} was released already`);
     await app.db.table("message").update(id, { time: due }); // the journal's time is when it goes out
-    ids = await deliveries(app, id, recipients.map((r) =>
+    return deliveries(app, id, recipients.map((r) =>
       ({ usrId: r.usrId, address: r.address, ...r.addressError ? owed(r.addressError, time) : { due } })));
   });
   return due > time ? 0 : dispatch(app, c, ids);

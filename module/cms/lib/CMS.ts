@@ -137,23 +137,23 @@ export class CMS extends Emitter<CmsEvents> {
   // deno-lint-ignore no-explicit-any
   async filter(pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
     const parts = [filter].flat();
-    const tags = parts.filter((part): part is string => typeof part === "string");
+    const navi = parts.includes("navi"), access = parts.includes("access"), readable = parts.includes("readable");
     filter = Object.assign({}, ...parts.filter((part) => part && typeof part === "object"));
-    filter.type ??= "p";
+    const type = filter.type ?? "p";
     const modules = filter.module && (Array.isArray(filter.module) ? filter.module : [filter.module]);
     const ret = new Map<number, Node>();
     for (const [id, c] of pages) {
       const vs = c.vs;
-      if (filter.type && filter.type !== "*" && vs.type !== filter.type) continue;
+      if (type && type !== "*" && vs.type !== type) continue;
       if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
       if (modules && !modules.includes(vs.module)) continue;
       if (filter.access !== undefined && (await c.access()) < filter.access) continue;
-      if (tags.includes("navi")) {
+      if (navi) {
         const titleObj = await c.title();
         if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || await c.edit())) continue;
       }
-      if (tags.includes("access") && !(await c.access())) continue;
-      if (tags.includes("readable") && !(await c.isReadable())) continue;
+      if (access && !(await c.access())) continue;
+      if (readable && !(await c.isReadable())) continue;
       ret.set(id, c);
     }
     return ret;

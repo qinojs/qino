@@ -76,14 +76,15 @@ export class SessionManager {
     const row = token
       ? await this.#db.row`SELECT id, data, settings, access, usr_id FROM sess WHERE token = ${token}`
       : null;
+    const access = Number(row?.access) || 0;
     // unreadable access = expired
-    if (!row || !pinned && unixTime() - (Number(row.access) || 0) > await this.maxIdle()) {
-      if (!pinned) return this.#create();
-      return this.#create(token).catch(() => this.load(token)); // a parallel request inserted it: read that row
+    if (!row || !pinned && unixTime() - access > await this.maxIdle()) {
+      // a parallel request inserted it: read that row
+      return pinned ? this.#create(token).catch(() => this.load(token)) : this.#create();
     }
     const sess = new Session(this.#db, row.id, token!, row.data, false);
     sess.settings = row.settings;
-    sess.access = Number(row.access) || 0;
+    sess.access = access;
     sess.usrId = Number(row.usr_id) || 0;
     return sess;
   }

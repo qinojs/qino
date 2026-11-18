@@ -32,8 +32,7 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
   const m = method.toLowerCase() as Method;
   if (!VERB_SET.has(m)) throw new NotFoundError(`no route: ${method} ${path}`);
 
-  const segments: string[] = [];
-  const nodes: ApiNode[] = [];
+  const pathNodes: [string, ApiNode][] = [];
   const pathValues: Record<string, unknown> = Object.create(null);
 
   let cursor: Branch = tree;
@@ -43,20 +42,19 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
     const child = branch(cursor[seg]);
     if (child && !RESERVED.has(seg)) {
       cursor = child;
-      segments.push(seg);
-    } else {
-      const keys = Object.keys(cursor);
-      const paramKey = keys.find((k) => k.startsWith(":") && !isCatchall(k) && branch(cursor[k])) ??
-        keys.find((k) => isCatchall(k) && branch(cursor[k]));
-      if (!paramKey) throw new NotFoundError(`no route: ${method} ${path}`);
-      pathValues[paramName(paramKey)] = isCatchall(paramKey) ? pathSegments.slice(i) : seg;
-      cursor = branch(cursor[paramKey])!;
-      segments.push(paramKey);
-      nodes.push(cursor);
-      if (isCatchall(paramKey)) break;
+      // A URL can name a parameter key literally; that node still needs validation.
+      if (seg.startsWith(":")) pathNodes.push([seg, child]);
       continue;
     }
-    nodes.push(cursor);
+    const keys = Object.keys(cursor);
+    const paramKey = keys.find((k) => k.startsWith(":") && !isCatchall(k) && branch(cursor[k])) ??
+      keys.find((k) => isCatchall(k) && branch(cursor[k]));
+    if (!paramKey) throw new NotFoundError(`no route: ${method} ${path}`);
+    const catchall = isCatchall(paramKey);
+    pathValues[paramName(paramKey)] = catchall ? pathSegments.slice(i) : seg;
+    cursor = branch(cursor[paramKey])!;
+    pathNodes.push([paramKey, cursor]);
+    if (catchall) break;
   }
 
   let verb = branch(cursor[m]) as Verb | undefined;
@@ -65,10 +63,8 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
     const child = paramKey ? branch(cursor[paramKey]) : undefined;
     if (paramKey && child) {
       pathValues[paramName(paramKey)] = [];
-      cursor = child;
-      segments.push(paramKey);
-      nodes.push(cursor);
-      verb = branch(cursor[m]) as Verb | undefined;
+      pathNodes.push([paramKey, child]);
+      verb = branch(child[m]) as Verb | undefined;
     }
   }
   if (!verb || typeof verb.execute !== "function") throw new NotFoundError(`no ${method} on ${path}`);
@@ -81,11 +77,8 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
   const input = isSplit ? asParams(rawParams.input) : rawParams;
   const query = isSplit ? asParams(rawParams.query) : rawParams;
 
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    if (!seg.startsWith(":")) continue;
+  for (const [seg, node] of pathNodes) {
     const name = paramName(seg);
-    const node = nodes[i];
     let value: unknown = pathValues[name];
     if (isCatchall(seg) && node.paramSchema?.kind === "string" && Array.isArray(value)) value = value.join("/");
     if (node.paramSchema) value = validate(node.paramSchema, coerce(value, node.paramSchema), `param :${name}`);

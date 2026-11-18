@@ -209,7 +209,7 @@ async function ipv6Answers(host: string, ip: string, signal?: AbortSignal) {
 // The www ↔ apex counterpart should be served too, not merely resolve.
 async function wwwCounterpart(host: string, signal?: AbortSignal) {
   const alt = wwwAlt(host);
-  if (alt.split(".").length < 2) return null;
+  if (!alt.includes(".")) return null;
   const [a, aaaa] = await Promise.all([dnsList(alt, "A"), dnsList(alt, "AAAA")]);
   if (!a.length && !aaaa.length) return null; // deliberately not published
   return fetch(`https://${alt}/`, { method: "HEAD", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })

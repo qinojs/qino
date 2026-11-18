@@ -28,15 +28,18 @@ export const round = (value: number): number => Math.sign(value) * Math.round(Ma
  * A credit note has negative quantities: its amounts and totals come out negative.
  */
 export function totals(lines: Line[], taxIncluded: boolean) {
-  const amounts = lines.map((line) => round((line.quantity ?? 1) * line.price));
   const byRate = new Map<number, number>();
-  lines.forEach((line, i) => byRate.set(line.taxRate ?? 0, (byRate.get(line.taxRate ?? 0) ?? 0) + amounts[i]));
+  const amounts = lines.map(({ quantity, price, taxRate }) => {
+    const amount = round((quantity ?? 1) * price), rate = taxRate ?? 0;
+    byRate.set(rate, (byRate.get(rate) ?? 0) + amount);
+    return amount;
+  });
   const rates = [...byRate].sort(([a], [b]) => a - b).map(([rate, sum]) => {
     const tax = round(taxIncluded ? sum * rate / (100 + rate) : sum * rate / 100);
     return { rate, net: taxIncluded ? sum - tax : sum, tax };
   });
-  const net = rates.reduce((sum, r) => sum + r.net, 0);
-  const tax = rates.reduce((sum, r) => sum + r.tax, 0);
+  let net = 0, tax = 0;
+  for (const r of rates) { net += r.net; tax += r.tax; }
   return { amounts, rates, net, tax, total: net + tax };
 }
 

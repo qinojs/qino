@@ -73,7 +73,7 @@ export class Module {
   #manifest: Manifest;
   #source: string;
   #dir: string | undefined;
-  #abort = new AbortController();
+  #abort?: AbortController;
 
   constructor(app: App, name: string, plugin: Plugin, manifest: Manifest, source: string) {
     this.#app = app;
@@ -109,7 +109,7 @@ export class Module {
   get dataUrl(): string { return `${getCtx().req.dataUrl}${this.name}/`; }
   // New signal per link; abort() on unlink removes what init() registered with it.
   newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
-  abort(): void { this.#abort.abort(); }
+  abort(): void { this.#abort?.abort(); }
   toString(): string { return this.name; }
 }
 

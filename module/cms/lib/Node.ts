@@ -301,14 +301,15 @@ export class Node {
     }
 
     async parent(level?: number): Promise<Node | undefined> {
+        if (level !== undefined) {
+            let i = 0;
+            for (const page of (await this.path()).values()) if (i++ === level) return page;
+            return;
+        }
         const basis = Number(this.vs.basis ?? 0);
         // keyed by basis, so a move invalidates it
         if (this.#parent?.id !== basis) this.#parent = basis ? await this.cms.node(basis) : undefined;
-        const parent = this.#parent;
-        if (level === undefined) return parent;
-        const path = await this.path();
-        let i = 0;
-        for (const page of path.values()) if (i++ === level) return page;
+        return this.#parent;
     }
 
     async path(): Promise<Map<number, Node>> {
@@ -320,7 +321,7 @@ export class Node {
 
     async bough(filter?: any): Promise<Map<number, Node>> {
         const bough = new Map<number, Node>([[this.id, this]]);
-        for (const child of (await this.children({ type: "*" })).values())
+        for (const child of (await this.children()).values())
             for (const [k, v] of await child.bough()) bough.set(k, v);
         return filter ? this.cms.filter(bough, filter) : bough;
     }
@@ -532,7 +533,7 @@ export class Node {
         return this.db.transaction(async () => {
             for (const l of lang ? [lang] : this.app.languages.all) {
                 if (!(await this.urls()).get(l)?.custom) await this.urlSet(l, { url: await generate(this, l) });
-                for (const child of (await this.children({ type: "*" })).values()) await child.urlsGen(l);
+                for (const child of (await this.children()).values()) await child.urlsGen(l);
             }
         });
     }
@@ -703,8 +704,7 @@ export class Node {
     }
     async #removeChild(child: Node | number) {
         const page = await this.cms.node(Number(child));
-        const children = await this.children({ type: "*" });
-        if (!children.has(Number(page))) return false;
+        if (!(await this.children()).has(page.id)) return false;
         for (const sub of (await page.children({ type: "*" })).values()) await page.removeChild(sub);
         for (const name of [...(await page.files()).keys()]) await page.deleteFile(name);
         for (const name of [...(await page.texts()).keys()]) await page.textDelete(name);

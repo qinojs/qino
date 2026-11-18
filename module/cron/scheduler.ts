@@ -66,10 +66,11 @@ export class Scheduler {
     const now = unixTime();
     const { jobs, rows } = await this.#load(now);
     const active = new Map(jobs.map((v) => [v.id, v.job]));
-    return [...rows.values()].sort((a, b) => String(a.id).localeCompare(String(b.id))).map((row) => {
-      const job = active.get(String(row.id));
+    return [...rows.keys()].sort((a, b) => a.localeCompare(b)).map((id) => {
+      const row = rows.get(id)!, job = active.get(id);
+      const lastFinished = Number(row.last_finished) || undefined;
       return {
-        id: String(row.id),
+        id,
         active: !!job,
         every: job?.every,
         at: job?.at,
@@ -78,9 +79,9 @@ export class Scheduler {
         nextRun: Number(row.next_run),
         running: Number(row.locked_until) > now,
         lastStarted: Number(row.last_started) || undefined,
-        lastFinished: Number(row.last_finished) || undefined,
+        lastFinished,
         lastSuccess: Number(row.last_success) || undefined,
-        durationMs: Number(row.last_finished) ? Number(row.duration_ms) : undefined,
+        durationMs: lastFinished ? Number(row.duration_ms) : undefined,
         failures: Number(row.failures),
         lastError: String(row.last_error || "") || undefined,
       };

@@ -193,10 +193,10 @@ class SqliteDriver extends DbDriver {
   #serial<T>(fn: () => T | Promise<T>, hold?: Promise<unknown>): Promise<T> {
     if (this.#txAls.getStore()?.open) return Promise.resolve(fn());
     this.#queued++;
-    const run = this.#chain.then(fn, fn);
-    const done = run.then(() => {}, () => {});
+    const run = this.#chain.then(fn);
+    const finish = () => this.#queued--;
+    const done = run.then(finish, finish);
     this.#chain = hold ? Promise.race([done, hold]) : done;
-    done.then(() => this.#queued--);
     return run;
   }
   // Compiling SQL is measurable per request; texts repeat since values are bound. SQLite
@@ -246,7 +246,7 @@ class SqliteDriver extends DbDriver {
   async columns(table: string) {
     // Map PRAGMA table_info → MySQL SHOW FULL COLUMNS shape so DbField stays dialect-free.
     const rows = await this.query(`PRAGMA table_info(${this.quoteId(table)})`);
-    const solo = rows.filter((c) => c.pk).length === 1;
+    const solo = !rows.some((c) => c.pk > 1);
     return rows.map((c) => ({
       Field: c.name,
       Type: c.type || "text",
