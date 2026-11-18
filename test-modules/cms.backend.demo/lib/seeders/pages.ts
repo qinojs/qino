@@ -41,7 +41,7 @@ async function contents(s: Seed, page: Node, specs: ContSpec[]) {
     if (spec.text) await text(s, cont, "main", spec.text);
     if (spec.image) {
       for (const lang of s.app.languages.all) {
-        await (await cont.file("image_" + lang)).replaceBy(s.rnd.image(spec.image, `${spec.image} ${lang}`));
+        await (await cont.file("image " + lang)).replaceBy(s.rnd.image(spec.image, `${spec.image} ${lang}`));
       }
       s.count("files", s.app.languages.all.length);
     }

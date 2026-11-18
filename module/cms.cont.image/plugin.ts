@@ -22,17 +22,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const settings = node.settings;
 
-  let img = null;
-  let url = await node.cms.url(settings.url());
-
-  // Language-specific variants
-  for (const l of node.app.languages.all) {
-    const langImg = await node.file("image_" + l);
-    if ((ctx.lang === l || !img) && await langImg.exists()) img = langImg;
-    const lUrl = await node.cms.url(settings["url_" + l]());
-    if (ctx.lang === l && lUrl) url = lUrl;
-  }
-  img ??= await node.file("image_" + ctx.lang);
+  // "image <lang>" (fileLang creates the placeholders to upload into), else the first image of the node
+  const img = await node.cms.fileLang(node, "image", ctx.lang)
+    ?? (await node.files()).values().find((f) => f.mime.startsWith("image/"))
+    ?? await node.file("image " + ctx.lang);
+  const url = await node.cms.url(settings["url_" + ctx.lang]()) || await node.cms.url(settings.url());
 
   const edit = await node.edit();
   const tag = !edit && url ? "a" : "div";

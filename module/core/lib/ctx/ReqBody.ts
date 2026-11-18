@@ -18,7 +18,7 @@ export class ReqBody {
   /** tmp files written so far — removed in Ctx.cleanup() */
   tmpPaths: string[] = [];
   #rawFiles: Record<string, File> = Object.create(null);
-  #spooled: Record<string, Promise<UploadedFile>> = Object.create(null);
+  #spooled?: Map<string, Promise<UploadedFile>>;
   #maxSize = 0; // set by parse(); only parse() can add files
 
   get files(): Record<string, Promise<UploadedFile> | undefined> {
@@ -32,18 +32,17 @@ export class ReqBody {
   }
 
   #spool(key: string) {
-    let p = this.#spooled[key];
-    if (!p) {
-      p = this.#spooled[key] = readUploadFile(this.#rawFiles[key], { maxSize: this.#maxSize })
+    return (this.#spooled ??= new Map()).getOrInsertComputed(key, () => {
+      const p = readUploadFile(this.#rawFiles[key], { maxSize: this.#maxSize })
         .then((f) => (this.tmpPaths.push(f.tmpPath), f));
       p.catch(() => {}); // access without await must not cause an unhandled rejection
-    }
-    return p;
+      return p;
+    });
   }
 
   /** Wait for running writes, then return the tmp paths (for cleanup). */
   async settle(): Promise<string[]> {
-    await Promise.allSettled(Object.values(this.#spooled));
+    if (this.#spooled) await Promise.allSettled(this.#spooled.values());
     return this.tmpPaths;
   }
 
@@ -67,12 +66,17 @@ export class ReqBody {
     if (isJson)
       body.#value = deepFreeze(await (src ?? request.clone()).json().catch(bad));
     else {
-      const entries = groupFormData(await (src ?? request.clone()).formData().catch(bad));
+      // Group by name in FormData order, including file fields.
+      const entries: Record<string, { fields: string[]; file?: File }> = Object.create(null);
+      for (const [key, value] of await (src ?? request.clone()).formData().catch(bad)) {
+        const entry = entries[key] ??= { fields: [] };
+        if (value instanceof File) entry.file = value; // several per name: last wins
+        else entry.fields.push(value);
+      }
       const post = Object.create(null);
-      for (const [key, vals] of Object.entries(entries)) {
-        const file = vals.findLast((v) => v instanceof File);
-        const fields = vals.filter((v) => !(v instanceof File));
-        if (file) body.#rawFiles[key] = file; // several per name: last wins
+      for (const key in entries) {
+        const { fields, file } = entries[key];
+        if (file) body.#rawFiles[key] = file;
         if (fields.length) post[key] = fields.length > 1 ? Object.freeze(fields) : fields[0];
       }
       body.#value = Object.freeze(post);
@@ -105,11 +109,4 @@ function deepFreeze(v: any) {
     Object.freeze(v);
   }
   return v;
-}
-
-/** FormData as a record of every value per key. */
-function groupFormData(form: FormData): Record<string, FormDataEntryValue[]> {
-  const out = Object.create(null);
-  for (const [k, v] of form) (out[k] ??= []).push(v);
-  return out;
 }

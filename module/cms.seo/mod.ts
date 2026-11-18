@@ -19,5 +19,5 @@ export async function imageUrl(file: DbFile, w: number, h: number): Promise<stri
 /** The page's image: file "share", else "main". */
 export async function image(page: Node) {
   const files = await page.files();
-  return ["share", "main"].map((name) => files.get(name)).find((file) => file?.mime.startsWith("image/"));
+  return [files.get("share"), files.get("main")].find((file) => file?.mime.startsWith("image/"));
 }

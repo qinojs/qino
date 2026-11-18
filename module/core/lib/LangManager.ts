@@ -78,15 +78,14 @@ export class LangManager {
       if (!match) continue;
       const langQuality = parseFloat(match[2] ?? "1");
       if (langQuality <= currentQ) continue;
-      const langCode = match[1].split("-");
-      while (langCode.length) {
-        const code = langCode.join("-").toLowerCase();
+      let code = match[1].toLowerCase();
+      while (code) {
         if (this.#langs.includes(code)) {
           currentLang = code;
           currentQ = langQuality;
           break;
         }
-        langCode.pop();
+        code = code.substring(0, code.lastIndexOf("-"));
       }
     }
     return currentLang;

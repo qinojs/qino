@@ -33,9 +33,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   // provider has none to give.
   const snapshot = async (points: Datapoint[]) => {
     const enabled = new Set((await providers(app)).filter((row) => row.enabled).map((row) => row.id));
-    for (const provider of new Set(points.map((point) => point.provider).filter((id) => enabled.has(id)))) {
+    for (const [provider, group] of Map.groupBy(points, (point) => point.provider)) {
+      if (!enabled.has(provider)) continue;
       entities(app, provider).then((current) => {
-        for (const point of points.filter((point) => point.provider === provider)) {
+        for (const point of group) {
           const entity = current.find((entity) => entity.id === point.entity) ?? null;
           capture(point, entity, updated(entity));
         }

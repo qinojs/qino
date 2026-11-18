@@ -16,9 +16,9 @@ export async function serveFile(req: Request, path: string, headers: Headers = n
 
   const type = headers.get("Content-Type") || mimeTypes.contentType(extname(path));
   if (type) headers.set("Content-Type", type);
-  if (mtime && !headers.has("Last-Modified")) headers.set("Last-Modified", mtime.toUTCString());
-  if (!headers.has("ETag")) headers.set("ETag", `"${size.toString(36)}-${(mtime?.getTime() ?? 0).toString(36)}"`);
-  const etag = headers.get("ETag")!, modified = headers.get("Last-Modified");
+  let modified = headers.get("Last-Modified"), etag = headers.get("ETag");
+  if (modified === null && mtime) headers.set("Last-Modified", modified = mtime.toUTCString());
+  if (etag === null) headers.set("ETag", etag = `"${size.toString(36)}-${(mtime?.getTime() ?? 0).toString(36)}"`);
 
   const inm = req.headers.get("If-None-Match");
   const ims = !inm && req.headers.get("If-Modified-Since");

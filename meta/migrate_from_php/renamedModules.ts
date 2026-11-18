@@ -17,6 +17,7 @@ export const renamedModules: Record<string, string> = {
   "cms.cont.form1": "cms.cont.form", // migrateForm1 also reshapes its children and settings
   "cms.cont.form1.fields2": "cms.cont.form.fields",
   "cms.cont.text.cd": "cms.cont.text",
+  "cms.cont.image2": "cms.cont.image", // same settings; migrateImage2 renames the language variants
   "cms.cont.search1": "cms.cont.search",
   "cms.cont.nav3": "cms.cont.nav", // same setting names
   "cms.cont.login2": "cms.cont.login.password",

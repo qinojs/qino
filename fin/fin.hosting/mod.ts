@@ -14,8 +14,8 @@ export const refOf = (name: string, kind?: Kind): string => `fin.hosting:${name}
 
 /** The domain and kind of a fin.hosting `ref`, or undefined. */
 export function parseRef(ref: unknown): { name: string; kind?: Kind } | undefined {
-  const [, name, kind] = /^fin\.hosting:([^/]+)(?:\/(domain|hosting))?$/.exec(String(ref ?? "")) ?? [];
-  return name ? { name, kind: kind as Kind | undefined } : undefined;
+  const m = /^fin\.hosting:([^/]+)(?:\/(domain|hosting))?$/.exec(String(ref ?? ""));
+  if (m) return { name: m[1], kind: m[2] as Kind | undefined };
 }
 
 /** The kind a subscription is for, or undefined. */

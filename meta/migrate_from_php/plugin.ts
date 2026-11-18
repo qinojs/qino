@@ -8,6 +8,7 @@ import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
 import { migrateFiles } from "./moveFiles.ts";
 import { migrateCss } from "./migrateCss.ts";
 import { migrateForm1, prepareForm1Settings } from "./migrateForm1.ts";
+import { migrateImage2 } from "./migrateImage2.ts";
 import { migrateTable1 } from "./migrateTable1.ts";
 import { unparkText } from "./migrateText.ts";
 import { renamedModules } from "./renamedModules.ts";
@@ -32,6 +33,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await migrateCss(app); // reads the still-legacy page.module, so before the rename
   await migrateForm1(app);
   await migrateTable1(app); // still the legacy module name, so before the rename
+  await migrateImage2(app); // same
   await migrateL1(app);
   await migrateRenamedModules(app);
   const coerced = await coerceSettings(app); // after the renames: the schema of the module that reads them
