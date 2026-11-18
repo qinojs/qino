@@ -67,6 +67,14 @@ export const cms = { node: { render, is: ["shop_product"] } };
 
 A node keeps what it is when its module changes. Any other node becomes one by inserting the row.
 
+## A node's image
+
+A node's main image is its file `image`, as its main text is `main`. An image for one use carries
+that use's name (`share` for shared links), a language's own `<name> <lang>`.
+`cms.image(node, { use, orFirst })` reads `use`, else `image`, else with `orFirst` the first image
+attached. It never creates placeholders: the module that shows the image provides those to upload
+into, in edit mode only.
+
 ## GET parameter naming
 
 A parameter needs a prefix when other modules may read the same request — action hooks, the
