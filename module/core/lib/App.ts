@@ -178,8 +178,9 @@ export class App extends Emitter<AppEvents> {
         // api always ends with a thrown Output (success or error), caught in #run.
         // stateless requests carry no cookie, so no CSRF check
         // the raw path: invoke() decodes per segment, so "%2F" stays inside its segment
-        if (uri === "api" || uri.startsWith("api/"))
-            return apiFetch(ctx.req, this.apiTree, "/" + ctx.req.url.pathname.slice(ctx.req.appUrl.length + "api/".length), { auth: () => ctx.statelessAuth });
+        const raw = ctx.req.url.pathname.slice(ctx.req.appUrl.length);
+        if (raw === "api" || raw.startsWith("api/"))
+            return apiFetch(ctx.req, this.apiTree, "/" + raw.slice("api/".length), { auth: () => ctx.statelessAuth });
 
         return this.#render(ctx);
     }

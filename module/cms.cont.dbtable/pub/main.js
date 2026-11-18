@@ -6,7 +6,7 @@ import { t } from '@qino/pub/t.js';
 const debounce = (fn, ms) => { let timer; return (...a) => { clearTimeout(timer); timer = setTimeout(() => fn(...a), ms); }; };
 const dialogs = () => import('@qino/u2/js/dialog/dialog.js');
 
-for (const root of document.querySelectorAll('[qcms-mod="cont.dbtable"]')) init(root);
+cms.initNode('cont.dbtable', init); // also wires nodes replaced by cms.reloadNode
 
 /** Wires a node rendered like the list: its part (`cms-part`) reloads after uploads and row actions. */
 export function init(root) {
