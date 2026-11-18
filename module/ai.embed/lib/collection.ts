@@ -13,8 +13,8 @@ export type Embedding = { name: string; table: string; keys: string[] };
 
 /** All embedding tables of the database. */
 export const embeddings = (db: Db): Embedding[] => Object.keys(db.tables).flatMap((table) => {
-  const props = db.schema.properties[table]?.additionalProperties?.properties;
-  if (!table.startsWith("embedding_") || !props) return [];
+  const props = table.startsWith("embedding_") && db.schema.properties[table]?.additionalProperties?.properties;
+  if (!props) return [];
   const keys = Object.keys(props).filter((col) => props[col]["x-index"] === "primary" && col !== "chunk" && col !== "collection_id");
   return [{ name: table.slice("embedding_".length), table, keys }];
 });

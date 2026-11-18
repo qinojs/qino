@@ -38,8 +38,8 @@ export function halfLife(db: Db, name: string, seconds: number): void {
 
 /** All score tables of the database. */
 export const scores = (db: Db): Score[] => Object.keys(db.tables).flatMap((table) => {
-  const props = db.schema.properties[table]?.additionalProperties?.properties;
-  if (!table.startsWith("score_") || !props) return [];
+  const props = table.startsWith("score_") && db.schema.properties[table]?.additionalProperties?.properties;
+  if (!props) return [];
   const name = table.slice("score_".length);
   const keys = Object.keys(props).filter((col) => props[col]["x-index"] === "primary");
   return [{ name, table, keys, half: halves.get(db)?.get(name) ?? HALF_LIFE }];

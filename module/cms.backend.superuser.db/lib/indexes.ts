@@ -65,7 +65,7 @@ export async function tableIndexes(db: Db, table: string) {
       primary: row.origin === "pk",
       unique: !!row.unique,
       type: "btree",
-      safe: row.origin === "c" && !row.partial && fields.every((field) => field !== "null"),
+      safe: row.origin === "c" && !row.partial && !fields.includes("null"),
       valid: true,
     };
   }));
