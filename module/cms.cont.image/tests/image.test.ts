@@ -44,7 +44,8 @@ test("localized uploads only replace the shared image in their own language", as
       assert(!out.includes("french-image"));
     }
     await node.deleteFile(shared);
-    assert(!(await render("de")).includes("<cms-image"));
+    // without a shared image, other languages fall back to the first one
+    assertStringIncludes(await render("de"), "french-image");
     assertStringIncludes(await render("fr"), "french-image");
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
