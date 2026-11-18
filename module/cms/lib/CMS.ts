@@ -225,22 +225,19 @@ export class CMS extends Emitter<CmsEvents> {
     options.contenteditable ??= edit;
     if (edit) options["cmstxt-placeholder"] ||= name;
     if (options.contenteditable || tag === "input" || tag === "textarea") options.cmstxt = textObj.id;
-    let text = await textObj.string();
-    if (text === "" && options.initial !== undefined) {
+    if (options.initial !== undefined && await textObj.string() === "") {
       if (typeof options.initial === "object" && !Array.isArray(options.initial)) {
         for (const l of this.app.languages.all) {
           const lt = textObj.lang(l);
           if (await lt.get() === "") await lt.set(options.initial[l] ?? "");
         }
-        text = await textObj.string();
       } else {
-        text = options.initial;
-        await textObj.lang(this.app.languages.def).set(text);
+        await textObj.lang(this.app.languages.def).set(options.initial);
       }
     }
 
     const shown = name === "title" ? await node.showTitle() : await node.showText(name);
-    text = String(shown);
+    let text = String(shown);
 
     // if (shown.lang && shown.lang !== getCtx().lang && !("lang" in options)) {
     //     options.lang = shown.lang;
