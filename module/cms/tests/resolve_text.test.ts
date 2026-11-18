@@ -12,7 +12,7 @@ test("resolveText resolves file urls always, cmspid links only outside edit mode
       dbFiles: {
         file: () => Promise.resolve({
           exists: () => Promise.resolve(true),
-          get: () => Promise.resolve("abcdef1234567890"),
+          vs: { md5: "abcdef1234567890" },
         }),
       },
     },

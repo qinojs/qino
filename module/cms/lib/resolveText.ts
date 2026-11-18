@@ -22,7 +22,7 @@ async function replaceLinks(cms: CMS, pid: string) {
 
 async function replaceFileUrls(cms: CMS, id: string) {
   const file = await cms.app.dbFiles.file(Number(id));
-  if (await file.exists()) return `/dbFile/${id}/u-${String(await file.get("md5") ?? "").slice(0, 5)}/`;
+  if (await file.exists()) return `/dbFile/${id}/u-${String(file.vs?.md5 ?? "").slice(0, 5)}/`;
   console.warn(`[content-issue] MissingFile dbFile://${id}`);
   return `/dbFile/${id}/`;
 }
