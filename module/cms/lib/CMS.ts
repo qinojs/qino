@@ -148,8 +148,7 @@ export class CMS extends Emitter<CmsEvents> {
       if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
       if (modules && !modules.includes(vs.module)) continue;
       if (filter.access !== undefined && (await c.access()) < filter.access) continue;
-      if (navi && (!vs.visible || !(await c.isReadable()) ||
-        !(await (await c.title()).string() || await c.edit()))) continue;
+      if (navi && (!vs.visible || !(await c.isReadable()) || !(await (await c.title()).string() || await c.edit()))) continue;
       if (access && !(await c.access())) continue;
       if (readable && !(await c.isReadable())) continue;
       ret.set(id, c);
