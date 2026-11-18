@@ -24,8 +24,12 @@ const weights = (json: unknown): Record<string, number> | undefined => {
 function answered(messages: Message[]) {
   return messages.flatMap((m, i) => {
     if (m.role !== "assistant" || !m.toolCalls?.length) return [m];
-    const after = messages.slice(i + 1), end = after.findIndex((next) => next.role !== "tool");
-    const ids = new Set(after.slice(0, end < 0 ? after.length : end).map((next) => (next as { id: string }).id));
+    const ids = new Set<string>();
+    for (let j = i + 1; j < messages.length; j++) {
+      const next = messages[j];
+      if (next.role !== "tool") break;
+      ids.add(next.id);
+    }
     // before the results there are: those of one step stay together
     return [m, ...m.toolCalls.filter((call) => !ids.has(call.id))
       .map((call) => ({ role: "tool" as const, id: call.id, content: '{"error":"No result: the turn failed"}' }))];

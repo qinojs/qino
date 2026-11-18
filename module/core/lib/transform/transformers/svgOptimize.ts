@@ -23,7 +23,7 @@ export const svgOptimize: TransformerDef = {
     (await svgo.available() || await scour.available()),
   transform: async (ctx) => {
     const q = Math.min(Math.max(ctx.options.q ?? 77, 1), 100);
-    const precision = Math.min(Math.max(1 + Math.round(q / 100 * 6), 1), 7);
+    const precision = 1 + Math.round(q / 100 * 6);
     const out = nodePath.join(ctx.tmpDir, 'out.svg');
     const minify = await svgo.available() ? svgo.run : scour.run;
     if (!await minify(ctx.currentPath, out, precision, ctx.signal)) return; // declined – keep what we have
