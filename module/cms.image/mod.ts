@@ -14,7 +14,7 @@ export async function cms_image(dbFile: DbFile, options: Record<string, any>): P
   ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "cms.image/pub/cms-image.js");
   ctx.res.html.styles.add(ctx.req.moduleUrl + "cms.image/pub/cms-image.css");
   // a file row without content (PHP's migration leaves some) is no image either
-  if (options.if && !options.editable && !(await dbFile.exists() && await dbFile.get("md5"))) return html.raw("");
+  if (options.if && !options.editable && !(await dbFile.exists() && dbFile.vs?.md5)) return html.raw("");
   options.quality ||= "85";
   delete options.if;
   return html.raw(await imageHtml(dbFile, options, ctx.app.modules.get(name)!.cache));

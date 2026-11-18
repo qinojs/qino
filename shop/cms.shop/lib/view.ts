@@ -1,15 +1,23 @@
 import { html, inlinePolicy, sanitizeHtml } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 
 import { cart } from "./cart.ts";
 import { shopT } from "./shop.ts";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Order } from "./rows.ts";
+import type { Line, Order } from "./rows.ts";
 
 /** A line's description for output: its inline HTML sanitized, a line per row. */
 export const descriptionHtml = (text: string): HtmlString =>
   html.raw(sanitizeHtml(String(text ?? ""), inlinePolicy).replaceAll("\n", "<br>"));
+
+/** A line's product image, small; none where the product is gone or not readable (offline). */
+export async function lineImage(line: Line): Promise<HtmlString | ""> {
+  const node = line.product_id ? await cms(line.$app).node(Number(line.product_id)) : undefined;
+  const file = node?.exists() && await node.isReadable() ? await node.cms.image(node, { orFirst: true }) : undefined;
+  return file ? html`<img src="${await file.url({ w: 120, h: 120, max: true })}" width=60 alt="" loading=lazy>` : "";
+}
 
 /** An order as a table: its lines, what the shop added, tax and total. For the backend and the customer. */
 export async function orderTable(order: Order): Promise<HtmlString> {
@@ -23,7 +31,7 @@ export async function orderTable(order: Order): Promise<HtmlString> {
     <th>${t`Price`}
     <th>${t`Total`}
   <tbody>${(await order.lines()).map(async (l) => html.async`<tr>
-    <td>${l.name}<div class=-description>${descriptionHtml(await l.describe())}</div>
+    <td>${lineImage(l)}${l.name}<div class=-description>${descriptionHtml(await l.describe())}</div>
     <td>${Number(l.quantity)}
     <td>${money(Number(l.price))}
     <td>${money(l.total())}`)}
