@@ -15,9 +15,3 @@ export async function imageUrl(file: DbFile, w: number, h: number): Promise<stri
   return file.url(fit(file) === "contain" ? { w, h, max: true, fmt: "png" }
     : { w, h, hpos: Number(await file.get("hpos") ?? 50), vpos: Number(await file.get("vpos") ?? 50) });
 }
-
-/** The page's image: file "share", else "main". */
-export async function image(page: Node) {
-  const files = await page.files();
-  return [files.get("share"), files.get("main")].find((file) => file?.mime.startsWith("image/"));
-}

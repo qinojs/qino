@@ -272,6 +272,13 @@ export class CMS extends Emitter<CmsEvents> {
     }
   }
 
+  /** The node's image: file `use` (e.g. "share"), else "image". Reads only, creates no placeholders —
+   *  a module that wants these uploaded provides them. */
+  async image(node: Node, { use }: { use?: string } = {}): Promise<DbFile | undefined> {
+    const files = await node.files();
+    return [use && files.get(use), files.get("image")].find((f) => f && f.mime.startsWith("image/")) || undefined;
+  }
+
   async parentFile(node: Node, name: string): Promise<DbFile | undefined> {
     let currentNode: Node | undefined = node;
     while (currentNode) {

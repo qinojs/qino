@@ -9,7 +9,7 @@ takes the page's own value, else what a layout or module set, else the default:
 |---|---|---|
 | `og:title` | text `_share_title` | the page's `<title>` |
 | `og:description` | text `_share_description` | the description (`_description`) |
-| `og:image` | file `share`, else `main` | none |
+| `og:image` | file `share`, else `image` | none |
 
 The image is delivered at 1200×630, the size the platforms show: photos cropped at their focal
 point, SVGs fitted whole and rasterized to PNG (the platforms reject SVG). `fit()` gives the same

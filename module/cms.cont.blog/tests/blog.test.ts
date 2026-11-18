@@ -22,7 +22,7 @@ test("blog lists published posts and serves escaped Atom and RSS feeds", async (
     await live.text("_description", "en", "A short & useful post");
     await live.text("_description", "de", "Ein kurzer & nützlicher Beitrag");
     const picture = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "coffee.png", { type: "image/png" }));
-    await live.addFile(picture, "share");
+    await live.addFile(picture, "image");
     const brief = await page.createChild({ access: 1, searchable: true, online_start: 1726473600 });
     await brief.title("en", "Without an excerpt");
     const hidden = await page.createChild({ access: 0, searchable: true, online_start: 1726646400 });

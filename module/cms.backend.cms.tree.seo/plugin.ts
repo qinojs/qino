@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { image, imageUrl, text } from "@qino/qino/cms.seo";
+import { imageUrl, text } from "@qino/qino/cms.seo";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -82,7 +82,7 @@ async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<str
           <u2-ico icon="${isOpen ? "remove" : "add"}">${isOpen ? "−" : "+"}</u2-ico></button>`
         : html`<span class=-toggle></span>`;
       const title = await pageTitle(page, ctx.lang);
-      const file = await image(page);
+      const file = await page.cms.image(page, { use: "share" });
       const seoTitle = await text(page, "_title") || title, descr = await text(page, "_description");
       // editable rows open the edit dialog on click
       const edit = access >= 2

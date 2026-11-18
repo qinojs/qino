@@ -1,5 +1,5 @@
 import { hee, html } from "@qino/qino";
-import { image, imageUrl, text } from "@qino/qino/cms.seo";
+import { imageUrl, text } from "@qino/qino/cms.seo";
 import { jsonLd } from "@qino/qino/seo";
 import * as u2 from "@qino/qino/u2";
 
@@ -43,7 +43,7 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
   const date = published && new Date(published * 1000);
-  const [file, description] = await Promise.all([image(page), text(page, "_description")]);
+  const [file, description] = await Promise.all([page.cms.image(page), text(page, "_description")]);
   jsonLd(ctx, {
     "@type": "BlogPosting", headline: title, mainEntityOfPage: { "@id": canonical },
     ...(description && { description }),

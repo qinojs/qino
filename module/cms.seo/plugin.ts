@@ -1,6 +1,6 @@
 import { cms, cmsCtx, hasOwnUrl } from "@qino/qino/cms";
 
-import { image, imageUrl, text } from "./mod.ts";
+import { imageUrl, text } from "./mod.ts";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -10,7 +10,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   cms(app).on("page:render-after", async ({ ctx }) => {
     const html = ctx.res.html, meta = html.meta, c = cmsCtx(ctx);
     const page = await c.mainNode.page();
-    const file = await image(page);
+    const file = await page.cms.image(page, { use: "share" });
     meta["og:title"] = await text(page, "_share_title") || meta["og:title"] || html.title;
     meta["og:description"] = await text(page, "_share_description") || meta["og:description"] || meta.description;
     // the size the platforms show (1.91:1)
@@ -36,7 +36,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
             for (const lang of app.languages.all) url[lang] = base + await n.urlSeo(lang);
             return url;
           };
-          const file = await image(page);
+          const file = await page.cms.image(page, { use: "share" });
           urls.push({ url: await addresses(page), lastmod: changed.get(page.id), image: file && ctx.req.url.origin + await file.url() });
           for (const cont of (await page.bough({ type: "c" })).values()) {
             if (await hasOwnUrl(cont) && await cont.isPublic() && await cont.isOnline()) urls.push({ url: await addresses(cont), lastmod: changed.get(page.id) });

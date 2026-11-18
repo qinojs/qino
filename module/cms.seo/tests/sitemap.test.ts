@@ -17,7 +17,7 @@ test("cms.seo adds public, searchable pages to the sitemap", async () => {
     await hidden.createChild({ access: 1, searchable: true });
     await root.createChild({ access: 1, searchable: false });
     const file = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "main.png", { type: "image/png" }));
-    await page.addFile(file, "main");
+    await page.addFile(file, "image");
     const logId = await app.db.table("log").insert({ time: 1726560000 });
     await app.db.table("node_changed").insert({ log_id: logId, node_id: page.id, page_id: page.id, data: "{}" });
 

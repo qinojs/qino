@@ -21,6 +21,11 @@ test("cms.seo sets the tags for shared links from the page's values", async () =
     assertStringIncludes(plain, '<meta name="twitter:card" content="summary">');
     assert(!plain.includes("og:image"));
 
+    // the page's image, until it gets its own for sharing
+    const main = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "main.png", { type: "image/png" }));
+    await page.addFile(main, "image");
+    assertStringIncludes(await get(), `<meta property="og:image" content="https://qino.test/dbFile/${main.id}/`);
+
     await page.text("_share_title", "en", "Meet the team");
     const file = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "team.png", { type: "image/png" }));
     await page.addFile(file, "share");

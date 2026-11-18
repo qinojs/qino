@@ -1,7 +1,7 @@
 import { hee, html, Output } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 import { cms_image } from "@qino/qino/cms.image";
-import { fit, image } from "@qino/qino/cms.seo";
+import { fit } from "@qino/qino/cms.seo";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -87,7 +87,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
   for (const post of found.slice(0, LIMIT)) {
     const excerpt = await descriptionOf(post.node);
     const url = await post.node.url();
-    const file = await image(post.node);
+    const file = await post.node.cms.image(post.node);
     const created = post.created && new Date(post.created * 1000);
     items.push(html.async`<article>
       ${file ? cms_image(file, { alt: post.title, fit: fit(file) }) : ""}
