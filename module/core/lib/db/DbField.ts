@@ -40,7 +40,6 @@ export class DbField {
   get onParentCopy(): string { return this.schema["x-qg-on-parent-copy"] ?? ""; }
   get onParentDelete(): string { return this.schema["x-qg-on-parent-delete"] ?? ""; }
   get key(): string { return this.vs.Key ?? ""; }
-  get id(): number { return this.vs.id; }
   isPrimary(): boolean { return this.vs.Key === "PRI"; }
   isAutoIncrement(): boolean { return this.vs.Extra === "auto_increment"; }
 

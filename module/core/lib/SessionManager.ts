@@ -93,10 +93,11 @@ export class SessionManager {
     const row = oldSessionToken ? await this.#db.row`SELECT id, settings FROM sess WHERE token = ${oldSessionToken}` : null;
     if (!row) return this.#create();
     const token = uid();
-    await this.#db.table("sess").update(row.id, { token, data: EMPTY_SESSION, access: unixTime() });
+    const time = unixTime();
+    await this.#db.table("sess").update(row.id, { token, data: EMPTY_SESSION, access: time });
     const sess = new Session(this.#db, row.id, token, EMPTY_SESSION, true);
     sess.settings = row.settings; // settings stay, only identity and data are rotated
-    sess.access = unixTime();
+    sess.access = time;
     return sess;
   }
 

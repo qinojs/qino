@@ -68,7 +68,7 @@ function initLog(ctx: Ctx) {
 
   const data = {
     time: unixTime(),
-    sess_id: ctx.sess?.id,
+    sess_id: ctx.sess.id,
     client_id: ctx.clientId,
     post: ctx.req.body == null ? ""
       : clip(JSON.stringify(ctx.req.body, (k, v) => k && SECRET.test(k) ? mask(String(v)) : typeof v === "string" ? clip(v, 1000) : v), 10000),

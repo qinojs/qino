@@ -70,7 +70,7 @@ export class Client extends DbRow {
   }
 
   async addUsr(id: number | string): Promise<void> {
-    await this.$table.db.table("client_usr").ensure({ client_id: this.$id, usr_id: String(id), time: unixTime() });
+    await this.$table.db.table("client_usr").ensure({ client_id: this.$id, usr_id: id, time: unixTime() });
   }
 }
 
