@@ -1,11 +1,9 @@
-// Delegated on document.
 import { api } from "@qino/pub/api.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-document.addEventListener("submit", async (e) => {
-  const form = e.target.closest?.("[qcms-mod='cont.shop.coupon']");
-  if (!form) return;
+initNode("cont.shop.coupon", (form) => form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const res = await api["cms.shop.coupon"].redeem.put({ code: form.elements.code?.value ?? "" });
   if (res.ok) location.reload();
   else alert(form.dataset.wrong || "?");
-});
+}));

@@ -1,14 +1,15 @@
-// Keep the URL fragment when switching language (the server never sees it). Delegated on document.
-const root = "[qcms-mod='cont.lang.choose'] ";
+// Keep the URL fragment when switching language (the server never sees it).
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-document.addEventListener("click", (e) => {
-  const a = e.target.closest?.(root + "a[hreflang]");
-  if (!a || !location.hash) return;
-  e.preventDefault();
-  location.href = a.href + location.hash;
-});
-
-document.addEventListener("change", (e) => {
-  const select = e.target.closest?.(root + "select");
-  if (select) location.href = select.value + location.hash;
+initNode("cont.lang.choose", (el) => {
+  el.addEventListener("click", (e) => {
+    const a = e.target.closest("a[hreflang]");
+    if (!a || !location.hash) return;
+    e.preventDefault();
+    location.href = a.href + location.hash;
+  });
+  el.addEventListener("change", (e) => {
+    const select = e.target.closest("select");
+    if (select) location.href = select.value + location.hash;
+  });
 });

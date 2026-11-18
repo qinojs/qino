@@ -1,8 +1,8 @@
-// Delegated on document. Every change is stored right away (typing
+// Every change is stored right away (typing
 // after a pause); the delivery address opens with its checkbox, and only then are its fields required.
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 import { setParty } from "../../cms.shop/pub/shop.js";
 
-const root = "[qcms-mod='cont.shop.address']";
 const ADDRESS = ["streetAddress", "postalCode", "addressLocality", "addressCountry"];
 
 /** The fields of one party: the address ones under address. */
@@ -29,24 +29,24 @@ function requireShip(form) {
   }
 }
 
-let timer;
-document.addEventListener("input", (e) => {
-  const el = e.target.closest?.(`${root} [name]`);
-  if (!el || el.name === "ship_unlike_bill") return;
-  clearTimeout(timer);
-  timer = setTimeout(() => save(el), 700);
+initNode("cont.shop.address", (root) => {
+  let timer;
+  root.addEventListener("input", (e) => {
+    const el = e.target.closest("[name]");
+    if (!el || el.name === "ship_unlike_bill") return;
+    clearTimeout(timer);
+    timer = setTimeout(() => save(el), 700);
+  });
+  root.addEventListener("change", (e) => {
+    const el = e.target.closest("[name]");
+    if (!el) return;
+    if (el.name === "ship_unlike_bill") {
+      el.closest(".-ship").querySelector(".-tableWrapper").hidden = !el.checked;
+      requireShip(el.form);
+    }
+    clearTimeout(timer);
+    save(el);
+  });
+  root.addEventListener("submit", (e) => e.preventDefault());
+  root.querySelectorAll("form").forEach(requireShip);
 });
-document.addEventListener("change", (e) => {
-  const el = e.target.closest?.(`${root} [name]`);
-  if (!el) return;
-  if (el.name === "ship_unlike_bill") {
-    el.closest(".-ship").querySelector(".-tableWrapper").hidden = !el.checked;
-    requireShip(el.form);
-  }
-  clearTimeout(timer);
-  save(el);
-});
-document.addEventListener("submit", (e) => {
-  if (e.target.closest?.(root)) e.preventDefault();
-});
-addEventListener("DOMContentLoaded", () => document.querySelectorAll(`${root} form`).forEach(requireShip));

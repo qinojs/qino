@@ -1,4 +1,3 @@
-// Delegated on document.
 import { api } from "@qino/pub/api.js";
 
 import { cms } from "@qino/m/cms/pub/js/cms.js";
