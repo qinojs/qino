@@ -27,10 +27,10 @@ type Owned = App & { [SOURCES]?: Promise<Map<string, Virtual[]>> };
 const forget = (app: App) => { delete (app as Owned)[SOURCES]; };
 
 export async function sourced(app: App, provider: number, entity: string): Promise<Virtual[]> {
-  (app as Owned)[SOURCES] ??= virtuals(app).then((rows) => Map.groupBy(
+  const sources = (app as Owned)[SOURCES] ??= virtuals(app).then((rows) => Map.groupBy(
     rows.filter((row) => row.source_provider), (row) => `${row.source_provider}:${row.source_entity}`,
   ));
-  return (await (app as Owned)[SOURCES]!).get(`${provider}:${entity}`) ?? [];
+  return (await sources).get(`${provider}:${entity}`) ?? [];
 }
 
 export async function virtuals(app: App, provider?: number): Promise<Virtual[]> {

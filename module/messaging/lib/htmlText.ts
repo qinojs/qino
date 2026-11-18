@@ -36,8 +36,7 @@ export function htmlToText(html: string): string {
   const breaks = (n: number) => {
     address = false;
     if (pre) return void (out += "\n");
-    const has = /\n*$/.exec(out)![0].length;
-    if (out && has < n) out += "\n".repeat(n - has);
+    while (out && !out.endsWith("\n".repeat(n))) out += "\n";
   };
 
   const parser = new Parser({
