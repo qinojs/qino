@@ -148,7 +148,8 @@ export class CMS extends Emitter<CmsEvents> {
       if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
       if (modules && !modules.includes(vs.module)) continue;
       if (filter.access !== undefined && (await c.access()) < filter.access) continue;
-      if (navi && (!vs.visible || !(await c.isReadable()) || !(await (await c.title()).string() || await c.edit()))) continue;
+      if (navi && (!vs.visible || !(await c.isReadable()) ||
+        !(await (await c.title()).string() || await c.edit()))) continue;
       if (access && !(await c.access())) continue;
       if (readable && !(await c.isReadable())) continue;
       ret.set(id, c);
@@ -181,7 +182,7 @@ export class CMS extends Emitter<CmsEvents> {
     const access = await page.access(); // first: url() and edit() reuse the cached level
     const mainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
     const [href, urls, inside, online, titleObj, edit] = await Promise.all([
-      page.url(), page.urls(), mainNode.in?.(page), page.isOnline(), page.title(), page.edit(),
+      page.url(), page.urls(), mainNode.in(page), page.isOnline(), page.title(), page.edit(),
     ]);
     const target = urls.get(ctx.lang)?.target;
     return {
@@ -195,8 +196,7 @@ export class CMS extends Emitter<CmsEvents> {
 
   // deno-lint-ignore no-explicit-any
   async url(pidOrUrl?: string, ret: Record<string, any> = {}): Promise<string | undefined> {
-    if (!pidOrUrl) return;
-    pidOrUrl = pidOrUrl.trim();
+    if (!(pidOrUrl = pidOrUrl?.trim())) return;
     ret.target = "_blank";
     if (/^\d+$/.test(pidOrUrl)) {
       const page = await this.node(Number(pidOrUrl));
@@ -207,7 +207,6 @@ export class CMS extends Emitter<CmsEvents> {
       }
       return;
     }
-    if (!pidOrUrl) return;
     if (!/^[a-z][a-z0-9+.-]*:/i.test(pidOrUrl)) return "http://" + pidOrUrl;
     if (!/^(https?|mailto|tel):/i.test(pidOrUrl)) return; // drop javascript:/data: etc.
     return pidOrUrl;
