@@ -477,9 +477,8 @@ export class Node {
 
     /** Reorder files by name. Unknown names are ignored; unlisted files keep their order at the end. */
     async sortFiles(sort: string[]): Promise<void> {
-        const names = new Set((await this.filesAndPlaceholders()).keys());
-        const wanted = new Set(sort.filter((n) => names.has(n)));
-        const ordered = [...wanted, ...[...names].filter((n) => !wanted.has(n))];
+        const files = await this.filesAndPlaceholders();
+        const ordered = [...new Set([...sort.filter((n) => files.has(n)), ...files.keys()])];
         const table = this.db.table("page_file");
         await this.db.transaction(() =>
             Promise.all(ordered.map((name, i) => table.update({ page_id: String(this), name, sort: i + 1 }))),
