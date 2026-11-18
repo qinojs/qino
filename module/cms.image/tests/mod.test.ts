@@ -9,7 +9,7 @@ import { imageData } from "../imageData.ts";
 test("cms.image: SVG dimensions use root attributes and viewBox", async () => {
   const dir = await fs.tempDir();
   const path = dir + "/image.svg";
-  const file = { path, get: () => "image/svg+xml", transform: () => ({ path }), url: () => "/original.svg" };
+  const file = { path, ensureVs: () => ({ mime: "image/svg+xml" }), transform: () => ({ path }), url: () => "/original.svg" };
   try {
     for (const [attributes, w, h] of [
       ['viewBox="-10 0 400 200"', 400, 200],
@@ -37,7 +37,7 @@ test("cms.image: finished SVGs use the requested quality inline and across displ
     const file = {
       path: dir + "/image.svg",
       name: "logo.svg",
-      get: (key: string) => ({ mime: "image/svg+xml", md5: "svg" }[key]),
+      ensureVs: () => ({ mime: "image/svg+xml", md5: "svg" }),
       url: (params?: unknown) => {
         assertEquals(params, { q: 37 });
         return "/dbFile/1/u-svg/q-37/logo.svg";
@@ -88,12 +88,12 @@ test("cms.image: cms_image renders escaped image component from cached data", as
     const ctx = await testContext({ app: { modules: { get: () => ({ cache: dir + "/cache/cms.image/" }) } } });
     const dbFile = {
       path: dir + "/image.jpg",
-      get: (key: string) => ({
+      ensureVs: () => ({
         md5,
         vpos: 45,
         hpos: 55,
         name: "hello_world.jpg",
-      }[key]),
+      }),
       url: (params: Record<string, unknown>) => "/dbFile?" + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString(),
     };
 
@@ -136,11 +136,11 @@ test("cms.image: cms_image derives alt text from file name", async () => {
     const dbFile = {
       path: dir + "/image.jpg",
       name: "product_photo.webp",
-      get: (key: string) => ({
+      ensureVs: () => ({
         md5,
         vpos: 50,
         hpos: 50,
-      }[key]),
+      }),
       url: (params: Record<string, unknown>) => "/dbFile?" + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString(),
     };
 

@@ -5,22 +5,22 @@ import { Parser } from "htmlparser2";
 import type { DbFile } from "@qino/qino";
 
 export async function imageData(file: DbFile, options: Record<string, any>, cacheDir: string) {
-  const hpos = options.hpos ?? await file.get("hpos") ?? 50;
-  const vpos = options.vpos ?? await file.get("vpos") ?? 50;
-  const data = await file.get("mime") === "image/svg+xml"
+  const vs = await file.ensureVs();
+  const hpos = options.hpos ?? vs.hpos ?? 50;
+  const vpos = options.vpos ?? vs.vpos ?? 50;
+  const data = vs.mime === "image/svg+xml"
     ? await vectorData(file, options)
-    : await rasterData(file, { ...options, hpos, vpos }, cacheDir);
+    : await rasterData(file, { ...options, hpos, vpos }, cacheDir, vs.md5);
   return { ...data, hpos, vpos };
 }
 
-async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: string) {
+async function rasterData(file: DbFile, options: Record<string, any>, cacheDir: string, md5: string | null) {
   const w = Number(options.width) || 0;
   const h = Number(options.height) || 0;
   const { hpos, vpos } = options;
   const FACTOR = 42;
   const MAX_HW = 30;
   const QUALITY = 60;
-  const md5 = await file.get("md5");
   const cacheFile = cacheDir + `data-v2-${md5}.${vpos}.${hpos}.${w}.${h}.${FACTOR}.${QUALITY}.${MAX_HW}.${options.fit ?? ""}.json`;
   let data;
   if (md5) {
