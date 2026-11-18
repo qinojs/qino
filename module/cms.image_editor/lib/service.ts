@@ -25,9 +25,9 @@ export async function writablePage(ctx: Ctx, fileId: number): Promise<any> {
 export async function getMeta(ctx: Ctx, fileId: number): Promise<{ name: string; vpos: any; hpos: any }> {
     const dbFile = await ctx.app.dbFiles.file(fileId);
     return {
-        name: await dbFile.get("name") ?? "",
-        vpos: await dbFile.get("vpos") ?? null,
-        hpos: await dbFile.get("hpos") ?? null,
+        name: dbFile.vs?.name ?? "",
+        vpos: dbFile.vs?.vpos ?? null,
+        hpos: dbFile.vs?.hpos ?? null,
     };
 }
 
