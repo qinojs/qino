@@ -104,7 +104,7 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
       ${invoice ? html.async`<tr><th>${t`Invoice`}<td>${invoice.number} · ${invoice.status}` : ""}
     </table>
     <div>
-      ${order.status === "ordered" ? html.async`<button data-status=paid>${t`Mark as paid`}</button>` : ""}
+      ${order.status === "ordered" && !invoice ? html.async`<button data-status=paid>${t`Mark as paid`}</button>` : ""}
       ${order.status !== "canceled" && order.status !== "cart" ? html.async`<button data-status=canceled u2-confirm>${t`Cancel`}</button>` : ""}
     </div>
   </div>
