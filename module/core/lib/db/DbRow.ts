@@ -98,11 +98,11 @@ export class DbRow {
     this.#vs = values;
     // Drivers return DECIMAL as string ("0.0100000000"); convert, so read and written values have
     // the same type.
-    for (const name in this.#vs) {
-      const value = this.#vs[name];
+    for (const name in values) {
+      const value = values[name];
       if (typeof value !== "string" || !NUM_TYPES.has(this.#table.field(name)?.type ?? "")) continue;
       const num = Number(value);
-      if (value !== "" && Number.isFinite(num)) this.#vs[name] = num;
+      if (value !== "" && Number.isFinite(num)) values[name] = num;
     }
     this.#exists = !!vs;
     this.#loadedAt = Date.now();

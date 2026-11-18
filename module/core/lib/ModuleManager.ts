@@ -16,6 +16,8 @@ type DbSchema = { properties: Record<string, unknown> };
 export const isModuleName = (name: string): boolean =>
   /^[\w.-]+$/.test(name) && name !== "." && name !== ".." && !Object.hasOwn(Object.prototype, name);
 
+const PLUGIN_RE = /\/(?:([^/?#]+)\/)?plugin\.(?:ts|js)(?:[?#].*)?$/;
+
 export function resolveSpecifier(app: App, spec: string | URL): string {
   if (spec instanceof URL) return spec.href;
   if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, pathToFileURL(app.dir)).href;
@@ -164,13 +166,13 @@ export class ModuleManager {
   async import(spec: string, expectedName?: string): Promise<Module> {
     if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported by import(). Use app.modules.add("${spec}") before app.init()`);
     if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);
-    if (!/\/plugin\.(?:ts|js)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts or plugin.js file: ${spec}`);
+    if (!PLUGIN_RE.test(spec)) throw new Error(`Plugin import needs a plugin.ts or plugin.js file: ${spec}`);
     const path = spec.startsWith("file:") ? fileURLToPath(spec) : isAbsolute(spec) ? spec : undefined;
     const source = path ? pathToFileURL(path).href : spec;
     // The manifest is read, not imported: a store must not need to run code.
     const manifest = await readManifest(source);
     if (manifest.name !== undefined && (typeof manifest.name !== "string" || !manifest.name)) throw new Error(`Manifest of ${source} has an invalid name`);
-    const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js)(?:[?#].*)?$/.exec(source)?.[1];
+    const inferredName = PLUGIN_RE.exec(source)?.[1];
     const name = expectedName ?? manifest.name ?? (inferredName && decodeURIComponent(inferredName));
     if (!name) throw new Error(`Module name cannot be inferred: ${source}`);
     if (!isModuleName(name)) throw new Error(`Invalid module name "${name}": ${source}`);

@@ -152,7 +152,7 @@ export function sqlSearch(input: string, like: string[], opt: { exact?: string[]
   if (!term || !(like.length + exact.length)) return { where: sql`${true}`, order: sql.raw("(SELECT NULL)") }; // Postgres refuses a bare constant in ORDER BY
   const id = (name: string) => sql.join(name.split(".").map(sql.id), ".");
   // '!' is a neutral escape char in every dialect's string literals.
-  const words = like.length ? term.split(/\s+/, 4).map((w) => w.replace(/[!%_]/g, "!$&")) : [];
+  const words = term.split(/\s+/, 4).map((w) => w.replace(/[!%_]/g, "!$&"));
   const cols = like.map(f => sql`LOWER(${id(f)})`);
 
   const ors = exact.map(f => sql`${id(f)} = ${trimmed}`);

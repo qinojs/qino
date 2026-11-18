@@ -50,7 +50,7 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   const own = (widget: string) => ({ name: widget, src: ctx.req.moduleUrl + name + "/pub/panel/widgets/" + widget + ".js" });
   // The options slot: the module's widget, else the generic settings editor if the node has
   // settings. Same position and label for every module.
-  const mod = node.module as { plugin?: { cms?: { node?: { widget?: string } } }; modUrl?: string } | undefined;
+  const mod = node.module;
   const modWidget = mod?.plugin?.cms?.node?.widget;
   const options = modWidget && mod?.modUrl ? mod.modUrl + modWidget
     : node.settings[$item].keys?.length ? own("sets").src : null;
@@ -93,7 +93,7 @@ const ROOTS = ["data", "app"] as const;
 
 async function moduleRoot(ctx: Ctx, pid: number, scope: string) {
   const node = await cms(ctx.app).node(pid);
-  const mod = node.module as { data?: string; dir?: string } | undefined;
+  const mod = node.module;
   const root = scope === "app" ? mod?.dir : mod?.data;
   if (!root) throw new ValidationError([{ message: "unknown file root", path: ["in"] }]);
   return root;

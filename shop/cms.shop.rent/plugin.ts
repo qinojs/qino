@@ -70,7 +70,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const kept: Range[] = [], asked = Map.groupBy(ranges, (r) => `${r.begin}-${r.end}`);
     for (const same of asked.values()) {
       const range = same[0];
-      const open = range.begin >= now && [...moments(range, seconds)].every((moment) => factorAt(all, moment) != null);
+      const open = range.begin >= now && moments(range, seconds).every((moment) => factorAt(all, moment) != null);
       kept.push(...same.slice(0, open ? await free(app, line.product_id, range, before) : 0));
     }
     if (kept.length === ranges.length) return;

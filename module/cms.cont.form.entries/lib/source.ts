@@ -9,8 +9,8 @@ export async function formOf(node: Node) {
     const form = await cms(node.app).node(id);
     return form.exists() && form.vs.module === "cms.cont.form" ? form : undefined;
   }
-  const page = [...(await node.path()).values()].findLast((n) => n.vs.type === "p");
-  if (!page) return;
+  const page = await node.page();
+  if (page.vs.type !== "p") return;
   for (const cont of (await page.bough()).values()) if (cont.vs.module === "cms.cont.form") return cont;
 }
 

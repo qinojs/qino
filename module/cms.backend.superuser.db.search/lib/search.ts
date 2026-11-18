@@ -21,7 +21,7 @@ export type TableSearch = {
   error?: string;
 };
 
-export const words = (term: string): string[] => term.toLowerCase().split(/\s+/).slice(0, WORDS).filter(Boolean);
+export const words = (term: string): string[] => term.toLowerCase().split(/\s+/, WORDS).filter(Boolean);
 
 /** Search plan for one table: index-backed groups, or a full scan while the table is small. */
 async function plan(db: Db, table: string, numeric: boolean) {

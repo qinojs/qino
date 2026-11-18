@@ -15,7 +15,7 @@ const TAG = /<[^>]*>/g;
 const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
 
 /** Plain text of CMS html: tags removed, the entities an editor writes decoded, trimmed. */
-const plainOf = (html: string) => (/[<&]/.test(html) ? unhee(html.replace(TAG, "")) : html).trim();
+const plainOf = (str: string) => (/[<&]/.test(str) ? unhee(str.replace(TAG, "")) : str).trim();
 
 /** Node class
  * represents both "Page" (type "p") and "Cont"/"Content" (type "c") entries in the database
@@ -63,7 +63,7 @@ export class Node {
         this.settings = bildJsonItem(
             this.vs.settings as string | null | undefined,
             async (json: string) => {
-                this.vs = { ...this.vs, settings: json };
+                this.vs.settings = json;
                 await this.db.table("page").update(this.id, { settings: json });
             },
         ).proxy;
@@ -230,7 +230,7 @@ export class Node {
             return String(await run());
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return await this.edit() ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${hee(err.message)}</code></div>` : '<div></div>';
+            return await this.edit() ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${hee(err.message)}</code></div>` : "<div></div>";
         }
     }
 

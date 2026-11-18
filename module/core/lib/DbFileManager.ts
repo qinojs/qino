@@ -265,7 +265,7 @@ export class DbFile extends File {
     const ext = f.name.replace(/.*\./, "").toLowerCase();
     const type = f.type === "application/octet-stream" ? mimeType(mimeTypes.lookup(ext) || f.type) : f.type;
 
-    await this.setVs({ name: f.name, mime: type, md5: f.md5, size: await this.size(), text: null });
+    await this.setVs({ name: f.name, mime: type, md5: f.md5, size: f.size, text: null });
   }
 
   async clone(to?: number | null): Promise<DbFile> {
