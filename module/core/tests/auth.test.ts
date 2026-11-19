@@ -4,6 +4,7 @@ import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { attempt, beforeProof, login, loginFromRequest, loginProof, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
 import { App, Ctx, requestStorage, unixTime } from "../mod.ts";
 import { initRequest } from "../lib/ctx/init.ts";
+import { addContact } from "../lib/contacts.ts";
 
 test("loginFromRequest: login form requires token", async () => {
   const ctx = await testContext({
@@ -114,6 +115,21 @@ test("login: whoever has no second factor is let in with one — a demand nobody
 
     assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "");
     assertEquals(ctx.userId, 7);
+  });
+});
+
+test("login: an account is named by its username, else by one of its e-mail addresses", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("usr").insert({ id: 8, username: "bob", active: true, pw: await pwHash("secret") });
+    await addContact(app.db, 8, "email", "Bob@Example.test");
+    // a username that is someone else's address wins: nobody signs in as another
+    await app.db.table("usr").insert({ id: 9, username: "bob@example.test", active: true, pw: await pwHash("other") });
+
+    assertEquals(await tryLogin(ctx, "bob@example.test", "secret"), "password");
+    await app.db.table("usr").update(9, { username: "bob9" });
+    assertEquals(await tryLogin(ctx, " BOB@example.test ", "secret"), "");
+    assertEquals(ctx.userId, 8);
+    assertEquals(await tryLogin(ctx, "nobody", "secret"), "username");
   });
 });
 

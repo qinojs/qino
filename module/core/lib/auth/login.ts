@@ -2,6 +2,7 @@
 import { inTurn, proofFailed, proofPassed, proofWait } from "./attempts.ts";
 import { bcrypt } from "../../deps.ts";
 import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
+import { contactOwner } from "../contacts.ts";
 import { safeEqual } from "../crypto.ts";
 import { unixTime } from "../util.ts";
 
@@ -44,10 +45,19 @@ export async function loginFromRequest(ctx: Ctx): Promise<void> {
   }
 }
 
+/** The account a login names: by its username, else by one of its e-mail addresses (a username need not be
+ *  one, the address to reset the password with is). The username wins, so nobody gets another account. */
+async function loginUser(app: App, typed: string) {
+  const user = await app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(username)) = LOWER(${typed})`;
+  if (user) return user;
+  const owner = await contactOwner(app.db, "email", typed).catch(() => undefined); // no address at all
+  return owner ? await app.db.row`SELECT * FROM usr WHERE id = ${owner}` : undefined;
+}
+
 /** Log in the user with this e-mail — via remembered client, else password.
  *  Resolves with the reason if no session was opened, "" on success. */
 export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
-  const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(username)) = LOWER(${email.trim()})`;
+  const user = await loginUser(ctx.app, email.trim());
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
   const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // loaded by the SELECT above
   const usrId = Number(user.id);

@@ -1,7 +1,8 @@
 # cms.cont.password_reset
 
 Put this element on a page for "I forgot my password". Without `?t=` in the URL it asks for the
-address; with `?t=` it shows the new-password form.
+address; with `?t=` it shows the new-password form. Any e-mail address of the user works (`usr_contact`), and the
+login takes it as well as the username.
 
 The link carries a [ticket](../ticket/) of kind `auth.pwReset`, valid one hour. Opening it only
 checks; the ticket is used when the form is submitted, so mail scanners can't use it up. Mail and
