@@ -28,7 +28,8 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
 
   const rows = await db.query`SELECT usr.*,
     (SELECT count(*) FROM sess WHERE usr_id = usr.id) AS num_sess,
-    (SELECT max(access) FROM sess WHERE usr_id = usr.id) AS last_online
+    (SELECT max(access) FROM sess WHERE usr_id = usr.id) AS last_online,
+    (SELECT address FROM usr_contact WHERE usr_id = usr.id AND type = 'email' ORDER BY main DESC, created LIMIT 1) AS email
     FROM usr WHERE (${sh.where}${byContact})${grpFilter}${superFilter} ORDER BY ${sh.order}, id LIMIT 200`;
 
   const pageUrl = node ? await (await node.page()).url() : "";
@@ -36,10 +37,6 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   const parts: (HtmlString | Promise<HtmlString>)[] = [];
   for (const vs of rows) {
     const detailUrl = backend.toUrl(pageUrl, { id: vs.id });
-    const isEmail = vs.username && /@/.test(vs.username);
-    const emailCell = isEmail
-      ? html`<a href="mailto:${vs.username}">${vs.username}</a>`
-      : vs.username;
 
     const loginAsTd = canLoginAs
       ? html.raw('<td class=-loginAs><button class=u2-unstyle aria-label="Login as user"><u2-ico icon=switch_account>⇄</u2-ico></button>')
@@ -50,7 +47,8 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   <td> ${vs.id}
   <td>
     <a href="${detailUrl}">${(vs.given_name ?? "") + " " + (vs.family_name ?? "")}</a>
-  <td> ${emailCell}
+  <td> ${vs.username}
+  <td> ${vs.email ? html`<a href="mailto:${vs.email}">${vs.email}</a>` : ""}
   <td> ${vs.organization}
   <td> ${vs.active ? "yes" : "no"}
   <td> ${vs.num_sess ?? 0}
@@ -64,7 +62,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
     <button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
-  if (rows.length === 200) parts.push(html.async`\n<tr><td colspan=10>${ctx.app.t`Only the first 200 results are shown.`}`);
+  if (rows.length === 200) parts.push(html.async`\n<tr><td colspan=11>${ctx.app.t`Only the first 200 results are shown.`}`);
 
   return html.join(await Promise.all(parts));
 }

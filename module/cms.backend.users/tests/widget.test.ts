@@ -104,3 +104,21 @@ test("how a user signs in, as a card on other pages, links to where it is change
   assertEquals(await backendRowWidget.usr(app, 2, page), "");
   await db.close();
 });
+
+test("cms.backend.users: the list shows each user's main address beside the login handle", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.migrate(contactDbSchema);
+  await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, given_name TEXT, family_name TEXT,
+    organization TEXT, active INTEGER, superuser INTEGER DEFAULT 0)`;
+  await db.query`CREATE TABLE sess (usr_id INTEGER, access INTEGER)`;
+  await db.loadTables();
+  await db.table("usr").insert({ username: "hans", given_name: "Hans", active: 1 });
+  await db.table("usr").insert({ username: "eva", given_name: "Eva", active: 1 });
+  await db.table("usr_contact").insert({ type: "email", address: "old@qino.test", usr_id: 1, main: false, created: 1 });
+  await db.table("usr_contact").insert({ type: "email", address: "hans@qino.test", usr_id: 1, main: true, created: 2 });
+  const ctx = await testContext({ app: { db, t: fakeT } as never });
+  const out = String(await requestStorage.run(ctx, () => cms.node.parts.list(null as never, { ctx, vars: {} })));
+  assertStringIncludes(out, '<a href="mailto:hans@qino.test">hans@qino.test</a>');
+  assertEquals(out.includes("old@qino.test"), false);
+  assertStringIncludes(out, "<td> hans\n"); // the handle is no link
+});

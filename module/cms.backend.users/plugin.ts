@@ -96,7 +96,8 @@ async function renderOverview(node: Node, ctx: Ctx) {
             <th> ID
             <th> ${t`Name`}
             <th> ${t`Username`}
-            <th> ${t`Company`}
+            <th> ${t`Email`}
+            <th> ${t`Organization`}
             <th> ${t`Active`}
             <th> ${t`Sessions`}
             <th> ${t`last online`}
@@ -278,7 +279,7 @@ async function renderDetail(node: Node, ctx: Ctx, id: number) {
           <th> ${t`Last name`}:
           <td> <input name=family_name value="${vs.family_name}">
         <tr>
-          <th> ${t`Company`}:
+          <th> ${t`Organization`}:
           <td> <input name=organization value="${vs.organization}">
         ${superuserRow}
       </table>
