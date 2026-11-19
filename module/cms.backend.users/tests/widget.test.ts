@@ -121,4 +121,13 @@ test("cms.backend.users: the list shows each user's main address beside the logi
   assertStringIncludes(out, '<a href="mailto:hans@qino.test">hans@qino.test</a>');
   assertEquals(out.includes("old@qino.test"), false);
   assertStringIncludes(out, "<td> hans\n"); // the handle is no link
+
+  // the search finds part of an address, and a phone number however it is written
+  await db.table("usr_contact").insert({ type: "phone", address: "+41791234567", usr_id: 2, main: true, created: 3 });
+  const found = async (search: string) => [...String(await requestStorage.run(ctx, () =>
+    cms.node.parts.list(null as never, { ctx, vars: { search } }))).matchAll(/itemid=(\d+)/g)].map((m) => Number(m[1]));
+  assertEquals(await found("old@qino"), [1]);
+  assertEquals(await found("079 123 45 67"), [2]);
+  assertEquals(await found("+41 79 123"), [2]);
+  assertEquals(await found("nobody"), []);
 });

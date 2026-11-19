@@ -9,6 +9,17 @@ export function allowLoginAs(node: Node | null, ctx: Ctx): boolean {
   return !!ctx.user?.superuser || !!(node?.settings.allow_login_as());
 }
 
+/** Part of an address finds whom it belongs to, even when their login handle says something else; a
+ *  number also as written at home (`079 123 45 67` finds `+41791234567`). */
+function contactSearch(search: string) {
+  const term = search.trim().toLowerCase();
+  if (!term) return sql``;
+  const digits = term.replace(/[\s()./-]/g, "");
+  const number = /^\+?\d{4,}$/.test(digits) ? digits.replace(/^(\+|00|0)/, "") : "";
+  return sql` OR id IN (SELECT usr_id FROM usr_contact WHERE address LIKE ${`%${term}%`}${
+    number ? sql` OR address LIKE ${`%${number}%`}` : sql``})`;
+}
+
 export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const db = ctx.app.db;
 
@@ -19,10 +30,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   const grpId = Number(vars?.grp_id ?? ctx.req.query.grp_id) || null;
 
   const sh = sqlSearch(search, ["family_name", "given_name", "organization", "username"]);
-  // an address someone verified finds them too, even when their login handle says something else
-  const byContact = search.trim()
-    ? sql` OR id IN (SELECT usr_id FROM usr_contact WHERE address = ${search.trim().toLowerCase()})`
-    : sql``;
+  const byContact = contactSearch(search);
   const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql``;
   const superFilter = isSuperuser ? sql`` : sql` AND superuser = ${false}`;
 

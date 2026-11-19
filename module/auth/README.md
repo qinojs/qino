@@ -36,7 +36,8 @@ function of the app if the list is only known at runtime.
 `factors(app)` lists what linked modules declare, `userFactors(app, usrId)` what one user has set
 up. `auth` knows no factor by name, so a new factor needs no code here and shows up in
 [cms.backend.superuser.security.auth](../cms.backend.superuser.security.auth/) automatically. `core` declares
-`password`. Each factor has its own `cms.cont.my.*` page for setup.
+`password`. Each factor has its own `cms.cont.my.*` page for setup. The password login takes the
+username or any e-mail address of the user in `usr_contact`; a matching username wins.
 
 ## Login with more than one factor
 
