@@ -10,9 +10,9 @@ import type { List, Project, Updates } from "./host/helper.ts";
 
 /** Projects and overview come from one call of the helper, so they are one part; updates another. */
 export function render(node: Node): Promise<HtmlString> {
-  return html.async`<div>
-    <div class=u2-flex cms-part=list>${list(node)}</div>
-    <div class=u2-flex cms-part=updates>${updates(node)}</div>
+  return html.async`<div class=u2-flex>
+    <div cms-part=list>${list(node)}</div>
+    <div cms-part=updates>${updates(node)}</div>
   </div>`;
 }
 

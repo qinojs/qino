@@ -1,5 +1,7 @@
 [qcms-mod="backend.hosting"] {
-  & > .u2-flex > .u2-card { flex: 1 1 100%; min-width: 0; }
+  /* the parts only hold their cards: the cards are the flex items, side by side as far as they fit */
+  & > [cms-part] { display: contents; }
+  & .u2-card { flex: 1 1 auto; min-width: 0; }
   & .u2-card > .-head { display: flex; align-items: center; gap: .5rem; }
   & .u2-card > .-head > :is(button, .-actions) { margin-left: auto; }
   /* the table wrapper is a direct card child, so it carries the card gap — the table must not */
