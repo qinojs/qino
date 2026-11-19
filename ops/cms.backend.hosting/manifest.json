@@ -8,6 +8,7 @@
     "README.md",
     "host/helper.ts",
     "host/qino-hosting.service",
+    "host/setup.sh",
     "host/templates/qino-bun/files/server.ts",
     "host/templates/qino-bun/install.sh",
     "host/templates/qino-bun/site.caddy",

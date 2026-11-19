@@ -6,31 +6,38 @@ import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { List, Project } from "./host/helper.ts";
+import type { List, Project, Updates } from "./host/helper.ts";
 
-/** Both cards come from one call of the helper, so they are one part. */
+/** Projects and overview come from one call of the helper, so they are one part; updates another. */
 export function render(node: Node): Promise<HtmlString> {
-  return html.async`<div><div class=u2-flex cms-part=list>${list(node)}</div></div>`;
+  return html.async`<div>
+    <div class=u2-flex cms-part=list>${list(node)}</div>
+    <div class=u2-flex cms-part=updates>${updates(node)}</div>
+  </div>`;
 }
 
-export async function list(node: Node): Promise<HtmlString> {
+/** The helper's answer to `verb`, rendered, or a card saying it does not answer. */
+async function ask<T>(node: Node, verb: string, title: (t: App["t"]) => Promise<string>, fn: (app: App, data: T) => Promise<HtmlString>) {
   const app = node.app;
   const t = app.t;
   const socket = String(await app.settings[manifest.name].socket);
-  return call(socket, "list").then(
-    (data) => renderList(app, data as List),
+  return call(socket, verb).then(
+    (data) => fn(app, data as T),
     (e) => html.async`<div class=u2-card>
-      <div class=-head><span>${t`Projects`}</span></div>
+      <div class=-head><span>${title(t)}</span></div>
       <div>${t`The hosting helper does not answer`} (<code>${socket}</code>): ${errMsg(e)}</div>
     </div>`,
   );
 }
 
+export const list = (node: Node): Promise<HtmlString> => ask(node, "list", (t) => t`Projects`, renderList);
+export const updates = (node: Node): Promise<HtmlString> => ask(node, "updates", (t) => t`Updates`, renderUpdates);
+
 const bytes = (n: number | null | undefined) => n == null ? "–" : html`<u2-bytes>${n}</u2-bytes>`;
 /** How full: turns to the warning colour above 80 %. */
 const meter = (used: number, total: number) =>
   html`<meter min=0 max="${total}" value="${used}" high="${total * .8}" optimum=0 title="${Math.round(used / total * 100)} %"></meter>`;
-const sum = (projects: Project[], key: "memory" | "cpu" | "tasks" | "disk") =>
+const sum = (projects: Project[], key: "memory" | "cache" | "cpu" | "tasks" | "disk") =>
   projects.reduce((all, p) => all + (p[key] ?? 0), 0);
 
 export function renderList(app: App, { server, projects }: List): Promise<HtmlString> {
@@ -54,6 +61,7 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
         <th>${t`Domains`}
         <th>${t`Listens on`}
         <th class=-num>${t`Memory`}
+        <th class=-num title="${t`Files the kernel keeps in memory, freed when needed`}">${t`File cache`}
         <th class=-num>${t`CPU`}
         <th class=-num>${t`Tasks`}
         <th class=-num>${t`Disk`}
@@ -64,6 +72,7 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
       <tfoot><tr>
         <th colspan=5>${projects.length} ${t`projects`}
         <td class=-num>${bytes(sum(projects, "memory"))}
+        <td class=-num>${bytes(sum(projects, "cache"))}
         <td class=-num>${sum(projects, "cpu")} %
         <td class=-num>${sum(projects, "tasks")}
         <td class=-num>${bytes(sum(projects, "disk"))}
@@ -106,6 +115,35 @@ export function renderList(app: App, { server, projects }: List): Promise<HtmlSt
   </div>`;
 }
 
+/** Pending packages, whether a reboot is due, and the runtimes. Automatic updates install the packages anyway. */
+export function renderUpdates(app: App, { packages, reboot, runtimes }: Updates): Promise<HtmlString> {
+  const t = app.t;
+  const badge = (color: string, text: unknown) => html.async`<small class=u2-badge style="background:${color}">${text}</small>`;
+  return html.async`<div class=u2-card>
+    <div class=-head>
+      <span>${t`Updates`}</span>
+      ${packages.length ? badge("var(--orange)", html.async`${packages.length} ${t`pending`}`) : badge("var(--green)", t`Up to date`)}
+      ${reboot ? badge("var(--orange)", t`Reboot required`) : ""}
+      <span class=-actions>
+        ${packages.length ? html.async`<button type=button data-verb=upgrade u2-confirm="${t`Install all updates? Services may restart.`}">${t`Install updates`}</button>` : ""}
+        <button type=button data-verb=reboot u2-confirm="${t`Reboot the server? All projects are offline for a minute.`}">${t`Reboot`}</button>
+      </span>
+    </div>
+    ${packages.length ? html.async`<details>
+      <summary>${t`Packages`}</summary>
+      <u2-table><table class=u2-table>
+        <tbody>${packages.map((p) => html`<tr><td>${p.name}<td>${p.version}`)}
+      </table></u2-table>
+    </details>` : ""}
+    <u2-table><table class=u2-table>
+      <thead><tr>
+        <th>${t`Runtime`}
+        <th>${t`Version`}
+      <tbody>${runtimes.map((r) => html`<tr><td><code>${r.path}</code><td>${r.version ?? "–"}`)}
+    </table></u2-table>
+  </div>`;
+}
+
 const STATE_COLOR: Record<string, string> = { active: "var(--green)", failed: "var(--red)", activating: "var(--orange)" };
 
 /** Each domain as a link; its preview address, if served, as an icon beside it. */
@@ -140,6 +178,7 @@ function renderRow(app: App, p: Project, self: boolean, preview: string) {
     <td>${domains(app, p.domains, preview)}
     <td>${listen}
     <td class=-num>${bytes(p.memory)}
+    <td class=-num>${bytes(p.cache)}
     <td class=-num>${p.cpu == null ? "–" : html`${p.cpu} %`}
     <td class=-num>${p.tasks ?? "–"}
     <td class=-num>${bytes(p.disk)}

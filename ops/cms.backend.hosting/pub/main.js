@@ -2,7 +2,7 @@ import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 initNode("backend.hosting", (el) => {
-  const { node, refresh, alert: show } = nodePanel(el, ["list"]);
+  const { node, refresh, alert: show } = nodePanel(el, ["list", "updates"]);
   let busy = false;
 
   /** One call at a time; the list follows what it changed. */
@@ -25,7 +25,10 @@ initNode("backend.hosting", (el) => {
     const button = event.target.closest("[data-verb]");
     if (!button) return;
     const { verb, name } = button.dataset;
-    if (verb === "log") run(button, { verb, name }, (res) => show(res.log));
+    if (verb === "log" || verb === "upgrade") run(button, { verb, name }, async (res) => {
+      if (verb === "upgrade") await refresh();
+      await show(res.log);
+    });
     else if (verb === "delete") run(button, { verb, name }, async (res) => {
       await refresh();
       await show(`${res.archive}${res.stillServed.length ? `\n\nStill in Caddy: ${res.stillServed.join(", ")}` : ""}`);

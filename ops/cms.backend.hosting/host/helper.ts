@@ -18,7 +18,7 @@ const run = promisify(execFile);
 type Host = { www: string; units: string; caddy: string; templates: string; archive: string; self: string; preview: string };
 type Args = Record<string, unknown>;
 
-const PROPS = ["Id", "ActiveState", "SubState", "MemoryCurrent", "CPUUsageNSec", "TasksCurrent", "NRestarts", "ActiveEnterTimestamp", "ExecStart"];
+const PROPS = ["Id", "ActiveState", "SubState", "MemoryCurrent", "ControlGroup", "CPUUsageNSec", "TasksCurrent", "NRestarts", "ActiveEnterTimestamp", "ExecStart"];
 /** A project name is its main domain (or, for older ones, any hostname-like name). */
 const NAME = /^(?=.{1,100}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/;
 const PORTS: [number, number] = [8090, 8999];
@@ -27,8 +27,10 @@ const PORTS: [number, number] = [8090, 8999];
 const num = (v = "") => /^\d+$/.test(v) && v !== "18446744073709551615" ? Number(v) : null;
 const exists = (path: string) => stat(path).then(() => true, () => false);
 
-/** The program a unit starts (`bun`, `deno` …), from systemctl's `ExecStart={ path=/usr/local/bin/bun ; … }`. */
-export const program = (exec = "") => exec.match(/path=\S*?([^/\s;]+) ;/)?.[1] ?? null;
+/** The path of what a unit starts, from systemctl's `ExecStart={ path=/usr/local/bin/bun ; … }`. */
+const execPath = (exec = "") => exec.match(/path=(\S+) ;/)?.[1] ?? null;
+/** The program a unit starts (`bun`, `deno` …). */
+export const program = (exec = "") => execPath(exec)?.split("/").pop() ?? null;
 
 /** Blocks of `key=value` lines, as printed by `systemctl show a b …`. */
 export const parseShow = (text: string): Record<string, string>[] =>
@@ -90,6 +92,12 @@ export function parseMeminfo(text: string): { total: number; available: number }
   return { total: kb("MemTotal"), available: kb("MemAvailable") };
 }
 
+/** Bytes of a cgroup's page cache, from its `memory.stat` (`file <bytes>`): files the kernel keeps in RAM,
+ *  freed as soon as anything else needs the memory. */
+export const parseFileCache = (stat: string) => num(stat.match(/^file (\d+)$/m)?.[1]);
+const fileCache = async (cgroup = "") =>
+  cgroup ? parseFileCache(await readFile(`/sys/fs/cgroup${cgroup}/memory.stat`, "utf8").catch(() => "")) : null;
+
 const unitOf = async (pid: number) =>
   (await readFile(`/proc/${pid}/cgroup`, "utf8").catch(() => "")).match(/\/([^/]+\.service)$/m)?.[1];
 
@@ -148,6 +156,7 @@ async function list(host: Host) {
     const cpu = (num(p.CPUUsageNSec) ?? NaN) - (num(before.get(unit)?.CPUUsageNSec) ?? NaN);
     const sockets = listen.get(unit) ?? [];
     const ports = sockets.map((s) => Number(s.split(":").pop()));
+    const current = num(p.MemoryCurrent), cache = current == null ? null : await fileCache(p.ControlGroup);
     return {
       name,
       program: program(p.ExecStart),
@@ -155,7 +164,8 @@ async function list(host: Host) {
       sub: p.SubState,
       since: num(p.ActiveEnterTimestamp?.slice(1)),
       restarts: num(p.NRestarts),
-      memory: num(p.MemoryCurrent),
+      memory: current == null ? null : current - (cache ?? 0), // without the page cache, like the server's "used"
+      cache,
       cpu: Number.isNaN(cpu) ? null : Math.round(cpu / 1e7), // percent of one core
       tasks: num(p.TasksCurrent),
       disk: await disk(host.www + name),
@@ -297,8 +307,76 @@ async function remove(host: Host, args: Args) {
   return { archive: to, stillServed };
 }
 
+type Package = { name: string; version: string };
+
+/** `apt list --upgradable`: `name/suite version arch [upgradable from: old]`. */
+export const parseApt = (text: string): Package[] =>
+  [...text.matchAll(/^([^/\s]+)\/\S+ (\S+)/gm)].map(([, name, version]) => ({ name, version }));
+
+/** `dnf check-update`: `name.arch version repo` up to the first blank line, obsoleted packages follow. */
+export const parseDnf = (text: string): Package[] =>
+  text.trim().split(/\n\s*\n/)[0].split("\n").map((l) => l.trim().split(/\s+/)).filter((c) => c.length === 3)
+    .map(([name, version]) => ({ name: name.replace(/\.[^.]+$/, ""), version }));
+
+const C = { ...process.env, LC_ALL: "C" };
+
+/** Per package manager: what is pending (from the lists the automatic updates fetch), how to install it,
+ *  and whether a reboot is due. */
+const MANAGERS: Record<string, { pending(): Promise<Package[]>; upgrade: string; reboot(): Promise<boolean> }> = {
+  "apt-get": {
+    pending: async () => parseApt((await run("apt", ["list", "--upgradable"], { env: C, maxBuffer: 1 << 24 })).stdout),
+    upgrade: "apt-get -q update && apt-get -qy -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold --with-new-pkgs upgrade",
+    reboot: () => exists("/run/reboot-required"),
+  },
+  dnf: {
+    // exit code 100: updates are pending
+    pending: async () => parseDnf((await run("dnf", ["-q", "check-update"], { env: C, maxBuffer: 1 << 24 })
+      .catch((e) => e.code === 100 ? e : Promise.reject(e))).stdout),
+    upgrade: "dnf -qy upgrade",
+    reboot: () => run("needs-restarting", ["-r"]).then(() => false, (e) => e.code === 1 || Promise.reject(e)),
+  },
+};
+
+async function manager() {
+  for (const [bin, m] of Object.entries(MANAGERS)) if (await exists(`/usr/bin/${bin}`)) return m;
+  throw new Error("no known package manager");
+}
+
+/** The runtimes the projects start and their version, asked as the user of a project that runs it. */
+async function runtimes(host: Host) {
+  const all = await names(host), units = await show(all.map((n) => `${n}.service`));
+  const users = new Map(all.map((n) => [execPath(units.get(`${n}.service`)?.ExecStart), n]));
+  users.delete(null);
+  return Promise.all([...users].sort().map(async ([path, user]) => {
+    const out = await run("runuser", ["-u", user, "--", path!, "--version"]).then((r) => r.stdout, () => "");
+    return { path: path!, version: out.split("\n")[0].trim() || null };
+  }));
+}
+
+/** Pending package updates, whether a reboot is due, and the runtimes the projects start. */
+async function updates(host: Host) {
+  const m = await manager();
+  const [packages, reboot, runs] = await Promise.all([m.pending(), m.reboot(), runtimes(host)]);
+  return { packages, reboot, runtimes: runs };
+}
+
+export type Updates = Awaited<ReturnType<typeof updates>>;
+
+/** Installs pending updates, outside the helper's cgroup: a service restart during the update must not kill it. */
+async function upgrade() {
+  const { stdout } = await run("systemd-run", ["--wait", "--pipe", "--collect", "--quiet",
+    "--setenv=DEBIAN_FRONTEND=noninteractive", "/bin/sh", "-c", (await manager()).upgrade], { env: C, maxBuffer: 1 << 24 });
+  return stdout.trim().split("\n").slice(-30).join("\n");
+}
+
+/** Reboots once the answer is out. */
+async function reboot() {
+  await run("systemctl", ["--no-block", "reboot"]);
+}
+
 const verbs: Record<string, (host: Host, args: Args) => Promise<unknown>> = {
   list, log, start: unit("start"), stop: unit("stop"), restart: unit("restart"), create, delete: remove,
+  updates, upgrade, reboot,
 };
 /** Verbs that change something run one after the other: two creates must not pick the same port. */
 let queue: Promise<unknown> = Promise.resolve();
@@ -308,7 +386,7 @@ async function answer(line: string, host: Host) {
     const { verb, ...args } = JSON.parse(line);
     if (!Object.hasOwn(verbs, verb)) throw new Error(`unknown verb "${verb}"`);
     console.log(verb, args.name ?? args.domain ?? "");
-    const job = (verb === "list" || verb === "log")
+    const job = (verb === "list" || verb === "log" || verb === "updates")
       ? verbs[verb](host, args)
       : (queue = queue.catch(() => {}).then(() => verbs[verb](host, args)));
     return { ok: true, data: await job };
@@ -322,7 +400,7 @@ async function answer(line: string, host: Host) {
 export async function serve(path: string, host: Host): Promise<void> {
   const server = createServer((sock) => {
     let buf = "";
-    sock.setTimeout(10 * 60_000, () => sock.destroy()); // a create clones and installs
+    sock.setTimeout(30 * 60_000, () => sock.destroy()); // a create clones and installs, an upgrade installs
     sock.on("error", () => {});
     sock.on("data", async (chunk) => {
       buf += chunk;

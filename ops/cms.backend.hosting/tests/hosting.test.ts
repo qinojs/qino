@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
-import { addresses, fill, freePort, parseCaddy, parseMeminfo, parseShow, parseSs, program } from "../host/helper.ts";
+import { addresses, fill, freePort, parseApt, parseCaddy, parseDnf, parseFileCache, parseMeminfo, parseShow, parseSs, program } from "../host/helper.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-import { list, renderList } from "../render.ts";
+import { list, renderList, renderUpdates } from "../render.ts";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -17,6 +17,7 @@ test("cms.backend.hosting: metadata is wired", () => {
   assertEquals(manifest.name, "cms.backend.hosting");
   assertEquals(manifest.dependencies, ["cms.backend"]);
   assertEquals(typeof cms.node.parts.list, "function");
+  assertEquals(typeof cms.node.parts.updates, "function");
   assertEquals(typeof cms.node.api, "function");
 });
 
@@ -72,7 +73,7 @@ const server = (o: Partial<List["server"]> = {}): List["server"] => ({
   self: "ops.example", preview: "preview.example", templates: ["qino-deno"], ...o,
 });
 const project = (o: Partial<Project>): Project => ({
-  name: "a", program: "deno", state: "active", sub: "running", since: null, restarts: 0, memory: 2048, cpu: 3, tasks: 9,
+  name: "a", program: "deno", state: "active", sub: "running", since: null, restarts: 0, memory: 2048, cache: 4096, cpu: 3, tasks: 9,
   disk: null, listen: [], domains: [], ...o,
 });
 
@@ -94,11 +95,12 @@ test("cms.backend.hosting: table flags sockets beside the proxy and escapes", as
 
 test("cms.backend.hosting: totals, server capacity, actions by state, never on itself", async () => {
   const out = String(await renderList(app, { server: server(), projects: [
-    project({ name: "a", memory: 1000, disk: 10, cpu: 2, tasks: 3 }),
-    project({ name: "b", state: "inactive", memory: null, disk: 20, cpu: null, tasks: null }),
-    project({ name: "ops.example", memory: 500, disk: 5 }),
+    project({ name: "a", memory: 1000, cache: 7000, disk: 10, cpu: 2, tasks: 3 }),
+    project({ name: "b", state: "inactive", memory: null, cache: null, disk: 20, cpu: null, tasks: null }),
+    project({ name: "ops.example", memory: 500, cache: 700, disk: 5 }),
   ] }));
   assertStringIncludes(out, "<td class=-num><u2-bytes>1500</u2-bytes>"); // memory of all projects
+  assertStringIncludes(out, "<td class=-num><u2-bytes>7700</u2-bytes>"); // their file cache
   assertStringIncludes(out, "<td class=-num><u2-bytes>2000000000</u2-bytes>"); // memory used on the server
   assertStringIncludes(out, "<td class=-num><u2-bytes>60000000000</u2-bytes>"); // disk used
   assertStringIncludes(out, "<td class=-num><u2-bytes>35</u2-bytes>"); // disk of all projects
@@ -120,6 +122,8 @@ test("cms.backend.hosting: templates, ports and memory", () => {
   assertEquals(addresses("x.s4.example.ch", "preview.s4.example.ch"), ["x.s4.example.ch"]);
   assertEquals(addresses("a.ch", ""), ["a.ch"]);
   assertEquals(freePort(new Set(), [9000, 9000]), 9000);
+  assertEquals(parseFileCache("anon 99053568\nfile 209268736\nkernel 28438528\nfile_mapped 8720384\n"), 209268736);
+  assertEquals(parseFileCache(""), null);
   assertEquals(parseMeminfo("MemTotal:       8000 kB\nMemFree:  10 kB\nMemAvailable:   6000 kB\n"), { total: 8192000, available: 6144000 });
 });
 
@@ -127,4 +131,37 @@ test("cms.backend.hosting: a missing helper is a message, not an error", async (
   const settings = { "cms.backend.hosting": { socket: "/nonexistent/hosting.sock" } };
   const out = String(await list({ app: { t, settings } } as unknown as Node));
   assertStringIncludes(out, "The hosting helper does not answer (<code>/nonexistent/hosting.sock</code>)");
+});
+
+test("cms.backend.hosting: pending packages from apt and dnf", () => {
+  assertEquals(parseApt(`Listing...
+caddy/any-version 2.11.9 amd64 [upgradable from: 2.11.8]
+libsqlite3-0/noble-updates 3.45.1-1ubuntu2.9 amd64 [upgradable from: 3.45.1-1ubuntu2.8]
+`), [{ name: "caddy", version: "2.11.9" }, { name: "libsqlite3-0", version: "3.45.1-1ubuntu2.9" }]);
+  assertEquals(parseDnf(`
+kernel.x86_64                        4.18.0-553.186.1.el8_10             baseos
+sw-nginx.x86_64                      1.30.7.1-1.redhat.8                 plesk
+
+Obsoleting Packages
+kernel-headers.x86_64                4.18.0-553.178.1.el8_10             baseos
+    kernel-headers.x86_64            4.18.0-553.177.1.el8_10             @baseos
+`), [{ name: "kernel", version: "4.18.0-553.186.1.el8_10" }, { name: "sw-nginx", version: "1.30.7.1-1.redhat.8" }]);
+  assertEquals(parseApt("Listing...\n"), []);
+  assertEquals(parseDnf(""), []);
+});
+
+test("cms.backend.hosting: updates card", async () => {
+  const runtimes = [{ path: "/usr/local/bin/bun", version: "1.4.4" }, { path: "/x/<y>", version: null }];
+  const pending = String(await renderUpdates(app, { packages: [{ name: "caddy", version: "2.11.9" }], reboot: true, runtimes }));
+  assertStringIncludes(pending, "1 pending");
+  assertStringIncludes(pending, "Reboot required");
+  assertStringIncludes(pending, "data-verb=upgrade");
+  assertStringIncludes(pending, "<tr><td>caddy<td>2.11.9");
+  assertStringIncludes(pending, "<code>/usr/local/bin/bun</code><td>1.4.4");
+  assertStringIncludes(pending, "&lt;y&gt;");
+  const current = String(await renderUpdates(app, { packages: [], reboot: false, runtimes: [] }));
+  assertStringIncludes(current, "Up to date");
+  assertEquals(current.includes("data-verb=upgrade"), false);
+  assertEquals(current.includes("Reboot required"), false);
+  assertStringIncludes(current, "data-verb=reboot");
 });

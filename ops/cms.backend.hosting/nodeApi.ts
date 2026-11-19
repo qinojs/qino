@@ -5,8 +5,8 @@ import manifest from "./manifest.json" with { type: "json" };
 
 import type { Node } from "@qino/qino/cms";
 
-/** `start`, `stop`, `restart` and `log` take `name`; `create` (`domain`, `template`) and `delete` (`name`)
- *  need a fresh passkey or other step-up. */
+/** `start`, `stop`, `restart` and `log` take `name`; `create` (`domain`, `template`), `delete` (`name`) and
+ *  what affects the whole server, `upgrade` and `reboot`, need a fresh passkey or other step-up. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const socket = String(await node.app.settings[manifest.name].socket);
   const { verb, name, domain, template } = vars;
@@ -22,6 +22,14 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   if (verb === "delete") {
     await requireStepUp(getCtx());
     return call(socket, "delete", { name });
+  }
+  if (verb === "upgrade") {
+    await requireStepUp(getCtx());
+    return { log: await call(socket, "upgrade", {}, 30 * 60_000) };
+  }
+  if (verb === "reboot") {
+    await requireStepUp(getCtx());
+    return call(socket, "reboot");
   }
   return false;
 }

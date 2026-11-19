@@ -1,6 +1,6 @@
 # cms.backend.hosting
 
-The projects of a server: state, memory, CPU, tasks, disk, restarts, listening sockets and the domains
+The projects of a server: state, memory and file cache, CPU, tasks, disk, restarts, listening sockets and the domains
 Caddy proxies to them, with the server's totals. A socket that is not on loopback is flagged: it bypasses
 the proxy. Projects can be started, stopped, restarted, created from a template and deleted; creating
 and deleting need a fresh passkey (step-up). Deleting archives: directory, unit and Caddy site move to
@@ -20,15 +20,22 @@ Reading other projects and changing them needs root; the managing instance must 
 managing instance's group may open. It imports nothing but the runtime.
 
 ```sh
-mkdir -p /usr/local/lib/qino-hosting
-cp -r host/helper.ts host/templates /usr/local/lib/qino-hosting/ && chown -R root: /usr/local/lib/qino-hosting
-cp host/qino-hosting.service /etc/systemd/system/   # set Group= to the managing instance's user
-systemctl daemon-reload && systemctl enable --now qino-hosting
+sh host/setup.sh <managing instance> [preview domain]   # as root, on every update again
 ```
 
-Install copies owned by root: if the managing instance could write what the helper runs, it would be
+[host/setup.sh](host/setup.sh) copies helper and templates to `/usr/local/lib/qino-hosting/`, installs
+[the unit](host/qino-hosting.service) with `Group=` set to the managing instance, and turns on
+[automatic updates](#updates). Install copies owned by root: if the managing instance could write what the helper runs, it would be
 root. The socket path is the setting `socket` (default `/run/qino-hosting/hosting.sock`). Every request
 is logged in the helper's journal, out of the instance's reach.
+
+## Updates
+
+The server updates itself: `setup.sh` turns on unattended-upgrades (apt) or dnf-automatic (dnf) for every
+package source, not only security updates, and reboots at 03:30 when an update needs it (kernel, libc).
+The panel shows pending packages, whether a reboot is due and the runtimes the projects start (Bun and Deno
+are no packages: `bun upgrade`, `deno upgrade`). Installing and rebooting by hand need a step-up; the
+install runs outside the helper's cgroup, so a service restart during it does not cut it off.
 
 ## Templates
 
