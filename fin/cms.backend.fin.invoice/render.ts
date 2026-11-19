@@ -1,7 +1,7 @@
 import { html, inlinePolicy, sanitizeHtml, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
-  badge, direction, field, inputAmount, money, option, pager, refLink, rowLink, sources, status,
+  badge, direction, field, inputAmount, money, option, pager, refLink, rowLink, sources, status, statusName,
 } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, today } from "@qino/qino/fin";
 import { document, lines, listedOf, owed, refOf } from "@qino/qino/fin.invoice";
@@ -72,7 +72,7 @@ async function overview(node: Node, url: URL) {
         ${option("in", t`Received (payables)`, q("direction"))}
       </select>
       <select name=status>${option("", t`Any status`, q("status"))}
-        ${STATUSES.map((s) => option(s, s, q("status")))}</select>
+        ${STATUSES.map((s) => option(s, statusName(node.app, s), q("status")))}</select>
       <select name=type>${option("", t`Any type`, q("type"))}
         ${TYPES.map((type) => option(type, typeName(node.app, type), q("type")))}</select>
       <label><input type=checkbox name=overdue value=1${q("overdue") ? html.raw(" checked") : ""}> ${t`overdue`}</label>
@@ -126,7 +126,7 @@ async function list(node: Node, url: URL) {
       <td style="text-align:end; white-space:nowrap">${money(row.total, row.currency)}
       <td>${overdue(row)
       ? html.async`<span title="${t`Due`} ${row.due}">${badge(t`overdue`, "--red")}</span>`
-      : html.async`<span title="${row.due ? html.async`${t`Due`} ${row.due}` : ""}">${status(row.status)}</span>`}
+      : html.async`<span title="${row.due ? html.async`${t`Due`} ${row.due}` : ""}">${status(app, row.status)}</span>`}
         ${partly(row) ? html.async`<small title="${t`Paid`}">${money(row.paid, row.currency)}</small>` : ""}
       <td>${refLink(node, row.ref)}`)}
     ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 7 })}
@@ -384,7 +384,7 @@ async function detail(node: Node, id: number) {
       <a href="${pageUrl}">${t`Invoices`}</a> › ${typeName(app, row.type)} ${row.number || `#${id}`}
     </div>
     <table class=u2-table>
-      ${field(t`Status`, status(row.status))}
+      ${field(t`Status`, status(app, row.status))}
       ${field(t`User`, userLink(node, row.usr_id, users.get(Number(row.usr_id))))}
       ${field(t`Language`, row.lang)}
       ${field(t`Type`, typeName(app, row.type))}
@@ -496,7 +496,7 @@ async function detail(node: Node, id: number) {
       <td style="text-align:end">${money(Number(p.paid) - Number(p.refunded), p.currency)}
       <td style="text-align:end" title="${t`What of it went to this`}">
         ${p.share == null ? "" : money(p.share, p.currency)}
-      <td>${status(p.status)}`)}</table>` : html.async`<p>${t`No payments yet`}`}
+      <td>${status(app, p.status)}`)}</table>` : html.async`<p>${t`No payments yet`}`}
     ${ways.length && !waiting ? html.async`<form data-request="${id}">
       ${t`Ask for`} ${money(open, row.currency)}:
       <select name=method>${ways.map((w) => html`<option value="${w.method}">${w.label}`)}</select>
@@ -539,6 +539,6 @@ export async function userInvoices(app: App, id: unknown, page: Node): Promise<H
     <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
     <td>${row.date}
     <td style="text-align:end">${money(row.total, row.currency)}
-    <td>${status(row.status)}`)}
+    <td>${status(app, row.status)}`)}
   </table>${all}`;
 }

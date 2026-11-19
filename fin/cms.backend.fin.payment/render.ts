@@ -1,7 +1,7 @@
 import { html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
-  badge, direction, field, money, option, pager, refLink, rowLink, sources, status,
+  badge, direction, field, money, option, pager, refLink, rowLink, sources, status, statusName,
 } from "@qino/qino/cms.backend.fin";
 import { mainCurrency } from "@qino/qino/fin";
 import { methods, provider as providerOf, slip } from "@qino/qino/fin.payment";
@@ -37,7 +37,7 @@ async function overview(node: Node, url: URL) {
         ${option("out", t`Out`, q("direction"))}
       </select>
       <select name=status>${option("", t`Any status`, q("status"))}
-        ${STATUSES.map((s) => option(s, s, q("status")))}</select>
+        ${STATUSES.map((s) => option(s, statusName(node.app, s), q("status")))}</select>
       <select name=provider>
         ${option("", t`Any provider`, q("provider"))}${providers.map((p) => option(p, p, q("provider")))}
       </select>
@@ -105,7 +105,7 @@ async function list(node: Node, url: URL) {
       <td>${row.provider}${row.method ? html`<small>.${row.method}</small>` : ""}
       <td style="text-align:end; white-space:nowrap">${money(row.amount, row.currency)}
       <td style="text-align:end; white-space:nowrap">${paidOf(row)}
-      <td>${status(row.status)}
+      <td>${status(app, row.status)}
       <td>${refLink(node, row.ref)}
       <td>${row.description}`)}
     ${pager(pageUrl, url, { page, shown: rows.length, total, per: PER_PAGE, span: 9 })}
@@ -171,7 +171,7 @@ async function detail(node: Node, id: number) {
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head><a href="${pageUrl}">${t`Payments`}</a> › #${id}</div>
     <table class=u2-table>
-      ${field(t`Status`, status(row.status))}
+      ${field(t`Status`, status(app, row.status))}
       ${field(t`Direction`, html.async`${direction(row.direction, "")} ${row.direction}`)}
       ${field(t`Provider`, provider
         ? `${provider.label} (${row.provider})`

@@ -3,7 +3,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
-import { inputAmount, money, parseAmount } from "../mod.ts";
+import { inputAmount, money, parseAmount, status } from "../mod.ts";
 import { cms } from "../plugin.ts";
 
 const FIN = ["fin.payment", "fin.bank", "fin.payment.qrbill", "fin.invoice"];
@@ -22,6 +22,16 @@ test("the overview shows what is open and lists the linked parts with what they 
       "<code>fin.bank</code> <code>fin.payment</code>", // what qrbill builds on
       "fin.invoice:7",
     ]) assertStringIncludes(page, part);
+  });
+});
+
+test("a status is said in the request's language, with its colour", async () => {
+  await withFinApp(FIN, async (app) => {
+    app.languages.setLangs(["en", "de"]);
+    const say = (lang: string) => app.t.with({ ns: "fin", lang }, () => status(app, "paid"));
+    assertEquals(String(await say("de")), '<small class=u2-badge style="background:var(--green)">bezahlt</small>');
+    assertEquals(String(await say("en")), '<small class=u2-badge style="background:var(--green)">paid</small>');
+    assertEquals(String(await status(app, "unknown")), "<small class=u2-badge>unknown</small>");
   });
 });
 

@@ -99,7 +99,25 @@ export const overdueInvoices = (app: App): Promise<number> => app.db.one`SELECT 
   WHERE direction = 'out' AND type IN ('invoice', 'reminder') AND status = 'open' AND due < ${today()}`.then(Number);
 
 /** A status as a badge in its color. */
-export const status = (value: unknown): Promise<HtmlString> => badge(value, STATUS[String(value)]);
+/** What an invoice's or payment's status is called, in the request's language. */
+export function statusName(app: App, value: unknown): Promise<string> | string {
+  const t = app.t;
+  switch (value) {
+    case "draft": return t`draft`;
+    case "open": return t`open`;
+    case "pending": return t`pending`;
+    case "processing": return t`processing`;
+    case "paid": return t`paid`;
+    case "failed": return t`failed`;
+    case "uncollectible": return t`uncollectible`;
+    case "canceled": return t`canceled`;
+    case "expired": return t`expired`;
+    case "refunded": return t`refunded`;
+    default: return String(value ?? "");
+  }
+}
+
+export const status = (app: App, value: unknown): Promise<HtmlString> => badge(statusName(app, value), STATUS[String(value)]);
 
 /** Money in or out as an arrow; `label` says it in words, as title (a t`` may be passed). */
 export const direction = (value: unknown, label: unknown): Promise<HtmlString> => value === "in"
