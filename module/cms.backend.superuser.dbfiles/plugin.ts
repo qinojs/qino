@@ -213,7 +213,6 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 }
 
 async function renderDetail(node: Node, ctx: Ctx, id: number) {
-  u2.elements(ctx, "code"); // the text view highlights with a library of its own
   const app = node.app;
   const t = app.t;
 

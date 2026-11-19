@@ -2,17 +2,9 @@ import { test } from "node:test";
 import { ResHtml } from "@qino/qino";
 import { assertEquals } from "@qino/qino/tests";
 
-import { assets, elements, pin, root } from "../mod.ts";
+import { assets, pin, root } from "../mod.ts";
 
 import type { Ctx } from "@qino/qino";
-
-test("u2.elements allows what an element fetches itself, and nothing for an element without", () => {
-  const ctx = { res: { csp: { "script-src": {}, "style-src": {} } } } as unknown as Ctx;
-  elements(ctx, "code", "button");
-  const hljs = "https://cdn.jsdelivr.net/gh/highlightjs/";
-  assertEquals(ctx.res.csp["script-src"], { [hljs]: true });
-  assertEquals(ctx.res.csp["style-src"], { [hljs]: true });
-});
 
 test("u2.assets load the page's release: the pinned one, else qino's — wherever the pin comes", () => {
   const page = () => ({ res: { csp: { "script-src": {}, "style-src": {}, "connect-src": {} }, html: new ResHtml() } }) as unknown as Ctx;

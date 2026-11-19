@@ -19,21 +19,6 @@ const CDN = u2Root.replace(/(@v?)[\d.]+\/$/, "$1");
 /** Where a u2 release lives: the version the caller pinned, else the one qino ships with. */
 export const root = (version?: string): string => version ? `${CDN}${version}/` : u2Root;
 
-// What an element loads itself after upgrading. Paths end in "/", so u2 version bumps need no change.
-const OWN: Record<string, string[]> = {
-  code: ["https://cdn.jsdelivr.net/gh/highlightjs/"], // u2-code highlights with highlight.js
-};
-
-/** Allow what these u2 elements load themselves: `u2.elements(ctx, "code")` on a page showing one. */
-export function elements(ctx: Ctx, ...names: string[]): void {
-  for (const name of names) {
-    for (const src of OWN[name] ?? []) {
-      ctx.res.csp["script-src"][src] = true;
-      ctx.res.csp["style-src"][src] = true;
-    }
-  }
-}
-
 const use = (ctx: Ctx, base: string) => {
   ctx.res.html.importMap.set("@u2/", base);
   for (const directive of ["style-src", "script-src", "connect-src"] as const) ctx.res.csp[directive][base] = true;

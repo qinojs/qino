@@ -1,5 +1,4 @@
 import { getCtx, html, isEmptyObject, safeEqual } from "@qino/qino";
-import * as u2 from "@qino/qino/u2";
 import { channels, placeholderName, saveTemplate, templated, templates } from "@qino/qino/messaging";
 
 import type { App, HtmlString, Row, Ctx } from "@qino/qino";
@@ -99,7 +98,6 @@ async function detail(node: Node, ctx: Ctx, name: string, channel: string) {
   const app = node.app;
   const t = app.t;
   const post = ctx.req.body;
-  u2.elements(ctx, "code"); // the editor highlights with a library of its own
   const back = ctx.req.url.toURL();
   back.searchParams.delete("name");
   back.searchParams.delete("channel");

@@ -1,6 +1,5 @@
 import { html, getCtx, toInput, toJsonSchema, VERBS, RESERVED, toolName, toTools, Access } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import * as u2 from "@qino/qino/u2";
 
 import type { Ctx, StandardSchema, Method, ApiNode, Verb, App } from "@qino/qino";
 
@@ -143,7 +142,6 @@ function routeHtml(r: Route, idx: number, toolJson: string) {
 
 function render() {
   const ctx = getCtx();
-  u2.elements(ctx, "code"); // the json views highlight with a library of their own
   const appUrl = ctx.req.appUrl;
 
   const apiTree = ctx.app.apiTree;
