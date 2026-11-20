@@ -166,6 +166,8 @@ The CMS is built from ordinary modules: inline editing, layouts, content types, 
 
 The CMS currently lives in this repository under [`module/cms`](module/cms/). A dedicated [Qino CMS repository](https://github.com/qinojs/cms) is being prepared.
 
+[Try the interactive CMS demo by schwups GmbH](https://schwups.ch/qino#ausprobieren). The demo is in German and lets you edit sample content directly on the page without an account.
+
 ## Documentation
 
 The [core documentation](module/core/docs/) covers [modules](module/core/docs/module.md), [database access](module/core/docs/db.md) and [file transforms](module/core/docs/transform.md).
