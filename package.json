@@ -1,5 +1,8 @@
 {
   "name": "@qino/qino",
+  "description": "Qino by schwups is a modular TypeScript framework for web apps and APIs, with inline CMS editing, authentication, AI integrations and MCP.",
+  "keywords": ["typescript", "web-framework", "cms", "inline-editing", "mcp", "deno", "bun", "node"],
+  "license": "MIT",
   "private": true,
   "type": "module",
   "repository": {
