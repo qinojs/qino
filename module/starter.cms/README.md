@@ -4,7 +4,57 @@ A website to start from. Applied once, then everything belongs to the site.
 
 ## Getting started
 
-One file, `server.ts`, in an empty folder. Put the newest version from
+Bun is the preferred runtime. In an empty folder, clone qino and make it the project's workspace:
+
+```sh
+git clone https://github.com/qinojs/qino.git qino
+cp qino/.npmrc .   # a workspace reads only the root's
+```
+
+`package.json` — item.js is released together with qino, so it may be younger than the minimum
+release age; `bunfig.toml` exempts it:
+
+```json
+{ "private": true, "type": "module", "workspaces": ["qino"], "dependencies": { "@qino/qino": "workspace:*" } }
+```
+
+```toml
+[install]
+minimumReleaseAge = 86400
+minimumReleaseAgeExcludes = ["@nuxodin/item", "@nuxodin/dump", "@nuxodin/reporter"]
+```
+
+`server.ts`:
+
+```ts
+import { App, sys } from "@qino/qino";
+
+const app = new App({ dir: import.meta.resolve("./") }); // files and the SQLite database next to this file
+app.stores.add(import.meta.resolve("./qino/module/store.json")).add("starter.cms");
+await app.init();
+
+sys.serve({ port: 8080, hostname: "127.0.0.1" }, app.fetch);
+```
+
+```sh
+bun install --production
+bun server.ts
+```
+
+1. The first start prints the superuser's password. It is also kept in
+   `data/starter.cms/superuser.txt`, readable only by the server's user.
+2. Open <http://localhost:8080/login> and sign in with `su` and that password.
+3. Switch on editing with the switch at the top right (or the key E) and click any text.
+4. The menu now shows *First steps*, a checklist only editors see: your own account, name and
+   logo, sending mail, imprint and privacy policy, languages. Delete the page when it is done.
+
+More starters build on this one. `starter.account` and `starter.ai` are added the same way;
+`starter.shop` comes from `./qino/shop/store.json`, `starter.fin` from `./qino/fin/store.json`
+(the shop needs the `fin` store too).
+
+### On Deno
+
+Deno is supported too and needs no checkout: one `server.ts`, with the newest version from
 [jsr.io/@qino/qino](https://jsr.io/@qino/qino) in place of `X.Y.Z`:
 
 ```ts
@@ -24,31 +74,6 @@ deno run -A server.ts
 
 The version is named once: the code and the modules must come from the same release, otherwise
 both are loaded twice. The first start downloads everything and takes a minute.
-
-1. The first start prints the superuser's password. It is also kept in
-   `data/starter.cms/superuser.txt`, readable only by the server's user.
-2. Open <http://localhost:8080/login> and sign in with `su` and that password.
-3. Switch on editing with the switch at the top right (or the key E) and click any text.
-4. The menu now shows *First steps*, a checklist only editors see: your own account, name and
-   logo, sending mail, imprint and privacy policy, languages. Delete the page when it is done.
-
-More starters build on this one. `starter.account` and `starter.ai` are added the same way;
-`starter.shop` comes from `qino + "shop/store.json"`, `starter.fin` from `qino + "fin/store.json"`
-(the shop needs the `fin` store too).
-
-### From a checkout
-
-To work on qino itself, clone it into `qino/` and make it part of the project with a `deno.json`.
-item.js is released together with qino, so it may be younger than Deno's minimum age for packages:
-
-```json
-{
-  "workspace": ["./qino"],
-  "minimumDependencyAge": { "age": "P1D", "exclude": ["jsr:@nuxodin/item"] }
-}
-```
-
-`server.ts` then imports `@qino/qino` and adds `import.meta.resolve("./qino/module/store.json")`.
 
 ## What it sets up
 

@@ -25,7 +25,7 @@ Use only what you need. Modules work without configuration, declare their depend
 
 ## Why Qino
 
-- **Runs on Node, Bun and Deno** — TypeScript, ESM, and Web APIs from end to end.
+- **Runs on Bun, Node and Deno** — Bun first; TypeScript, ESM, and Web APIs from end to end.
 - **Modular** — features are ordinary modules, no framework magic.
 - **Declarative APIs** — define an action tree once, serve it over HTTP, MCP or other adapters.
 - **Database-ready** — one query API for SQLite, PostgreSQL and MySQL.
@@ -36,7 +36,7 @@ Use only what you need. Modules work without configuration, declare their depend
 ## Quick start
 
 ```ts
-import { Access, App, sys } from "jsr:@qino/qino@^0.7";
+import { Access, App, sys } from "qinojs";
 
 const app = new App(); // SQLite by default
 
@@ -56,10 +56,11 @@ sys.serve({ port: 8080 }, app.fetch);
 
 Your endpoint is now available at `GET /api/hello`.
 
-Qino runs on Node 26, Bun and Deno. The examples here use Deno with JSR; on npm the package is `qinojs`:
+Qino runs best on Bun; Node 26 and Deno are supported as well. On npm the package is `qinojs`:
 
 ```sh
-npm install qinojs
+bun add qinojs
+bun server.ts
 ```
 
 ```ts
@@ -67,24 +68,18 @@ import { App } from "qinojs";
 import type { Node } from "qinojs/cms";
 ```
 
-```sh
-bun server.ts
-node --import qinojs/node server.ts # Node refuses TypeScript below node_modules; this lifts that
-```
+On Node: `npm install qinojs`, then `node --import qinojs/node server.ts` (Node refuses TypeScript below
+`node_modules`; this lifts that).
 
-Direct `jsr:` imports, including package subpaths, work without a `deno.json`:
+On Deno, Qino comes from JSR as `@qino/qino`. Direct `jsr:` imports, including package subpaths, work
+without a `deno.json`:
 
 ```ts
 import { App } from "jsr:@qino/qino@^0.7";
 import type { Node } from "jsr:@qino/qino@^0.7/cms";
 ```
 
-In a project, add Qino once with `deno add jsr:@qino/qino@^0.7` and use the short form:
-
-```ts
-import { App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
-```
+In a project, add Qino once with `deno add jsr:@qino/qino@^0.7` and use the short form `@qino/qino`.
 
 Qino's own modules import the same way; JSR rewrites these imports to full specifiers when publishing.
 
@@ -113,7 +108,7 @@ The query is rendered for the active database dialect.
 The action tree keeps routing, validation, access control and execution in one place, and can be served over more than one interface.
 
 ```ts
-import { Access, App, s } from "jsr:@qino/qino";
+import { Access, App, s } from "qinojs";
 
 const app = new App();
 
@@ -141,15 +136,15 @@ This action is available as `GET /api/users/:id` and, for example, as an MCP too
 `app.fetch` works wherever a standard request handler is accepted:
 
 ```ts
-sys.serve({ port: 8080 }, app.fetch); // or Deno.serve, Bun.serve
+sys.serve({ port: 8080 }, app.fetch); // or Bun.serve, Deno.serve
 ```
 
 Hono is optional. Use the adapter to mount Qino below an existing route:
 
 ```ts
-import { Hono } from "npm:hono@^4";
-import { App, sys } from "jsr:@qino/qino";
-import { honoAdapter } from "jsr:@qino/qino/hono";
+import { Hono } from "hono";
+import { App, sys } from "qinojs";
+import { honoAdapter } from "qinojs/hono";
 
 const app = new App();
 await app.init();
