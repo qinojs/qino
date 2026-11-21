@@ -7,7 +7,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 
 /** A user's postal address; the browser fills and saves it. */
 function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.address");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   return html.async`<form>
   <u2-fields>

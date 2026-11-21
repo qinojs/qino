@@ -7,6 +7,9 @@
     "u2"
   ],
   "files": [
+    "locale/de.json",
+    "locale/fr.json",
+    "locale/it.json",
     "manifest.json",
     "plugin.ts",
     "pub/main.js",

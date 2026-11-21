@@ -1,5 +1,7 @@
 import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
-import { t } from "@qino/pub/t.js";
+import { t as tAll } from "@qino/pub/t.js";
+
+const t = tAll.in("cms.cont.my.webauthn");
 import { html } from "@qino/pub/html.js";
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 

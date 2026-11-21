@@ -62,7 +62,7 @@ async function position(node: Node, ctx: Ctx): Promise<{ lat: number; lon: numbe
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.map.openstreet");
   const found = await position(node, ctx);
 
   // Without a position there is nothing to show — but an editor has to learn why.

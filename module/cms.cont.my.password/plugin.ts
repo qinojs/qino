@@ -7,7 +7,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 
 // The username field lets password managers file the new password under the right account.
 function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.password");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   return html.async`<form>
   <input type=text name=username autocomplete=username value="${ctx.user.username}" hidden>

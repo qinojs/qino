@@ -7,7 +7,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 
 // The codes exist in one response and nowhere else, so they are fetched, never rendered.
 function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.backup_codes");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   return html.async`<div>
   <div data-state>${t`Loading…`}</div>

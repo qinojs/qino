@@ -8,7 +8,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 
 // The secret is only ever fetched by the client, so a cached page cannot carry one.
 function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.totp");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   u2.assets(ctx, ["el/qrcode/qrcode.js", "el/time/time.js"]);
   return html.async`<div>

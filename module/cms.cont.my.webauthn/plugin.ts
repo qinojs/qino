@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 export const cms = { node: { js: ["pub/main.js"], render } };
 
 function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.webauthn");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   u2.assets(ctx, ["el/time/time.js"]);
   return html.async`<div data-api-base="${ctx.req.appUrl}api/auth.webauthn">

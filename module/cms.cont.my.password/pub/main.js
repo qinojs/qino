@@ -1,5 +1,7 @@
 import { api } from "@qino/pub/api.js";
-import { t } from "@qino/pub/t.js";
+import { t as tAll } from "@qino/pub/t.js";
+
+const t = tAll.in("cms.cont.my.password");
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 // core asks for a fresh proof (step-up) itself before it takes the new password

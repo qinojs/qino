@@ -10,7 +10,7 @@ export const cms = { node: { js: ["pub/main.js"], render, api } };
 /** Sign the user out on another device: sessions, remembered login, link. */
 export async function api(node: Node, vars: Record<string, unknown>): Promise<Record<string, unknown> | null> {
   const ctx = getCtx();
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.clients");
   const id = Number(vars.logout_client ?? 0);
   if (!ctx.userId || !id) return null;
   if (String(id) === ctx.clientId) return { ok: false, message: await t`Use the logout button of this device.` };
@@ -48,7 +48,7 @@ async function ipHosts(ips: string[]): Promise<Record<string, string>> {
 const ACTIVE = 15 * 60; // seconds since the last request that still count as "here"
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.clients");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
 
   // client_usr records "this user signed in on this device".

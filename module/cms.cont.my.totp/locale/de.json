@@ -1,0 +1,12 @@
+{
+  "6-digit code": "6-stelliger Code",
+  "Authenticator app": "Authenticator-App",
+  "No authenticator app yet.": "Noch keine Authenticator-App.",
+  "Or type the secret by hand:": "Oder den Schlüssel von Hand eingeben:",
+  "Remove this authenticator app?": "Diese Authenticator-App entfernen?",
+  "Scan this with your authenticator app, then enter what it shows.": "Scannen Sie dies mit Ihrer Authenticator-App und geben Sie den angezeigten Code ein.",
+  "Set up": "Einrichten",
+  "Set up an authenticator app": "Authenticator-App einrichten",
+  "Set up. The app can prove it is you from now on.": "Eingerichtet. Ab jetzt kann die App bestätigen, dass Sie es sind.",
+  "What is this device called?": "Wie heisst dieses Gerät?"
+}

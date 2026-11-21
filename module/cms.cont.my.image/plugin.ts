@@ -7,7 +7,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 
 /** A user's image: saved as soon as one is chosen. */
 function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.image");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   return html.async`<div>
   <figure data-image hidden>

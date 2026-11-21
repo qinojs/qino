@@ -95,6 +95,9 @@ test("appointment booking isolates instances, enforces node rights, and serializ
       assertStringIncludes(rendered, "name=slot");
       assertStringIncludes(rendered, "Guest &lt;b&gt;one&lt;/b&gt;");
       assertStringIncludes(rendered, "csrfToken");
+      // a slot within a day names its date once: "Nov 25, 2026, 2:00 – 3:00 PM"
+      const label = rendered.match(/<option value="\{[^>]*>([^<]+)</)?.[1] ?? "";
+      assertEquals(label.split(String(tomorrow.year)).length, 2, label);
     });
     const day = tomorrow.add({ days: 4 });
     await requestStorage.run(admin, async () => {

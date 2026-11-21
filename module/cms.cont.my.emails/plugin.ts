@@ -13,7 +13,7 @@ const settingsSchema = {
 export const cms = { node: { js: ["pub/main.js"], render, settingsSchema } };
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.emails");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   u2.assets(ctx, ["el/time/time.js"]);
   const single = Boolean(await node.settings.single);

@@ -9,7 +9,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 // The deep link is valid 15 minutes, so it is not in the HTML (a cached page would show an expired
 // one). The client fetches it, and refetches while waiting.
 function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.my.telegram");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   u2.assets(ctx, ["el/time/time.js"]);
   return html.async`<div>

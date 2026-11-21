@@ -1,5 +1,7 @@
 import { api } from "@qino/pub/api.js";
-import { t } from "@qino/pub/t.js";
+import { t as tAll } from "@qino/pub/t.js";
+
+const t = tAll.in("cms.cont.my.api_keys");
 import { html } from "@qino/pub/html.js";
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 

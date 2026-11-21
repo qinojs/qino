@@ -10,7 +10,7 @@ export const cms = { node: { js: ["pub/main.js"], render } };
 // Connecting redirects to the provider, so plain links; only the list is fetched.
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
-  const t = app.t;
+  const t = app.t.in("cms.cont.my.oauth");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   u2.assets(ctx, ["el/time/time.js"]);
 

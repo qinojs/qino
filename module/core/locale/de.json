@@ -702,5 +702,20 @@
   "with logged-in users": "mit angemeldeten Benutzern",
   "Words search the message, a path (with /) the file, an IP address or a numeric id match exactly": "Wörter suchen in der Nachricht, ein Pfad (mit /) in der Datei, eine IP-Adresse oder numerische ID müssen genau passen",
   "Write index": "Index schreiben",
-  "Your message could not be sent. Please try again in a few seconds or contact us directly.": "Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es in ein paar Sekunden nochmals, oder kontaktieren Sie uns direkt."
+  "Your message could not be sent. Please try again in a few seconds or contact us directly.": "Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es in ein paar Sekunden nochmals, oder kontaktieren Sie uns direkt.",
+  "Please sign in.": "Bitte melden Sie sich an.",
+  "Error loading.": "Fehler beim Laden.",
+  "Save": "Speichern",
+  "Saved.": "Gespeichert.",
+  "Remove": "Entfernen",
+  "Connect": "Verbinden",
+  "Connected": "Verbunden",
+  "Disconnect": "Trennen",
+  "Last used": "Zuletzt verwendet",
+  "Never used": "Nie verwendet",
+  "Verified": "Bestätigt",
+  "Send code again": "Code erneut senden",
+  "Verification code sent.": "Bestätigungscode gesendet.",
+  "Yes": "Ja",
+  "Copied.": "Kopiert."
 }

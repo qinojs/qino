@@ -40,7 +40,9 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   }
   const available = await slots(node, { start: date.toZonedDateTime(timeZone).toInstant().toString(), end: date.add({ days: 7 }).toZonedDateTime(timeZone).toInstant().toString(), timeZone });
   const mine = await bookings(node);
-  const stamp = (value: string) => Temporal.Instant.from(value).toZonedDateTimeISO(timeZone).toLocaleString(ctx.lang, { dateStyle: "medium", timeStyle: "short" });
+  // one date for a range within a day: "25.11.2026, 14:00–15:00"
+  const format = new Intl.DateTimeFormat(ctx.lang, { dateStyle: "medium", timeStyle: "short", timeZone });
+  const range = (start: string, end: string) => format.formatRange(Temporal.Instant.from(start).epochMilliseconds, Temporal.Instant.from(end).epochMilliseconds);
   const url = new URL(ctx.req.url.href);
   const dateId = `booking-${node.id}-date`, slotId = `booking-${node.id}-slot`;
   const nameId = `booking-${node.id}-name`, emailId = `booking-${node.id}-email`;
@@ -60,7 +62,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
       <input type=text name=your_name autocomplete=off tabindex=-1 aria-hidden=true>
       <label for="${slotId}">${t`Appointment (required)`}</label>
       <select id="${slotId}" name=slot required><option value="">${t`Choose an appointment`}</option>
-        ${available.map((slot) => html`<option value="${JSON.stringify({ dateId: slot.dateId, start: slot.start })}">${stamp(slot.start)} – ${stamp(slot.end)}</option>`)}
+        ${available.map((slot) => html`<option value="${JSON.stringify({ dateId: slot.dateId, start: slot.start })}">${range(slot.start, slot.end)}</option>`)}
       </select>
       <label for="${nameId}">${t`Name (required)`}</label>
       <input id="${nameId}" name=name autocomplete=name maxlength=200 value="${vars.name}" required>
@@ -69,7 +71,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
       <button type=submit name=book value=1>${t`Book appointment`}</button>
     </form>` : html.async`<p>${t`No appointments available in this period.`}</p>`}
     ${mine.length ? html.async`<section aria-label="${t`Bookings`}"><h3>${t`Bookings`}</h3><ul>${mine.map((row) => html.async`<li>
-      <time datetime="${row.start}">${stamp(String(row.start))}</time> – ${stamp(String(row.end))}: ${row.name}
+      <time datetime="${row.start}">${range(String(row.start), String(row.end))}</time>: ${row.name}
       <form method=post action="${url.href}" aria-label="${t`Cancel appointment`}">${node.cms.formFields(node)}
         <button type=submit name=cancel value="${row.id}">${t`Cancel appointment`}</button>
       </form>
