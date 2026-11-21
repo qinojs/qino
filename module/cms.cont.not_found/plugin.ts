@@ -52,7 +52,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
 async function renderEditBox(node: Node, ctx: Ctx) {
   if (!await node.edit()) return "";
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.not_found");
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
   if (cmsCtx(ctx).mainNode === await node.cms.nodeFromRequest()) return "";
 

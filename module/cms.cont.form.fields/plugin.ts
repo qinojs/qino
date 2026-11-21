@@ -74,10 +74,10 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx,
       else if (required) form.errors++;
     } else if (required && !value) {
       form.errors++;
-      error = html`<div class=-error>${await node.app.t`This field is required`}</div>`;
+      error = html`<div class=-error>${await node.app.t.in("cms.cont.form.fields")`This field is required`}</div>`;
     } else if (type === "email" && value && !isEmail(value)) {
       form.errors++;
-      error = html`<div class=-error>${await node.app.t`Please enter a valid e-mail address`}</div>`;
+      error = html`<div class=-error>${await node.app.t.in("cms.cont.form.fields")`Please enter a valid e-mail address`}</div>`;
     } else if (value) {
       form.values[name] = type === "number" ? Number(value) : type === "checkbox" ? true : value;
       form.labels[name] = label;
@@ -132,7 +132,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx,
 
   return html.async`<tr class="-item -item-${name}">
       <th scope=row><label for="${common.id}">${node.cms.text(node, name + "_title", { tag: "span" })}${required ? " *" : ""}</label>${taken
-        ? html.async` <span class=-taken title="${node.app.t`Another field block of this form has a field "${name}" too: only one value is kept.`}">!</span>`
+        ? html.async` <span class=-taken title="${node.app.t.in("cms.cont.form.fields")`Another field block of this form has a field "${name}" too: only one value is kept.`}">!</span>`
         : ""}
       <td>${control}${error}`;
 }
@@ -159,7 +159,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   }
 
   const warning = edit && !path.some((n) => n.vs.module === "cms.cont.form")
-    ? html.async`<tr><td colspan=2><u2-alert open variant=warning>${node.app.t`This module belongs inside a "cms.cont.form" module.`}</u2-alert>`
+    ? html.async`<tr><td colspan=2><u2-alert open variant=warning>${node.app.t.in("cms.cont.form.fields")`This module belongs inside a "cms.cont.form" module.`}</u2-alert>`
     : "";
 
   const table = html.async`<table class="u2-table -Fields -Flex -NoSideGaps">${warning}${fields}</table>`;

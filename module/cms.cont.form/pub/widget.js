@@ -1,7 +1,9 @@
 /* Panel widget: what happens to a sent form — where it is kept, where it goes, what it writes. */
 import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t as tAll } from '@qino/pub/t.js';
+
+const t = tAll.in('cms.cont.form');
 
 import { bindSettings } from '@qino/m/cms/pub/js/cms.js';
 

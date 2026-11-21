@@ -24,7 +24,7 @@ export const tickets: Record<string, TicketKind> = {
 };
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.password_reset");
   const handle = ctx.req.query[TICKET_PARAM] ?? "";
   if (handle) {
     // opening the link only looks — mail scanners must not spend the ticket

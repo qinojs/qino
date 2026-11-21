@@ -1,0 +1,6 @@
+{
+  "Open this link to set a new password: {0}\n\nThe link is valid until {1} UTC. If you did not ask for it, ignore this mail.": "Öffnen Sie diesen Link, um ein neues Passwort zu setzen: {0}\n\nDer Link gilt bis {1} UTC. Wenn Sie ihn nicht angefordert haben, ignorieren Sie diese Mail.",
+  "Set a new password": "Neues Passwort setzen",
+  "The password is too short.": "Das Passwort ist zu kurz.",
+  "Your password is set. You can sign in now.": "Ihr Passwort ist gesetzt. Sie können sich jetzt anmelden."
+}

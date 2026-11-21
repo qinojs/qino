@@ -33,20 +33,20 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     out.push(html.async`<form method=post>
   ${
       showSaveLogin
-        ? html.async`<label><input name=save_login type=checkbox value=1${saveLoginChecked}>${app.t`Stay logged in`}</label>`
+        ? html.async`<label><input name=save_login type=checkbox value=1${saveLoginChecked}>${app.t.in("cms.cont.login.known")`Stay logged in`}</label>`
         : ""
     }
   ${email}
   <input name=email type=text value="${email}" autocomplete=username readonly hidden>
   <input type=hidden name=csrfToken value="${csrfToken}">
   ${showPwField ? html`<input name=pw type=password autocomplete=current-password>` : ""}
-  <button name=core_login>${app.t`Log in`}</button>
+  <button name=core_login>${app.t.in("cms.cont.login.known")`Log in`}</button>
 </form>\n`);
   }
 
   if (!out.length) return html.raw("");
   return html.async`<div>
-    ${ctx.loginError && ctx.loginError !== "pending" ? html.async`<div class=loginError>${app.t`Your login attempt failed`}</div>` : ""}
+    ${ctx.loginError && ctx.loginError !== "pending" ? html.async`<div class=loginError>${app.t.in("cms.cont.login.known")`Your login attempt failed`}</div>` : ""}
     ${out}
   </div>`;
 }

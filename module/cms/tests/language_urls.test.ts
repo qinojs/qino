@@ -42,7 +42,8 @@ test("cms: an empty stored address is the site root, not a missing one", async (
   try {
     await app.settings.core.langs("de");
     const node = await cms(app).node((await (await cms(app).node(1)).createChild()).id);
-    await app.db.table("page_url").insert({ page_id: node.id, lang: "de", url: "", custom: 1 }); // the home page, as PHP stored it
+    // the home page, as PHP stored it — over the address the node got when it was made
+    await app.db.table("page_url").ensure({ page_id: node.id, lang: "de", url: "", custom: 1 });
     const ctx = await testContext({ app });
     ctx.lang = "de";
     assertEquals(await requestStorage.run(ctx, () => node.url("de")), ctx.req.appUrl);

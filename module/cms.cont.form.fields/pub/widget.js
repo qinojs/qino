@@ -2,7 +2,9 @@
    never changes. */
 import { html, unhee } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t as tAll } from '@qino/pub/t.js';
+
+const t = tAll.in('cms.cont.form.fields');
 
 import { bindSettings } from '@qino/m/cms/pub/js/cms.js';
 

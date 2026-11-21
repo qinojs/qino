@@ -1,7 +1,9 @@
 /* Panel widget: table size, column widths, and the excel export link. */
 import { html } from '@qino/pub/html.js';
 import { api } from '@qino/pub/api.js';
-import { t } from '@qino/pub/t.js';
+import { t as tAll } from '@qino/pub/t.js';
+
+const t = tAll.in('cms.cont.table');
 
 import { bindSettings } from '@qino/m/cms/pub/js/cms.js';
 

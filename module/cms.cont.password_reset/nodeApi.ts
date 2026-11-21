@@ -16,7 +16,7 @@ const PER_HOUR = 3; // links an account gets at most: enough for a lost mail, to
  */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
-  const t = app.t;
+  const t = app.t.in("cms.cont.password_reset");
   if (vars.request) {
     const email = String(vars.request).trim().toLowerCase();
     // the address has to be a verified contact: a login handle that looks like one proves nothing
@@ -58,8 +58,8 @@ async function sendLink(node: Node, usrId: number, email: string) {
   const url = new URL(await node.url(), await app.url());
   url.searchParams.set(TICKET_PARAM, handle);
   const until = new Date((unixTime() + TTL) * 1000).toISOString().slice(0, 16).replace("T", " ");
-  const text = await app.t`Open this link to set a new password: ${url.href}
+  const text = await app.t.in("cms.cont.password_reset")`Open this link to set a new password: ${url.href}
 
 The link is valid until ${until} UTC. If you did not ask for it, ignore this mail.`;
-  await send(app, { email }, { title: await app.t`Set a new password`, text });
+  await send(app, { email }, { title: await app.t.in("cms.cont.password_reset")`Set a new password`, text });
 }

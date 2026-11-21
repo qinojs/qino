@@ -16,7 +16,7 @@ test("known accounts distinguish remembered logins from those needing a password
   ];
   Object.defineProperty(ctx, "client", { value: { users: () => users } });
   const node = {
-    app: { t: async (...args: Parameters<typeof fakeT>) => fakeT(...args) }, edit: () => false,
+    app: { t: fakeT }, edit: () => false,
     settings: { history: () => 0, saveLogin: () => true },
   } as unknown as Node;
   const out = String(await requestStorage.run(ctx, () => cms.node.render(node, { ctx })));

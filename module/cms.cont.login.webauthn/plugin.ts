@@ -32,7 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   }
 
   return html.async`<form method=post data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">
-  <button data-action=login>${app.t`Sign in with passkey`}</button>
+  <button data-action=login>${app.t.in("cms.cont.login.webauthn")`Sign in with passkey`}</button>
   <output class=-msg></output>
 </form>`;
 }

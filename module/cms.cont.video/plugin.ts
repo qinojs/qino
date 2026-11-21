@@ -17,7 +17,7 @@ async function render(node: Node) {
   const files = [...(await node.files()).values()];
   const first = (type: string) => files.find((f) => f.mime.startsWith(type));
   const video = first("video/");
-  if (!video) return html.async`<div>${await node.edit() ? html.async`<p>${node.app.t`Drop a video file here.`}</p>` : ""}</div>`;
+  if (!video) return html.async`<div>${await node.edit() ? html.async`<p>${node.app.t.in("cms.cont.video")`Drop a video file here.`}</p>` : ""}</div>`;
 
   const { settings } = node;
   const flags = {

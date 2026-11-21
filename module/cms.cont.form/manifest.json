@@ -11,6 +11,9 @@
   ],
   "files": [
     "dbschema.json",
+    "locale/de.json",
+    "locale/fr.json",
+    "locale/it.json",
     "manifest.json",
     "mod.ts",
     "plugin.ts",

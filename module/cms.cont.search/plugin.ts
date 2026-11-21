@@ -151,12 +151,12 @@ async function results(node: Node, ctx: Ctx, search: string, vars: Record<string
   const entry = await record(node, ctx, search, found.length, vars);
   const list = found.length
     ? html.async`<ol>${found.map((r) => item(node, r.page, r.text, words))}</ol>`
-    : html.async`<p class=-empty>${ctx.app.t`No results found`}</p>`;
+    : html.async`<p class=-empty>${ctx.app.t.in("cms.cont.search")`No results found`}</p>`;
   return html.async`${entry}${list}`;
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  const t = ctx.app.t;
+  const t = ctx.app.t.in("cms.cont.search");
   const search = (ctx.req.query[QUERY] ?? "").trim();
   u2.assets(ctx, ["attr/href/href.js"]);
 

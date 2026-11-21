@@ -62,7 +62,7 @@ async function others(node: Node, form: Form) {
     if (values.length) form.values[name] = values.length > 1 ? values : values[0];
   }
   if (rest.length <= MAX_FIELDS && JSON.stringify(form.values).length <= MAX_CHARS) return "";
-  return node.app.t`Your entry is too long.`;
+  return node.app.t.in("cms.cont.form")`Your entry is too long.`;
 }
 
 /** Recipients: the form's list plus addresses from fields; if none, the site's own address. */
@@ -102,7 +102,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   await init(node);
   u2.assets(ctx, ["el/alert/alert.js", "el/alert/alert.css", "class/width/width.css", "class/flex/flex.css"]);
   const edit = await node.edit();
-  const t = node.app.t;
+  const t = node.app.t.in("cms.cont.form");
   const cms = node.cms;
   const successPage = node.settings.success_page();
 

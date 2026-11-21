@@ -9,6 +9,9 @@
   ],
   "files": [
     "README.md",
+    "locale/de.json",
+    "locale/fr.json",
+    "locale/it.json",
     "manifest.json",
     "nodeApi.ts",
     "plugin.ts",

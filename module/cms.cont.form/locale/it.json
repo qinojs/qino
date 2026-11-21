@@ -1,0 +1,12 @@
+{
+  "(empty: the site's own address)": "(vuoto: l'indirizzo del sito)",
+  "(the page title is used when empty)": "(vuoto: il titolo della pagina)",
+  "A confirmation text or a redirect should be defined.": "Dovrebbe essere definito un testo di conferma o un reindirizzamento.",
+  "Buttons": "Pulsanti",
+  "E-Mail above": "Testo dell'e-mail sopra",
+  "E-Mail below": "Testo dell'e-mail sotto",
+  "On success go to page": "Dopo l'invio, vai alla pagina",
+  "Submit": "Invia",
+  "Your entry is too long.": "Il vostro inserimento è troppo lungo.",
+  "…or show this content": "…oppure mostrare questo contenuto"
+}
