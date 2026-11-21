@@ -2,7 +2,7 @@ import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
 import { stepUp } from "@qino/pub/stepUpDialog.js";
 import { t as tAll } from "@qino/pub/t.js";
 
-const t = tAll.in("cms.cont.login.webauthn");
+const t = tAll.in("cms.cont.login");
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 initNode("cont.login.webauthn", (el) => {

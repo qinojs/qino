@@ -1,5 +1,10 @@
 {
   "Sign in": "Connexion",
   "Welcome back": "Bon retour",
-  "or": "ou"
+  "or": "ou",
+  "Stay logged in": "Rester connecté",
+  "Your login attempt failed": "La connexion a échoué",
+  "Login failed: {0}": "Échec de la connexion : {0}",
+  "Signing in…": "Connexion…",
+  "No login providers configured.": "Aucun service de connexion configuré."
 }

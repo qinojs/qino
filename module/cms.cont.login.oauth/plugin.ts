@@ -11,7 +11,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   if (ctx.user && !edit) return html.raw(""); // nothing to offer once logged in
 
   const list = await providers(app);
-  if (!list.length) return edit ? html`<em>${await app.t.in("cms.cont.login.oauth")`No login providers configured.`}</em>` : html.raw("");
+  if (!list.length) return edit ? html`<em>${await app.t.in("cms.cont.login")`No login providers configured.`}</em>` : html.raw("");
 
   const base = ctx.req.appUrl;
   const returnTo = ctx.req.url.pathname + ctx.req.url.search;

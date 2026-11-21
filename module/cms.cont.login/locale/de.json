@@ -1,5 +1,10 @@
 {
   "Sign in": "Anmelden",
   "Welcome back": "Willkommen zurück",
-  "or": "oder"
+  "or": "oder",
+  "Stay logged in": "Angemeldet bleiben",
+  "Your login attempt failed": "Die Anmeldung ist fehlgeschlagen",
+  "Login failed: {0}": "Anmeldung fehlgeschlagen: {0}",
+  "Signing in…": "Anmelden…",
+  "No login providers configured.": "Keine Anmeldedienste eingerichtet."
 }

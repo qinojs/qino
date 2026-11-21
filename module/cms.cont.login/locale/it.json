@@ -1,5 +1,10 @@
 {
   "Sign in": "Accedi",
   "Welcome back": "Bentornati",
-  "or": "oppure"
+  "or": "oppure",
+  "Stay logged in": "Resta connesso",
+  "Your login attempt failed": "L'accesso non è riuscito",
+  "Login failed: {0}": "Accesso non riuscito: {0}",
+  "Signing in…": "Accesso…",
+  "No login providers configured.": "Nessun servizio di accesso configurato."
 }
