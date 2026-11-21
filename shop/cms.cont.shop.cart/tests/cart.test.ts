@@ -20,6 +20,7 @@ test("cart lines show their product's image", async () => {
       const out = await shown();
       assertStringIncludes(out, "<cms-image");
       assertStringIncludes(out, `/dbFile/${photo.id}/`);
+      assertStringIncludes(out, "CHF 24.50"); // every amount with its currency
     });
   });
 });
