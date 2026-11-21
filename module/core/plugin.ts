@@ -8,6 +8,7 @@ import { pendingLogin } from "./lib/auth/factors.ts";
 import { isLocalHost } from "./lib/fileStream.ts";
 import { cleanLogs } from "./healthChecks.ts";
 import { migrateSmalltext } from "./lib/LangManager.ts";
+import { $item } from "./deps.ts";
 
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/DbEvents.ts";
@@ -189,6 +190,9 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     await migrateSmalltext(app.db); // before any locale is imported
     app.languages.setLangs(String(await settings.langs ?? ""));
+    // changed in the backend or by a starter: it holds at once, not from the next start
+    const langs = settings.langs[$item];
+    langs.addEventListener("change", () => app.languages.setLangs(String(langs.get() ?? "")), { signal });
 
     const transformTimeout = Number(await settings.transform.timeout ?? "");
     if (transformTimeout) app.fileTransformer.timeout = transformTimeout;

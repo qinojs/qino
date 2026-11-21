@@ -59,8 +59,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     ...(product.brand && { brand: { "@type": "Brand", name: product.brand } }),
     offers,
   });
+  // in a list, the title leads to the product's own page (not while editing: a click edits the title)
+  const href = about === node && !own && !await node.edit() ? await node.url() : "";
   return html.async`<div>
-  ${node.cms.text(node, "title", { tag: "h2", class: "-title" })}
+  ${href ? html`<h2 class=-title><a href="${href}">${title}</a></h2>` : node.cms.text(node, "title", { tag: "h2", class: "-title" })}
   ${file ? cms_image(file, { alt: title, width: 500 }) : ""}
   ${node.cms.text(node, "main", { class: "-text", if: true })}
   <form shop-add ${action ? html`action=${action}` : ""} class=-buy>

@@ -26,10 +26,13 @@ test("a product tells search engines the price it shows, only where the page is 
     // the module makes it a product: the row is there with the node
     const cup = await category.createCont({ module: "cms.cont.shop.product" });
     await app.db.table("shop_product").update(cup.id, { price: 900 });
-    for (const [asked, told] of [[page, null], [cup, "9.00"]] as const) await asVisitor(app, async (ctx) => {
+    for (const [asked, told, linked] of [[page, null, true], [cup, "9.00", false]] as const) await asVisitor(app, async (ctx) => {
       cmsCtx(ctx).requestedNode = asked;
-      await cms.node.render(cup, { ctx });
+      const own = await cup.url();
+      const out = String(await cms.node.render(cup, { ctx }));
       assertEquals(structured(ctx.res.html.head)?.offers[0].price ?? null, told);
+      // in the list, the title leads to the product's own page; there, it is plain
+      assertEquals(out.includes(`<a href="${own}">`), linked);
     });
   }));
 
