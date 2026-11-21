@@ -2,6 +2,7 @@ import { test } from "node:test";
 import { assertEquals, assertThrows } from "./deps.ts";
 import { DbDriver, pgTypes } from "../lib/db/DbDriver.ts";
 import { Db } from "../lib/db/Db.ts";
+import { fs } from "../lib/fs.ts";
 
 test("PostgreSQL driver exposes its dialect and escapes identifiers", async () => {
   const driver = DbDriver.from("postgresql://qino:secret@localhost/qino");
@@ -155,4 +156,15 @@ test("A transaction on a pool takes its connection after transaction:before", as
     await done;
     assertEquals(order, ["connection", "connection"]); // nested: joins, without waiting again
   } finally { DbDriver.from = from; }
+});
+
+test("SQLite creates the directory of its file", async () => {
+  const dir = await fs.tempDir();
+  const driver = DbDriver.from(`sqlite:${dir}/data/new/app.sqlite`);
+  try {
+    assertEquals(await fs.isFile(`${dir}/data/new/app.sqlite`, { ttl: 0 }), true);
+  } finally {
+    await driver.close();
+    await fs.remove(dir, { recursive: true });
+  }
 });

@@ -11,7 +11,7 @@ const FIELDS = ["honorificPrefix", "organization", "givenName", "familyName", "s
 const IN_ADDRESS = new Set(["streetAddress", "postalCode", "addressLocality", "addressCountry"]);
 const AUTOCOMPLETE: Record<string, string> = {
   honorificPrefix: "honorific-prefix", organization: "organization", givenName: "given-name", familyName: "family-name",
-  streetAddress: "street-address", postalCode: "postal-code", addressLocality: "address-level1", addressCountry: "country",
+  streetAddress: "street-address", postalCode: "postal-code", addressLocality: "address-level2", addressCountry: "country", // level1 is the region
   telephone: "tel", email: "email",
 };
 const REQUIRED = ["honorificPrefix", "givenName", "familyName", "streetAddress", "postalCode", "addressLocality", "addressCountry", "email"];

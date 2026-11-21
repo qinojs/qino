@@ -37,7 +37,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     ? html`<span class=-num>${lines.length}</span> <span class=-cost>${money(total)}</span>`
     : html`<span class=-num>${lines.length}</span>`;
 
-  return html.async`<div>${url ? html.async`<a href="${url}">${body}</a>` : body}</div>`;
+  // the number alone says nothing to a screen reader: the link names what it counts
+  const label = mode === "short" ? html.async` aria-label="${t`Shopping cart`}: ${lines.length}"` : "";
+  return html.async`<div>${url ? html.async`<a href="${url}"${label}>${body}</a>` : body}</div>`;
 }
 
 export const cms = { node: { render, js: ["../cms.shop/pub/shop.js", "pub/main.js"], settingsSchema } };

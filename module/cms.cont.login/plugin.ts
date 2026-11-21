@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["class/card/card.css", "class/flex/flex.css"]);
   const app = node.app;
-  const t = app.t;
+  const t = app.t.in("cms.cont.login");
   const edit = await node.edit();
   // signed in, the password form renders nothing but still applies its redirect setting
   if (ctx.user && !edit) return html.async`<div class=u2-card>

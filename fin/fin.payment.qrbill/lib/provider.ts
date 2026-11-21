@@ -31,7 +31,8 @@ export const paymentProvider: Provider = {
 
   async methods(app, { currency }) {
     if (!CURRENCIES.has(currency) || !await iban(app)) return [];
-    return [{ name: "", label: "QR-bill" }];
+    // its official name in each language: QR-Rechnung, QR-facture, QR-fattura
+    return [{ name: "", label: await app.t.in("fin.payment.qrbill")`QR-bill` }];
   },
 
   async start(app, payment, urls) {

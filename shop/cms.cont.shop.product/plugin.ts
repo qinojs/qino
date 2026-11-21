@@ -29,9 +29,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const action = cartId ? await (await node.cms.node(cartId)).url() : "";
 
   const rows = [], offers = [];
+  let orderable = false; // a button that can only fail is none
   for (const variant of variants.length ? variants : [undefined]) {
     const [{ gross }, errors] = await Promise.all([product.prices({ variant, order, currency }), product.errors(variant)]);
     const message = Object.values(errors)[0];
+    if (!message) orderable = true;
     // the price as shown, so the structured data says what the page says
     if (currency && gross >= 0) offers.push({
       "@type": "Offer", ...(variant && { name: await variant.title(ctx.lang) }),
@@ -66,7 +68,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <table class=u2-table><tbody>${rows}</tbody></table>
     ${product.fields({ order, currency })}
     <small class=-tax>${t`including VAT`} ${product.taxRate(where)}%</small>
-    <button>${t`Add to cart`}</button>
+    ${orderable ? html.async`<button>${t`Add to cart`}</button>` : ""}
   </form>
 </div>`;
 }

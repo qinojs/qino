@@ -1,5 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { AsyncLocalStorage } from "node:async_hooks";
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 import { mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
 
@@ -155,6 +157,9 @@ const { Bun, Deno, process } = globalThis as any;
 /** `node:sqlite`, in Bun `bun:sqlite` — both answer `exec`, `prepare().all/run`, `loadExtension`
  *  and `close` alike. Loaded on first use, so other backends never load it. */
 function openSqlite(path: string): DatabaseSync {
+  // sqlite only says "unable to open database file" when the file's directory is missing
+  const dir = path === ":memory:" || path.startsWith("file:") ? "" : dirname(path);
+  if (dir && !existsSync(dir)) mkdirSync(dir, { recursive: true });
   if (Bun) return new (process.getBuiltinModule("bun:sqlite").Database)(path);
   // Deno: extensions need FFI rights, the flag alone throws without them
   const allowExtension = !Deno || Deno.permissions.querySync({ name: "ffi" }).state === "granted";

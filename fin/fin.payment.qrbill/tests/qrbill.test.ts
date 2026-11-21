@@ -38,6 +38,9 @@ test("an invoice paid by QR bill: slip, a partial transfer, the rest", async () 
     app.languages.setLangs(["en", "de"]); // a site that speaks German
     assertEquals(await methods(app, { amount: 100, currency: "CHF" }), [{ method: "qrbill", label: "QR-bill" }]);
     assertEquals(await methods(app, { amount: 100, currency: "USD" }), []);
+    app.languages.setLangs(["de", "en"]); // its name in the site's language
+    assertEquals(await methods(app, { amount: 100, currency: "CHF" }), [{ method: "qrbill", label: "QR-Rechnung" }]);
+    app.languages.setLangs(["en", "de"]);
     const draft = await invoice(app, { currency: "CHF", lang: "de", lines: [{ name: "Design", price: 50000 }] });
     const id = Number((await issue(app, draft))?.id);
     const order = { method: "qrbill", amount: 50000, currency: "CHF", ref: refOf(id), description: "Rechnung 2026-1" };

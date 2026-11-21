@@ -68,3 +68,23 @@ test("combined login renders its real children and configured providers without 
     await fs.remove(dir, { recursive: true });
   }
 });
+
+test("the login speaks German: its own texts and the password form's", async () => {
+  const dir = await fs.tempDir() + "/";
+  const app = new App({ db: "sqlite::memory:", dir });
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.login");
+  try {
+    await app.init();
+    app.languages.setLangs(["de", "en"]);
+    const root = await cms(app).node(1);
+    const login = await root.child("login", { module: "cms.cont.login", access: 1 });
+    await login.title("de", "Anmelden");
+    const html = await (await app.fetch(new Request("http://localhost/de/anmelden"))).text();
+    for (const text of ["<h2>Anmelden</h2>", "Willkommen zurück", ">oder<", "Passwort:", "Angemeldet bleiben:"]) {
+      assert(html.includes(text), text);
+    }
+  } finally {
+    await app.db.close();
+    await fs.remove(dir, { recursive: true });
+  }
+});

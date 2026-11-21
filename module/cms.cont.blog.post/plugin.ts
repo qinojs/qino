@@ -39,7 +39,7 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
   await init(node);
   const page = await node.page();
   const title = (await page.showTitle()).plain();
-  const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
+  const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url().catch(() => ctx.req.url.href)).href;
   ctx.res.html.head += `<link rel="canonical" href="${hee(canonical)}">\n`;
   const published = Number(page.vs.online_start);
   const date = published && new Date(published * 1000);

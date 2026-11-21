@@ -150,3 +150,25 @@ test("editors create posts as drafts and see what is missing", async () => {
     await fs.remove(dir, { recursive: true });
   }
 });
+
+test("blog renders before the site's address is known, with the request's", async () => {
+  const dir = await fs.tempDir() + "/";
+  const app = new App({ db: "sqlite::memory:", dir });
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.blog").add("cms.layout.standard.2");
+  await app.init();
+  try {
+    const root = await cms(app).node(1);
+    const page = await root.createChild({ access: 1, searchable: true });
+    await page.title("en", "News");
+    await page.cont("main", "cms.cont.blog");
+    const post = await page.createChild({ access: 1, searchable: true, online_start: 1726560000 });
+    await post.title("en", "First post");
+    const document = await (await app.fetch(new Request(`https://news.test/${await page.urlSeo("en")}`))).text();
+    assertStringIncludes(document, "First post");
+    assertStringIncludes(document, `rel="canonical" href="https://news.test/`);
+  } finally {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await app.db.close();
+    await fs.remove(dir, { recursive: true });
+  }
+});

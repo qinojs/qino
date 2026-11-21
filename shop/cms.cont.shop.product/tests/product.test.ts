@@ -52,3 +52,12 @@ test("product image prefers the named slot and keeps legacy attachments visible"
     }
     assertEquals([...(await node.files()).keys()].sort(), ["image", "old-gallery-key"]);
   }));
+
+test("a product nobody can order has no button to try", () =>
+  withShop(["cms.cont.shop.product", "cms.shop.stock"], async (app) => {
+    const node = await cmsOf(app).node(10);
+    const shown = () => asVisitor(app, async (ctx) => String(await cms.node.render(node, { ctx })));
+    assertStringIncludes(await shown(), "<button>");
+    await app.db.table("shop_product").update(10, { stock: 0 });
+    assert(!(await shown()).includes("<button>"), "sold out: the message, no button");
+  }));

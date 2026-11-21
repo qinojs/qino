@@ -21,6 +21,9 @@ test("the small cart: empty, then as much as its mode says", async () => {
       assert((await shown("short")).includes('-num>1<'));
       assert((await shown("count")).includes("CHF 49.00"));
       assert((await shown("lines")).includes("<table>"));
+      await node.settings.cart(1); // with a cart page, the link names what the number counts
+      assert((await shown("short")).includes('aria-label="Shopping cart: 1"'));
+      assert(!(await shown("count")).includes("aria-label"), "the cost is in the text, a label would hide it");
     });
   });
 });

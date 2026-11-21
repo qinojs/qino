@@ -69,7 +69,7 @@ ${errorHtml}
         ? html.async`<tr class=-email>
       <th>${cms.text(node, "user", {
           tag: "div",
-          initial: { en: "E-Mail:" },
+          initial: { en: "E-Mail:", de: "E-Mail:", fr: "E-mail :", it: "E-mail:" },
         })}
       <td><input name=email type=text autocomplete=username autocapitalize=none required${
           noAutofocus ? "" : " autofocus"
@@ -79,7 +79,7 @@ ${errorHtml}
     <tr class=-pw>
       <th>${cms.text(node, "pw", {
       tag: "div",
-      initial: { en: "Password:" },
+      initial: { en: "Password:", de: "Passwort:", fr: "Mot de passe :", it: "Password:" },
     })}
       <td><input name=pw type=password autocomplete=current-password required>
     ${
@@ -88,7 +88,7 @@ ${errorHtml}
       <th>
         ${cms.text(node, "saveLogin", {
           tag: "div",
-          initial: { en: "Stay logged in:" },
+          initial: { en: "Stay logged in:", de: "Angemeldet bleiben:", fr: "Rester connecté :", it: "Resta connesso:" },
         })}
       <td><label><input name=save_login type=checkbox value=1></label>`
         : ""

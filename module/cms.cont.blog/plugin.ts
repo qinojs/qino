@@ -57,11 +57,14 @@ function pageUrl(canonical: string, page: number) {
   return url.href;
 }
 
+/** The site's public address; before one is known (core.url), the request's — a page still renders. */
+const origin = (app: App, ctx: Ctx): Promise<string> => app.url().catch(() => ctx.req.url.href);
+
 async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string, unknown> }) {
   const t = node.app.t;
   const page = await node.page();
   const title = (await page.showTitle()).plain();
-  const base = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
+  const base = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await origin(node.app, ctx)).href;
   const asked = Number(ctx.req.query.cms_blog_page);
   const pageNo = Number.isSafeInteger(asked) && asked > 0 ? asked : 1;
   const canonical = pageUrl(base, pageNo);
@@ -117,14 +120,15 @@ async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {
     throw new Output("Not Found", { status: 404 });
 
   const title = (await page.showTitle()).plain();
-  const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), await node.app.url()).href;
+  const site = await origin(node.app, ctx);
+  const canonical = new URL(ctx.req.appUrl + await page.urlSeo(ctx.lang), site).href;
   const entries = [];
   for (const post of await posts(node, true, { dated: true })) {
     const file = await post.node.cms.image(post.node);
     entries.push({
-      image: file && { url: new URL(await file.url(), await node.app.url()).href, type: file.mime, length: Number(file.vs?.size) || 0 },
+      image: file && { url: new URL(await file.url(), site).href, type: file.mime, length: Number(file.vs?.size) || 0 },
       title: post.title,
-      url: new URL(ctx.req.appUrl + await post.node.urlSeo(ctx.lang), await node.app.url()).href,
+      url: new URL(ctx.req.appUrl + await post.node.urlSeo(ctx.lang), site).href,
       summary: await descriptionOf(post.node),
       date: new Date(post.created * 1000).toISOString(),
     });
