@@ -1,5 +1,6 @@
 import { html, inlinePolicy, sanitizeHtml } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
+import { cms_image } from "@qino/qino/cms.image";
 
 import { cart } from "./cart.ts";
 import { shopT } from "./shop.ts";
@@ -16,7 +17,7 @@ export const descriptionHtml = (text: string): HtmlString =>
 export async function lineImage(line: Line): Promise<HtmlString | ""> {
   const node = line.product_id ? await cms(line.$app).node(Number(line.product_id)) : undefined;
   const file = node?.exists() && await node.isReadable() ? await node.cms.image(node, { orFirst: true }) : undefined;
-  return file ? html`<img src="${await file.url({ w: 120, h: 120, max: true })}" width=60 alt="" loading=lazy>` : "";
+  return file ? cms_image(file, { alt: line.name, width: 60 }) : "";
 }
 
 /** An order as a table: its lines, what the shop added, tax and total. For the backend and the customer. */
@@ -26,21 +27,23 @@ export async function orderTable(order: Order): Promise<HtmlString> {
   const { rates, total } = await order.totals();
   return html.async`<table class=u2-table>
   <thead><tr>
+    <th>
     <th>${t`Article`}
     <th>${t`Quantity`}
     <th>${t`Price`}
     <th>${t`Total`}
   <tbody>${(await order.lines()).map(async (l) => html.async`<tr>
-    <td>${lineImage(l)}${l.name}<div class=-description>${descriptionHtml(await l.describe())}</div>
+    <td class=-image>${lineImage(l)}
+    <td>${l.name}<div class=-description>${descriptionHtml(await l.describe())}</div>
     <td>${Number(l.quantity)}
     <td>${money(Number(l.price))}
     <td>${money(l.total())}`)}
   <tbody>${(await order.extras()).map((x) => html`<tr>
-    <td colspan=3>${x.name}
+    <td colspan=4>${x.name}
     <td>${money(x.price)}`)}
   <tfoot>
-    ${rates.filter((r) => r.rate).map((r) => html.async`<tr><th colspan=3>${t`VAT`} ${r.rate}%<td>${money(r.tax)}`)}
-    <tr><th colspan=3>${t`Total`} ${order.currency}<td>${money(order.status === "cart" ? total : Number(order.total))}
+    ${rates.filter((r) => r.rate).map((r) => html.async`<tr><th colspan=4>${t`VAT`} ${r.rate}%<td>${money(r.tax)}`)}
+    <tr><th colspan=4>${t`Total`} ${order.currency}<td>${money(order.status === "cart" ? total : Number(order.total))}
 </table>`;
 }
 

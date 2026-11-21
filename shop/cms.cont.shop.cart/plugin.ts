@@ -29,7 +29,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const line of lines) {
     const errors = Object.values(await line.errors()), solutions = Object.entries(await line.solutions());
     rows.push(html.async`<tr data-line="${line.id}">
-      <td class=-title>${lineImage(line)}${line.name}<div class=-description>${descriptionHtml(await line.describe())}</div>
+      <td class=-image>${lineImage(line)}
+      <td class=-title>${line.name}<div class=-description>${descriptionHtml(await line.describe())}</div>
         ${errors.length ? html`<div class=-errors>${errors.map((e) => html`<div>${e}</div>`)}${solutions.map(([id, s]) => html`<button type=button class=-solve data-solution="${id}">${s.label}</button>`)}</div>` : ""}
       <td class=-quantity>${editable ? html.async`<input type=number min=0 step=1 value="${line.quantity}" aria-label="${t`Quantity`}">` : line.quantity}
       <td class=-price>${money(line.price)}
@@ -38,17 +39,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   }
   // shipping and surcharges are lines of their own: they are in the total, so they are shown
   const extras = (await order!.extras()).map((x) => html`<tr class=-extra>
-      <td class=-title colspan=3>${x.name}
+      <td class=-title colspan=4>${x.name}
       <td class=-total>${money(x.price)}
       ${cell}`);
   const taxes = rates.filter((r) => r.rate).map((r) => html.async`<tr class=-tax>
-      <th colspan=3>${t`VAT`} ${r.rate}%
+      <th colspan=4>${t`VAT`} ${r.rate}%
       <td>${money(r.tax)}
       ${cell}`);
 
   return html.async`<div>
   <table class=u2-table>
     <thead><tr>
+      <th>
       <th>${t`Article`}
       <th>${t`Quantity`}
       <th>${t`Price`}
@@ -59,7 +61,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <tfoot>
       ${taxes}
       <tr class=-sum>
-        <th colspan=3>${t`Total`} ${currency?.$id}
+        <th colspan=4>${t`Total`} ${currency?.$id}
         <td>${money(total)}
         ${cell}
   </table>

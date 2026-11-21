@@ -17,7 +17,9 @@ test("cart lines show their product's image", async () => {
       await (await cart(ctx))!.add((await app.db.table("shop_product").get<Product>(10))!, { quantity: 1 });
       assert(!(await shown()).includes("<img"));
       await product.addFile(photo, "image");
-      assertStringIncludes(await shown(), `/dbFile/${photo.id}/`);
+      const out = await shown();
+      assertStringIncludes(out, "<cms-image");
+      assertStringIncludes(out, `/dbFile/${photo.id}/`);
     });
   });
 });

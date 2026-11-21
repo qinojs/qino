@@ -4,6 +4,7 @@
   "dependencies": [
     "core",
     "cms",
+    "cms.image",
     "fin",
     "fin.payment",
     "fin.invoice",
