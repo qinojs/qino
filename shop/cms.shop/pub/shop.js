@@ -7,6 +7,15 @@ import { api } from "@qino/pub/api.js";
 
 const shop = api["cms.shop"];
 
+// Changes to the cart still on their way (an address left a moment ago): an order waits for them,
+// or it would check what was there before.
+const pending = new Set();
+const track = (promise) => {
+  pending.add(promise);
+  promise.finally(() => pending.delete(promise)).catch(() => {});
+  return promise;
+};
+
 /** The cart in numbers — lines, quantity, total, currency. */
 export const cart = () => shop.cart.get();
 
@@ -19,16 +28,19 @@ export const remove = (line) => shop.cart.lines(line).delete();
 
 export const solve = (line, solution) => shop.cart.lines(line).solve.post({ solution });
 
-export const choose = (what, value) => shop.cart[what].put({ value });
+export const choose = (what, value) => track(shop.cart[what].put({ value }));
 
-export const setParty = (kind, party) => shop.cart.party.put({ kind, party });
+export const setParty = (kind, party) => track(shop.cart.party.put({ kind, party }));
 
 export const setCurrency = (value) => shop.cart.currency.put({ value });
 
-export const setData = (values) => shop.cart.data.put({ values });
+export const setData = (values) => track(shop.cart.data.put({ values }));
 
 /** Place the order; the answer may send the payer to the payment. */
-export const order = (back = location.href) => shop.cart.order.post({ return: back });
+export const order = async (back = location.href) => {
+  await Promise.allSettled(pending);
+  return shop.cart.order.post({ return: back });
+};
 
 /** Start the payment of a placed order again. */
 export const pay = (id, back = location.href) => shop.order(id).pay.post({ return: back });
