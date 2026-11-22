@@ -37,7 +37,7 @@ initNode("backend.system", (el) => {
     const btn = e.target.closest("button[data-solution]");
     if (!btn) return;
     e.preventDefault();
-    const box     = btn.closest(".healthy_item");
+    const box      = btn.closest(".healthy_item");
     const solution = btn.dataset.solution;
     const form     = btn.closest("form");
     const formData = form ? Object.fromEntries(new FormData(form)) : {};

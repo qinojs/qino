@@ -75,3 +75,4 @@ if (dataEl) {
     if (w[k] === undefined || w[k] instanceof Element) w[k] = data[k]; // an element's id is a global too
   }
 }
+//document.cookie = "q1_dpr=" + devicePixelRatio + "; path=/; SameSite=Strict" + (location.protocol === "https:" ? "; Secure" : "") + ";";
