@@ -2,7 +2,7 @@
 // dialog, copy, delete, uploads.
 import { api } from '@qino/pub/api.js';
 import { t } from '@qino/pub/t.js';
-import { cms, initNode } from '@qino/m/cms/pub/js/cms.js';
+import { initNode } from '@qino/m/cms/pub/js/cms.js';
 
 const debounce = (fn, ms) => { let timer; return (...a) => { clearTimeout(timer); timer = setTimeout(() => fn(...a), ms); }; };
 const dialogs = () => import('@qino/u2/js/dialog/dialog.js');

@@ -1,4 +1,4 @@
-import { cms, initNode } from '@qino/m/cms/pub/js/cms.js';
+import { initNode } from '@qino/m/cms/pub/js/cms.js';
 
 import { init } from '../../cms.layout.houdini/pub/main.js';
 

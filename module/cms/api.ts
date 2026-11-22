@@ -27,6 +27,10 @@ const requireModuleAdmin = async (module: string, ctx: Ctx) => {
 const before = s.optional(s.string()).describe("Child of this node to insert above. Omit to append.");
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 const fileSource = s.optional(s.string()).describe("http(s) URL to fetch, a data: URI (`data:image/png;name=cat.png;base64,…`) to store inline, or an existing file ID to copy. Omit to create an empty slot");
+const treeQuery = {
+  filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
+  level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
+};
 
 /** Render without a page request: the rendered node is the request's main node. */
 const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= await node.page(); };
@@ -189,10 +193,7 @@ const node = {
     get: {
       description: "Read page tree from this node",
       ...nodeRead,
-      query: s.object({
-        filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
-        level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
-      }),
+      query: s.object({ ...treeQuery }),
       execute: ({ node, filter, level }: any) =>
         fns.tree(node.id, { filter: filter ?? "*", level: level ?? 0 }),
     },
@@ -281,15 +282,14 @@ const node = {
           await node.set("module", module);
           return { ok: true };
         }
-        let done = 0, has = 0;
+        let done = 0;
         const bough = await node.bough({ type: "p" });
         for (const page of bough.values()) {
-          has++;
           if (await page.access() < 2) continue;
           await page.set("module", module);
           done++;
         }
-        return { done, has };
+        return { done, has: bough.size };
       },
     },
   },
@@ -664,8 +664,7 @@ export const api = {
       description: "Read the full page tree",
       access: Access.USER,
       query: s.object({
-        filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
-        level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
+        ...treeQuery,
         expandTo: s.optional(s.number()).describe("Node to open the tree down to; every other branch stays closed and reports no children"),
       }),
       execute: ({ filter, level, expandTo }: any) =>

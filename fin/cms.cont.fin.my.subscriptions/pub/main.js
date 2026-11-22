@@ -1,4 +1,4 @@
-import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
+import { initNode } from "@qino/m/cms/pub/js/cms.js";
 import { api } from "@qino/pub/api.js";
 import { t } from "@qino/pub/t.js";
 import { html } from "@qino/pub/html.js";

@@ -1,4 +1,4 @@
-import { cms, initNode } from '@qino/m/cms/pub/js/cms.js';
+import { initNode } from '@qino/m/cms/pub/js/cms.js';
 
 /* Native popovertarget exposes the open state to assistive technology, including light dismiss and Escape. */
 export function init(el) {

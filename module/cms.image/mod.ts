@@ -7,12 +7,13 @@ import { imageData } from "./imageData.ts";
 import type { HtmlString, DbFile } from "@qino/qino";
 
 const { name } = manifest;
-const SKIP = new Set(["quality", "alt", "width", "height", "css", "style", "if", "editable"]);
+const SKIP = new Set(["quality", "alt", "width", "height", "css", "style", "editable"]);
 
 export async function cms_image(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
-  ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "cms.image/pub/cms-image.js");
-  ctx.res.html.styles.add(ctx.req.moduleUrl + "cms.image/pub/cms-image.css");
+  const { moduleUrl } = ctx.req;
+  ctx.res.html.legacyScripts.add(moduleUrl + "cms.image/pub/cms-image.js");
+  ctx.res.html.styles.add(moduleUrl + "cms.image/pub/cms-image.css");
   // a file row without content (PHP's migration leaves some) is no image either
   if (options.if && !options.editable && !(await dbFile.exists() && dbFile.vs?.md5)) return html.raw("");
   options.quality ||= "85";

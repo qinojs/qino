@@ -238,14 +238,12 @@ export class Node {
         return this.app.modules.get(String(this.vs.module ?? ""));
     }
     /* Online state */
-    async onlineStart(): Promise<number> {
-        const p = this.vs.online_start === null ? await this.parent() : undefined;
-        return p ? p.onlineStart() : Number(this.vs.online_start ?? 0);
+    async #online(field: "online_start" | "online_end"): Promise<number> {
+        const p = this.vs[field] === null ? await this.parent() : undefined;
+        return p ? p.#online(field) : Number(this.vs[field] ?? 0);
     }
-    async onlineEnd(): Promise<number> {
-        const p = this.vs.online_end === null ? await this.parent() : undefined;
-        return p ? p.onlineEnd() : Number(this.vs.online_end ?? 0);
-    }
+    async onlineStart(): Promise<number> { return this.#online("online_start"); }
+    async onlineEnd(): Promise<number> { return this.#online("online_end"); }
     async isOnline(): Promise<boolean> {
         const [start, end] = await Promise.all([this.onlineStart(), this.onlineEnd()]);
         // small grace window so a freshly set online_start/end takes effect despite clock skew
@@ -671,11 +669,11 @@ export class Node {
         return page;
     }
 
-    insertBefore(pageArg: Node | number, before?: Node | number | null): Promise<boolean> {
-        return this.db.transaction(() => this.#insertBefore(pageArg, before));
+    insertBefore(ref: Node | number, before?: Node | number | null): Promise<boolean> {
+        return this.db.transaction(() => this.#insertBefore(ref, before));
     }
-    async #insertBefore(pageArg: Node | number, before?: Node | number | null) {
-        const page = await this.cms.node(Number(pageArg));
+    async #insertBefore(ref: Node | number, before?: Node | number | null) {
+        const page = await this.cms.node(Number(ref));
         const oldParent = await page.parent();
         const beforePage = before ? await this.cms.node(Number(before)) : null;
         if (await this.in(page)) return false;

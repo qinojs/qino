@@ -135,7 +135,6 @@ export class App extends Emitter<AppEvents> {
         const meta = { request, peerAddr, time, base };
         let ctx: Ctx;
         try {
-// console.log('start');
             await this.fire("request-start", meta); // cheap pre-filter, before any DB/session work
             const url = new URL(request.url);
             const localPath = urlToLocalPath(url, base, this);
@@ -221,7 +220,6 @@ export class App extends Emitter<AppEvents> {
         for (const [name, value] of RESPONSE_HEADERS)
             if (!res.headers.has(name)) res.headers.set(name, value);
         await this.fire("response-ready", { ...meta, res });
-// console.log('done');
         return res;
     }
 
