@@ -232,10 +232,10 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 }
 
 async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>) {
-  const db = node.app.db;
+  const { t, db } = node.app;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
-  if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return html`<div>${await node.app.t`Invalid parameters`}</div>`;
+  if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return html`<div>${await t`Invalid parameters`}</div>`;
   const where = groupWhere(db, get);
 
   const rows = await db.query`
@@ -287,7 +287,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 
   return html.async`
 <div class=u2-card style="height:88vh; overflow:auto; flex:1 1 80rem">
-  <div class=-head><a href="${back.search || "?"}">← ${node.app.t`Errors`}</a> &nbsp; ${get.file} : ${get.line} : ${get.col}</div>
+  <div class=-head><a href="${back.search || "?"}">← ${t`Errors`}</a> &nbsp; ${get.file} : ${get.line} : ${get.col}</div>
   <table class=u2-table>
     <tbody style="vertical-align:baseline">
       ${trs}

@@ -362,7 +362,8 @@ async function providers(node: Node) {
 
   const providerRows = rows.map(async (p) => {
     const key = String(await app.settings.core.keys[p.name] ?? "");
-    const keyUrl = CATALOG.find((c) => c.name === p.name)?.console;
+    const cat = CATALOG.find((c) => c.name === p.name);
+    const keyUrl = cat?.console;
     const url = getCtx().req.url.toURL(); // its models, switched off too
     for (const [k, v] of Object.entries({ show: "models", all: "1", provider: String(p.id) })) url.searchParams.set(k, v);
     const models = url.pathname + url.search;
@@ -370,7 +371,7 @@ async function providers(node: Node) {
       <td>${checkbox(p.enabled)}
       <th><a href="${models}" style="color:${backend.uniqueColor(p.name)}">${p.name}</a>
       <td class=-num><a href="${models}" title="${t`active / all`}">${p.active ?? 0} / ${p.models}</a>
-      <td>${CATALOG.some((provider) => provider.name === p.name) ? p.type : html`<select name=type>${options(types, p.type)}</select>`}
+      <td>${cat ? p.type : html`<select name=type>${options(types, p.type)}</select>`}
       <td><input name=endpoint value="${p.endpoint}" required>
       <td class=-num><input name=timeout_ms type=number min=1000 step=1000 value="${p.timeout_ms}">
       <td>

@@ -17,13 +17,13 @@ initNode("backend.system", (el) => {
 
   // one after another: every check re-collects the registry, so parallel runs only pile up load
   (async () => {
-    for (const box of el.querySelectorAll(".healty_item[data-name]")) {
+    for (const box of el.querySelectorAll(".healthy_item[data-name]")) {
       const inner = await node.html.part("health-item").post({ vars: box.dataset });
       if (!inner.trim()) { box.remove(); continue; }
       box.innerHTML = inner;
       box.classList.add("-" + box.dataset.type);
     }
-    if (!el.querySelector(".healty_item")) el.querySelector(".-allok")?.removeAttribute("hidden");
+    if (!el.querySelector(".healthy_item")) el.querySelector(".-allok")?.removeAttribute("hidden");
   })();
 
   el.addEventListener("click", async (e) => {
@@ -37,7 +37,7 @@ initNode("backend.system", (el) => {
     const btn = e.target.closest("button[data-solution]");
     if (!btn) return;
     e.preventDefault();
-    const box      = btn.closest(".healty_item");
+    const box     = btn.closest(".healthy_item");
     const solution = btn.dataset.solution;
     const form     = btn.closest("form");
     const formData = form ? Object.fromEntries(new FormData(form)) : {};

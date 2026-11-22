@@ -89,7 +89,7 @@ export async function overview(node: Node): Promise<HtmlString | string> {
       <button name=create>${t`Create`}</button>
     </form>
   </div>
-  ${placeholders(node, samples)}
+  ${placeholders(app, samples)}
 </div>`;
 }
 
@@ -142,7 +142,7 @@ async function detail(node: Node, ctx: Ctx, name: string, channel: string) {
     </form>
   </div>
   ${preview(node, row, values)}
-  ${placeholders(node, values)}
+  ${placeholders(app, values)}
 </div>`;
 }
 
@@ -174,8 +174,7 @@ async function preview(node: Node, row: Row, values: Computed) {
   </div>`;
 }
 
-async function placeholders(node: Node, values: Computed) {
-  const app = node.app;
+async function placeholders(app: App, values: Computed) {
   const t = app.t;
   const offered = new Map([...contributed(app)].map(([mod, made]) =>
     [mod, Object.keys(made).map((name) => placeholderName(mod, name)).sort()]));

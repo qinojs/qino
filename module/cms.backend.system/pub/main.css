@@ -3,10 +3,10 @@
     flex-basis:28rem;
     flex-grow:0;
   }
-  .healty_container {
+  .healthy_container {
     display:grid; gap:.5rem;
   }
-  .healty_item {
+  .healthy_item {
     padding:.5rem;
     background:color-mix(in srgb, var(--gray), #fff 80%);
     border-radius:var(--radius);

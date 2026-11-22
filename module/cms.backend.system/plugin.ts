@@ -57,7 +57,7 @@ async function render(node: Node) {
   // ── health checks ──────────────────────────────────────────────────────
   // Placeholders only — the client runs the checks one by one through the `health-item` part.
   const items = (await getHealthChecks(app)).map(({ type, mod, name }) =>
-    html`<div class=healty_item data-type="${type}" data-mod="${mod}" data-name="${name}">
+    html`<div class=healthy_item data-type="${type}" data-mod="${mod}" data-name="${name}">
   <small>${mod}</small><br>
   <strong>${cap(name)}</strong>
 </div>`
@@ -67,7 +67,7 @@ async function render(node: Node) {
 <div class=u2-card>
   <div class=-head>${t`Health`}</div>
   <div class=-body style="max-height:43.75rem;overflow:auto">
-    <div class=healty_container>
+    <div class=healthy_container>
       ${items}
       <span class=-allok hidden style="color:green">&#10003; ${t`All OK`}</span>
     </div>

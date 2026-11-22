@@ -25,22 +25,22 @@ export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlStr
   const question = String(ctx.req.body?.prompt ?? "").trim();
 
   // AI prompt prefills the editor with generated SQL (using the current query as context); the user reviews and runs it.
-  let sql = String(ctx.req.body?.sql ?? "").trim();
+  let stmt = String(ctx.req.body?.sql ?? "").trim();
   let aiNote = "", aiFailed = false;
   if (isAsk && question && token) {
-    const ai = await askDbAi(app, question, await schemaText(app), sql);
-    sql = ai.sql || sql;
+    const ai = await askDbAi(app, question, await schemaText(app), stmt);
+    stmt = ai.sql || stmt;
     aiNote = ai.note;
     aiFailed = !ai.sql;
   }
 
-  const result = !isAsk && sql && token ? runQuery(app, sql) : "";
+  const result = !isAsk && stmt && token ? runQuery(app, stmt) : "";
 
   return html.async`<div style="flex:1 1 auto">
   <form method=post class=-console>
     ${node.cms.formFields(node)}
     ${renderAi(app, question, aiNote, aiFailed)}
-    <u2-code trim language=sql class=-editor><textarea name=sql placeholder="SELECT * FROM …">${sql}</textarea></u2-code>
+    <u2-code trim language=sql class=-editor><textarea name=sql placeholder="SELECT * FROM …">${stmt}</textarea></u2-code>
     <div class=-bar>
       <button>${app.t`Run`}</button>
       <small>${app.t`Ctrl/⌘ + Enter`} · ${app.t`one statement`}</small>
