@@ -3,7 +3,7 @@
 import { ConflictError, DbRow, hee, isEmptyObject, sql, unixTime } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { fromMinor } from "@qino/qino/fin";
-import { totals } from "@qino/qino/fin.invoice";
+import { round, totals } from "@qino/qino/fin.invoice";
 import { create as createPayment, methods as finMethods } from "@qino/qino/fin.payment";
 import { currency as iso } from "@qino/qino/locale.currency";
 
@@ -268,7 +268,7 @@ export class Line extends ShopRow {
   }
 
   /** quantity × price, rounded as fin rounds it. */
-  total(): number { return totals([{ name: "", quantity: Number(this.quantity), price: Number(this.price) }], false).amounts[0]; }
+  total(): number { return round(Number(this.quantity) * Number(this.price)); }
 }
 
 export class Order extends ShopRow {
@@ -441,8 +441,7 @@ export class Order extends ShopRow {
   async totals(): Promise<{ net: number; tax: number; total: number; rates: { rate: number; net: number; tax: number }[] }> {
     const lines = await this.#lineSums();
     for (const extra of await this.extras()) lines.push({ name: extra.name, price: extra.price, taxRate: extra.taxRate });
-    const { net, tax, total, rates } = totals(lines, !!this.tax_included);
-    return { net, tax, total, rates };
+    return totals(lines, !!this.tax_included);
   }
 
   /** The goods alone, with tax — what thresholds compare against. */

@@ -52,7 +52,7 @@ async function spentOn(app: App, order: Order): Promise<{ coupon: Row; spent: nu
   const paid = (await order.extras()).find((x) => x.key === "coupon");
   if (!paid) return;
   const currency = await order.currencyRow(), main = await mainCurrency(app);
-  return { coupon, spent: -paid.price / (currency ? Number(currency.factor) : 1) / toMinor(1, main?.$id ?? "") };
+  return { coupon, spent: (currency ? currency.unchange(-paid.price) : -paid.price) / toMinor(1, main?.$id ?? "") };
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
