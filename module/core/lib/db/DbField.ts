@@ -36,7 +36,7 @@ export class DbField {
   get null(): boolean { return this.vs.Null === "YES"; }
   get default(): unknown { return this.vs.Default; }
   get collate(): string { return this.vs.Collation ?? ""; }
-  get schema(): Record<string, any> { return this.table.schema?.additionalProperties?.properties?.[this.#name] ?? {}; }
+  get schema(): Record<string, any> { return this.table.schema.additionalProperties?.properties?.[this.#name] ?? {}; }
   get onParentCopy(): string { return this.schema["x-qg-on-parent-copy"] ?? ""; }
   get onParentDelete(): string { return this.schema["x-qg-on-parent-delete"] ?? ""; }
   get key(): string { return this.vs.Key ?? ""; }

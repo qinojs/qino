@@ -62,11 +62,11 @@ export class Ctx {
   }
   /** The signed-in user, loaded in initRequest — columns are read synchronously. */
   get user(): Usr | null {
-    return this.userId ? this.app.db.table('usr').row<Usr>(this.userId) : null;
+    return this.userId ? this.app.db.table("usr").row<Usr>(this.userId) : null;
   }
   get client(): Client {
     if (!this.clientId) throw new Error("No client id");
-    return this.app.db.table('client').row<Client>(this.clientId);
+    return this.app.db.table("client").row<Client>(this.clientId);
   }
   /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
   get csrfToken(): string {

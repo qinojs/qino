@@ -3,7 +3,6 @@ import { SelectorObserver } from '@qino/u2/js/SelectorObserver/SelectorObserver.
 import { api } from '@qino/pub/api.js';
 
 export const cms = {};
-//Object.assign(cms, c1.Eventer);
 
 cms.modConnected = {};
 

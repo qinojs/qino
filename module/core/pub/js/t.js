@@ -36,7 +36,6 @@ function translate(ns, original, values) {
     // Fresh store: use it. Otherwise ask the server; stale texts are shown meanwhile.
     if (fresh && entry.translated !== undefined) entry.promise = Promise.resolve(entry.translated);
     else {
-//      if (!pending.size) queueMicrotask(flush); // the first text of a batch schedules it
       // The first text of a batch schedules the flush. A frame's delay collects a burst of widgets
       // (a microtask only one), and unlike requestAnimationFrame a timer also fires in hidden tabs.
       if (!pending.size) setTimeout(flush, 20);
