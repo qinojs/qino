@@ -16,7 +16,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const order = await cart(ctx, false);
   if (order) await order.reprice(); // prices as they are now
   const lines = order ? await order.lines() : [];
-  if (!lines.length) return html.async`<div class=-empty>${t`Your cart is empty`}</div>`;
+  if (!lines.length) return html.async`<div class=-empty>${t`Your shopping cart is empty`}</div>`;
 
   const editable = await node.settings.editable !== false;
   const currency = await order!.currencyRow();
@@ -27,7 +27,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const rows: Promise<HtmlString>[] = [];
   for (const line of lines) {
-    const errors = Object.values(await line.errors()), solutions = Object.entries(await line.solutions());
+    const errors = Object.values(await line.errors());
+    const solutions = errors.length ? Object.entries(await line.solutions()) : []; // offered with an error only
     rows.push(html.async`<tr data-line="${line.id}">
       <td class=-image>${lineImage(line)}
       <td class=-title>${line.name}<div class=-description>${descriptionHtml(await line.describe())}</div>

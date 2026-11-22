@@ -15,7 +15,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = shopT(node.app);
   const order = await cart(ctx, false);
   const lines = order ? await order.lines() : [];
-  if (!lines.length) return html.async`<div class=-empty>${t`Your cart is empty`}</div>`;
+  if (!lines.length) return html.async`<div class=-empty>${t`Your shopping cart is empty`}</div>`;
 
   const currency = await order!.currencyRow();
   const money = (v: number) => currency?.show(v) ?? v;
