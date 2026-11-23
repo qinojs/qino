@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { html, getCtx } from "@qino/qino";
 
-import { fieldOriginsByTable } from "../lib/analyze.ts";
+import { fieldOriginsByTable, sortTableNames } from "../lib/analyze.ts";
 import { tableStatus } from "../lib/tableStatus.ts";
 
 import type { HtmlString, App } from "@qino/qino";
@@ -25,17 +25,14 @@ export function renderTables(app: App, db: any, modules: Map<string, any>, table
 
 async function tableOverview(app: App, db: any) {
   const t = app.t;
-  const tables = Object.values<any>(db.tables);
+  const tables = sortTableNames(Object.keys(db.tables)).map((name) => db.tables[name]);
   const schemaProps = db.schema?.properties ?? {};
 
   const u = getCtx().req.url.toURL();
   u.searchParams.set("view", "tables");
 
   const rows = await Promise.all(
-    tables.sort((a, b) => {
-      const sa = a.name.startsWith("_"), sb = b.name.startsWith("_");
-      return (sa ? 1 : 0) - (sb ? 1 : 0) || a.name.localeCompare(b.name);
-    }).map(async (table: any) => {
+    tables.map(async (table: any) => {
       const fields = await table.init();
       const schemaFields: Record<string, any> = schemaProps[table.name]?.additionalProperties?.properties ?? {};
       const status = await tableStatus(db, table.name).catch(() => null);

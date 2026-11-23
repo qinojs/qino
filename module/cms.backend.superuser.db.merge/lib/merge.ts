@@ -7,7 +7,7 @@ import type { Db, Row, Sql } from "@qino/qino";
 
 type DbField = NonNullable<ReturnType<ReturnType<Db["table"]>["field"]>>;
 
-const empty = (v: unknown) => v == null || v === "";
+export const empty = (v: unknown) => v == null || v === "";
 const is = (column: string, value: unknown): Sql => value == null ? sql`${sql.id(column)} IS NULL` : sql`${sql.id(column)} = ${value}`;
 
 /** The table's single key column; tables keyed by several columns cannot be merged. */

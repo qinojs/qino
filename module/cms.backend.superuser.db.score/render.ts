@@ -6,8 +6,6 @@ import type { App, Db, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Score } from "@qino/qino/score";
 
-const TOP = sql.raw("10");
-
 type ScoreRow = { score: number; time: number; [key: string]: unknown };
 type Stats = { total: number; faded: number; last: number };
 
@@ -51,7 +49,7 @@ async function renderScore(app: App, { name, table, keys, half }: Score, now: nu
   const limit = fadeLimit(db, name, now);
   const stats = await db.row<Stats>`
     SELECT COUNT(*) AS total, SUM(CASE WHEN score < ${limit} THEN 1 ELSE 0 END) AS faded, MAX(time) AS last FROM ${tbl}`;
-  const top = await db.query<ScoreRow>`SELECT * FROM ${tbl} ORDER BY score DESC LIMIT ${TOP}`;
+  const top = await db.query<ScoreRow>`SELECT * FROM ${tbl} ORDER BY score DESC LIMIT 10`;
   const faded = Number(stats?.faded ?? 0);
 
   return html.async`<div class=-body>

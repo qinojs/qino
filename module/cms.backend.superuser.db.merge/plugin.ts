@@ -1,7 +1,7 @@
 import { hee, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
-import { duplicates, keyOf, merge, references } from "./lib/merge.ts";
+import { duplicates, empty, keyOf, merge, references } from "./lib/merge.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString, Row } from "@qino/qino";
@@ -23,7 +23,6 @@ const settingsSchema = {
 };
 
 const show = (v: unknown) => v == null ? html`<i>NULL</i>` : v === "" ? html`<i>""</i>` : String(v);
-const empty = (v: unknown) => v == null || v === "";
 
 async function config(node: Node) {
   const table = String(await node.settings.table ?? "");
