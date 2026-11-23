@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+
 import { identityCss } from "../mod.ts";
+import { variableTtf } from "./font.ts";
 
 // deno-lint-ignore no-explicit-any
 const appFake = (brand: Record<string, string>, font?: { name: string; url: () => string }): any => ({
@@ -24,4 +28,14 @@ test("u2: an uploaded font without a name is named after the file", async () => 
 
 test("u2: no brand, no css", async () => {
   assertEquals(await identityCss(appFake({})), "");
+});
+
+test("u2: a variable font gets its weight and width ranges, read once in the background", async () => {
+  const path = mkdtempSync(tmpdir() + "/qino-u2-") + "/v.ttf";
+  writeFileSync(path, variableTtf());
+  const font = { name: "v.ttf", path, url: () => "/dbFile/7/v.ttf" };
+  const app = appFake({}, font);
+  assertEquals((await identityCss(app)).includes("font-weight"), false); // the first request does not wait
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assertStringIncludes(await identityCss(app), "font-weight:100 900;font-stretch:62% 125%;font-display:swap");
 });

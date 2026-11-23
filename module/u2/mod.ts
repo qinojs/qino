@@ -1,8 +1,10 @@
 // Helpers mirror u2's own layout: elements under `el`, the framework itself flat.
-import { html, Output, u2Root } from "@qino/qino";
+import { fs, html, Output, u2Root } from "@qino/qino";
 import * as identity from "@qino/qino/identity";
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import { fontAxes } from "./lib/fontAxes.ts";
+
+import type { App, Ctx, DbFile, HtmlString } from "@qino/qino";
 
 export * as el from "./lib/el.ts";
 
@@ -37,6 +39,24 @@ export function assets(ctx: Ctx, files: string[]): void {
 /** Settings are free text — keep a value inside the declaration it belongs to. */
 const clean = (value: unknown) => String(value ?? "").replace(/[^\w .,#()%-]/g, "");
 
+// per app and font file (its content hash): the descriptors once read, "" until then
+const known = new WeakMap<App, Map<string, string>>();
+
+/** A variable font's weight and width ranges for its `@font-face`, else the browser draws only its
+ *  default instance. Read in the background, once per file: no request waits for the file. */
+function ranges(app: App, font: DbFile): string {
+  let files = known.get(app);
+  if (!files) known.set(app, files = new Map());
+  const hit = files.get(font.path);
+  if (hit !== undefined) return hit;
+  files.set(font.path, "");
+  fs.bytes(font.path).then((bytes) => {
+    const { wght, wdth } = fontAxes(bytes);
+    files.set(font.path, (wght ? `font-weight:${wght.join(" ")};` : "") + (wdth ? `font-stretch:${wdth.join("% ")}%;` : ""));
+  }).catch(() => {});
+  return "";
+}
+
 /** The identity brand as u2's variables, for `res.html.inlineStyles`: u2 derives its palette from them. */
 export async function identityCss(app: App): Promise<string> {
   const brand = app.settings.identity.brand;
@@ -45,7 +65,7 @@ export async function identityCss(app: App): Promise<string> {
   ]);
   const family = clean(fontFamily) || clean(font?.name.replace(/\.\w+$/, ""));
 
-  let out = font && family ? `@font-face{font-family:"${family}";src:url("${await font.url()}");font-display:swap}` : "";
+  let out = font && family ? `@font-face{font-family:"${family}";src:url("${await font.url()}");${ranges(app, font)}font-display:swap}` : "";
   const vars = [
     color && `--color:${clean(color)}`,
     accent && `--accent:${clean(accent)}`,
