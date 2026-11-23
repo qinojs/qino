@@ -14,7 +14,7 @@ export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlStr
   const root = ctx.req.appUrl + "ai-chatgpt";
   const back = ctx.req.url.pathname + ctx.req.url.search;
   const local = ctx.req.url.protocol === "http:" && ctx.req.url.hostname === "127.0.0.1";
-  const localUrl = new URL(ctx.req.url.href);
+  const localUrl = ctx.req.url.toURL();
   localUrl.hostname = "127.0.0.1";
   const list = await connections(node.app, ctx.userId);
   const start = `${root}/start?return_to=${encodeURIComponent(back)}`;

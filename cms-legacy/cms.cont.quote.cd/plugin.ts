@@ -18,7 +18,7 @@ async function render(node: Node, data: { ctx: Ctx }) {
   if (site) return site;
 
   const level = Number(await node.settings.heading) || 0;
-  const tag = html.raw(`h${Math.min(Math.max(level, 1), 6)}`);
+  const tag = `h${Math.min(Math.max(level, 1), 6)}`;
   const title = level ? html.async`<${tag}>${node.showText("title")}</${tag}>` : "";
 
   return html.async`<section${html.raw(await sectionAttr(node))}>${title}${node.cont("main")}</section>`;

@@ -27,7 +27,7 @@ async function render(node: Node, data: { ctx: Ctx }) {
   if (await node.settings["font white"]) style += "color:#fff;";
   const cls = await node.settings.fixed ? " class=-Fix" : "";
 
-  return html.async`<section${html.raw(cls)}${html.raw(styleAttr(style))}>${node.cont("main")}</section>`;
+  return html.async`<section${cls}${html.raw(styleAttr(style))}>${node.cont("main")}</section>`;
 }
 
 export const cms = {

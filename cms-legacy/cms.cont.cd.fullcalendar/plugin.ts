@@ -6,10 +6,7 @@ import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  let rows: Record<string, unknown>[] = [];
-  try {
-    rows = await node.db.query`SELECT * FROM ${sql.id("event2_dates")} ORDER BY start_date`;
-  } catch {/**/}
+  const rows = await node.db.query`SELECT * FROM ${sql.id("event2_dates")} ORDER BY start_date`.catch(() => []);
   const startId = Number(await node.settings["start page"]);
   const start = startId ? await node.cms.node(startId) : await node.page();
   const date = new Intl.DateTimeFormat(ctx.lang, { dateStyle: "medium", timeStyle: "short" });
