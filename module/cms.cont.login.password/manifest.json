@@ -1,7 +1,7 @@
 {
   "name": "cms.cont.login.password",
   "description": "Password login form.",
-  "dependencies": ["cms"],
+  "dependencies": ["cms", "u2"],
   "files": [
     "manifest.json",
     "plugin.ts",

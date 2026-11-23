@@ -1,18 +1,18 @@
 body {
-  background: var(--cms-background);
   display: grid;
+  grid-template-columns: 100%;
   align-content: center;
-  justify-items: center;
-  min-height: 100svh;
+  min-block-size: 100svh;
+  margin: 0;
+  padding: var(--gap);
 }
 
 #container {
-  background: #fff;
-  min-width: min(22rem, 100%);
-  max-width: 100%;
-  padding: 2rem;
-}
+  & > a > img { display: block; block-size: 2.5rem; inline-size: auto; margin: 0 auto calc(var(--gap) * 2); }
+  & > h1 { text-align: center; }
 
-#container > h1 {
-  text-align: center;
+  /* the contents bring their cards, the page gives them a surface */
+  & .u2-card { background: light-dark(#fff, var(--color-darker)); max-inline-size: 100%; }
+  /* a content that is a card is a form: narrow; a content holding cards may use the width */
+  & [qcms-name=main] > .u2-card { inline-size: 28rem; margin-inline: auto; }
 }

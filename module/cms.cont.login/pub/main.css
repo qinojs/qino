@@ -20,6 +20,7 @@
                     flex-direction: row-reverse;
                     justify-content: start;
                     align-items: center;
+                    & > * { flex: none; }
                 }
             }
         }

@@ -24,28 +24,36 @@ export const tickets: Record<string, TicketKind> = {
 };
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
+  u2.assets(ctx, ["class/card/card.css", "class/table/table.css"]);
+  return html.async`<div class=u2-card>${body(node, ctx)}</div>`;
+}
+
+async function body(node: Node, ctx: Ctx) {
   const t = node.app.t.in("cms.cont.password_reset");
   const handle = ctx.req.query[TICKET_PARAM] ?? "";
+  const id = `pwReset${node.id}`;
   if (handle) {
     // opening the link only looks — mail scanners must not spend the ticket
     const ticket = await check(node.app, handle, PURPOSE);
     if (!ticket) return html.async`<p>${t`This link is no longer valid. Please request a new one.`}</p>`;
     return html.async`<form data-reset>
     <input type=hidden name=handle value="${handle}">
-    <u2-fields>
-      ${t`New password`} <input type=password name=pw autocomplete=new-password minlength=8 required>
-    </u2-fields>
-    <button>${t`Set password`}</button>
+    <table class="u2-table -Flex -NoSideGaps">
+      <tr><th><label for=${id}>${t`New password`}</label>
+        <td><input id=${id} type=password name=pw autocomplete=new-password minlength=8 required>
+      <tr><th><td><button>${t`Set password`}</button>
+    </table>
     <p><small>${t`This link is valid until`}
       ${u2.el.time(ticket.expires, { second: true })}</small></p>
     <output class=-msg></output>
   </form>`;
   }
   return html.async`<form data-request>
-    <u2-fields>
-      ${t`E-Mail`} <input type=email name=email autocomplete=email required>
-    </u2-fields>
-    <button>${t`Send link`}</button>
+    <table class="u2-table -Flex -NoSideGaps">
+      <tr><th><label for=${id}>${t`E-Mail`}</label>
+        <td><input id=${id} type=email name=email autocomplete=email required>
+      <tr><th><td><button>${t`Send link`}</button>
+    </table>
     <output class=-msg></output>
   </form>`;
 }
