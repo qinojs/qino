@@ -4,7 +4,7 @@ import { assertEquals, assertThrows } from "./deps.ts";
 import { DbField } from "../lib/db/DbField.ts";
 
 function field(type: string, extra: Record<string, any> = {}) {
-  const table = { db: {}, toString: () => "tbl" };
+  const table = { db: {}, schema: {}, toString: () => "tbl" };
   return new DbField(table as any, "value", {
     Type: type,
     Null: "NO",
