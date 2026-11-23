@@ -25,7 +25,7 @@ export async function mcpFetch(ctx: Ctx): Promise<never> {
   if (!ctx.statelessAuth) throw unauthorized(ctx);
   const msg = ctx.req.body as Rpc; // parsed in Req.create; null = no/invalid JSON body
   if (msg === null) throw new Output(rpcError(null, -32700, "Parse error"), { status: 400 });
-  if (!msg || typeof msg !== "object" || Array.isArray(msg) || typeof msg.method !== "string")
+  if (typeof msg !== "object" || Array.isArray(msg) || typeof msg.method !== "string")
     throw new Output(rpcError(null, -32600, "Invalid Request"), { status: 400 });
   if (msg.id == null) throw new Output(undefined, { status: 202 }); // notification, e.g. notifications/initialized
   throw new Output(await respond(msg, ctx));

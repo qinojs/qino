@@ -42,13 +42,7 @@ const showEditor = async el => {
   const data = await api['cms.text'].text(tid).get();
   const parts = [];
   for (const row of data) {
-    let sourceLang = null;
-    for (const item of data) {
-      if (item.text !== false && item.lang !== row.lang) {
-        sourceLang = item.lang;
-        break;
-      }
-    }
+    const sourceLang = data.find((item) => item.text !== false && item.lang !== row.lang)?.lang ?? null;
     const text = (row.text===false?'':row.text);
     const style = 'border:2px solid var(--cms-dark); padding:.2rem; display:block; '+(row.lang===activeLang?'border-color:var(--cms-access-2)':'');
     const tag = el.tagName === 'TD' ? 'div' : el.tagName;

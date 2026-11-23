@@ -120,7 +120,7 @@ export function identity(c: any): { sub: string; email: string; verified: boolea
     email: String(c.email ?? "").trim().toLowerCase(),
     // missing counts as unconfirmed; Microsoft sends the optional claim xms_edov instead
     verified: String(c.email_verified ?? c.verified ?? c.xms_edov) === "true",
-    given_name: String(c.given_name ?? first ?? ""),
+    given_name: String(c.given_name ?? first),
     family_name: String(c.family_name ?? rest.join(" ")),
   };
 }

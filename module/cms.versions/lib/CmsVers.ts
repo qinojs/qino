@@ -104,8 +104,7 @@ export async function copyNode(
         }
 
         // Recurse into children
-        const childView = ensureView(db, "page", toSpace, 0);
-        const childIds = await db.col`SELECT id FROM ${sql.id(childView)} WHERE basis = ${id} ${sql.raw(subPages ? "" : "AND type = 'c'")}`;
+        const childIds = await db.col`SELECT id FROM ${sql.id(toPageView)} WHERE basis = ${id} ${sql.raw(subPages ? "" : "AND type = 'c'")}`;
         for (const cid of childIds) await generate(Number(cid));
     };
 

@@ -175,7 +175,7 @@ viewer.on('before-load',function(e){
     };
     text('-date', exactDate.format(date));
     text('-usr', data.usr);
-    text('-device', `${data.browser} | ${data.ip}`).title = String(data.user_agent);
+    text('-device', `${data.browser} | ${data.ip}`);
   });
   find(more, '.-reactivate').onclick = () => {
     body.style.opacity = 0.3;
