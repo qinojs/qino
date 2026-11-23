@@ -159,11 +159,11 @@ sys.serve({ port: 8080 }, hono.fetch);
 
 The CMS is built from ordinary modules: inline editing, layouts, content types, localization, files and images, user administration and a modular backend. The core stays small.
 
-The CMS currently lives in this repository under [`module/cms`](module/cms/). A dedicated [Qino CMS repository](https://github.com/qinojs/cms) is being prepared.
+The CMS currently lives in this repository under [`module/cms`](module/cms/). The [Qino CMS repository](https://github.com/qinojs/cms) provides the product overview and links to the starter.
 
 [Qino CMS product information from schwups GmbH](https://schwups.ch/qino) is available in German.
 
-[Try the live Qino CMS demo](https://demo.qino.schwups.ch/).
+[Try the live Qino CMS demo](https://demo.qino.schwups.ch/) or follow the [English walkthrough](https://demo.qino.schwups.ch/en/service/try-it).
 
 ## Documentation
 
