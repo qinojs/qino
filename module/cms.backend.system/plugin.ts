@@ -215,7 +215,7 @@ function renderDbBox(node: Node) {
 async function mysqlBox(node: Node) {
   const db = node.app.db;
   const RELEVANT = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
-  const vars = await db.query`SHOW VARIABLES`;
+  const vars = await db.query`SHOW VARIABLES WHERE ${sql.in("Variable_name", RELEVANT)}`;
   const map = new Map(vars.map((r: Record<string, string>) => [r.Variable_name, r.Value]));
   const fmt = (name: string, value: string) =>
     (name === "max_allowed_packet" || name === "innodb_buffer_pool_size")
