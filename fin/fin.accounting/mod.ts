@@ -138,7 +138,7 @@ export async function balances(
 const CLOSING = "fin.accounting:close:";
 
 /** An entry for `ref` that is booked and not taken back. */
-export const booked = (app: App, ref: string): Promise<Row | undefined> => app.db.one`
+export const booked = (app: App, ref: string): Promise<unknown> => app.db.one`
   SELECT e.id FROM accounting_entry e WHERE e.ref = ${ref} AND e.reverses IS NULL
     AND NOT EXISTS (SELECT 1 FROM accounting_entry r WHERE r.reverses = e.id)`;
 
