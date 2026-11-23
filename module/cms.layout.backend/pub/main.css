@@ -64,7 +64,6 @@ u2-accordion {
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:0 1.4rem;
   background:var(--color-dark);
   color:var(--color-light);
   text-decoration:none;

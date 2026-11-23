@@ -31,7 +31,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.js");
 
-  const layoutPage = await node.cms.layoutPage(String(node.vs.module));
+  const layoutPage = await node.cms.layoutPage(node.module!.name);
 
   // Logo: the identity image, else the portal name (or host). At twice the display height; svg unchanged.
   const brand = String(await node.app.settings.identity.name ?? "") || (ctx.req.header("host") ?? "");

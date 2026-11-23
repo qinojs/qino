@@ -79,7 +79,7 @@ export default async function (widget, { node, signal }) {
   };
   replace([]);
   const form = widget.querySelector('.-design');
-  if (!sheet) form.querySelector('output').textContent = String(await t`Open a page using this layout to preview your changes.`);
+  if (!sheet) form.querySelector('output').textContent = await t`Open a page using this layout to preview your changes.`;
   const inherited = getComputedStyle(document.documentElement);
   for (const field of FIELDS)
     form.elements.namedItem(field.key).placeholder = inherited.getPropertyValue(`--${field.key}`).trim() || field.hint;
@@ -97,7 +97,7 @@ export default async function (widget, { node, signal }) {
       const input = form.elements.namedItem(field.key);
       const value = input.value.trim();
       const valid = !value || safeValue(value) && CSS.supports(field.property, value);
-      input.setCustomValidity(valid ? '' : String(invalid));
+      input.setCustomValidity(valid ? '' : invalid);
       if (!valid) design[field.key] = safeValue(layout.design?.[field.key]);
     }
     replace([themeCss(design)]);
