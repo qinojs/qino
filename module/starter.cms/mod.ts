@@ -1,3 +1,4 @@
+import { hee } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 
 import type { App } from "@qino/qino";
@@ -82,14 +83,26 @@ export async function moduleLink(app: App, module: string, label: string): Promi
   return node ? link(await node.page(), label) : label;
 }
 
-/** Adds an item to the editors' checklist "First steps" of starter.cms, once per name: a section
- *  titled `titles`, holding `texts`. */
+/** Adds an item to the editors' checklist "First steps" of starter.cms, once per name: a text
+ *  headed `titles`, holding `texts`. */
 export async function todo(app: App, name: string, titles: Texts, texts: Texts): Promise<void> {
   const cm = cms(app);
   const list = (await cm.nodesByName("first-steps")).values().find((node) => node.vs.type === "p");
   if (!list || (await cm.nodesByName(name)).size) return;
-  // the name goes on the section: the template looks up its text as "main"
-  const section = (await (await prose(list, texts)).parent())!;
-  await section.set("name", name);
-  await title(section, titles);
+  const item = await (await items(list)).createCont({ module: "cms.cont.text" });
+  await item.set("name", name);
+  await text(item, "main", Object.fromEntries(Object.entries(texts)
+    .map(([lang, body]) => [lang, `<h2>${hee(titles[lang] ?? titles.en ?? "")}</h2>\n${body}`])));
 }
+
+/** All items in one section, each a heading with its text — the shape of a long text page such
+ *  as the privacy policy. */
+async function items(list: Node): Promise<Node> {
+  const found = (await cms(list.app).nodesByName(ITEMS)).values().next().value;
+  if (found) return found.cont("main", "cms.cont.flexible");
+  const flexible = await section(list, "cms.cont.flexible");
+  await flexible.settings.__inited(true);
+  await (await flexible.parent())!.set("name", ITEMS);
+  return flexible;
+}
+const ITEMS = "first-steps-items";

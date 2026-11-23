@@ -21,7 +21,7 @@ module in the template means no starter.
 
 Main has no width limit; sections use `u2-width`, full-width content just omits it.
 Logo, name, colors and font come from identity; without a name the home link says
-Home. `cms-link=parent(1)` follows the usual CMS tree — adapt it for a different one.
+Home. The logo links to `/`, which leads to the start page in the visitor's language.
 
 ## Navigation
 

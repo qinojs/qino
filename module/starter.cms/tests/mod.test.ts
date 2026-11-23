@@ -48,10 +48,12 @@ test("starter.cms: builds a site once, fills gaps on repair, and leaves it to th
   assert(home.body.includes('href="/en/system/login"'), "the welcome text leads to the login");
   assert(!home.body.includes('href="/en/first-steps"'), "guests don't see the checklist in the menu");
   for (const item of ["todo-account", "todo-identity", "todo-mail", "todo-legal", "todo-languages"]) {
-    const [section, ...more] = (await cms(app).nodesByName(item)).values();
+    const [node, ...more] = (await cms(app).nodesByName(item)).values();
     assertEquals(more, [], item);
-    assertEquals((await section.conts()).map((c) => `${c.vs.name} ${c.vs.module}`), ["main cms.cont.text"], item);
-    assert(await section.title("en"), `${item} has a section title`);
+    assertEquals(node.vs.module, "cms.cont.text", item);
+    assert((await (await node.text("main", "en")).get()).startsWith("<h2>"), `${item} has its heading`);
+    // all items in one section, like a long text page
+    assertEquals((await (await node.parent())!.parent())!.vs.name, "first-steps-items", item);
   }
   // the menu first, then the checklist, the pages only linked to, and what runs the site
   const order = (await (await cms(app).node(1)).children({ type: "p" })).values().map((p) => p.vs.name ?? p.vs.module);

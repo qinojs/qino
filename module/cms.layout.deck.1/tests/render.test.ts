@@ -37,7 +37,7 @@ test("cms.layout.deck.1: header floats above the cards, main holds the deck", as
   const { out, ctx } = await render(dir);
   assertStringIncludes(out, `<main id="content"><div>main</div></main>`);
   assertStringIncludes(out, "<div>nav</div>"); // from the layout page
-  assertStringIncludes(out, `<a href="/" class="cmsLink3"></a>`); // logo link remains while the image is empty
+  assertStringIncludes(out, `<a href="/"></a>`); // the logo leads to the start page, also while the image is empty
   assertEquals([...ctx.res.html.styles].some((s) => s.endsWith("css/norm/norm.css")), true);
   await fs.remove(dir, { recursive: true });
 });
