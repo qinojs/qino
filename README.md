@@ -163,6 +163,8 @@ The CMS currently lives in this repository under [`module/cms`](module/cms/). A 
 
 [Qino CMS product information from schwups GmbH](https://schwups.ch/qino) is available in German.
 
+[Try the live Qino CMS demo](https://demo.qino.schwups.ch/).
+
 ## Documentation
 
 The [core documentation](module/core/docs/) covers [modules](module/core/docs/module.md), [database access](module/core/docs/db.md) and [file transforms](module/core/docs/transform.md).
