@@ -19,7 +19,7 @@ export const ctxSettingsSchema = {
 /** The user's session with the assistant: the kept one, else (or with `fresh`) a new one, kept from now on. */
 async function session(ctx: Ctx, fresh = false): Promise<{ id: number }> {
   const db = ctx.app.db, kept = Number(await ctx.settings[name].session) || 0;
-  const owner = kept && Number(await db.one`SELECT usr_id FROM ai_session WHERE id = ${kept}`);
+  const owner = !fresh && kept && Number(await db.one`SELECT usr_id FROM ai_session WHERE id = ${kept}`);
   if (!fresh && kept && owner === ctx.userId) return { id: kept };
   const agent = await Agent.named(ctx.app, AGENT);
   if (!agent) throw new Error(`No agent ${AGENT}`);

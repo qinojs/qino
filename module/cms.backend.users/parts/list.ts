@@ -41,14 +41,13 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
     FROM usr WHERE (${sh.where}${byContact})${grpFilter}${superFilter} ORDER BY ${sh.order}, id LIMIT 200`;
 
   const pageUrl = node ? await (await node.page()).url() : "";
+  const loginAsTd = canLoginAs
+    ? html.raw('<td class=-loginAs><button class=u2-unstyle aria-label="Login as user"><u2-ico icon=switch_account>⇄</u2-ico></button>')
+    : "";
 
   const parts: (HtmlString | Promise<HtmlString>)[] = [];
   for (const vs of rows) {
     const detailUrl = backend.toUrl(pageUrl, { id: vs.id });
-
-    const loginAsTd = canLoginAs
-      ? html.raw('<td class=-loginAs><button class=u2-unstyle aria-label="Login as user"><u2-ico icon=switch_account>⇄</u2-ico></button>')
-      : "";
 
     parts.push(html`
 <tr itemid=${vs.id} u2-href>
