@@ -119,13 +119,13 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
   const cms = node.cms;
 
   let image: HtmlString | string = "";
-  if (await node.settings["preview image"]) {
+  if (node.settings["preview image"]()) {
     const file = await page.cms.image(page, { orFirst: true });
     if (file) image = html`<img src="${await file.url({ w: 120, h: 400, max: true })}" alt="" loading=lazy>`;
   }
 
   let path: HtmlString | string = "";
-  if (await node.settings.breadcrumb) {
+  if (node.settings.breadcrumb()) {
     const links = [];
     for (const p of (await page.path()).values()) {
       if (p.id === 1 || !(await p.showTitle()).plain()) continue;
@@ -161,7 +161,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["attr/href/href.js"]);
 
   let form: Promise<HtmlString> | HtmlString | string = "";
-  if (!await node.settings["hide input"]) {
+  if (!node.settings["hide input"]()) {
     // The page may be addressed by parameters (cmspid, editmode, a language) — carry them along.
     const keep = Object.entries(ctx.req.query)
       .filter(([k, v]) => k !== QUERY && typeof v === "string")

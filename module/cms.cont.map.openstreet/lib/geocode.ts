@@ -6,7 +6,7 @@
 
 const SERVICE = "https://nominatim.openstreetmap.org/search";
 
-export type Place = { lat: number; lon: number; label: string };
+type Place = { lat: number; lon: number; label: string };
 
 /** One request per second is the documented limit; a little air on top of it. */
 const GAP = 1100;

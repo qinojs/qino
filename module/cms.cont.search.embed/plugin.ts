@@ -17,7 +17,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const query = (ctx.req.query[QUERY] ?? "").trim(), t = ctx.app.t;
   const keep = Object.entries(ctx.req.query).filter(([key, value]) => key !== QUERY && typeof value === "string")
     .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`);
-  const form = await node.settings["hide input"] ? "" : html.async`<form>${keep}
+  const form = node.settings["hide input"]() ? "" : html.async`<form>${keep}
     <input type=search name="${QUERY}" value="${query}" placeholder="${t`Search`}">
     <button>${t`Search`}</button>
   </form>`;

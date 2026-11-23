@@ -16,7 +16,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t.in("cms.cont.my.emails");
   if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   u2.assets(ctx, ["el/time/time.js"]);
-  const single = Boolean(await node.settings.single);
+  const single = Boolean(node.settings.single());
   return html.async`<div ${single ? "data-single" : ""}>
   <div data-emails>${t`Loading…`}</div>
   <form data-add>

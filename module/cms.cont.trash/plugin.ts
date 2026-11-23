@@ -15,9 +15,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     if (await node.in(page)) continue;
     const title       = await (await page.title()).string() || "(no title)";
     const id          = page.id;
-    const deletedTime = Number(await page.settings.__deleted.time);
-    const deletedBy   = await page.settings.__deleted.by;
-    const deletedFrom = Number(await page.settings.__deleted.from);
+    const deletedTime = Number(page.settings.__deleted.time());
+    const deletedBy   = page.settings.__deleted.by();
+    const deletedFrom = Number(page.settings.__deleted.from());
     const fromTitle   = deletedFrom ? await (await (await node.cms.node(deletedFrom)).title()).string() : "";
     const timeHtml    = deletedTime ? u2.el.time(deletedTime) : "";
     const module      = page.vs.module;

@@ -33,13 +33,11 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   return html.async`${trs}`;
 
   async function loopConts(page: Node) {
-    const data = { onlineStart: 0, onlineEnd: 0, access: 0 };
+    const data = { onlineEnd: 0, access: 0 };
     for (const cont of await page.conts()) {
       const child = await loopConts(cont);
-      data.onlineStart += child.onlineStart;
       data.onlineEnd += child.onlineEnd;
       data.access += child.access;
-      if (cont.vs.online_start != null) data.onlineStart++;
       if (cont.vs.online_end != null) data.onlineEnd++;
       if (cont.vs.access != null) data.access++;
     }
@@ -52,7 +50,8 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       const subAccess = await subPage.access();
       const open = openPageNodes.has(String(subPage.id));
       const isCont = subPage.vs.type === "c";
-      const contsData = await loopConts(subPage);
+      // a row without read access shows "---" throughout: its contents need no walk
+      const contsData = subAccess > 0 ? await loopConts(subPage) : null;
 
       const toggleBtn = (await subPage.children({ type: treeType })).size
         ? html`<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${subPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`
@@ -82,8 +81,8 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       <a style="vertical-align:middle" href="${subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>
     </div>
   <td>${renderOnlineStart(subPage, subAccess)}
-  <td>${renderOnlineEnd(subPage, subAccess, contsData.onlineEnd)}
-  <td>${renderAccess(subPage, subAccess, contsData.access)}
+  <td>${renderOnlineEnd(subPage, subAccess, contsData?.onlineEnd ?? 0)}
+  <td>${renderAccess(subPage, subAccess, contsData?.access ?? 0)}
   <td>${renderFlag("visible", subPage, subAccess)}
   <td>${renderFlag("searchable", subPage, subAccess)}
   <td><span>${subPage.vs.module}</span>`);

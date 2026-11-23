@@ -15,6 +15,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app;
   const settings = node.settings;
   const showSaveLogin = settings.saveLogin();
+  const t = app.t.in("cms.cont.login");
   const csrfToken = ctx.csrfToken;
   const out = [];
 
@@ -33,20 +34,20 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     out.push(html.async`<form method=post>
   ${
       showSaveLogin
-        ? html.async`<label><input name=save_login type=checkbox value=1${saveLoginChecked}>${app.t.in("cms.cont.login")`Stay logged in`}</label>`
+        ? html.async`<label><input name=save_login type=checkbox value=1${saveLoginChecked}>${t`Stay logged in`}</label>`
         : ""
     }
   ${email}
   <input name=email type=text value="${email}" autocomplete=username readonly hidden>
   <input type=hidden name=csrfToken value="${csrfToken}">
   ${showPwField ? html`<input name=pw type=password autocomplete=current-password>` : ""}
-  <button name=core_login>${app.t.in("cms.cont.login")`Log in`}</button>
+  <button name=core_login>${t`Log in`}</button>
 </form>\n`);
   }
 
   if (!out.length) return html.raw("");
   return html.async`<div>
-    ${ctx.loginError && ctx.loginError !== "pending" ? html.async`<div class=loginError>${app.t.in("cms.cont.login")`Your login attempt failed`}</div>` : ""}
+    ${ctx.loginError && ctx.loginError !== "pending" ? html.async`<div class=loginError>${t`Your login attempt failed`}</div>` : ""}
     ${out}
   </div>`;
 }

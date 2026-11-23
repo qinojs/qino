@@ -8,8 +8,6 @@ import { api, Query, route, settingsSchema as listSchema, show } from "@qino/qin
 import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-const NAME = "cms.cont.dbrow";
-
 const { table, where, field_order, fields } = listSchema.properties;
 const settingsSchema = { properties: { table, where, field_order, fields } };
 
@@ -40,7 +38,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  app.on("route", ({ ctx }: { ctx: Ctx }) => route(app, ctx, NAME), { signal });
+  app.on("route", ({ ctx }: { ctx: Ctx }) => route(app, ctx, "cms.cont.dbrow"), { signal });
 }
 
 export const cms = {

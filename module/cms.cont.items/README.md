@@ -18,7 +18,6 @@ That's why entries are managed in the options panel, not by dropping blocks onto
 |------------------|----------------------------------------------------------------------|
 | `default module` | module of a new entry (default `cms.cont.flexible`)                   |
 | `add position`   | `bottom` (default) or `top` — where a new entry appears               |
-| `width`          | `u2-width` (default) or empty — the site's content width, or the container's |
 
 `cms.cont.flexible` suits entries that differ. A dedicated module (a teaser, a person) keeps all
 entries uniform.
@@ -32,7 +31,7 @@ editable.
 ## What it renders
 
 ```html
-<div qcms-mod="cont.items" class="u2-width">
+<div qcms-mod="cont.items">
   <div class="u2-grid">
     <div qcms-id="…">…</div>
   </div>
