@@ -246,7 +246,9 @@ setTimeout(() => document.activeElement.blur());
 globalThis.qino?.cms?.clipboard && import('./clipboard.js').then(({ default: clipboard }) => clipboard(globalThis.qino.cms.clipboard));
 
 cms.console = {
-  show(msg, type) {
+  // a t`` text is a promise: shown once translated, not first in English
+  async show(msg, type) {
+    msg = await msg;
     const el = this.el();
     el.togglePopover(true);
     el.classList.add('-active');
