@@ -138,7 +138,7 @@ function spam(score: unknown) {
   if (score == null) return "";
   const p = Number(score);
   const percent = `${Math.round(p * 100)}%`;
-  return p >= SPAM ? html`<span style="color:var(--red)">${percent}</span>` : html`${percent}`;
+  return p >= SPAM ? html`<span style="color:var(--red)">${percent}</span>` : percent;
 }
 
 /** How far a message got: how many of its recipients it reached, and what is still owed. An incoming
@@ -194,7 +194,7 @@ async function trackingStats(app: App, rows: Row[]) {
 
 function trackedStat(count: unknown, first: unknown) {
   const n = Number(count) || 0;
-  return first == null ? html`${n}` : html`${n} <small>${u2.el.time(first, { narrow: true })}</small>`;
+  return first == null ? n : html`${n} <small>${u2.el.time(first, { narrow: true })}</small>`;
 }
 
 /** One message with its payload and the result per recipient. */
@@ -392,7 +392,7 @@ function paramUrl(url: URL, params: Record<string, string>) {
 function recipient(row: Row, url: URL, view: View) {
   return row.usr_id
     ? html`<a href="${paramUrl(url, { usr: String(row.usr_id), msg: "" })}">${row.username ?? "#" + row.usr_id}</a>`
-    : html`${view.anonymous}`;
+    : view.anonymous;
 }
 
 async function chatMessage(app: App, row: Row & { deliveries: Row[]; attachments: Row[] }, view: View) {
@@ -455,7 +455,7 @@ function plain(row: Row) {
 /** The body for the panel: sanitized markup or escaped text. Messages are untrusted. */
 function body(row: Row) {
   const markup = htmlOf(rowMsg(row));
-  return markup ? html.raw(sanitizeHtml(markup)) : html`${row.text}`;
+  return markup ? html.raw(sanitizeHtml(markup)) : row.text;
 }
 
 function rowMsg(row: Row): Msg {

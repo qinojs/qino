@@ -182,7 +182,7 @@ async function renderDetail(node: Node, id: number) {
   const [lastLabel, activeLabel, mobileLabel, desktopLabel, badges] = await Promise.all([t`last`, t`active`, t`mobile`, t`desktop`, ipBadges(node.app)]);
   const user = (row: Row) => html`<span style="color:${uniqueColor(row.usr_id)}">${userName(row)}</span>`;
   const empty = (cols: number) => html.async`<tr><td colspan=${cols}>${t`No entries`}`;
-  const link = (href: string, label: unknown) => href ? html`<a href="${href}">${label}</a>` : html`${label}`;
+  const link = (href: string, label: unknown) => href ? html`<a href="${href}">${label}</a>` : label;
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:1 1 30rem">
