@@ -89,7 +89,6 @@ async function verifyAssertion(
   ctx: Ctx,
   { credentialId, clientDataJSON, authenticatorData, signature }: any,
   expectedChallenge: string,
-  requireUserVerification: boolean,
 ): Promise<{ ok: false; error: string } | { ok: true; cred: any; newCounter: number }> {
   const cred = await ctx.app.db.row`SELECT * FROM webauthn_credential WHERE credential_id = ${credentialId}`;
   if (!cred) return { ok: false, error: "credential_not_found" };
@@ -112,7 +111,7 @@ async function verifyAssertion(
         publicKey: unb64url(cred.public_key),
         counter: Number(cred.sign_count),
       },
-      requireUserVerification,
+      requireUserVerification: true,
     });
     if (!verified) return { ok: false, error: "verification_failed" };
     return { ok: true, cred, newCounter: authenticationInfo.newCounter };
@@ -249,7 +248,7 @@ export const api: ApiTree = {
           const stored = await consumeChallenge(db, token, "login");
           if (!stored) return { ok: false, error: "challenge_expired" };
 
-          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
+          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge);
           if (!r.ok) {
             ctx.app.fire("suspicious", { ctx, weight: 2, reason: "webauthn login verification failed" }).catch(() => {});
             return r;
@@ -304,7 +303,7 @@ export const api: ApiTree = {
           if (!stored)                   return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== usrId)   return { ok: false, error: "user_mismatch" };
 
-          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
+          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge);
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== usrId) return { ok: false, error: "user_mismatch" };
 

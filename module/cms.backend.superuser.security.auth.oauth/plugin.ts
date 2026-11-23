@@ -69,13 +69,14 @@ function providerForm(csrf: string, selfBase: string, action: string, p: any = {
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
   const text = (k: string, ph = "") => html`<input name=${k} value="${v(k)}" placeholder="${ph}" autocomplete=off>`;
+  const consoleUrl = PRESETS[v("name")]?.console_url;
   // `new-password`, so the browser doesn't treat this as a login form and autofill it.
   return html`<form method=post action="${action}" autocomplete=off>
 
   ${isNew ? "" : 
     html`<div style="margin-bottom:1em">
-    ${PRESETS[v("name")]?.console_url ? 
-      html`<a href="${PRESETS[v("name")]?.console_url ?? "#"}" target=_blank rel=noopener>Provider console</a><br>
+    ${consoleUrl ?
+      html`<a href="${consoleUrl}" target=_blank rel=noopener>Provider console</a><br>
     ` : ""}
     <small>Redirect URI: <code>${p.redirect_uri || selfBase + "oauth/callback/" + String(p.name)}</code></small>
   </div>`}
