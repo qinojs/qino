@@ -3,7 +3,7 @@ import { t } from "@qino/pub/t.js";
 import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
 initNode("backend.ai", (el) => {
-  const { node, alert } = nodePanel(el, []);
+  const { node, alert } = nodePanel(el);
   const nid = Number(cms.el.nid(el));
   const row = (target) => target.closest("[data-row]");
   const filter = el.querySelector("[data-filter]");

@@ -73,7 +73,7 @@ export default async function api(node: Node, vars: Record<string, any>): Promis
       // filtered by a provider, only its offers; else the models and all their offers
       if (ids.length && !provider) await db.exec`UPDATE ai_model SET enabled = ${on} WHERE ${sql.in("id", ids)}`;
       if (ids.length) await db.exec`UPDATE ai_model_provider SET enabled = ${on} WHERE ${sql.in("model_id", ids)} ${provider ? sql`AND provider_id = ${provider}` : sql``}`;
-      return { ok: true, message: `${ids.length} ${vars.switch.on ? await t`models on` : await t`models off`}` };
+      return { ok: true, message: `${ids.length} ${on ? await t`models on` : await t`models off`}` };
     }
     if (vars.remove) {
       const { table, id } = vars.remove;

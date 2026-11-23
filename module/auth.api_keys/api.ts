@@ -8,10 +8,8 @@ export const api: ApiTree = {
   get: {
     description: "List own API keys (never the token itself)",
     access: Access.USER,
-    execute: async (_: unknown, ctx: Ctx) => {
-      const rows = await ctx.app.db.query`SELECT id, name, prefix, created, expires FROM api_key WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
-      return rows;
-    },
+    execute: async (_: unknown, ctx: Ctx) =>
+      ctx.app.db.query`SELECT id, name, prefix, created, expires FROM api_key WHERE usr_id = ${ctx.userId} ORDER BY created DESC`,
   },
   post: {
     description: "Create an API key — the token is returned only once and never stored in clear",
