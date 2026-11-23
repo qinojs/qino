@@ -26,8 +26,8 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       sort: 20,
     });
     for (const grp of [1, 2, 3]) await page.changeGroup(grp, 0);
-    await (await page.cont('1')).set("module", "cms.backend");
-    page.settings.childXML('<page visible=1></page>');
+    await (await page.cont("1")).set("module", "cms.backend");
+    page.settings.childXML("<page visible=1></page>");
     node = await cm.nodeByModule("cms.backend");
   }
   return node?.page();
@@ -52,7 +52,7 @@ export async function install(app: App, module: string, titles?: Record<string, 
           access: 0,
           offline: 0,
           visible: true,
-        })).cont('1');
+        })).cont("1");
         await cont.set("module", mod);
       }
     }
@@ -158,5 +158,5 @@ export async function breadcrumb(host: Node, nodeId: number): Promise<HtmlString
     crumbs.push(html`<a href="${url}">${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
   }
   if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);
-  return html.join(crumbs, ' <span class=-sep>›</span> ');
+  return html.join(crumbs, " <span class=-sep>›</span> ");
 }
