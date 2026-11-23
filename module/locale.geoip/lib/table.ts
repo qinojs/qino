@@ -3,10 +3,10 @@
 
 /** Lets requests through after every few ms of work: building a table takes seconds.
  *  `if (slice.due()) await slice.pause();` */
-export function slices(ms = 5): { due: () => boolean; pause: () => Promise<void> } {
+export function slices(): { due: () => boolean; pause: () => Promise<void> } {
   let start = performance.now();
   return {
-    due: () => performance.now() - start > ms,
+    due: () => performance.now() - start > 5,
     pause: () => new Promise<void>((r) => setTimeout(r, 0)).then(() => void (start = performance.now())),
   };
 }

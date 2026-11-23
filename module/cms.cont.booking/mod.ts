@@ -8,6 +8,7 @@ import type { Period } from "@qino/qino/calendar";
 import type { Node } from "@qino/qino/cms";
 
 const NAME = "cms.cont.booking";
+const START = sql.id("start"), END = sql.id("end"); // "end" is a reserved word in some dialects
 
 /** Each content instance owns an independent appointment calendar. */
 export async function slots(node: Node, period: Period) {
@@ -50,10 +51,10 @@ export async function slots(node: Node, period: Period) {
   if (!candidates.length) return [];
   const end = candidates.reduce((last, slot) => Temporal.Instant.compare(slot.end, last) > 0 ? slot.end : last, candidates[0].end);
   // Check complete slots, including the part beyond the requested window.
-  const booked = (await node.db.query`SELECT ${sql.id("start")}, ${sql.id("end")} FROM cms_booking
+  const booked = (await node.db.query`SELECT ${START}, ${END} FROM cms_booking
     WHERE node_id = ${node.id} AND cancelled = ${false}
-      AND ${sql.id("start")} < ${end.toString({ fractionalSecondDigits: 9 })}
-      AND ${sql.id("end")} > ${candidates[0].start.toString({ fractionalSecondDigits: 9 })}`)
+      AND ${START} < ${end.toString({ fractionalSecondDigits: 9 })}
+      AND ${END} > ${candidates[0].start.toString({ fractionalSecondDigits: 9 })}`)
     .map((row) => ({ start: Temporal.Instant.from(String(row.start)), end: Temporal.Instant.from(String(row.end)) }))
     .sort((a, b) => Temporal.Instant.compare(a.start, b.start));
   let cursor = 0;
@@ -97,11 +98,11 @@ export async function bookings(node: Node, id?: number) {
   const saved = ctx.sess.data[NAME][String(node.id)]() as Record<string, string> | undefined;
   const ids = Object.keys(saved ?? {}).map(Number).filter(Number.isSafeInteger);
   if (!editor && !ctx.userId && !ids.length) return [];
-  const rows = await node.db.query`SELECT id, ${sql.id("start")}, ${sql.id("end")}, name, email, usr_id, token FROM cms_booking
+  const rows = await node.db.query`SELECT id, ${START}, ${END}, name, email, usr_id, token FROM cms_booking
     WHERE node_id = ${node.id} AND cancelled = ${false}
       ${id === undefined ? sql`` : sql`AND id = ${id}`}
       AND ${editor ? sql`${true}` : sql`(usr_id = ${ctx.userId || null} OR ${sql.in("id", ids)})`}
-    ORDER BY ${sql.id("start")}, id`;
+    ORDER BY ${START}, id`;
   return rows.filter((row) => editor || ctx.userId && Number(row.usr_id) === ctx.userId || safeEqual(saved?.[String(row.id)], row.token))
     .map(({ token: _token, usr_id: _usr, ...row }) => row);
 }

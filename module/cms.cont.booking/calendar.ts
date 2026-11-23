@@ -3,15 +3,17 @@ import { cms } from "@qino/qino/cms";
 
 import type { Entry, Source } from "@qino/qino/calendar";
 
+const START = sql.id("start"), END = sql.id("end"); // "end" is a reserved word in some dialects
+
 export const calendar: Source = {
   title: { en: "Appointments", de: "Terminbuchungen" },
   color: "purple",
   async query(ctx, period) {
     const start = Temporal.Instant.from(period.start).toString({ fractionalSecondDigits: 9 });
     const end = Temporal.Instant.from(period.end).toString({ fractionalSecondDigits: 9 });
-    const rows = await ctx.app.db.query`SELECT id, node_id, ${sql.id("start")}, ${sql.id("end")}, usr_id FROM cms_booking
-      WHERE cancelled = ${false} AND ${sql.id("start")} < ${end} AND ${sql.id("end")} > ${start}
-      ORDER BY ${sql.id("start")}, id`;
+    const rows = await ctx.app.db.query`SELECT id, node_id, ${START}, ${END}, usr_id FROM cms_booking
+      WHERE cancelled = ${false} AND ${START} < ${end} AND ${END} > ${start}
+      ORDER BY ${START}, id`;
     const nodes = new Map<number, { title: string; url: string; editor: boolean } | null>();
     const result: Entry[] = [];
     for (const row of rows) {

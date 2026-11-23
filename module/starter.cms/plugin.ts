@@ -17,13 +17,14 @@ export function install({ app }: { app: App }): Promise<void> {
 
 async function build(app: App) {
   const { settings } = app;
+  const cm = cms(app);
   await adopt(app, name);
   if (!await settings.core.langs) await settings.core.langs("en");
   if (!await settings.cms.frontend) await settings.cms.frontend("cms.frontend");
 
-  const root = await cms(app).node(1);
+  const root = await cm.node(1);
   // cms starts the root on a bare fallback; a layout the site already chose stays
-  if (!cms(app).getLayouts()[String(root.vs.module)]) await root.set("module", LAYOUT);
+  if (!cm.getLayouts()[String(root.vs.module)]) await root.set("module", LAYOUT);
 
   await root.changeGroup(await editors(app), 2); // before the pages: children copy the grants
   await superuser(app);
@@ -46,7 +47,7 @@ async function build(app: App) {
   const privacy = await page(service, "privacy", TITLES.privacy, listed, (p) => section(p, "cms.cont.privacy"));
 
   // The footer belongs to the layout, so every page shows it
-  const foot = await (await cms(app).layoutPage(LAYOUT)).cont("foot", "cms.cont.flexible");
+  const foot = await (await cm.layoutPage(LAYOUT)).cont("foot", "cms.cont.flexible");
   if (!(await foot.conts()).length) {
     await foot.settings.__inited(true);
     const nav = await foot.createCont({ module: "cms.cont.nav" });
@@ -61,9 +62,10 @@ async function build(app: App) {
  * then what runs the site. Later starters put their menu pages before the checklist.
  */
 async function arrange(app: App, firstSteps: Node) {
+  const cm = cms(app);
   await before(firstSteps, "service");
-  await before(await (await cms(app).node(1)).child("system"));
-  const backend = await cms(app).nodeByModule("cms.backend");
+  await before(await (await cm.node(1)).child("system"));
+  const backend = await cm.nodeByModule("cms.backend");
   if (backend) await before(await backend.page());
 }
 
