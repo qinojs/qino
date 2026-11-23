@@ -36,7 +36,7 @@ const mark = (el, target = el) => async () => {
   await page(":root")();
   cms.contPos(el).mark();
   await new Promise(requestAnimationFrame);
-  return typeof target === "string" ? document.querySelector(target) : target;
+  return typeof target === "string" ? find(target) : target; // the module menu lives in the cms root
 };
 
 let tour;
