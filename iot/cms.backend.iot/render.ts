@@ -94,12 +94,15 @@ const options = (entity: Entity, value: unknown) => typeof value !== "string" ? 
   .values(entity.attributes).find((list) => Array.isArray(list) && list.includes(value)) as string[] | undefined)
   ?.filter((option) => typeof option === "string") ?? [value];
 
+/** The enabled providers of the view, or the one chosen with `?provider=`. */
+const select = (rows: Provider[], vars: Vars) => rows.filter((row) => !vars.provider || String(row.id) === String(vars.provider));
+
 /** Every value of the enabled providers' entities as one row: their states, and when searching also their
  *  attribute leaves; searching `/` lists them all. */
 export async function live(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const app = node.app, t = app.t, rows = await enabled(app);
   if (!rows.length) return html.async`<p>${t`No provider is enabled.`}</p>`;
-  const selected = rows.filter((row) => !vars.provider || String(row.id) === String(vars.provider));
+  const selected = select(rows, vars);
   const results = await Promise.all(selected.map(async (row) =>
     [row, await entities(app, row.id).catch((error: unknown) => error)] as const));
   const q = String(vars.q ?? "").toLowerCase();
@@ -123,7 +126,7 @@ export async function live(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
 /** Per enabled provider (`provider`: one): its stored commands and a form to call an action or store one. */
 export async function control(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const app = node.app, stored = await commands(app);
-  const rows = (await enabled(app)).filter((row) => !vars.provider || String(row.id) === String(vars.provider));
+  const rows = select(await enabled(app), vars);
   if (!rows.length) return html.async`<p>${app.t`No provider is enabled.`}</p>`;
   return html.async`${rows.map(async (row) => {
     const [endpoints, list] = await Promise.allSettled([entities(app, row.id), actions(app, row.id)]);

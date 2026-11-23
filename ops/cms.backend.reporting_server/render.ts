@@ -33,7 +33,7 @@ export async function instances(node: Node): Promise<HtmlString> {
   const rows = await app.db.query`
     SELECT i.*, (SELECT COUNT(*) FROM reporting_error e WHERE e.instance = i.id) AS errors
     FROM reporting_instance i ORDER BY i.last_seen DESC`;
-  return html.async`<table class="u2-table -instances -Sticky">
+  return html.async`<table class="u2-table -Sticky">
     <thead><tr>
       <th>${t`Instance`}
       <th>${t`Qino`}
@@ -69,7 +69,7 @@ export async function errors(node: Node): Promise<HtmlString> {
     SELECT fp, MAX(source) AS source, MAX(file) AS file, MAX(line) AS line, MAX(col) AS col, MAX(prio) AS prio,
       MAX(message) AS message, COUNT(*) AS instances, SUM(hits) AS hits, MAX(last_seen) AS last_seen
     FROM reporting_error GROUP BY fp ORDER BY MAX(last_seen) DESC LIMIT 500`;
-  return html.async`<table class="u2-table -errors -Sticky">
+  return html.async`<table class="u2-table -Sticky">
     <thead><tr>
       <th>${t`Message`}
       <th>${t`Where`}

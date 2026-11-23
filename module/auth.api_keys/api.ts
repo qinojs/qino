@@ -10,7 +10,7 @@ export const api: ApiTree = {
     access: Access.USER,
     execute: async (_: unknown, ctx: Ctx) => {
       const rows = await ctx.app.db.query`SELECT id, name, prefix, created, expires FROM api_key WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
-      return rows.map((r) => ({ id: r.id, name: r.name, prefix: r.prefix, created: r.created, expires: r.expires }));
+      return rows;
     },
   },
   post: {

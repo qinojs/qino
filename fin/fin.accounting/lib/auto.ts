@@ -2,7 +2,7 @@ import { mainCurrency, today } from "@qino/qino/fin";
 import { lineOf, lines as linesOf, refOf as invoiceRef, round, totals } from "@qino/qino/fin.invoice";
 import { refOf } from "@qino/qino/fin.payment";
 
-import { book, moneyBy, reverse } from "../mod.ts";
+import { book, booked, moneyBy, reverse } from "../mod.ts";
 
 import type { App, Row } from "@qino/qino";
 import type { Line } from "../mod.ts";
@@ -19,11 +19,6 @@ async function setup(app: App) {
   const closed = String(await s.closedUntil ?? "");
   return { roles, currency: await mainCurrency(app) ?? "", closed, moneyBy: await moneyBy(app) };
 }
-
-/** An entry for `ref` that is booked and not taken back. */
-const booked = (app: App, ref: string) => app.db.one`
-  SELECT e.id FROM accounting_entry e WHERE e.ref = ${ref} AND e.reverses IS NULL
-    AND NOT EXISTS (SELECT 1 FROM accounting_entry r WHERE r.reverses = e.id)`;
 
 /** What has been booked so far on one account for `ref`, debit positive. */
 const sumOn = (app: App, ref: string, number: string) => app.db.one`

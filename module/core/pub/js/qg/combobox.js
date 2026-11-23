@@ -1,94 +1,93 @@
-import { debounce } from '../c1.js';
-import Placer from '../c1/Placer.mjs';
+import { debounce } from "../c1.js";
+import Placer from "../c1/Placer.mjs";
 
 const doc = document;
-const dialog = doc.createElement('div');
-dialog.classList.add('c1Dialog');
-dialog.classList.add('c1Select');
-dialog.setAttribute('popover', 'manual'); // top layer: sits above the cms panel (itself a popover) and its shadow DOM
-dialog.addEventListener('mousedown', e=>{
+const dialog = doc.createElement("div");
+dialog.classList.add("c1Dialog","c1Select");
+dialog.setAttribute("popover", "manual"); // top layer: sits above the cms panel (itself a popover) and its shadow DOM
+dialog.addEventListener("mousedown", e=>{
   e.preventDefault();
   e.stopPropagation(); // prevent closing cms-panel
 });
-dialog.addEventListener('touchstart', e => e.stopPropagation()); // prevent closing cms-panel
+dialog.addEventListener("touchstart", e => e.stopPropagation()); // prevent closing cms-panel
 const placer = new Placer(dialog);
 
 export function Combobox(input){
   if (input.combobox) return input.combobox;
   input.combobox = this;
-  input.setAttribute('autocomplete','off');
-  input.addEventListener('input', this);
-  input.addEventListener('keydown', this);
-  input.addEventListener('blur', this);
+  input.setAttribute("autocomplete","off");
+  input.addEventListener("input", this);
+  input.addEventListener("keydown", this);
+  input.addEventListener("blur", this);
   this.input = input;
 };
 Combobox.prototype = {
   showDialog(){
     if (dialog.parentNode !== doc.body) doc.body.append(dialog);
-    if (!dialog.matches(':popover-open')) dialog.showPopover(); // top layer instead of z-index, else behind the panel popover
-    dialog.style.minWidth = this.input.offsetWidth + 'px';
+    if (!dialog.matches(":popover-open")) dialog.showPopover(); // top layer instead of z-index, else behind the panel popover
+    dialog.style.minWidth = this.input.offsetWidth + "px";
     placer.follow(this.input);
   },
   hideDialog(){
-    if (dialog.matches(':popover-open')) dialog.hidePopover();
+    if (dialog.matches(":popover-open")) dialog.hidePopover();
   },
   initOptions(){
     this.mark(dialog.firstElementChild);
   },
   searchOptions(){
-    console.warn('not implemented');
+    console.warn("not implemented");
   },
   searchOptionsDebounced:debounce(function(){
     this.searchOptions();
   }, 150),
   setOptions(array){
-    dialog.innerHTML = '';
+    dialog.innerHTML = "";
     let el, i=0, item;
     for (;(item = array[i++]);) {
-      el = doc.createElement('div');
+      el = doc.createElement("div");
       el.innerHTML = item.html;
-      el.setAttribute('value', item.value);
-      el.setAttribute('text', item.text);
+      el.setAttribute("value", item.value);
+      el.setAttribute("text", item.text);
       dialog.appendChild(el);
     }
     this.initOptions();
   },
   mark(el){
-    this.marked?.classList?.remove('-marked');
+    this.marked?.classList?.remove("-marked");
     this.marked = el;
-    el?.classList?.add('-marked');
+    el?.classList?.add("-marked");
   },
   select(el){
     if (!el) return;
     this.mark(el);
     this.selected = el;
-    this.input.value = el.getAttribute('value');
-    this.input.dispatchEvent(new Event('change',{bubbles:true})); // should trigger "input" only, cause focus is on input
+    this.input.value = el.getAttribute("value");
+    this.input.dispatchEvent(new Event("change",{bubbles:true})); // should trigger "input" only, cause focus is on input
     if (el.offsetTop + el.offsetHeight > dialog.scrollTop + dialog.offsetHeight - 10) {
       dialog.scrollTop = el.offsetTop + el.offsetHeight - dialog.offsetHeight + 4;
     }
     if (el.offsetTop < dialog.scrollTop + 10) dialog.scrollTop = el.offsetTop - 2;
   },
   handleEvent(e){
-    if (!this['on'+e.type]) return;
-    this['on'+e.type](e);
+    if (!this["on"+e.type]) return;
+    this["on"+e.type](e);
   },
   onfocus(){
     this.input.select();
     setTimeout(()=>{ // ie11 has blur before focusin
-      dialog.innerHTML = '';
+      dialog.innerHTML = "";
       this.lastValue = this.input.value;
       this.showDialog();
       this.searchOptions();
       dialog.onmouseover = e=>{
-        const el = e.target.closest('[value]');
+        const el = e.target.closest("[value]");
         this.mark(el);
       };
       dialog.onmouseup = e=>{
-        const el = e.target.closest('[value]');
+        const el = e.target.closest("[value]");
         this.select(el);
         this.hideDialog();
-        this.input.dispatchEvent(new CustomEvent('select_by_pointer')); // new
+        this.input.dispatchEvent(new CustomEvent("select_by_pointer")); // new
       };
       dialog.combobox = this;
     });
@@ -104,17 +103,17 @@ Combobox.prototype = {
   onkeydown(e) {
     if (e.defaultPrevented) return;
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         this.marked && this.select(this.marked.nextElementSibling);
         return;
-      case 'ArrowUp':
+      case "ArrowUp":
         this.marked && this.select(this.marked.previousElementSibling);
         return;
-      case 'Enter': // preventDefault() ??
+      case "Enter": // preventDefault() ??
         this.marked && this.select(this.marked);
         this.hideDialog();
         return;
-      case 'Escape':
+      case "Escape":
         this.input.value = this.lastValue;
         this.hideDialog();
         return;
@@ -123,7 +122,7 @@ Combobox.prototype = {
 };
 
 const css =
-'.c1Select { \
+".c1Select { \
   position: fixed; \
   inset: auto; \
   margin: 0; \
@@ -153,7 +152,7 @@ const css =
 .c1Select::-webkit-scrollbar { width: 6px; height: 6px; } \
 .c1Select::-webkit-scrollbar-track { background: rgba(0, 0, 0, .05); } \
 .c1Select::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .25); } \
-';
-const sEl = document.createElement('style');
+";
+const sEl = doc.createElement("style");
 sEl.textContent = css;
-document.head.append(sEl);
+doc.head.append(sEl);

@@ -162,7 +162,7 @@ async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {
         <description>${hee(await descriptionOf(page))}</description><language>${hee(ctx.lang)}</language>${items}
       </channel></rss>`;
   }
-  throw new Output(body, { headers: { "Content-Type": `application/${format === "atom" ? "atom" : "rss"}+xml; charset=utf-8` } });
+  throw new Output(body, { headers: { "Content-Type": `application/${format}+xml; charset=utf-8` } });
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {

@@ -9,7 +9,8 @@ export function time(value: unknown, { narrow, second }: { narrow?: boolean; sec
   const date = value instanceof Date ? value
     : Number.isFinite(Number(value)) ? new Date(Number(value) * 1000)
     : new Date(String(value));
-  if (Number.isNaN(date.getTime()) || date.getTime() === 0) return html`-`;
+  const ts = date.getTime();
+  if (Number.isNaN(ts) || !ts) return html`-`;
   const iso = date.toISOString();
   return html`<u2-time datetime="${iso}" type=relative ${second ? "second" : "minute"}${narrow ? " mode=narrow" : ""}>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
 }

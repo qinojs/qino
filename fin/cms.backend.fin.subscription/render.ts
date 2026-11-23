@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, inputAmount, money, refLink, rowLink } from "@qino/qino/cms.backend.fin";
+import { every, badge, inputAmount, money, refLink, rowLink } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, nameOf, today } from "@qino/qino/fin";
 import { horizon, periods, plans, renews, subscriptions } from "@qino/qino/fin.subscription";
 
@@ -19,10 +19,6 @@ export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (Number.isSafeInteger(plan) && plan > 0) return planDetail(node, plan);
   return overview(node, url);
 }
-
-/** Every `n units`: "1 year", "3 months". */
-const every = (app: App, unit: unknown, count: unknown) =>
-  html.async`${Number(count) > 1 ? `${count} ` : ""}${unit === "month" ? app.t`month` : app.t`year`}`;
 
 /** The plan, the price and the period fields of a form; empty ones take the plan's (`placeholder`). */
 function terms(app: App, row: Row, catalog: Row[], placeholder: Row = {}) {

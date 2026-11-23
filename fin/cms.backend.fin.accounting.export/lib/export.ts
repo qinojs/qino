@@ -47,11 +47,11 @@ export async function exportBooks(app: App, { from, to }: { from: string; to: st
   files["journal.csv"] = new TextEncoder().encode(csv([
     ["Date", "Entry", "Text", "Account", "Account name", "Debit", "Credit", "Tax code", "Currency", "Reference",
       "Reverses", "Receipts"],
-    ...lines.map((l) => [
-      l.date, l.id, l.text, l.number, l.name,
-      amount(Math.max(Number(l.amount), 0), String(l.currency)),
-      amount(Math.max(-Number(l.amount), 0), String(l.currency)),
-      l.tax_code, l.currency, l.ref, l.reverses, (receipts.get(Number(l.id)) ?? []).join(" "),
+    ...lines.map((row) => [
+      row.date, row.id, row.text, row.number, row.name,
+      amount(Math.max(Number(row.amount), 0), String(row.currency)),
+      amount(Math.max(-Number(row.amount), 0), String(row.currency)),
+      row.tax_code, row.currency, row.ref, row.reverses, (receipts.get(Number(row.id)) ?? []).join(" "),
     ]),
   ]));
   files["balances.csv"] = new TextEncoder().encode(csv([

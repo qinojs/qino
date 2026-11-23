@@ -36,7 +36,6 @@ const device = (ua: string) => {
   return ua && [browser, info.os].filter(Boolean).join(" · ") || ua.slice(0, 40);
 };
 
-/** Reverse-DNS name of an IP, in-addr.arpa for v4, ip6.arpa for v6. */
 /** Host names for the IPs, "" if none. Best effort, with short timeout. */
 async function ipHosts(ips: string[]): Promise<Record<string, string>> {
   return Object.fromEntries(await Promise.all([...new Set(ips.filter(Boolean))].map(async (ip) => [

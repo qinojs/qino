@@ -79,6 +79,7 @@ export async function methods(app: App, offer: Offer): Promise<{ method: string;
 export const refOf = (id: number): string => `fin.payment:${id}`;
 
 /** A payment's `data`: what its provider stored as `State.data`. */
+// deno-lint-ignore no-explicit-any
 export const dataOf = (payment: { data?: unknown }): Record<string, any> =>
   JSON.parse(String(payment.data ?? "{}")) ?? {};
 

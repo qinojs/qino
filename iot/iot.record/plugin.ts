@@ -15,6 +15,8 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 const key = (provider: number, entity: string) => `${provider} ${entity}`;
 const updated = (entity: Entity | null) => entity?.updated === undefined ? Date.now() : Date.parse(entity.updated);
 
+const fail = (error: unknown) => console.error("iot.record:", error);
+
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   const recorded = new Map<string, Datapoint[]>();
   const load = async () => {
@@ -27,7 +29,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   const capture = (point: Datapoint, entity: Entity | null, time: number, reported = false) => {
     if (signal.aborted) return;
     return write(app, point, value(point, entity), time, { reported })
-      .catch((error) => console.error("iot.record:", error));
+      .catch(fail);
   };
   // Adapters that connected before this listener existed: take one current observation; a disabled
   // provider has none to give.
@@ -40,7 +42,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
           const entity = current.find((entity) => entity.id === point.entity) ?? null;
           capture(point, entity, updated(entity));
         }
-      }).catch((error) => console.error("iot.record:", error));
+      }).catch(fail);
     }
   };
   await load();
@@ -57,10 +59,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
     const known = find();
     await load();
     const point = !known && find();
-    if (point) snapshot([point]).catch((error) => console.error("iot.record:", error));
+    if (point) snapshot([point]).catch(fail);
   }, { signal });
   app.on("iot.history:read", (request) => read(app, request), { signal });
-  snapshot([...recorded.values()].flat()).catch((error) => console.error("iot.record:", error));
+  snapshot([...recorded.values()].flat()).catch(fail);
 }
 
 /** Expected intervals detect stale streams with one null gap; cached states are never copied. */
@@ -68,7 +70,7 @@ export const cron = { stale: { every: 60, run: async (app: App) => {
   const interval = sql.id("interval");
   const ids = await app.db.col<number>`SELECT id FROM iot_datapoint WHERE record = ${true} AND ${interval} > 0
     AND value IS NOT NULL AND time < ${Date.now()} - ${interval} * 2000`;
-  for (const id of ids) await record(app, Number(id), null).catch((error) => console.error("iot.record:", error));
+  for (const id of ids) await record(app, Number(id), null).catch(fail);
 } } } satisfies Jobs;
 
 /** Query one local datapoint without requiring its provider to be running. */

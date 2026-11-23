@@ -62,7 +62,7 @@ export async function stepUp({ factors = [] } = {}) {
 }
 
 /** Standard step-up form: fields, confirm button, errors in an `<output>`. `check(form)` resolves
- *  true on success. Returns the form, so handlers can add to it. */
+ *  true on success. Returns `{ form, done }`, so handlers can add to the form and await `done`. */
 export async function proveForm(root, fields, check) {
   root.innerHTML = `<form>${fields}
     <button>${await t`Confirm`}</button>

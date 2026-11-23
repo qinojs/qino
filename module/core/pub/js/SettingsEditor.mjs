@@ -168,7 +168,7 @@ function ensureSettingsEditorCss(root = document) {
   .-row {
     border-bottom:1px solid #f4f4f4;
     display:flex;
-    align-items:baseline;;
+    align-items:baseline;
     &:hover { background:#f4f4f4; }
     > * { padding:5px; }
     > .-name { flex:1 0 auto; }
@@ -185,10 +185,10 @@ function ensureSettingsEditorCss(root = document) {
     background-repeat:no-repeat;
     background-position:50%;
   }
-  .-rem > a { background-image:${svgUrl(remImgData)}; cursor:pointer; }
+  .-rem > a { background-image:${svgUrl(REM_IMG)}; cursor:pointer; }
   .-toggle { align-self:center; }
-  .-toggle > .-minus { background-image:${svgUrl(closeImgData)}; cursor:pointer; background-size:95%; }
-  .-toggle > .-plus { background-image:${svgUrl(openImgData)}; cursor:pointer; background-size:95%; }
+  .-toggle > .-minus { background-image:${svgUrl(CLOSE_IMG)}; cursor:pointer; background-size:95%; }
+  .-toggle > .-plus { background-image:${svgUrl(OPEN_IMG)}; cursor:pointer; background-size:95%; }
 }
 `;
   const style = (root.ownerDocument || root).createElement("style");
@@ -199,12 +199,12 @@ function ensureSettingsEditorCss(root = document) {
 
 function svgUrl(svg) { return `url(data:image/svg+xml;utf8,${encodeURIComponent(svg)})`; }
 
-const remImgData =
+const REM_IMG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg>';
-const openImgData =
+const OPEN_IMG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#000" stroke-width="4.6">' +
   '<line x1="8" y1="32" x2="56" y2="32"/>' +
   '<line x1="32" y1="8" x2="32" y2="56"/>' +
   "</svg>";
-const closeImgData =
+const CLOSE_IMG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#000" stroke-width="4.6"><line x1="8" y1="32" x2="56" y2="32"/></svg>';

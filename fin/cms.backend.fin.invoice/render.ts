@@ -21,9 +21,12 @@ export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   return id ? detail(node, id) : overview(node, url);
 }
 
-/** The party's name, from the snapshot. */
+/** The party snapshot, JSON in the `party` column. */
+const partyOf = (row: Row) => JSON.parse(String(row.party ?? "{}")) ?? {};
+
+/** Its name. */
 const partyName = (row: Row) => {
-  const party = JSON.parse(String(row.party ?? "{}")) ?? {};
+  const party = partyOf(row);
   return String(party.legalName || party.name || "");
 };
 
@@ -232,7 +235,7 @@ async function editor(node: Node, row: Row) {
   const app = node.app;
   const t = app.t;
   const id = Number(row.id);
-  const party = JSON.parse(String(row.party ?? "{}")) ?? {};
+  const party = partyOf(row);
   const address = party.address ?? {};
   // the languages the site has texts for; the document falls back to the default one likewise
   const languages = app.languages.all;
@@ -350,7 +353,7 @@ async function detail(node: Node, id: number) {
   ]);
   if (!row) return html.async`<div class=u2-card><div>${t`No invoice`} ${id}</div></div>`;
   if (row.status === "draft") return editor(node, row);
-  const party = JSON.parse(String(row.party ?? "{}")) ?? {};
+  const party = partyOf(row);
   const address = party.address ?? {};
   // a credit note asks for nothing: what is open on it, we owe, its rest being negative; anything
   // else asks for what it is owed, with what it lists

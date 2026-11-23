@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, rowLink } from "@qino/qino/cms.backend.fin";
+import { every, badge, money, rowLink } from "@qino/qino/cms.backend.fin";
 import { nameOf } from "@qino/qino/fin";
 import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, overbilled, registrars, running, sources, sourceTypes, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
@@ -42,10 +42,13 @@ const kindWord = (app: App, kind: Kind | undefined) =>
 
 /** Per period: "CHF 240.00 / year". */
 const price = (app: App, s: Row) =>
-  html.async`${money(s.amount, s.currencyCode)} / ${Number(s.count) > 1 ? `${s.count} ` : ""}${s.unit === "month" ? app.t`month` : app.t`year`}`;
+  html.async`${money(s.amount, s.currencyCode)} / ${every(app, s.unit, s.count)}`;
 
 /** What we bill a domain for (`billable`) without a running subscription for it. */
 const unbilled = (d: Row, subs: Row[]) => billable(d).filter((kind) => !subs.some((s) => running(s) && kindOf(s) === kind));
+
+/** What we bill for, without a running subscription for it. */
+const notBilledBadge = (app: App, kind: Kind | undefined) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange");
 
 /** "billed, not registered", or "billed, not hosted": a subscription we bill for nothing (`overbilled`). */
 const overbilledBadge = (app: App, kind: Kind | undefined) =>
@@ -56,7 +59,7 @@ const overbilledBadge = (app: App, kind: Kind | undefined) =>
 function billing(app: App, d: Row, subs: Row[]) {
   const live = subs.filter(running);
   return html.async`${live.map((s) => html.async`<div><small>${kindWord(app, kindOf(s))}</small> ${s.label} <small>${price(app, s)}</small></div>`)}
-    ${unbilled(d, subs).map((kind) => badge(html.async`${kindWord(app, kind)} ${app.t`not billed`}`, "--orange"))}
+    ${unbilled(d, subs).map((kind) => notBilledBadge(app, kind))}
     ${overbilled(d, subs).map((kind) => overbilledBadge(app, kind))}`;
 }
 
@@ -79,7 +82,7 @@ async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
       <td style="white-space:nowrap">${nameCell(pageUrl, domain)}
       <td>${missing === "customer" ? badge(t`no customer`, "--red")
         : missing === "service" ? overbilledBadge(app, kind)
-        : badge(html.async`${kindWord(app, kind)} ${t`not billed`}`, "--orange")}
+        : notBilledBadge(app, kind)}
       <td>${kind === "hosting" ? domain.host : domain.registrar}
       <td>${kind !== "hosting" && domain.expires ? html.async`<small>${t`until`} ${String(domain.expires).slice(0, 10)}</small>` : ""}`)}
     </table>` : html.async`<p>${t`Every domain we register or host has a customer and is billed.`}`}

@@ -17,6 +17,10 @@ export function money(amount: unknown, currency: unknown): string {
 
 const nowrap = (text: string) => html`<span style="white-space:nowrap">${text}</span>`;
 
+/** Every `n units`: "1 year", "3 months". */
+export const every = (app: App, unit: unknown, count: unknown) =>
+  html.async`${Number(count) > 1 ? `${count} ` : ""}${unit === "month" ? app.t`month` : app.t`year`}`;
+
 /** What a person types (`120.50`, `120,50`, `1'200`) as minor units of the currency. A unit price
  *  (`fine`) may be finer than a minor unit: four more decimals are kept, 0.2345 CHF is 23.45. */
 export function parseAmount(value: unknown, currency: string, { fine = false } = {}): number {
@@ -98,7 +102,6 @@ export const openInvoices = (app: App, direction: string): Promise<Record<string
 export const overdueInvoices = (app: App): Promise<number> => app.db.one`SELECT COUNT(*) FROM invoice
   WHERE direction = 'out' AND type IN ('invoice', 'reminder') AND status = 'open' AND due < ${today()}`.then(Number);
 
-/** A status as a badge in its color. */
 /** What an invoice's or payment's status is called, in the request's language. */
 export function statusName(app: App, value: unknown): Promise<string> | string {
   const t = app.t;
@@ -117,6 +120,7 @@ export function statusName(app: App, value: unknown): Promise<string> | string {
   }
 }
 
+/** A status as a badge in its color. */
 export const status = (app: App, value: unknown): Promise<HtmlString> => badge(statusName(app, value), STATUS[String(value)]);
 
 /** Money in or out as an arrow; `label` says it in words, as title (a t`` may be passed). */

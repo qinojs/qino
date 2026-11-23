@@ -137,6 +137,11 @@ export async function balances(
 /** The ref of the entries that close a year: `fin.accounting:close:2026-12-31`. */
 const CLOSING = "fin.accounting:close:";
 
+/** An entry for `ref` that is booked and not taken back. */
+export const booked = (app: App, ref: string): Promise<Row | undefined> => app.db.one`
+  SELECT e.id FROM accounting_entry e WHERE e.ref = ${ref} AND e.reverses IS NULL
+    AND NOT EXISTS (SELECT 1 FROM accounting_entry r WHERE r.reverses = e.id)`;
+
 /**
  * Close the business year that ends on `until` — any day, not only the 31st of December: its
  * income and expense since the last closing go to the result account (`accounts.result`, equity)
@@ -177,8 +182,7 @@ export async function reopen(app: App): Promise<void> {
   const s = app.settings["fin.accounting"];
   const closed = String(await s.closedUntil ?? "");
   if (!closed) fail("nothing is closed");
-  const entry = await app.db.one`SELECT id FROM accounting_entry e WHERE ref = ${`${CLOSING}${closed}`}
-    AND reverses IS NULL AND NOT EXISTS (SELECT 1 FROM accounting_entry r WHERE r.reverses = e.id)`;
+  const entry = await booked(app, `${CLOSING}${closed}`);
   // the closing before is where the books stay closed; none, and they are open
   const before = await app.db.one`SELECT MAX(date) FROM accounting_entry e
     WHERE ref LIKE ${`${CLOSING}%`} AND date < ${closed} AND reverses IS NULL
