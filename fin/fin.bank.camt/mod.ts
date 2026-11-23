@@ -60,22 +60,22 @@ export function parse(xml: string): Statement[] {
       // is an ordinary line, its sign follows CdtDbtInd.
       const status = text(entry, "Sts", "Cd") || text(entry, "Sts");
       if (status && status !== "BOOK") return [];
+      const booked = text(entry, "BookgDt", "Dt") || text(entry, "BookgDt", "DtTm");
       const key = [
-        text(entry, "BookgDt", "Dt") || text(entry, "BookgDt", "DtTm").slice(0, 10),
+        booked.slice(0, 10),
         text(entry, "CdtDbtInd"),
         content(child(entry, "Amt")).trim(),
         text(entry, "NtryDtls", "TxDtls", "Refs", "EndToEndId") || text(entry, "AddtlNtryInf"),
       ].join(":");
       seen.set(key, (seen.get(key) ?? 0) + 1);
-      return lines(entry, currency, `${key}:${seen.get(key)}`);
+      return lines(entry, currency, `${key}:${seen.get(key)}`, booked.slice(0, 10));
     });
     return { account, currency, transactions };
   });
 }
 
-/** An entry's transactions; one without details is a line of its own. */
-function lines(entry: El, currency: string, fallbackId: string): Tx[] {
-  const date = (text(entry, "BookgDt", "Dt") || text(entry, "BookgDt", "DtTm")).slice(0, 10);
+/** An entry's transactions; one without details is a line of its own. `date` is the booked date. */
+function lines(entry: El, currency: string, fallbackId: string, date: string): Tx[] {
   const sign = text(entry, "CdtDbtInd") === "DBIT" ? -1 : 1;
   const entryId = text(entry, "AcctSvcrRef") || fallbackId;
   const details = kids(entry, "NtryDtls").flatMap((d) => kids(d, "TxDtls"));

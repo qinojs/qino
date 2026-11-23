@@ -101,8 +101,8 @@ async function writeOff(app: App, invoice: Row) {
   const id = Number(invoice.id);
   const { roles, currency } = await setup(app);
   if (invoice.currency !== currency || await booked(app, lossRef(id))) return;
-  const open = Number(invoice.total) - Number(invoice.paid);
   const total = Number(invoice.total);
+  const open = total - Number(invoice.paid);
   if (open <= 0 || !total || !roles.losses || !roles.receivable) return;
   const { rates } = split(await linesOf(app, id), Boolean(invoice.tax_included), "");
   const parts = rates.map((r) => {
@@ -142,7 +142,7 @@ export async function onPayment(app: App, payment: Row): Promise<void> {
   const ref = refOf(Number(payment.id));
   const moved = Number(payment.paid) - Number(payment.refunded);
   const fee = Number(payment.fee);
-  const dMoved = moved - (incoming ? -await sumOn(app, ref, counter) : await sumOn(app, ref, counter));
+  const dMoved = moved - (incoming ? -1 : 1) * await sumOn(app, ref, counter);
   // what the provider kept needs its account: without one, nothing rather than half of it — the
   // money account would show more than arrived
   if (fee && !roles.fees) return;
