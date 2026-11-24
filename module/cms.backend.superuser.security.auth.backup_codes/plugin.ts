@@ -58,7 +58,7 @@ ${note ? html`<div class=u2-card style="flex:1 1 100%"><div>${note}</div></div>`
   <div>
     <form method=post>
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
-      <input name=code placeholder="Spend one" required>
+      <input name=code autocomplete=off placeholder="Spend one" required>
       <button name=spend value=1>Check</button>
     </form>
   </div>

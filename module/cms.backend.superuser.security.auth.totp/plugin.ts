@@ -69,7 +69,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         <u2-qrcode>${started.uri}</u2-qrcode>
         <p>Or type the secret by hand: <code>${started.secret}</code>
         <p><input name=label placeholder="What is this device called?">
-        <p><input name=code inputmode=numeric autocomplete=one-time-code placeholder="6-digit code" required>
+        <p><input name=code inputmode=numeric autocomplete=off placeholder="6-digit code" required>
         <button name=confirm value=1>Confirm</button>
       </form>`
     : html`<form method=post>
@@ -85,7 +85,7 @@ ${note ? html`<div class=u2-card style="flex:1 1 100%"><div>${note}</div></div>`
   <div>
     <form method=post>
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
-      <input name=code inputmode=numeric placeholder="Try a code" required>
+      <input name=code inputmode=numeric autocomplete=off placeholder="Try a code" required>
       <button name=test value=1>Check</button>
     </form>
   </div>

@@ -3,6 +3,10 @@
 import { t } from "./t.js";
 import { html } from "./html.js";
 
+// Browsers that don't know `one-time-code` (Firefox) keep the codes in their form history and offer
+// stale ones again; `off` avoids that there, while the others keep filling codes in.
+const OTC = Object.assign(document.createElement("input"), { autocomplete: "one-time-code" }).autocomplete;
+
 /** Ask for a fresh proof. Resolves true on success, false if cancelled. */
 export async function stepUp({ factors = [] } = {}) {
   const dialog = document.createElement("dialog");
@@ -74,6 +78,7 @@ export async function proveForm(root, fields, check) {
 
   // Clean pasted text instead of truncating: a leading space must not cut off the last digit.
   for (const el of form.querySelectorAll("input[name=code]")) {
+    if (!OTC && el.getAttribute("autocomplete") === "one-time-code") el.autocomplete = "off";
     el.addEventListener("input", () => {
       el.value = el.inputMode === "numeric" ? el.value.replace(/\D/g, "").slice(0, 6) : el.value.trim();
     });

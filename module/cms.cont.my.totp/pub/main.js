@@ -66,7 +66,10 @@ initNode("cont.my.totp", async (el) => {
       </form>`;
       setup.hidden = false;
       start.hidden = true;
-      setup.querySelector("[name=code]").focus();
+      const code = setup.querySelector("[name=code]");
+      // Browsers that don't know `one-time-code` (Firefox) would offer stale codes from their history.
+      if (!Object.assign(document.createElement("input"), { autocomplete: "one-time-code" }).autocomplete) code.autocomplete = "off";
+      code.focus();
     } catch (e) { show(e?.message || String(e)); }
   });
 
