@@ -8,6 +8,9 @@ import { cms } from "../plugin.ts";
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
+// the request url is read-only, changes go through toURL()
+const reqUrl = (href: string) => Object.assign(new URL(href), { toURL: () => new URL(href) });
+
 test("ChatGPT account content node renders a return link and escapes account labels", async () => {
   const dir = await fs.tempDir();
   const original = globalThis.fetch;
@@ -17,7 +20,7 @@ test("ChatGPT account content node renders a return link and escapes account lab
   const node = { app: viewApp } as Node;
   const headers = new Headers();
   const ctx = { user: {}, userId: 7, csrfToken: "csrf", res: { headers }, req: {
-    appUrl: "/cms1/", url: new URL("http://127.0.0.1:8080/cms1/account") },
+    appUrl: "/cms1/", url: reqUrl("http://127.0.0.1:8080/cms1/account") },
   } as unknown as Ctx;
   try {
     await app.init();

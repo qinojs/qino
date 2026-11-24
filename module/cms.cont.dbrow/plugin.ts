@@ -5,6 +5,8 @@ import { hee, html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 import { api, Query, route, settingsSchema as listSchema, show } from "@qino/qino/cms.cont.dbtable";
 
+import manifest from "./manifest.json" with { type: "json" };
+
 import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
@@ -38,7 +40,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  app.on("route", ({ ctx }: { ctx: Ctx }) => route(app, ctx, "cms.cont.dbrow"), { signal });
+  app.on("route", ({ ctx }: { ctx: Ctx }) => route(app, ctx, manifest.name), { signal });
 }
 
 export const cms = {
