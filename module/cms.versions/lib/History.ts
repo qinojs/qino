@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 
 // History capture (cms-agnostic): copies every write on a versioned table into its _vers_* table,
-// keyed by the request's log entry. Writes without request (cron/CLI/boot) have no log entry and
-// are not captured.
-import { requestStorage, sql } from "@qino/qino";
+// keyed by the request's log entry. Writes without request (cron/CLI/boot) get a log entry of
+// their own, else a restore would bring back the state before them.
+import { requestStorage, sql, unixTime } from "@qino/qino";
 
 import { getVers, getVersTable } from "./Vers.ts";
 
@@ -29,17 +29,21 @@ const snapshot = (cols: Record<string, any>[], space: number, logId: string, del
 
 export function initHistory(app: App, signal: AbortSignal) {
 
-  // ctx + shadow table + logId for a tracked write, or null to skip. logId is awaited only after
+  // Writes without request share one log entry, until a request's entry comes after it — then the
+  // next one gets a newer entry, so the history keeps the order of the writes.
+  let ownLog: Promise<string | null> | undefined;
+
+  // space + shadow table + logId for a tracked write, or null to skip. logId is awaited only after
   // the table check; earlier, the log insert's own insert-after would wait for itself.
   const track = async (e: any) => {
     const ctx = requestStorage.getStore();
-    if (!ctx) return null;
     const tableName = String(e.table);
-    const versTable = getVersTable(ctx.app.db, tableName);
+    if (tableName === "log" && ctx) ownLog = undefined;
+    const versTable = getVersTable(app.db, tableName);
     if (!versTable) return null;
-    const logId = await ctx.logId;
+    const logId = await (ctx ? ctx.logId : ownLog ??= app.db.table("log").insert({ time: unixTime() }).then((id) => id ? String(id) : null, () => null));
     if (!logId) return null;
-    return { ctx, tableName, versTable, logId };
+    return { space: ctx ? getVers(ctx).space : 0, tableName, versTable, logId };
   };
 
   // ─── History capture: insert/update ──────────────────────────────────────
@@ -47,11 +51,11 @@ export function initHistory(app: App, signal: AbortSignal) {
   const catchInsertUpdate = async (e: DbEvents["table:insert-after"]) => {
     const t = await track(e);
     if (!t) return;
-    const { ctx, tableName, versTable, logId } = t;
+    const { space, tableName, versTable, logId } = t;
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
-    const versCols = columnsOf(ctx.app.db, versTable);
-    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, getVers(ctx).space, logId, false)} FROM ${sql.id(tableName)} WHERE ${where}`);
+    const versCols = columnsOf(app.db, versTable);
+    await replaceFrom(app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, space, logId, false)} FROM ${sql.id(tableName)} WHERE ${where}`);
   };
   app.db.on("table:update-after", catchInsertUpdate, { signal });
   app.db.on("table:insert-after", catchInsertUpdate, { signal });
@@ -60,14 +64,13 @@ export function initHistory(app: App, signal: AbortSignal) {
   app.db.on("table:delete-after", async (e) => {
     const t = await track(e);
     if (!t) return;
-    const { ctx, versTable, logId } = t;
+    const { space, versTable, logId } = t;
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
     // The live row is gone: copy its latest snapshot with _vers_deleted set, so all NOT NULL
     // columns are filled.
-    const space = getVers(ctx).space;
-    const versCols = columnsOf(ctx.app.db, versTable);
-    await replaceFrom(ctx.app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, space, logId, true)} FROM (
+    const versCols = columnsOf(app.db, versTable);
+    await replaceFrom(app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, space, logId, true)} FROM (
       SELECT * FROM ${sql.id(versTable)} WHERE ${where} AND _vers_space = ${space}
       ORDER BY _vers_log DESC LIMIT 1) AS src`);
   }, { signal });
