@@ -519,7 +519,7 @@
             "type": "string"
           }
         },
-        "required": ["id", "active", "pw", "given_name", "family_name", "superuser"]
+        "required": ["id", "active", "pw", "superuser"]
       }
     },
     "usr_contact": {
