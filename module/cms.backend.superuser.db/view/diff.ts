@@ -48,7 +48,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
           <td>${field}
           <td>${badges[status]}`)}
       </table>`
-    : html`<div>Schema and DB match.</div>`;
+    : html.async`<div>${t`Schema and DB match.`}</div>`;
 
   // --- schema from db ---
   const fromDb = await schemaFromDb((text: string) => db.query`${sql.raw(text)}`);

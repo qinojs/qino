@@ -561,6 +561,7 @@
   "messages in 7 days": "berichten in 7 dagen",
   "missing in DB": "ontbreekt in DB",
   "missing in schema": "ontbreekt in schema",
+  "Schema and DB match.": "Schema en DB komen overeen.",
   "Missing tables as schema JSON": "Ontbrekende tabellen als schema-JSON",
   "Module": "Module",
   "Module access": "Moduletoegang",

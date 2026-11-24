@@ -561,6 +561,7 @@
   "messages in 7 days": "wiadomości w 7 dni",
   "missing in DB": "brak w DB",
   "missing in schema": "brak w schemacie",
+  "Schema and DB match.": "Schemat i baza danych są zgodne.",
   "Missing tables as schema JSON": "Brakujące tabele jako JSON schematu",
   "Module": "Moduł",
   "Module access": "Dostęp do modułu",

@@ -561,6 +561,7 @@
   "messages in 7 days": "7 日間のメッセージ",
   "missing in DB": "DB にありません",
   "missing in schema": "スキーマにありません",
+  "Schema and DB match.": "スキーマとDBは一致しています。",
   "Missing tables as schema JSON": "不足しているテーブル (スキーマ JSON)",
   "Module": "モジュール",
   "Module access": "モジュールへのアクセス",

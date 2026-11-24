@@ -561,6 +561,7 @@
   "messages in 7 days": "viestit 7 päivässä",
   "missing in DB": "puuttuu tietokannasta",
   "missing in schema": "puuttuu skeemasta",
+  "Schema and DB match.": "Skeema ja tietokanta täsmäävät.",
   "Missing tables as schema JSON": "Puuttuvat taulut skeema-JSONina",
   "Module": "Moduuli",
   "Module access": "Moduulin käyttöoikeus",

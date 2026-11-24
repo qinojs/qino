@@ -561,6 +561,7 @@
   "messages in 7 days": "رسائل خلال 7 أيام",
   "missing in DB": "ناقص في قاعدة البيانات",
   "missing in schema": "ناقص في المخطط",
+  "Schema and DB match.": "المخطط وقاعدة البيانات متطابقان.",
   "Missing tables as schema JSON": "الجداول الناقصة بصيغة JSON للمخطط",
   "Module": "الوحدة",
   "Module access": "الوصول إلى الوحدة",

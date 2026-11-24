@@ -561,6 +561,7 @@
   "messages in 7 days": "7 दिनों में संदेश",
   "missing in DB": "DB में नहीं",
   "missing in schema": "स्कीमा में नहीं",
+  "Schema and DB match.": "स्कीमा और DB मेल खाते हैं।",
   "Missing tables as schema JSON": "अनुपलब्ध तालिकाएँ स्कीमा JSON के रूप में",
   "Module": "मॉड्यूल",
   "Module access": "मॉड्यूल पहुँच",

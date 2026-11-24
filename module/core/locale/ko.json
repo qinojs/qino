@@ -561,6 +561,7 @@
   "messages in 7 days": "7일간 메시지",
   "missing in DB": "DB에 없음",
   "missing in schema": "스키마에 없음",
+  "Schema and DB match.": "스키마와 DB가 일치합니다.",
   "Missing tables as schema JSON": "누락된 테이블 (스키마 JSON)",
   "Module": "모듈",
   "Module access": "모듈 접근 권한",

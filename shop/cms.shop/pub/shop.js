@@ -7,8 +7,8 @@ import { api } from "@qino/pub/api.js";
 
 const shop = api["cms.shop"];
 
-// Changes to the cart still on their way (an address left a moment ago): an order waits for them,
-// or it would check what was there before.
+// Changes to the cart still on their way (a quantity or an address left a moment ago): an order
+// waits for them, or it would check what was there before.
 const pending = new Set();
 const track = (promise) => {
   pending.add(promise);
@@ -20,19 +20,19 @@ const track = (promise) => {
 export const cart = () => shop.cart.get();
 
 export const add = (product, { variant, quantity = 1, data } = {}) =>
-  shop.cart.lines.post({ product: String(product), variant: variant ? String(variant) : undefined, quantity, data });
+  track(shop.cart.lines.post({ product: String(product), variant: variant ? String(variant) : undefined, quantity, data }));
 
-export const setQuantity = (line, quantity) => shop.cart.lines(line).put({ quantity });
+export const setQuantity = (line, quantity) => track(shop.cart.lines(line).put({ quantity }));
 
-export const remove = (line) => shop.cart.lines(line).delete();
+export const remove = (line) => track(shop.cart.lines(line).delete());
 
-export const solve = (line, solution) => shop.cart.lines(line).solve.post({ solution });
+export const solve = (line, solution) => track(shop.cart.lines(line).solve.post({ solution }));
 
 export const choose = (what, value) => track(shop.cart[what].put({ value }));
 
 export const setParty = (kind, party) => track(shop.cart.party.put({ kind, party }));
 
-export const setCurrency = (value) => shop.cart.currency.put({ value });
+export const setCurrency = (value) => track(shop.cart.currency.put({ value }));
 
 export const setData = (values) => track(shop.cart.data.put({ values }));
 

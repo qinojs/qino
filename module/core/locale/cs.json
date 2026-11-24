@@ -561,6 +561,7 @@
   "messages in 7 days": "zprávy za 7 dní",
   "missing in DB": "chybí v DB",
   "missing in schema": "chybí ve schématu",
+  "Schema and DB match.": "Schéma a databáze se shodují.",
   "Missing tables as schema JSON": "Chybějící tabulky jako JSON schématu",
   "Module": "Modul",
   "Module access": "Přístup k modulu",

@@ -561,6 +561,7 @@
   "messages in 7 days": "сообщений за 7 дней",
   "missing in DB": "нет в БД",
   "missing in schema": "нет в схеме",
+  "Schema and DB match.": "Схема и БД совпадают.",
   "Missing tables as schema JSON": "Отсутствующие таблицы как JSON схемы",
   "Module": "Модуль",
   "Module access": "Доступ к модулю",

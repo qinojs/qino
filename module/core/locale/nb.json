@@ -561,6 +561,7 @@
   "messages in 7 days": "meldinger på 7 dager",
   "missing in DB": "mangler i DB",
   "missing in schema": "mangler i skjema",
+  "Schema and DB match.": "Skjema og DB stemmer overens.",
   "Missing tables as schema JSON": "Manglende tabeller som skjema-JSON",
   "Module": "Modul",
   "Module access": "Modultilgang",

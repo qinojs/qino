@@ -561,6 +561,7 @@
   "messages in 7 days": "7 günde ileti",
   "missing in DB": "VT'de eksik",
   "missing in schema": "şemada eksik",
+  "Schema and DB match.": "Şema ve veritabanı eşleşiyor.",
   "Missing tables as schema JSON": "Eksik tablolar şema JSON'u olarak",
   "Module": "Modül",
   "Module access": "Modül erişimi",

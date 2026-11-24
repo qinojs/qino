@@ -561,6 +561,7 @@
   "messages in 7 days": "mensajes en 7 días",
   "missing in DB": "falta en la BD",
   "missing in schema": "falta en el esquema",
+  "Schema and DB match.": "El esquema y la BD coinciden.",
   "Missing tables as schema JSON": "Tablas que faltan como JSON de esquema",
   "Module": "Módulo",
   "Module access": "Acceso al módulo",

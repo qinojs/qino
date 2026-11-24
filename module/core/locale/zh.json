@@ -561,6 +561,7 @@
   "messages in 7 days": "7 天内的消息",
   "missing in DB": "数据库中缺失",
   "missing in schema": "结构中缺失",
+  "Schema and DB match.": "架构与数据库一致。",
   "Missing tables as schema JSON": "缺失的数据表 (结构 JSON)",
   "Module": "模块",
   "Module access": "模块访问权限",
