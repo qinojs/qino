@@ -6,6 +6,8 @@ import { html } from "@qino/pub/html.js";
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const sms = api["messaging.sms"];
+// Browsers that don't know `one-time-code` (Firefox) would offer stale codes from their form history.
+const OTC = Object.assign(document.createElement("input"), { autocomplete: "one-time-code" }).autocomplete || "off";
 
 initNode("cont.my.phones", async (el) => {
   const list = el.querySelector("[data-phones]");
@@ -44,7 +46,7 @@ initNode("cont.my.phones", async (el) => {
       };
       const claimed = (p) => html`<div data-pending="${p.address}">
         <p><strong>${p.address}</strong></p>
-        <label>${labels.pending} <input inputmode=numeric pattern="[0-9]{6}" maxlength=6 data-code required></label>
+        <label>${labels.pending} <input inputmode=numeric autocomplete=${OTC} pattern="[0-9]{6}" maxlength=6 data-code required></label>
         <button type=button data-verify>${labels.confirm}</button>
         <button type=button data-resend>${labels.resend}</button>
       </div>`;

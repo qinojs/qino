@@ -6,6 +6,8 @@ import { html } from "@qino/pub/html.js";
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const totp = api["auth.totp"];
+// Browsers that don't know `one-time-code` (Firefox) would offer stale codes from their form history.
+const OTC = Object.assign(document.createElement("input"), { autocomplete: "one-time-code" }).autocomplete || "off";
 
 initNode("cont.my.totp", async (el) => {
   const list = el.querySelector("[data-apps]");
@@ -60,16 +62,13 @@ initNode("cont.my.totp", async (el) => {
         <u2-qrcode>${uri}</u2-qrcode>
         <p>${labels.byHand} <code>${secret}</code></p>
         <p><input name=label placeholder="${labels.name}"></p>
-        <p><input name=code inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" maxlength=6 placeholder="${labels.code}" required></p>
+        <p><input name=code inputmode=numeric autocomplete=${OTC} pattern="[0-9]{6}" maxlength=6 placeholder="${labels.code}" required></p>
         <button>${labels.confirm}</button>
         <button type=button data-cancel>${labels.cancel}</button>
       </form>`;
       setup.hidden = false;
       start.hidden = true;
-      const code = setup.querySelector("[name=code]");
-      // Browsers that don't know `one-time-code` (Firefox) would offer stale codes from their history.
-      if (!Object.assign(document.createElement("input"), { autocomplete: "one-time-code" }).autocomplete) code.autocomplete = "off";
-      code.focus();
+      setup.querySelector("[name=code]").focus();
     } catch (e) { show(e?.message || String(e)); }
   });
 
