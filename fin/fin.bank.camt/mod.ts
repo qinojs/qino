@@ -61,14 +61,16 @@ export function parse(xml: string): Statement[] {
       const status = text(entry, "Sts", "Cd") || text(entry, "Sts");
       if (status && status !== "BOOK") return [];
       const booked = text(entry, "BookgDt", "Dt") || text(entry, "BookgDt", "DtTm");
+      const date = booked.slice(0, 10);
       const key = [
-        booked.slice(0, 10),
+        date,
         text(entry, "CdtDbtInd"),
         content(child(entry, "Amt")).trim(),
         text(entry, "NtryDtls", "TxDtls", "Refs", "EndToEndId") || text(entry, "AddtlNtryInf"),
       ].join(":");
-      seen.set(key, (seen.get(key) ?? 0) + 1);
-      return lines(entry, currency, `${key}:${seen.get(key)}`, booked.slice(0, 10));
+      const n = (seen.get(key) ?? 0) + 1;
+      seen.set(key, n);
+      return lines(entry, currency, `${key}:${n}`, date);
     });
     return { account, currency, transactions };
   });
