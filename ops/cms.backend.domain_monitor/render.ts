@@ -237,8 +237,11 @@ function changedCell(row: DomainRow) {
   return html`${mark} <small title="${title}">${u2.el.time(row.changed, { narrow: true })}</small>`;
 }
 
+/** The comma-separated column as one line per missing header. */
+const missingHeaders = (row: DomainRow) => lines((row.headers_missing ?? "").replace(/, /g, "\n"));
+
 function headersCell(row: DomainRow) {
-  const missing = lines((row.headers_missing ?? "").replace(/, /g, "\n"));
+  const missing = missingHeaders(row);
   const hsts = row.hsts ?? 0;
   const title = [
     hsts ? `HSTS ${Math.round(hsts / 86400)} days${row.hsts_flags ? ` (${row.hsts_flags})` : ""}` : "no HSTS",
@@ -337,7 +340,7 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
       <td data-g=http data-value="${row.status_code}">${row.status_code ?? "–"}
       <td data-g=http data-value="${row.response_time}">${row.response_time != null ? row.response_time + " ms" : "–"}
       <td data-g=http data-value="${rank(row.redirect_https)}">${flag(row.redirect_https, row.redirect_https == null ? "unknown" : row.redirect_https ? "http→https" : "no https redirect")}
-      <td data-g=http data-value="${row.hsts == null ? -1 : lines((row.headers_missing ?? "").replace(/, /g, "\n")).length}">${headersCell(row)}
+      <td data-g=http data-value="${row.hsts == null ? -1 : missingHeaders(row).length}">${headersCell(row)}
       <td data-g=http data-value="${rank(row.ipv6)}">${flag(row.ipv6, ipv6Title)}
       <td data-g=http data-value="${rank(row.www_ok)}">${flag(row.www_ok, wwwTitle)}
       <td data-g=http data-value="${rank(row.soft_404)}">${flag(row.soft_404, row.soft_404 == null ? "unknown" : row.soft_404 ? "unknown paths answer 404" : "an unknown path answers like a real page")}

@@ -239,6 +239,7 @@ export async function memories(node: Node, { vars = {} }: { vars?: Vars } = {}):
 /** The tools of agent `vars.agent`, the nearest to its role first, and which a session starts with. */
 export async function tools(node: Node, { vars = {} }: { vars?: Vars } = {}): Promise<HtmlString> {
   const t = node.app.t, list = await new Agent(node.app, Number(vars.agent) || 0).tools().catch(() => []);
+  const first = list.findIndex((r) => !r.always);
   return html.async`
     <thead><tr>
       <th>#
@@ -247,7 +248,7 @@ export async function tools(node: Node, { vars = {} }: { vars?: Vars } = {}): Pr
       <th title="${t`A session starts with it; the others it finds itself`}">${t`In context`}
       <th>${t`Description`}
     <tbody>${list.length ? list.map(({ tool, score, given, always }, i) => html.async`<tr>
-      <td>${always ? "" : i + 1 - list.findIndex((r) => !r.always)}
+      <td>${always ? "" : i + 1 - first}
       <td>${always ? html.async`<small class=u2-badge title="${t`Not of its api paths: every session has it`}">${t`always`}</small> ` : ""}${tool.name}
       <td>${score == null ? "–" : score.toFixed(3)}
       <td>${given ? html.async`<u2-ico icon=push_pin title="${t`Included when a session starts`}">📌</u2-ico>` : "–"}

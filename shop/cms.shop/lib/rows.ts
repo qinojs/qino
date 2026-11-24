@@ -355,9 +355,14 @@ export class Order extends ShopRow {
     this[kind] = party ? JSON.stringify(party) : "";
     if (kind === "bill") this.email = party?.email?.toLowerCase() ?? "";
     this.#derived(); // methods may depend on the address
+    await this.#syncCountry();
+    return this;
+  }
+
+  /** Re-apply the delivery country after the delivery party changed it. */
+  async #syncCountry(): Promise<void> {
     const country = this.party("ship")?.address?.addressCountry;
     if (country && country !== this.country) await this.setCountry(country);
-    return this;
   }
 
   /** The order's currency; one the shop switched off meanwhile gives way to the main one. */
@@ -518,8 +523,7 @@ export class Order extends ShopRow {
     this.#placing = true;
     try {
       // the address decides where it goes, whatever was chosen since
-      const country = this.party("ship")?.address?.addressCountry;
-      if (country && country !== this.country) await this.setCountry(country);
+      await this.#syncCountry();
       for (const line of await this.lines()) await line.recheck(); // stock and friends look again
       await this.reprice();
       const e = { order: this, errors: await this.errors(), prevent: false, redirect: "" };

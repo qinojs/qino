@@ -361,6 +361,7 @@ async function detail(node: Node, id: number) {
   const open = credit ? Math.abs(Number(row.total) - Number(row.paid)) : await owed(app, row);
   const claims = ["invoice", "reminder"].includes(String(row.type)) && row.direction === "out";
   const reminders = app.modules.linked("fin.invoice.reminder");
+  const remindable = claims && reminders && row.status === "open";
   const [items, payments, ways, listed, listing] = await Promise.all([
     lines(app, id),
     // asked for with its ref, or paid on another and shared out to it (a reminder's): each by its index
@@ -405,7 +406,7 @@ async function detail(node: Node, id: number) {
       ${listing.length ? field(t`Reminded`, html.join(listing.map((r) =>
         html`<a href="${backend.toUrl(pageUrl, { id: r.id })}">${r.number || `#${r.id}`}</a>
           <small>${r.date}</small>`), ", ")) : ""}
-      ${claims && reminders && row.status === "open" ? field(t`Reminders`, html.async`
+      ${remindable ? field(t`Reminders`, html.async`
         ${row.remind ? t`go out` : badge(t`held`, "--orange")}
         <button data-action="${row.remind ? "hold" : "release"}" data-id="${id}">
           ${row.remind ? t`Hold` : t`Release`}</button>`) : ""}
@@ -423,8 +424,7 @@ async function detail(node: Node, id: number) {
         ? html.async`<button data-action=print data-id="${id}">${t`Print PDF`}</button>`
         : ""}
       ${pdfUrl && row.direction === "out" ? html.async`<a href="${pdfUrl}" target=_blank>${t`Open PDF`}</a>` : ""}
-      ${claims && reminders && row.status === "open"
-        ? html.async`<button data-action=remind data-id="${id}"
+      ${remindable ? html.async`<button data-action=remind data-id="${id}"
           u2-confirm="${t`Make the next reminder of it now?`}">${t`Remind`}</button>`
         : ""}
       ${row.type === "proforma" && row.status === "open"
