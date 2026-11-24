@@ -4,6 +4,7 @@ import { cms as cmsFor } from "@qino/qino/cms";
 import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { chatgptStore as store } from "@qino/qino/tests";
 
+import { ReqUrl } from "../../core/lib/ctx/ReqUrl.ts";
 import { cms } from "../plugin.ts";
 
 import type { Ctx } from "@qino/qino";
@@ -26,7 +27,7 @@ async function withPage(fn: (render: (ctx: Ctx, vars?: Record<string, unknown>) 
 
 const ctxOf = (userId: number, url = "http://127.0.0.1:8080/cms1/backend/ai/chatgpt", superuser = false) => ({
   user: { superuser }, userId, csrfToken: "csrf", res: { headers: new Headers() },
-  req: { appUrl: "/cms1/", url: new URL(url) },
+  req: { appUrl: "/cms1/", url: new ReqUrl(url) },
 }) as unknown as Ctx;
 
 const connect = (app: App, user: number) => store(app, user, { client_id: "oaiapp_test", subject: "sub", email: "user@example.org",

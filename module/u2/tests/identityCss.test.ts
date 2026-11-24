@@ -36,6 +36,7 @@ test("u2: a variable font gets its weight and width ranges, read once in the bac
   const font = { name: "v.ttf", path, url: () => "/dbFile/7/v.ttf" };
   const app = appFake({}, font);
   assertEquals((await identityCss(app)).includes("font-weight"), false); // the first request does not wait
-  await new Promise((resolve) => setTimeout(resolve, 50));
+  // the background read takes longer under load: wait for it instead of a fixed time
+  for (let i = 0; i < 100 && !(await identityCss(app)).includes("font-weight"); i++) await new Promise((resolve) => setTimeout(resolve, 20));
   assertStringIncludes(await identityCss(app), "font-weight:100 900;font-stretch:62% 125%;font-display:swap");
 });
