@@ -23,10 +23,18 @@ test("cms.versions: a historical page's file is served as it was, only to editor
 
     const get = async (query: string, cookie = `qinoSess=${sess.token}`) =>
       (await app.handle(new Request(`http://qino.test/dbFile/${file.id}/a.txt${query}`, { headers: { cookie } }))).text();
-    const before = `?cms_versions_log=${replaced}&cms_versions_page=1`;
+    const before = `?cms_versions_log=${replaced}`;
     assertEquals(await get(before), "old");
     assertEquals(await get(""), "new");
     assertEquals(await get(before, ""), "new", "without edit access the live file");
+
+    // an editor of another page only: the file's own page counts, not any page
+    const ed = Number(await app.db.table("usr").insert({ ...blank, username: "ed", active: true }));
+    await (await (await cms(app).node(1)).createChild({})).changeUser(ed, 2);
+    const edSess = await app.sessions.load();
+    edSess.data.core.userId(ed);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    assertEquals(await get(before, `qinoSess=${edSess.token}`), "new");
   } finally {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
@@ -53,8 +61,8 @@ test("cms.versions: in log mode the page's file urls carry the version", async (
     assertEquals(await get(""), html, "outside log mode nothing changes");
     const log = Number(await app.db.one`SELECT max(id) FROM log`);
 
-    const at = `cms_versions_log=${log}&cms_versions_page=1`;
-    assertEquals(await get(`?${at}`),
+    const at = `cms_versions_log=${log}`;
+    assertEquals(await get(`?${at}&cms_versions_page=1`),
       `<img src="/dbFile/7/u-abc/a.jpg?${at}" srcset="/dbFile/7/w-2/a.jpg?${at} 2x">` +
       `<a href="/dbFile/8/b.pdf?exp=1&amp;sig=x&${at}">/dbFile/9/c.pdf?${at}</a>`);
   } finally {

@@ -164,20 +164,20 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     }, { signal });
 
     // ─── Log-mode files: shown as they were ─────────────────────────────────────
-    // Every file is a request of its own: the page hands its params on to its file urls (a raw
-    // "&" is safe in attributes, <style> and <script>), and dbFile:resolve serves the snapshot.
+    // Every file is a request of its own: the page hands its log on to its file urls (a raw "&" is
+    // safe in attributes, <style> and <script>), and dbFile:resolve serves the snapshot.
     app.on("respond", ({ ctx }) => {
         const { log } = getCmsVers(ctx);
         const body = ctx.res.body;
         if (!log || typeof body !== "string" || !ctx.res.headers.get("Content-Type")?.startsWith("text/html")) return;
-        const at = `cms_versions_log=${log}&cms_versions_page=${Number(ctx.req.query.cms_versions_page)}`;
+        const at = `cms_versions_log=${log}`;
         ctx.res.body = body.replace(/\/dbFile\/[^"'\s)<>?#]+(\?[^"'\s)<>#]*)?/g, (url, query) => url + (query ? "&" : "?") + at);
     }, { signal });
 
     app.on("dbFile:resolve", (e) => {
         const ctx = getCtx();
         const log = Number(ctx.req.query.cms_versions_log) || 0;
-        if (log) return historicalFile(app, e, getCmsVers(ctx).space, log, Number(ctx.req.query.cms_versions_page) || 0);
+        if (log) return historicalFile(app, e, getCmsVers(ctx).space, log);
     }, { signal });
 
     // ─── page:render-after: add frontend JS ──────────────────────────────────────────
@@ -193,15 +193,25 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 }
 
 /** The file as it was before log entry `log`: its latest snapshot then, gone if deleted. Only for
- *  who may edit the page, like the page itself. A new DbFile — the cached one stays live. */
-async function historicalFile(app: App, e: { id: number; file?: DbFile }, space: number, log: number, pid: number) {
-    const page = await cms(app).node(pid);
-    if (!page.exists() || await page.access() < 2) return;
+ *  who may edit a node the file is or was attached to — like the history of a page itself. A new
+ *  DbFile — the cached one stays live. */
+async function historicalFile(app: App, e: { id: number; file?: DbFile }, space: number, log: number) {
+    const nodes = await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${e.id}
+        UNION SELECT page_id FROM _vers_page_file WHERE file_id = ${e.id}`;
+    if (!await someEditable(app, nodes.map((r) => Number(r.page_id)))) return;
     const row = await app.db.row`SELECT * FROM _vers_file WHERE id = ${e.id} AND _vers_space = ${space}
         AND _vers_log BETWEEN 1 AND ${log - 1} ORDER BY _vers_log DESC LIMIT 1`;
     if (!row) return; // no snapshot that old: the live file
     const { _vers_log, _vers_space, _vers_deleted, ...vs } = row;
     e.file = new DbFile(app.dbFiles, e.id, Number(_vers_deleted) ? {} : vs);
+}
+
+async function someEditable(app: App, ids: number[]) {
+    for (const id of ids) {
+        const node = await cms(app).node(id);
+        if (node.exists() && await node.access() >= 2) return true;
+    }
+    return false;
 }
 
 /**
