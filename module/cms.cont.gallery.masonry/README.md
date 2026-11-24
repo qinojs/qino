@@ -1,6 +1,7 @@
 # cms.cont.gallery.masonry
 
-Add images to the block's files; they are shown in file-list order. `u2-masonry` keeps
+Add images and videos to the block's files; they are shown in file-list order. A video plays
+like a moving photo — muted, in a loop, its first frame as poster when ffmpeg is there. `u2-masonry` keeps
 proportions; a click opens the original in a `u2-lightbox` (with `u2-carousel`).
 
 `cms-image` handles responsive loading and previews. Adjust the layout with u2's

@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { FileTransformer, html } from "@qino/qino";
 import { cms_image } from "@qino/qino/cms.image";
 import * as u2 from "@qino/qino/u2";
 
@@ -9,14 +9,18 @@ const MAX_LENGTH = 100;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["el/masonry/masonry.css", "el/masonry/masonry.js", "attr/lightbox/lightbox.js", "class/width/width.css"]);
-  const images = await Promise.all([...(await node.files()).values()].filter((file) => file.mime.startsWith("image/")).map(async (file) =>
-    html`<a href="${await file.url()}" u2-lightbox="gallery-${node.id}">
+  const files = [...(await node.files()).values()].filter((file) => /^(image|video)\//.test(file.mime));
+  const items = await Promise.all(files.map(async (file) => file.mime.startsWith("video/")
+    // a video is a moving photo: muted, in a loop, its first frame as poster (if ffmpeg can cut it)
+    ? html`<video src="${await file.url()}" autoplay muted loop playsinline preload=metadata${
+      await FileTransformer.capabilities.ffmpeg ? html` poster="${await file.url({ fmt: "jpg", frame: 1 })}"` : ""}></video>`
+    : html`<a href="${await file.url()}" u2-lightbox="gallery-${node.id}">
       ${await cms_image(file, {})}
     </a>`));
   const width = node.settings["col-width"]<string>();
   const style = width && width.length <= MAX_LENGTH && !/[;{}]/.test(width) ? html` style="--u2-Items-width:${width}"` : "";
   return html`<div class=u2-width>
-    <u2-masonry ${style}>${images}</u2-masonry>
+    <u2-masonry ${style}>${items}</u2-masonry>
   </div>`;
 }
 
