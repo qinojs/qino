@@ -18,6 +18,9 @@ Shared for now: plain text, publishing, retry and sync. Provider modules handle 
 settings, targets, API calls and webhook authentication. Media, scheduling, editing, deleting,
 analytics and direct messages have no contract yet.
 
+`fetchJson(name, url, { token, error })` makes a provider's API call: JSON in and out, a failed
+connection, 429 or 5xx as a `ProviderError` to retry.
+
 ## Scope decisions
 
 Included:

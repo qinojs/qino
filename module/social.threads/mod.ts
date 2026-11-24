@@ -1,5 +1,5 @@
-import { errMsg, safeFetch, unixTime } from "@qino/qino";
-import { ProviderError } from "@qino/qino/social";
+import { unixTime } from "@qino/qino";
+import { fetchJson } from "@qino/qino/social";
 
 import type { App } from "@qino/qino";
 import type { Provider } from "@qino/qino/social";
@@ -7,22 +7,11 @@ import type { Provider } from "@qino/qino/social";
 const BASE = new URL("https://graph.threads.net/v1.0/");
 const ACCOUNT = "me?fields=id,username,name";
 
-// deno-lint-ignore no-explicit-any
-async function call(app: App, path: string, init: RequestInit = {}): Promise<any> {
+async function call(app: App, path: string, init: RequestInit = {}) {
   const token = String(await app.settings["social.threads"].accessToken ?? "").trim();
   if (!token) throw new Error("social.threads: configure accessToken");
-  const headers = new Headers(init.headers);
-  headers.set("accept", "application/json");
-  headers.set("authorization", `Bearer ${token}`);
-  let res: Response;
-  try { res = await safeFetch(new URL(path, BASE).href, { ...init, headers }, 0); }
-  catch (e) { throw new ProviderError(`social.threads: ${errMsg(e)}`); }
-  const data = await res.json().catch(() => ({}));
-  if (res.ok) return data;
-  const message = String(data.error?.message ?? data.error?.type ?? `${res.status} ${res.statusText}`);
-  const retry = res.status === 429 ? Number(res.headers.get("retry-after")) || 60 : res.status >= 500 ? 60 : undefined;
-  const error = `social.threads: ${message}`;
-  throw retry ? new ProviderError(error, retry) : new Error(error);
+  return fetchJson("social.threads", new URL(path, BASE).href,
+    { ...init, token, error: (data) => data.error?.message ?? data.error?.type });
 }
 
 async function targets(app: App) {

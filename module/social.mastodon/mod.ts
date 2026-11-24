@@ -1,5 +1,4 @@
-import { errMsg, safeFetch } from "@qino/qino";
-import { ProviderError } from "@qino/qino/social";
+import { fetchJson } from "@qino/qino/social";
 
 import { postOf } from "./lib/status.ts";
 
@@ -23,21 +22,10 @@ async function config(app: App) {
   return { base, token };
 }
 
-// deno-lint-ignore no-explicit-any
-async function call(app: App, path: string, init: RequestInit = {}): Promise<any> {
+async function call(app: App, path: string, init: RequestInit = {}) {
   const { base, token } = await config(app);
-  const headers = new Headers(init.headers);
-  headers.set("accept", "application/json");
-  headers.set("authorization", `Bearer ${token}`);
-  let res: Response;
-  try { res = await safeFetch(new URL(path, base).href, { ...init, headers }, 0); }
-  catch (e) { throw new ProviderError(`social.mastodon: ${errMsg(e)}`); }
-  const data = await res.json().catch(() => ({}));
-  if (res.ok) return data;
-  const message = String(data.error_description ?? data.error ?? `${res.status} ${res.statusText}`);
-  const retry = res.status === 429 ? Number(res.headers.get("retry-after")) || 60 : res.status >= 500 ? 60 : undefined;
-  const error = `social.mastodon: ${message}`;
-  throw retry ? new ProviderError(error, retry) : new Error(error);
+  return fetchJson("social.mastodon", new URL(path, base).href,
+    { ...init, token, error: (data) => data.error_description ?? data.error });
 }
 
 const targetId = (account: Account) => String(account.uri ?? account.url ?? account.acct ?? account.id);

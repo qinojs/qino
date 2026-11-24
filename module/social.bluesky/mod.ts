@@ -1,5 +1,5 @@
-import { errMsg, safeFetch, unixTime } from "@qino/qino";
-import { ProviderError } from "@qino/qino/social";
+import { unixTime } from "@qino/qino";
+import { fetchJson } from "@qino/qino/social";
 
 import { tid } from "./lib/tid.ts";
 
@@ -23,20 +23,8 @@ async function config(app: App) {
   return { base, handle, password };
 }
 
-// deno-lint-ignore no-explicit-any
-async function call(base: URL, path: string, init: RequestInit = {}): Promise<any> {
-  const headers = new Headers(init.headers);
-  headers.set("accept", "application/json");
-  let res: Response;
-  try { res = await safeFetch(new URL(path, base).href, { ...init, headers }, 0); }
-  catch (e) { throw new ProviderError(`social.bluesky: ${errMsg(e)}`); }
-  const data = await res.json().catch(() => ({}));
-  if (res.ok) return data;
-  const message = String(data.message ?? data.error ?? `${res.status} ${res.statusText}`);
-  const retry = res.status === 429 ? Number(res.headers.get("retry-after")) || 60 : res.status >= 500 ? 60 : undefined;
-  const error = `social.bluesky: ${message}`;
-  throw retry ? new ProviderError(error, retry) : new Error(error);
-}
+const call = (base: URL, path: string, init: RequestInit = {}) =>
+  fetchJson("social.bluesky", new URL(path, base).href, { ...init, error: (data) => data.message ?? data.error });
 
 async function session(app: App) {
   const { base, handle, password } = await config(app);

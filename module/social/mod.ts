@@ -1,4 +1,4 @@
-import { errMsg, requestStorage, sha256b64url, sql, unixTime } from "@qino/qino";
+import { errMsg, requestStorage, safeFetch, sha256b64url, sql, unixTime } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";
 
@@ -33,6 +33,26 @@ export class ProviderError extends Error {
     super(message);
     this.retryAfter = retryAfter;
   }
+}
+
+// deno-lint-ignore no-explicit-any
+type Json = any; // as each provider's api answers
+
+/** JSON from a provider's api, for its `name` (`social.mastodon`). A failed connection, 429 or 5xx is
+ *  a ProviderError to retry, any other refusal an Error; `error` finds the text in the provider's answer. */
+export async function fetchJson(name: string, url: string,
+  { token, error, ...init }: RequestInit & { token?: string; error?: (data: Json) => unknown } = {}): Promise<Json> {
+  const headers = new Headers(init.headers);
+  headers.set("accept", "application/json");
+  if (token) headers.set("authorization", `Bearer ${token}`);
+  let res: Response;
+  try { res = await safeFetch(url, { ...init, headers }, 0); }
+  catch (e) { throw new ProviderError(`${name}: ${errMsg(e)}`); }
+  const data = await res.json().catch(() => ({}));
+  if (res.ok) return data;
+  const message = `${name}: ${String(error?.(data) ?? `${res.status} ${res.statusText}`)}`;
+  const retry = res.status === 429 ? Number(res.headers.get("retry-after")) || 60 : res.status >= 500 ? 60 : undefined;
+  throw retry ? new ProviderError(message, retry) : new Error(message);
 }
 
 /** Every provider declared by a linked module. */
