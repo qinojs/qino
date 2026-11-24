@@ -25,12 +25,13 @@ export const levelBadges = (rows) => [1, 2, 3]
 export const searchable = (widget, load) =>
   widget.on('input', '.-search', async (inp) => widget.querySelector('.-rows').innerHTML = await load(inp.value));
 
-export const radios = (name, access) => [0, 1, 2, 3].map((v) =>
+/** One radio per level up to `max`; higher levels stay empty cells. */
+export const radios = (name, access, max = 3) => [0, 1, 2, 3].map((v) => v > max ? html`<td>` :
   html`<td><input type=radio name=${name} value=${v} ${(v ? access == v : !access) ? 'checked' : ''}>`);
 
-export const row = (label, name, access) => html.async`<tr>
+export const row = (label, name, access, max) => html.async`<tr>
   <td>${label}
-  ${radios(name, access)}`;
+  ${radios(name, access, max)}`;
 
 /** The level table. `label` names the first column, `rows` are pre-rendered. */
 export const table = (label, rows) => html.async`<table class=-styled>

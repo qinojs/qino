@@ -18,7 +18,7 @@ export default async function (widget, { node, signal }) {
   widget.badge = [...(vs.public ? [] : [{ text: 'lock', class: '-icon' }]), ...levelBadges(first.rows)];
 
   const list = (data) => table(t`Group`, [
-    row(t`Public`, 'public', vs.public ? 1 : 0),
+    row(t`Public`, 'public', vs.public ? 1 : 0, 1), // public grants read access only
     ...data.rows.map((r) => row(r.label, 'g_' + r.id, r.access)),
   ]);
 

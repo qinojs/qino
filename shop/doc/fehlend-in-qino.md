@@ -55,7 +55,7 @@ Elixan. Nichts davon ist angefasst, es sind Vorschläge. Stand 09.11.2026.
 17. **cms `Node.text(name, lang)` legt einen fehlenden Text beim Lesen an.** cms.shop liest über
     `node.texts()`. Vorschlag: ein lesender Zugriff, der nichts anlegt.
 18. ~~**shp3 als Store ablösen.**~~ Erledigt: `starter.shop` und `cms.cont.shop.cart.small` liegen in `shop/`.
-19. **shwups-Modul:** `init()` fragt `oauth_provider` ab und fängt den Fehler bewusst ab. Der
+19. **schwups-Modul:** `init()` fragt `oauth_provider` ab und fängt den Fehler bewusst ab. Der
     DB-Treiber protokolliert ihn trotzdem bei jedem Start („no such table“).
 20. **Rohe Schreibzugriffe und die Identity-Map.** Ein rohes `UPDATE` per `db.exec` ohne `WHERE id` (der
     Blending-Lagerimport setzt alle Bestände) erreicht die gehaltenen Zeilen-Objekte nicht, und
