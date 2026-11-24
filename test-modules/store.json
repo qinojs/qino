@@ -1,6 +1,5 @@
 {
   "modules": {
-    "cms.backend.demo": {},
     "cms.cont.apitest": {},
     "cms.cont.cms-image-test": {},
     "cms.cont.example": {},

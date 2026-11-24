@@ -14,7 +14,7 @@
  */
 
 // deno-lint-ignore-file no-explicit-any
-import { Access, App, s } from "@qino/qino";
+import { Access, App, DbFile, getCtx, s } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 
 import { versedTables, historicalViews, initVers, shadowSchema } from "./lib/Vers.ts";
@@ -130,6 +130,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         // if (ctx.req.query.cms_versions_space !== undefined && ctx.req.query.cms_versions_space !== "active") {
         //     vs.space = Number(ctx.req.query.cms_versions_space) || 0;
         // }
+        // a historical page's files carry its params too, but are resolved one by one (dbFile:resolve)
+        if (ctx.req.appPath.startsWith("dbFile/")) return;
         vs.log = Number(ctx.req.query.cms_versions_log) || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
@@ -161,6 +163,23 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         // page:children overrides. See draftmode.ts.
     }, { signal });
 
+    // ─── Log-mode files: shown as they were ─────────────────────────────────────
+    // Every file is a request of its own: the page hands its params on to its file urls (a raw
+    // "&" is safe in attributes, <style> and <script>), and dbFile:resolve serves the snapshot.
+    app.on("respond", ({ ctx }) => {
+        const { log } = getCmsVers(ctx);
+        const body = ctx.res.body;
+        if (!log || typeof body !== "string" || !ctx.res.headers.get("Content-Type")?.startsWith("text/html")) return;
+        const at = `cms_versions_log=${log}&cms_versions_page=${Number(ctx.req.query.cms_versions_page)}`;
+        ctx.res.body = body.replace(/\/dbFile\/[^"'\s)<>?#]+(\?[^"'\s)<>#]*)?/g, (url, query) => url + (query ? "&" : "?") + at);
+    }, { signal });
+
+    app.on("dbFile:resolve", (e) => {
+        const ctx = getCtx();
+        const log = Number(ctx.req.query.cms_versions_log) || 0;
+        if (log) return historicalFile(app, e, getCmsVers(ctx).space, log, Number(ctx.req.query.cms_versions_page) || 0);
+    }, { signal });
+
     // ─── page:render-after: add frontend JS ──────────────────────────────────────────
     cms(app).on("page:render-after", async ({ ctx }) => {
         if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
@@ -171,6 +190,18 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     }, { signal });
 
     // initDraftmode(app, signal); // parked until draft reads and writes are fully routed
+}
+
+/** The file as it was before log entry `log`: its latest snapshot then, gone if deleted. Only for
+ *  who may edit the page, like the page itself. A new DbFile — the cached one stays live. */
+async function historicalFile(app: App, e: { id: number; file?: DbFile }, space: number, log: number, pid: number) {
+    const page = await cms(app).node(pid);
+    if (!page.exists() || await page.access() < 2) return;
+    const row = await app.db.row`SELECT * FROM _vers_file WHERE id = ${e.id} AND _vers_space = ${space}
+        AND _vers_log BETWEEN 1 AND ${log - 1} ORDER BY _vers_log DESC LIMIT 1`;
+    if (!row) return; // no snapshot that old: the live file
+    const { _vers_log, _vers_space, _vers_deleted, ...vs } = row;
+    e.file = new DbFile(app.dbFiles, e.id, Number(_vers_deleted) ? {} : vs);
 }
 
 /**

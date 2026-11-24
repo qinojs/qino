@@ -25,7 +25,7 @@ test("cms.versions: parked draft space stays inactive", async () => {
   };
   fakeCms(app, { on() {} });
   init(app as never, { signal: new AbortController().signal });
-  const ctx = { state: {}, req: { query: { cms_versions_space: "1" } } };
+  const ctx = { state: {}, req: { appPath: "", query: { cms_versions_space: "1" } } };
 
   await routes.at(-1)!({ ctx });
 

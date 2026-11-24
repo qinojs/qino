@@ -76,9 +76,8 @@ export function initHistory(app: App, signal: AbortSignal) {
   }, { signal });
 
   // ─── File protection: don't delete blobs referenced in _vers_file ────────
-  // Blobs can't be restored (rows can, from snapshots).
-  // TODO: dbFile output should fall back to the _vers_file snapshot when the
-  // live row is gone, so history views can still serve these preserved blobs.
+  // Blobs can't be restored (rows can, from snapshots). Historical pages serve them through
+  // dbFile:resolve (plugin.ts).
   app.on("dbFile:unlink-before", async (e) => {
     const md5 = e.file?.vs?.md5 ?? "";
     if (!md5) return;

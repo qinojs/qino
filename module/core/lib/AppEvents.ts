@@ -56,6 +56,13 @@ export const appEvents = {
         description: "May the current user read this dbFile? Slow path, only if access is still unresolved.",
         data: s.object({ file: dbFile, access: s.boolean().describe("Set to grant.") }),
     },
+    "dbFile:resolve": {
+        description: "A dbFile is requested: a listener may serve another state of it, e.g. an earlier one.",
+        data: s.object({
+            id: s.number().describe("The requested file's id."),
+            file: s.optional(dbFile.describe("Set to serve this file instead of the live one.")),
+        }),
+    },
     "dbFile:unlink-before": {
         description: "A dbFile was deleted; its stored content is about to be removed.",
         data: s.object({

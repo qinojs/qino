@@ -8,6 +8,7 @@ async function fixture(dir: string, body: string) {
   const row = { id: 3, name: "a.txt", md5: "aaa", mime: "text/plain", access: "1" };
   const app = {
     db: { row: () => Promise.resolve({ ...row }) },
+    fire: (_: string, data: unknown) => Promise.resolve(data),
     fileTransformer: { transform: (path: string) => ({ path, mime: "text/plain" }) },
   };
   const files = new DbFileManager(app as never, dir);

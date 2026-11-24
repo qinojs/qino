@@ -10,6 +10,7 @@ async function headersFor(mime: string, name = "a.bin") {
     const row = { id: 3, name, md5: "aaa", mime, access: "1" };
     const app = {
       db: { row: () => Promise.resolve({ ...row }) },
+      fire: (_: string, data: unknown) => Promise.resolve(data),
       fileTransformer: { transform: (path: string) => ({ path, mime: "" }) },
     };
     const res = await new DbFileManager(app as never, dir).output(`3/${name}`, new Request("http://x/"));

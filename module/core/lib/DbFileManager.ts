@@ -81,7 +81,8 @@ export class DbFileManager {
       params[k] = v ?? true;
     }
 
-    const f = await this.file(id);
+    const { file } = await this.#app.fire("dbFile:resolve", { id, file: undefined });
+    const f = file ?? await this.file(id);
     if (!await f.exists()) return new Response(null, { status: 404 });
     if (f.vs?.access != "1") {
       const ctx = getCtx();
