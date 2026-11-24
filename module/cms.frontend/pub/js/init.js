@@ -44,8 +44,12 @@ if (savedScroll) {
 if (editable) {
   const editToggle = dom.el('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Edit (E)"><div><i></i></div></a>');
   root.append(editToggle);
-  editToggle.addEventListener('click', e => {
+  // every switch, also the panel's: the panel is a popover in the top layer and covers this one
+  root.addEventListener('click', e => {
+    const switc = e.target.closest?.('.qgCMS_editmode_switch');
+    if (!switc) return;
+    e.preventDefault();
     toggleEdit();
-    e.currentTarget.classList.toggle('-active');
+    switc.classList.toggle('-active');
   });
 }
