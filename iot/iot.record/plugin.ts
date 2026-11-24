@@ -69,7 +69,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
 export const cron = { stale: { every: 60, run: async (app: App) => {
   const interval = sql.id("interval");
   const ids = await app.db.col<number>`SELECT id FROM iot_datapoint WHERE record = ${true} AND ${interval} > 0
-    AND value IS NOT NULL AND time < ${Date.now()} - ${interval} * 2000`;
+    AND value IS NOT NULL AND time + ${interval} * 2000 < ${Date.now()}`; // next to time, PostgreSQL types the parameter bigint
   for (const id of ids) await record(app, Number(id), null).catch(fail);
 } } } satisfies Jobs;
 

@@ -3,6 +3,8 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import { clientIp, fs, Output, requestStorage, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
@@ -14,6 +16,10 @@ const REPORTER_PATH = REPORTER_ROOT + "mod.js";
 await import("@nuxodin/reporter"); // the same file the browser gets from REPORTER_ROOT
 
 type Report = Record<string, unknown>;
+
+/** The context at load, outside any transaction: a report must not roll back with the failure it
+ *  reports. Timers and microtasks would carry the transaction along. */
+const outside = AsyncLocalStorage.snapshot();
 
 export { healthChecks } from "./healthChecks.ts";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
@@ -132,13 +138,14 @@ async function addReport(app: App, vs: Report) {
   }
   // the column always holds a JSON array — a report from the browser may send anything at all
   row.backtrace = JSON.stringify(Array.isArray(row.backtrace) ? row.backtrace : []);
-  await app.db.table("m_error_report").insert(row).catch(() => {});
+  await outside(() => app.db.table("m_error_report").insert(row)).catch(() => {});
 }
 
 /** The console is process-wide, so the hook is installed once and reports to the current request's
  *  app (fallback outside requests). */
 const apps = new Set<App>();
 
+// Known gap: outside requests, several apps in one process all report to the first.
 function reportingApp(): App | undefined {
   return requestStorage.getStore()?.app ?? [...apps][0]; // no request: first app still running
 }

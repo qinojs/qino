@@ -288,7 +288,9 @@ class PostgresDriver extends DbDriver {
   #pg: any;
   #pool: any;
   #ready: Promise<void>;
-  #tx = new AsyncLocalStorage<{ conn: any }>();
+  // `last` chains a transaction's statements: its client takes one at a time, and pg deprecates
+  // queueing them itself (parallel awaits inside a transaction, e.g. Promise.all).
+  #tx = new AsyncLocalStorage<{ conn: any; last: Promise<unknown> }>();
   #database: string;
   #adminParams: Record<string, unknown>;
 
@@ -305,10 +307,17 @@ class PostgresDriver extends DbDriver {
   }
 
   quoteId(id: string) { return pgDialect.quoteId(id); }
-  #conn() { return this.#tx.getStore()?.conn ?? this.#pool; }
+  #run(sql: string, params?: unknown[]): Promise<any> {
+    const box = this.#tx.getStore();
+    if (!box?.conn) return this.#pool.query(sql, params);
+    // a box cleared meanwhile sends the late statement to the pool, like the other drivers
+    const run = box.last.then(() => (box.conn ?? this.#pool).query(sql, params));
+    box.last = run.catch(() => {});
+    return run;
+  }
   async query(sql: string, params?: unknown[]) {
     if (!this.#pool) await this.#ready;
-    return (await this.#conn().query(sql, params)).rows as Row[];
+    return (await this.#run(sql, params)).rows as Row[];
   }
   async exec(sql: string, params?: unknown[], returning?: string) {
     if (!this.#pool) await this.#ready;
@@ -316,7 +325,7 @@ class PostgresDriver extends DbDriver {
     if (/^\s*insert\b/i.test(pgSql) && !/\breturning\b/i.test(pgSql)) {
       pgSql = pgSql.replace(/;\s*$/, "") + ` RETURNING ${returning ? this.quoteId(returning) : "*"}`;
     }
-    const res = await this.#conn().query(pgSql, params);
+    const res = await this.#run(pgSql, params);
     const row = res.rows?.[0] ?? {};
     return { insertId: Number(returning ? row[returning] : Object.values(row)[0] ?? 0), affectedRows: Number(res.rowCount ?? 0) };
   }
@@ -324,10 +333,12 @@ class PostgresDriver extends DbDriver {
     if (this.#tx.getStore()?.conn) return fn();
     if (!this.#pool) await this.#ready;
     const client = await this.#pool.connect();
-    const box: { conn: any } = { conn: client };
+    const box = { conn: client, last: Promise.resolve() as Promise<unknown> };
     await client.query("BEGIN");
-    try { const r = await this.#tx.run(box, fn); await client.query("COMMIT"); return r; }
-    catch (e) { await client.query("ROLLBACK"); throw e; }
+    // COMMIT and ROLLBACK queue behind statements still running
+    const end = (sql: string) => box.last.then(() => client.query(sql));
+    try { const r = await this.#tx.run(box, fn); await end("COMMIT"); return r; }
+    catch (e) { await end("ROLLBACK"); throw e; }
     finally { box.conn = null; client.release(); }
   }
   // Own connection: setval isn't rolled back anyway and must not fail with the caller's transaction.
