@@ -97,7 +97,7 @@ export async function context(app: App, session: number, { renew = false, keep =
   }));
   const messages: Message[] = [
     ...given.content ? [{ role: "system" as const, content: given.content }] : [],
-    ...answered(history.map((row: { message: Message }) => row.message)),
+    ...answered(history.map((row) => row.message)),
   ];
   return { agent, usrId, prefer, tools, messages };
 }
