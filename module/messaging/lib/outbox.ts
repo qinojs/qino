@@ -32,7 +32,7 @@ export const owed = (addressError: string | undefined, time: number): { error: s
   addressError ? { error: addressError, sent: time } : { due: time };
 
 /** Due deliveries, oldest first, each with its message. */
-export function due(app: App, limit = 100): Promise<Row[]> {
+function due(app: App, limit = 100): Promise<Row[]> {
   return app.db.query`
     SELECT d.id, d.message_id, m.channel FROM message_delivery d
     JOIN message m ON m.id = d.message_id

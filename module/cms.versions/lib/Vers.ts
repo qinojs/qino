@@ -43,7 +43,7 @@ export function getVers(ctx: Ctx): VersState {
 
 // ─── State helpers ──────────────────────────────────────────────────────────
 
-export function setSpace(ctx: Ctx, space: number): number {
+function setSpace(ctx: Ctx, space: number): number {
     const s = getVers(ctx);
     const old = s.space;
     s.space = space;
