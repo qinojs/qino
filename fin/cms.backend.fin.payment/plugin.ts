@@ -35,7 +35,7 @@ async function widget(app: App, page: Node): Promise<HtmlString> {
     ${amounts(moved)} <small>${t`in, 30 days`}</small><br>
     <b>${waiting}</b> ${t`waiting`}
   </div>
-  ${widgetList(rows.map((row) => html.async`<tr>
+  ${widgetList(rows.map((row) => html.async`<tr u2-href>
     <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">#${row.id}</a>
     <td>${u2.el.time(row.changed, { narrow: true })}
     <td>${direction(row.direction, row.direction === "in" ? t`in` : t`out`)}

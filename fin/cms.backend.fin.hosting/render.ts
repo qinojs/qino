@@ -84,7 +84,7 @@ async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
 }
 
 /** A domain to act on: what is missing, where it is, until when. */
-const todoRow = (app: App, pageUrl: string, { domain, missing, kind }: Awaited<ReturnType<typeof open>>[number]) => html.async`<tr>
+const todoRow = (app: App, pageUrl: string, { domain, missing, kind }: Awaited<ReturnType<typeof open>>[number]) => html.async`<tr u2-href>
   <td style="white-space:nowrap">${nameCell(pageUrl, domain)}
   <td>${missing === "customer" ? badge(app.t`no customer`, "--red")
     : missing === "service" ? overbilledBadge(app, kind)

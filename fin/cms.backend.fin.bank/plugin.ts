@@ -29,7 +29,7 @@ async function widget(app: App, page: Node): Promise<HtmlString> {
     <b>${open}</b> ${t`lines unassigned`}<br>
     <small>${accounts} ${t`accounts`}</small>
   </div>
-  ${widgetList(rows.map((row) => html.async`<tr>
+  ${widgetList(rows.map((row) => html.async`<tr u2-href>
     <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.date}</a>
     <td>${row.party_name || row.reference}
     <td style="text-align:end">${money(row.amount, row.currency)}`))}`;

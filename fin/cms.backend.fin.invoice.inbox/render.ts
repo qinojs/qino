@@ -67,7 +67,7 @@ export async function widget(app: App, page: Node): Promise<HtmlString> {
     backend.toModuleUrl(page, "cms.backend.fin.invoice"),
   ]);
   return html.async`<div><b>${count}</b> ${app.t`received invoices to check`}</div>
-  ${widgetList(rows.map((row) => html.async`<tr>
+  ${widgetList(rows.map((row) => html.async`<tr u2-href>
     <td><a href="${invoices({ id: row.id })}">${supplier(row)}</a>
     <td>${row.date}
     <td style="text-align:end">${money(row.total, row.currency)}`))}`;

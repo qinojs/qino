@@ -28,7 +28,7 @@ async function widget(app: App, page: Node): Promise<HtmlString> {
   ]);
   const due = all.filter((s) => renews(s, until)).sort((a, b) => String(a.next).localeCompare(String(b.next)));
   return html.async`<div><b>${due.length}</b> ${t`subscriptions to bill within`} ${Number(lead ?? 30)} ${t`days`}</div>
-  ${widgetList(due.slice(0, WIDGET_ROWS).map((s) => html.async`<tr>
+  ${widgetList(due.slice(0, WIDGET_ROWS).map((s) => html.async`<tr u2-href>
     <td>${s.next}
     <td><a href="${backend.toUrl(pageUrl, { id: s.id })}">${s.label}</a> ${s.detail ? html`<small>${s.detail}</small>` : ""}
     <td style="text-align:end">${money(s.amount, s.currencyCode)}`))}`;

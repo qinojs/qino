@@ -564,7 +564,7 @@ export async function widget(app: App, page: Node): Promise<HtmlString> {
     ${amounts(open)} <small>${t`receivable`}</small><br>
     <b>${overdue}</b> ${t`overdue`}
   </div>
-  ${widgetList(rows.map((row) => html.async`<tr>
+  ${widgetList(rows.map((row) => html.async`<tr u2-href>
     <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.number || `#${row.id}`}</a>
     <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
     <td>${partyName(row)}
