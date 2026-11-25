@@ -1,9 +1,9 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { badge, money, rowLink } from "@qino/qino/cms.backend.fin";
+import { badge, money, rowLink, WIDGET_ROWS, widgetList } from "@qino/qino/cms.backend.fin";
 import * as u2 from "@qino/qino/u2";
 
-import type { HtmlString, Row } from "@qino/qino";
+import type { App, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** Invoices come in here: uploaded, read, and waiting as drafts to be checked. */
@@ -57,4 +57,18 @@ function check(row: Row) {
   if (read?.total == null) return "";
   const same = Number(read.total) === Number(row.total);
   return same ? money(read.total, row.currency) : badge(money(read.total, row.currency), "--red");
+}
+
+/** The dashboard card: the read invoices waiting to be checked, the latest first. */
+export async function widget(app: App, page: Node): Promise<HtmlString> {
+  const [count, rows, invoices] = await Promise.all([
+    app.db.one`SELECT COUNT(*) FROM invoice WHERE direction = 'in' AND status = 'draft'`,
+    app.db.query`SELECT * FROM invoice WHERE direction = 'in' AND status = 'draft' ORDER BY id DESC LIMIT ${WIDGET_ROWS}`,
+    backend.toModuleUrl(page, "cms.backend.fin.invoice"),
+  ]);
+  return html.async`<div><b>${count}</b> ${app.t`received invoices to check`}</div>
+  ${widgetList(rows.map((row) => html.async`<tr>
+    <td><a href="${invoices({ id: row.id })}">${supplier(row)}</a>
+    <td>${row.date}
+    <td style="text-align:end">${money(row.total, row.currency)}`))}`;
 }

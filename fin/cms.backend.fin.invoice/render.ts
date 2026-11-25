@@ -1,7 +1,8 @@
 import { html, inlinePolicy, sanitizeHtml, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import {
-  badge, direction, field, inputAmount, money, option, pager, refLink, rowLink, sources, status, statusName,
+  amounts, badge, direction, field, inputAmount, money, openInvoices, option, overdueInvoices, pager, refLink, rowLink,
+  sources, status, statusName, WIDGET_ROWS, widgetList,
 } from "@qino/qino/cms.backend.fin";
 import { mainCurrency, today } from "@qino/qino/fin";
 import { document, lines, listedOf, owed, refOf } from "@qino/qino/fin.invoice";
@@ -544,4 +545,30 @@ export async function userInvoices(app: App, id: unknown, page: Node): Promise<H
     <td style="text-align:end">${money(row.total, row.currency)}
     <td>${status(app, row.status)}`)}
   </table>${all}`;
+}
+
+/** The dashboard card: what is owed and late, then the invoices to act on — open ones by due date,
+ *  the late first, then our drafts. */
+export async function widget(app: App, page: Node): Promise<HtmlString> {
+  const t = app.t;
+  const [open, overdue, rows, pageUrl] = await Promise.all([
+    openInvoices(app, "out"),
+    overdueInvoices(app),
+    app.db.query`SELECT * FROM invoice
+      WHERE type <> 'credit_note' AND (status = 'open' OR (status = 'draft' AND direction = 'out'))
+      ORDER BY CASE WHEN status = 'open' THEN 0 ELSE 1 END, due, id LIMIT ${WIDGET_ROWS}`,
+    page.url(),
+  ]);
+  const now = today();
+  return html.async`<div>
+    ${amounts(open)} <small>${t`receivable`}</small><br>
+    <b>${overdue}</b> ${t`overdue`}
+  </div>
+  ${widgetList(rows.map((row) => html.async`<tr>
+    <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.number || `#${row.id}`}</a>
+    <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
+    <td>${partyName(row)}
+    <td>${row.status === "open" && row.due && String(row.due) < now ? badge(row.due, "--red") : row.due}
+    <td style="text-align:end">${money(Number(row.total) - Number(row.paid), row.currency)}
+    <td>${status(app, row.status)}`))}`;
 }

@@ -1,8 +1,7 @@
-import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { amounts, finTexts, inFin, openInvoices, overdueInvoices } from "@qino/qino/cms.backend.fin";
+import { finTexts, inFin } from "@qino/qino/cms.backend.fin";
 
-import { render, userInvoices } from "./render.ts";
+import { render, userInvoices, widget } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -16,15 +15,6 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Invoices", de: "Rechnungen" });
 }
 
-/** What customers still owe, and how much of it is late. */
-async function widget(app: App): Promise<HtmlString> {
-  const [open, overdue] = await Promise.all([openInvoices(app, "out"), overdueInvoices(app)]);
-  return html.async`<div>
-    ${amounts(open)} <small>${app.t`receivable`}</small><br>
-    <b>${overdue}</b> ${app.t`overdue`}
-  </div>`;
-}
-
 export const cms = {
   node: {
     css: ["pub/main.css"],
@@ -34,7 +24,7 @@ export const cms = {
   },
 };
 
-export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));
+export const backendDashboardWidget = (app: App, page: Node): Promise<HtmlString> => finTexts(app, () => widget(app, page));
 
 export const backendRowWidget = {
   usr: (app: App, id: unknown, page: Node): Promise<HtmlString | string> => finTexts(app, () => userInvoices(app, id, page)),

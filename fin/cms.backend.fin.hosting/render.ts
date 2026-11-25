@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { every, badge, money, rowLink } from "@qino/qino/cms.backend.fin";
+import { every, badge, money, rowLink, WIDGET_ROWS, widgetList } from "@qino/qino/cms.backend.fin";
 import { nameOf } from "@qino/qino/fin";
 import { billable, blockers, domains, get, hosts, KINDS, kindOf, open, OURS, ours, overbilled, registrars, running, sources, sourceTypes, subscriptionsBy } from "@qino/qino/fin.hosting";
 import { subscriptions } from "@qino/qino/fin.subscription";
@@ -78,16 +78,19 @@ async function openCard(node: Node, pageUrl: string): Promise<HtmlString> {
   return html.async`<div class=u2-card style="flex:1 1 100%">
     <div class=-head>${t`To do`} <small>${todo.length}</small>
       ${names.length ? html.async`<button data-sync style="margin-left:auto">${t`Sync`} <small>${names.join(", ")}</small></button>` : ""}</div>
-    ${todo.length ? html.async`<table class=u2-table>${todo.map(({ domain, missing, kind }) => html.async`<tr>
-      <td style="white-space:nowrap">${nameCell(pageUrl, domain)}
-      <td>${missing === "customer" ? badge(t`no customer`, "--red")
-        : missing === "service" ? overbilledBadge(app, kind)
-        : notBilledBadge(app, kind)}
-      <td>${kind === "hosting" ? domain.host : domain.registrar}
-      <td>${kind !== "hosting" && domain.expires ? html.async`<small>${t`until`} ${String(domain.expires).slice(0, 10)}</small>` : ""}`)}
-    </table>` : html.async`<p>${t`Every domain we register or host has a customer and is billed.`}`}
+    ${todo.length ? html.async`<table class=u2-table>${todo.map((item) => todoRow(app, pageUrl, item))}</table>`
+      : html.async`<p>${t`Every domain we register or host has a customer and is billed.`}`}
   </div>`;
 }
+
+/** A domain to act on: what is missing, where it is, until when. */
+const todoRow = (app: App, pageUrl: string, { domain, missing, kind }: Awaited<ReturnType<typeof open>>[number]) => html.async`<tr>
+  <td style="white-space:nowrap">${nameCell(pageUrl, domain)}
+  <td>${missing === "customer" ? badge(app.t`no customer`, "--red")
+    : missing === "service" ? overbilledBadge(app, kind)
+    : notBilledBadge(app, kind)}
+  <td>${kind === "hosting" ? domain.host : domain.registrar}
+  <td>${kind !== "hosting" && domain.expires ? html.async`<small>${app.t`until`} ${String(domain.expires).slice(0, 10)}</small>` : ""}`;
 
 /** The fields of a source, as its dialog shows them (`data-source-dialog`); `current` to change one. */
 function sourceFields(app: App, types: string[], current?: Row) {
@@ -264,11 +267,11 @@ export async function userDomains(app: App, id: unknown, page: Node): Promise<Ht
   </table>`;
 }
 
-/** How many domains there are, and how many of a customer are billed by nothing. */
-export async function widget(app: App): Promise<HtmlString> {
-  const list = await domains(app);
-  const todo = await open(app);
+/** How many domains there are, and what is to do about them. */
+export async function widget(app: App, page: Node): Promise<HtmlString> {
+  const [list, todo, pageUrl] = await Promise.all([domains(app), open(app), page.url()]);
   return html.async`<div><b>${list.length}</b> ${app.t`domains`}${todo.length
     ? html.async` · ${badge(html.async`${todo.length} ${app.t`to do`}`, "--orange")}`
-    : ""}</div>`;
+    : ""}</div>
+  ${widgetList(todo.slice(0, WIDGET_ROWS).map((item) => todoRow(app, pageUrl, item)))}`;
 }

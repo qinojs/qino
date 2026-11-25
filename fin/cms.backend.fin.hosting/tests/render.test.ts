@@ -54,7 +54,9 @@ test("domains: the list shows owner, aliases, host and billing, flags what is no
     // searched for, an alias shows unfolded
     assert(!String(await inRequest(app, `${BASE}?search=anna.com`, (ctx) => render(node, { ctx }))).includes("data-alias-of="));
 
-    assertStringIncludes(String(await inRequest(app, BASE, () => backendDashboardWidget(app))), "<b>7</b> domains · <small class=u2-badge style=\"background:var(--orange)\">4 to do");
+    const widget = String(await inRequest(app, BASE, async () => backendDashboardWidget(app, await node.page())));
+    assertStringIncludes(widget, "<b>7</b> domains · <small class=u2-badge style=\"background:var(--orange)\">4 to do");
+    assertStringIncludes(widget, "?id=anna.com"); // what is to do, linked to the domain
     const card = String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna, await node.page())));
     assertStringIncludes(card, "anna.com");
     assertEquals(String(await inRequest(app, BASE, async () => backendRowWidget.usr(app, anna + 1, await node.page()))), "");

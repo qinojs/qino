@@ -1,6 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { finTexts, inFin } from "@qino/qino/cms.backend.fin";
+import { finTexts, inFin, money, WIDGET_ROWS, widgetList } from "@qino/qino/cms.backend.fin";
 import { horizon, renews, subscriptions } from "@qino/qino/fin.subscription";
 
 import { render, userSubscriptions } from "./render.ts";
@@ -17,12 +17,21 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Subscriptions", de: "Abos" });
 }
 
-/** What the next billing run takes: subscriptions renewing within the lead time. */
-async function widget(app: App): Promise<HtmlString> {
-  const lead = Number(await app.settings["fin.subscription"].lead ?? 30);
-  const until = await horizon(app);
-  const due = (await subscriptions(app)).filter((s) => renews(s, until));
-  return html.async`<div><b>${due.length}</b> ${app.t`subscriptions to bill within`} ${lead} ${app.t`days`}</div>`;
+/** What the next billing run takes: subscriptions renewing within the lead time, the soonest first. */
+async function widget(app: App, page: Node): Promise<HtmlString> {
+  const t = app.t;
+  const [lead, until, all, pageUrl] = await Promise.all([
+    app.settings["fin.subscription"].lead,
+    horizon(app),
+    subscriptions(app),
+    page.url(),
+  ]);
+  const due = all.filter((s) => renews(s, until)).sort((a, b) => String(a.next).localeCompare(String(b.next)));
+  return html.async`<div><b>${due.length}</b> ${t`subscriptions to bill within`} ${Number(lead ?? 30)} ${t`days`}</div>
+  ${widgetList(due.slice(0, WIDGET_ROWS).map((s) => html.async`<tr>
+    <td>${s.next}
+    <td><a href="${backend.toUrl(pageUrl, { id: s.id })}">${s.label}</a> ${s.detail ? html`<small>${s.detail}</small>` : ""}
+    <td style="text-align:end">${money(s.amount, s.currencyCode)}`))}`;
 }
 
 export const cms = {
@@ -33,7 +42,7 @@ export const cms = {
   },
 };
 
-export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));
+export const backendDashboardWidget = (app: App, page: Node): Promise<HtmlString> => finTexts(app, () => widget(app, page));
 
 export const backendRowWidget = {
   usr: (app: App, id: unknown, page: Node): Promise<HtmlString | string> => finTexts(app, () => userSubscriptions(app, id, page)),

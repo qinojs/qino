@@ -5,7 +5,7 @@ import { setTransport } from "@qino/qino/messaging.email";
 
 import api from "../nodeApi.ts";
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
-import { backendRowWidget } from "../plugin.ts";
+import { backendDashboardWidget, backendRowWidget } from "../plugin.ts";
 import { render } from "../render.ts";
 
 import type { App, Ctx } from "@qino/qino";
@@ -309,5 +309,17 @@ test("paid by hand, the source is suggested: those the books know an account for
       api(node, { record: { id: String(id), amount: "", provider: "qrbill" } })) as { ok: boolean; message: string };
     assertEquals(refused.ok, false);
     assertStringIncludes(refused.message, "payment provider");
+  });
+});
+
+test("the dashboard card lists the invoices to act on: open ones by due date, the late in red, then drafts", async () => {
+  await withApp(async (app, as, node) => {
+    const page = await node.page();
+    const late = Number((await issue(app, await create(app, { currency: "CHF", party: { name: "Spät AG" }, lines: [{ name: "x", price: 100 }], due: "2020-01-01" })))?.id);
+    const draft = Number(await create(app, { currency: "CHF", party: { name: "Entwurf AG" }, lines: [{ name: "y", price: 200 }] }));
+    const out = String(await as("http://qino.test/", () => backendDashboardWidget(app, page)));
+    assertStringIncludes(out, '<small class=u2-badge style="background:var(--red)">2020-01-01</small>');
+    assert(out.indexOf(`?id=${late}"`) < out.indexOf(`?id=${draft}"`), "open before drafts");
+    assertStringIncludes(out, "Entwurf AG");
   });
 });

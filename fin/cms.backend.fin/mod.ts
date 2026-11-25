@@ -85,6 +85,14 @@ export async function sources(app: App, id: string): Promise<HtmlString> {
 export const badge = (content: unknown, color = ""): Promise<HtmlString> =>
   html.async`<small class=u2-badge${color ? html.raw(` style="background:var(${color})"`) : ""}>${content}</small>`;
 
+/** A dashboard widget's rows, the most pressing first: about ten in sight, the rest scrolls. Nothing for none. */
+export const widgetList = (rows: unknown[]): Promise<HtmlString> | string => rows.length
+  ? html.async`<div style="overflow:auto; max-height:22rem; padding:0"><table class=u2-table style="white-space:nowrap">${rows}</table></div>`
+  : "";
+
+/** How many rows a dashboard widget lists. */
+export const WIDGET_ROWS = 20;
+
 /** An option of a filter, selected where it is the `current` value. */
 export const option = (value: string, label: unknown, current = ""): Promise<HtmlString> =>
   html.async`<option value="${value}"${value === current ? html.raw(" selected") : ""}>${label}`;

@@ -21,8 +21,10 @@ test("subscriptions are added, billed from the run, canceled, and deleted only u
     const add = (name: string) =>
       as(() => api(node, { subscribe: { usrId: String(usr), name, price: "240", currency: "chf", start: today } }));
     await add("Hosting example.ch");
-    assertStringIncludes(String(await as(() => backendDashboardWidget(app))), "<b>1</b>");
     const backendPage = await node.page();
+    const widget = String(await as(() => backendDashboardWidget(app, backendPage)));
+    assertStringIncludes(widget, "<b>1</b>");
+    assertStringIncludes(widget, "Hosting example.ch</a>"); // listed, linked to it
     const card = String(await as(() => backendRowWidget.usr(app, usr, backendPage)));
     assertStringIncludes(card, "Hosting example.ch</a>");
     assertStringIncludes(card, "?id=");

@@ -23,7 +23,7 @@ export const cms = {
   },
 };
 
-export const backendDashboardWidget = (app: App): Promise<HtmlString> => finTexts(app, () => widget(app));
+export const backendDashboardWidget = (app: App, page: Node): Promise<HtmlString> => finTexts(app, () => widget(app, page));
 
 export const backendRowWidget = {
   usr: (app: App, id: unknown, page: Node): Promise<HtmlString | string> => finTexts(app, () => userDomains(app, id, page)),
