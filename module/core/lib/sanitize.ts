@@ -20,15 +20,15 @@ export const inlinePolicy: HtmlPolicy = {
 
 /** Sanitize HTML for output — this is the security boundary. Idempotent. */
 export function sanitizeHtml(html: string, use: HtmlPolicy): string {
-  if (!html) return html;
-  const seen = cached(use);
+  if (!/[<>&]/.test(html)) return html;
+  const seen = results.getOrInsertComputed(use, () => new Map());
   const hit = seen.get(html);
   if (hit !== undefined) {
     seen.delete(html); // re-insert: map order = eviction order
     seen.set(html, hit);
     return hit;
   }
-  const clean = sanitize(html, options(use));
+  const clean = sanitize(html, translated.getOrInsertComputed(use, () => build(use)));
   if (seen.size >= LIMIT) seen.delete(seen.keys().next().value!);
   seen.set(html, clean);
   return clean;
@@ -37,17 +37,8 @@ export function sanitizeHtml(html: string, use: HtmlPolicy): string {
 // Same text + same policy = same result, so cache per text instead of parsing per request.
 const LIMIT = 500;
 const results = new WeakMap<HtmlPolicy, Map<string, string>>();
-
-function cached(use: HtmlPolicy) {
-  return results.getOrInsertComputed(use, () => new Map());
-}
-
 // Converted once per policy, not per text.
 const translated = new WeakMap<HtmlPolicy, sanitize.IOptions>();
-
-function options(use: HtmlPolicy) {
-  return translated.getOrInsertComputed(use, () => build(use));
-}
 
 /** The policy for sanitize-html. It has schemes per element, not per attribute, so they are merged. */
 function build(use: HtmlPolicy): sanitize.IOptions {

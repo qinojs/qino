@@ -16,20 +16,19 @@ export const unb64url = (str: string): Uint8Array<ArrayBuffer> => Uint8Array.fro
 /** n random bytes as base64url. */
 export const randB64 = (n: number): string => b64url(crypto.getRandomValues(new Uint8Array(n)));
 
-const digest = async (str: string) =>
-  new Uint8Array(await crypto.subtle.digest("SHA-256", ENCODER.encode(str)));
+const sha256 = (str: string, enc: "base64" | "base64url" | "hex") => createHash("sha256").update(str).digest(enc);
 
 /** SHA-256 of a string as base64 (44 chars), as used by CSP hashes and SRI `integrity`. */
-export const sha256b64 = async (str: string): Promise<string> => (await digest(str)).toBase64();
+export const sha256b64 = async (str: string): Promise<string> => sha256(str, "base64");
 
 /** SHA-256 as base64url (43 chars), safe in columns and URLs. Used for PKCE. */
-export const sha256b64url = async (str: string): Promise<string> => b64url(await digest(str));
+export const sha256b64url = async (str: string): Promise<string> => sha256(str, "base64url");
 
 /** MD5 as hex (32 chars): a short key for long values, not a security hash. */
 export const md5 = (str: string): string => createHash("md5").update(str).digest("hex");
 
 /** SHA-256 as hex (64 chars), e.g. a content hash in a column. */
-export const sha256hex = async (str: string): Promise<string> => (await digest(str)).toHex();
+export const sha256hex = async (str: string): Promise<string> => sha256(str, "hex");
 
 export const uid = (length?: number): string => randB64(16).slice(0, length);
 

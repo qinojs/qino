@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import * as nodePath from 'node:path';
 
 import { mimeTypes } from '../../deps.ts';
@@ -140,7 +141,7 @@ export class FileTransformer {
     const props = new Set(this.#transformers.flatMap((t) => t.props));
     for (const k of [...props].sort()) if (opts[k] !== undefined) parts.push(`${k}=${opts[k]}`);
     parts.push(await this.#toolchain(), accepts(accept, opts));
-    const cacheKey = await hashKey(parts);
+    const cacheKey = createHash('sha1').update(parts.join('|')).digest('hex');
     const run = async (): Promise<TransformResult> => {
       const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
       const metaPath = `${cachePath}.mime`;
@@ -228,11 +229,6 @@ function topoSort(transformers: TransformerDef[]) {
 
   for (const t of transformers) add(t);
   return result;
-}
-
-async function hashKey(parts: string[]) {
-  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(parts.join('|')));
-  return new Uint8Array(buf).toHex();
 }
 
 /** Add by priority, highest first; `signal` removes it again. */

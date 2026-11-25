@@ -47,7 +47,7 @@ function listColumns(app: App, main: string): Column[] {
 async function creatable(app: App): Promise<Node[]> {
   const modules = app.modules.linked().filter((m) => m.plugin.cms?.node?.childUrls).map((m) => m.name);
   if (!modules.length) return [];
-  const ids = await app.db.col`SELECT id FROM page WHERE type = ${"c"} AND module IN (${sql.join(modules.map((m) => sql`${m}`), ", ")})`;
+  const ids = await app.db.col`SELECT id FROM page WHERE type = ${"c"} AND ${sql.in("module", modules)}`;
   const nodes = await Promise.all(ids.map((id) => cmsOf(app).node(Number(id))));
   const readable = await Promise.all(nodes.map((n) => n.isOnline()));
   return nodes.filter((_, i) => readable[i]);
@@ -63,12 +63,12 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
   const categories = await Promise.all(all.map(async (id) => [Number(id), await categoryOf(await cmsOf(app).node(Number(id)))] as const));
   const named = new Map<number, Node>();
   for (const [, c] of categories) if (c && await c.isOnline()) named.set(c.id, c);
-  const inCategory = categories.filter(([, c]) => c?.id === Number(q("category"))).map(([id]) => sql`${id}`);
+  const inCategory = categories.filter(([, c]) => c?.id === Number(q("category"))).map(([id]) => id);
   const search = sqlSearch(q("search"), ["sku", "gtin", "brand"], { exact: ["id"] });
   const title = sqlSearch(q("search"), ["tl.text"]).where; // a product's name is its page's title, not every text on it
   const where = [
     q("search") ? sql`(${search.where} OR id IN (SELECT p.id FROM page p JOIN text_lang tl ON tl.text_id = p.title_id WHERE ${title}))` : null,
-    q("category") ? sql`id IN (${inCategory.length ? sql.join(inCategory, ", ") : sql`0`})` : null,
+    q("category") ? sql.in("id", inCategory) : null,
   ].filter((w) => w != null);
   const rows = await app.db.table("shop_product").all<Product>`${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``} ORDER BY id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
   const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname + url.search, { search: q("search"), category: q("category"), ...params });

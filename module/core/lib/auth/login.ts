@@ -51,7 +51,7 @@ async function loginUser(app: App, typed: string) {
   const user = await app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(username)) = LOWER(${typed})`;
   if (user) return user;
   const owner = await contactOwner(app.db, "email", typed).catch(() => undefined); // no address at all
-  return owner ? await app.db.row`SELECT * FROM usr WHERE id = ${owner}` : undefined;
+  return owner ? app.db.row`SELECT * FROM usr WHERE id = ${owner}` : undefined;
 }
 
 /** Log in the user with this e-mail — via remembered client, else password.

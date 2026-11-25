@@ -50,9 +50,9 @@ export const fs = {
   // --- info (cached) ---
 
   /** Like `Deno.stat`, but undefined if missing. */
-  stat(path: string, opt: Opt = {}): Promise<Info | undefined> {
+  stat(path: string, opt?: Opt): Promise<Info | undefined> {
     const hit = cache.get(path);
-    if (hit && performance.now() - hit.t < (opt.ttl ?? fs.ttl())) return hit.info;
+    if (hit && performance.now() - hit.t < (opt?.ttl ?? fs.ttl())) return hit.info;
     const info = (Deno ? Deno.stat(path).then(pick) : stat(path).then(toInfo)).catch(() => undefined);
     put(path, info);
     return info;

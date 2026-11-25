@@ -161,7 +161,7 @@ async function suggestions(app: App, open: Row[]) {
   const amounts = [...new Set(open.map((row) => Math.abs(Number(row.amount))))];
   const invoices = await app.db.query`
     SELECT id, direction, number, currency, total - paid AS rest, party FROM invoice
-    WHERE status = 'open' AND ABS(total - paid) IN (${sql.join(amounts.map((a) => sql`${a}`), ", ")})`;
+    WHERE status = 'open' AND ${sql.in(sql`ABS(total - paid)`, amounts)}`;
   for (const row of open) {
     const amount = Number(row.amount);
     found.set(Number(row.id), invoices

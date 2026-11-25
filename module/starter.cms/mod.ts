@@ -92,7 +92,7 @@ export async function todo(app: App, name: string, titles: Texts, texts: Texts):
   const item = await (await items(list)).createCont({ module: "cms.cont.text" });
   await item.set("name", name);
   await text(item, "main", Object.fromEntries(Object.entries(texts)
-    .map(([lang, body]) => [lang, `<h2>${hee(titles[lang] ?? titles.en ?? "")}</h2>\n${body}`])));
+    .map(([lang, body]) => [lang, `<h2>${hee(titles[lang] ?? titles.en)}</h2>\n${body}`])));
 }
 
 /** All items in one section, each a heading with its text — the shape of a long text page such

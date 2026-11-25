@@ -47,23 +47,11 @@ export class StandardSchema<T = unknown> {
   }
 
   default(value: T): StandardSchema<T> {
-    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), {
-      shape: this.shape,
-      inner: this.inner,
-      defaultValue: () => value,
-      description: this.description,
-      values: this.values,
-    });
+    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), { ...this, defaultValue: () => value });
   }
 
   describe(description: string): StandardSchema<T> {
-    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), {
-      shape: this.shape,
-      inner: this.inner,
-      defaultValue: this.defaultValue,
-      description,
-      values: this.values,
-    });
+    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), { ...this, description });
   }
 }
 

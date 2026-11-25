@@ -16,7 +16,7 @@ export const shippingProvider: ShippingProvider = {
   // offered where a product of the order has rates
   async methods(app: App, order: Order) {
     const ids = (await order.lines()).map((l) => l.product_id);
-    if (!ids.length || await app.db.one`SELECT 1 FROM shop_shipping_product WHERE product_id IN (${sql.join(ids.map((id) => sql`${id}`))}) LIMIT 1` == null) return [];
+    if (!ids.length || await app.db.one`SELECT 1 FROM shop_shipping_product WHERE ${sql.in("product_id", ids)} LIMIT 1` == null) return [];
     return [{ name: "", label: "" }]; // what the customer reads: cms.shop's labels
   },
 

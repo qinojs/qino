@@ -409,7 +409,7 @@ export class Node {
     /* Files */
     files(): Promise<Map<string, DbFile>> {
         if (!this.#files) {
-            this.#filesAll = new Map();
+            const all = this.#filesAll = new Map();
             this.#files = (async () => {
                 const files = new Map<string, DbFile>();
                 const rows = await this.db.query`
@@ -421,7 +421,7 @@ export class Node {
                 const dbFiles = await Promise.all(rows.map((vs) => this.app.dbFiles.file(vs.id, vs)));
                 const exist = await Promise.all(dbFiles.map((f) => f.exists()));
                 rows.forEach((vs, i) => {
-                    this.#filesAll!.set(vs.pf_name, dbFiles[i]);
+                    all.set(vs.pf_name, dbFiles[i]);
                     if (exist[i]) files.set(vs.pf_name, dbFiles[i]);
                 });
                 return files;

@@ -20,7 +20,6 @@ export type Row = {
 export const SORTABLE = ["request", "redirect"];
 
 const isNodeId = (v: string) => /^\d+$/.test(v);
-const inList = (vs: (string | number)[]) => sql.join(vs.map((v) => sql`${v}`), ", ");
 
 /** All direct links, resolved. Needs a request (page urls depend on the language). No paging;
  *  use search. */
@@ -35,15 +34,15 @@ export async function collect(app: App, opts: {
   const sort = SORTABLE.includes(String(opts.sort)) ? String(opts.sort) : "";
   // an unsorted search is ordered by how well it matched; a clicked column always wins
   const order = sort ? sql`${sql.id(sort)} ${sql.raw(opts.dir === "ASC" ? "ASC" : "DESC")}` : sql`${sh.order}, request`;
-  const all = await db.query`SELECT request, redirect FROM ${sql.id("page_redirect")} WHERE ${sh.where} ORDER BY ${order}`;
+  const all = await db.query`SELECT request, redirect FROM page_redirect WHERE ${sh.where} ORDER BY ${order}`;
 
   /* Existing targets and requests answered by page urls: one query each. Ids are matched in JS,
      since `page.id = page_redirect.redirect` compares integer with text (only SQLite allows that). */
   const ids = [...new Set(all.map((r) => String(r.redirect)).filter(isNodeId))];
   const requests = [...new Set(all.map((r) => String(r.request)))];
   const [aliveRows, shadowedRows] = await Promise.all([
-    ids.length ? db.query`SELECT id FROM ${sql.id("page")} WHERE id IN (${inList(ids.map(Number))})` : [],
-    requests.length ? db.query`SELECT url FROM ${sql.id("page_url")} WHERE url IN (${inList(requests)})` : [],
+    ids.length ? db.query`SELECT id FROM page WHERE ${sql.in("id", ids.map(Number))}` : [],
+    requests.length ? db.query`SELECT url FROM page_url WHERE ${sql.in("url", requests)}` : [],
   ]);
   const alive = new Set(aliveRows.map((r) => String(r.id)));
   const shadowed = new Set(shadowedRows.map((r) => String(r.url)));

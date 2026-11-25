@@ -239,12 +239,7 @@ export const cleanRequest = (v: string): string => String(v ?? "").trim().replac
 /** Whether a page url or a redirect answers this request. */
 export async function requestUsed(v: string): Promise<boolean> {
     v = cleanRequest(v);
-    const db = getCtx().app.db;
-    const [r, u] = await Promise.all([
-        db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`,
-        db.one`SELECT count(*) FROM page_url WHERE url = ${v}`,
-    ]);
-    return !!(r || u);
+    return !!await getCtx().app.db.one`SELECT 1 FROM page_redirect WHERE request = ${v} UNION ALL SELECT 1 FROM page_url WHERE url = ${v} LIMIT 1`;
 }
 
 export async function searchNodes(search: string): Promise<any[]> {

@@ -52,7 +52,7 @@ async function settingsWidgets(ctx: Ctx, pid: number) {
   // settings. Same position and label for every module.
   const mod = node.module;
   const modWidget = mod?.plugin?.cms?.node?.widget;
-  const options = modWidget && mod?.modUrl ? mod.modUrl + modWidget
+  const options = modWidget ? mod.modUrl + modWidget
     : node.settings[$item].keys?.length ? own("sets").src : null;
   const [settingsTitle, showTime, showUrls] = await Promise.all([
     ctx.app.t`Settings`,
@@ -232,19 +232,20 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
   cms(app).on("page:render-after", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || await app.settings.cms.frontend !== name) return;
 
-    const settings = ctx.settings;
-
-    const node = cmsCtx(ctx).mainNode;
+    const state = cmsCtx(ctx);
+    const node = state.mainNode;
     if (!node) return;
     const access = await node.access();
-    const inBackend = node.vs?.module === "cms.layout.backend";
+    const inBackend = node.vs.module === "cms.layout.backend";
+    if (access < 2 && !inBackend) return;
 
+    const settings = ctx.settings;
     const html = ctx.res.html;
     const moduleUrl = ctx.req.moduleUrl;
     const qino = html.jsData.qino ??= {};
     qino.cms ??= {};
 
-    if ((access > 1 || inBackend) && (await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
+    if ((await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
       const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
       const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
       const url = ctx.req.url;
@@ -256,11 +257,11 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (access > 1) {
       ctx.res.csp["img-src"]["blob:"] = true;
       qino.cms.nodeId = node.id;
-      qino.cms.requestedNodeId = cmsCtx(ctx).requestedNodeId;
+      qino.cms.requestedNodeId = state.requestedNodeId;
       qino.dev = ctx.dev;
-      qino.cms.editmode = cmsCtx(ctx).editmode;
+      qino.cms.editmode = state.editmode;
 
-      if (cmsCtx(ctx).editmode) {
+      if (state.editmode) {
         qino.cms.clipboard = Number(settings.cms.clipboard() ?? 0);
         qino.cms.ui = await settings[name].ui ?? {};
         qino.cms.tourSeen = !!await settings[name].tour_seen;

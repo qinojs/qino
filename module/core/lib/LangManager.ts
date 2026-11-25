@@ -119,7 +119,7 @@ export class LangManager {
       const order = [lang, ...this.#langs.filter((l) => l !== lang)];
       const en = order.indexOf("en"), chain = en < 0 ? order : order.slice(0, en + 1);
       const rows = await this.#app.db.query`SELECT s.original, s.namespace, l.lang, l.text FROM smalltext s
-        LEFT JOIN smalltext_lang l ON l.hash = s.hash AND l.namespace = s.namespace AND l.lang IN (${sql.join(chain.map((l) => sql`${l}`))})
+        LEFT JOIN smalltext_lang l ON l.hash = s.hash AND l.namespace = s.namespace AND ${sql.in("l.lang", chain)}
         WHERE s.namespace IN (${ns}, '')`;
       const index = new Map<string, string>(), rank = new Map<string, number>();
       for (const { original, namespace, lang: l, text } of rows) {

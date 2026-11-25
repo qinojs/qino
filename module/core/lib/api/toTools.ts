@@ -27,7 +27,9 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
 
+    const pathNames = new Set<string>();
     for (const [name, paramSchema, seg] of routeParams(r)) {
+      pathNames.add(name);
       properties[name] = paramSchema ? toJsonSchema(paramSchema) : { type: "string" };
       if (!isCatchall(seg)) required.push(name);
     }
@@ -37,6 +39,7 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
         if (field.kind !== "optional" && field.defaultValue === undefined) required.push(k);
       }
     }
+    const qShape = shapeOf(r.verb.query);
 
     tools.push({
       name: r.name,
@@ -49,8 +52,6 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
           .flatMap((seg) => seg.startsWith(":") ? pathValue(raw[paramName(seg)], isCatchall(seg)) : seg)
           .join("/");
         // path params go into the URL; unknown fields stay, so invoke() rejects them
-        const pathNames = new Set(routeParams(r).map(([name]) => name));
-        const qShape = shapeOf(r.verb.query);
         const input: Params = {}, query: Params = {};
         for (const [k, v] of Object.entries(raw)) {
           if (!pathNames.has(k)) (k in qShape || !r.verb.input ? query : input)[k] = v;

@@ -1,4 +1,4 @@
-import { html, sql } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { list, write } from "./render.ts";
@@ -58,7 +58,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   // Just the count: what is broken is one click away, and the widget must not scan the tree for it.
-  const total = await app.db.one`SELECT count(*) FROM ${sql.id("page_redirect")}`;
+  const total = await app.db.one`SELECT count(*) FROM page_redirect`;
   return html.async`<div class=-body><b>${Number(total)}</b> ${app.t`direct links`}</div>`;
 }
 

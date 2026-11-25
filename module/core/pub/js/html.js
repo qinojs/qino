@@ -49,17 +49,15 @@ async function htmlValueAsync(v) {
   return htmlValue(v);
 }
 
-function joinHtml(strings, parts) {
-  return new HtmlString(strings.reduce((acc, str, i) => i < parts.length ? acc + str + parts[i] : acc + str, ""));
+function joinHtml(s, v, fn) {
+  let out = s[0];
+  for (let i = 0; i < v.length; i++) out += (fn ? fn(v[i]) : v[i]) + s[i + 1];
+  return new HtmlString(out);
 }
 
-export function html(strings, ...values) {
-  return joinHtml(strings, values.map(htmlValue));
-}
+export function html(s, ...v) { return joinHtml(s, v, htmlValue); }
 
-html.async = async function (strings, ...values) {
-  return joinHtml(strings, await Promise.all(values.map(htmlValueAsync)));
-};
+html.async = async (s, ...v) => joinHtml(s, await Promise.all(v.map(htmlValueAsync)));
 
 // Like sql.raw/sql.join: raw() trusts a string, join() combines fragments (strings escaped,
 // HtmlString kept) into one HtmlString.
