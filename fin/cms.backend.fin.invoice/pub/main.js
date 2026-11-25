@@ -38,7 +38,10 @@ initNode("backend.fin.invoice", (el) => {
       const doc = frame.contentDocument?.documentElement;
       if (!doc?.scrollWidth) return;
       doc.style.zoom = "";
-      const zoom = Math.min(1, frame.clientWidth / doc.scrollWidth);
+      // an overflowing sheet's width counts the body's start padding, not its end padding
+      if (doc.scrollWidth <= doc.clientWidth) return;
+      const end = parseFloat(getComputedStyle(frame.contentDocument.body).paddingRight) || 0;
+      const zoom = frame.clientWidth / (doc.scrollWidth + end);
       //frame.style.height = `${Math.ceil(doc.scrollHeight * zoom)}px`;
       doc.style.zoom = String(zoom);
     };

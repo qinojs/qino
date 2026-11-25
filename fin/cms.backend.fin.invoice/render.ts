@@ -518,7 +518,7 @@ async function detail(node: Node, id: number) {
       : ""}
   </div>
   ${row.direction === "in" ? original(node, row) : ""}
-  ${row.direction === "in" ? "" : html.async`<div class=u2-card style="flex:1 1 auto; min-width:40rem">
+  ${row.direction === "in" ? "" : html.async`<div class=u2-card style="flex:1 1 55rem">
     <div class=-head>${t`Document`}</div>
     <iframe data-sheets srcdoc="${preview}" style="width:100%; height:70rem; border:0; padding:0"></iframe>
   </div>`}

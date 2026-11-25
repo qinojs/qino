@@ -73,18 +73,20 @@ async function closing(app: App): Promise<HtmlString> {
     : html.async`<li>${badge("✓", "--green")} ${match}`;
   return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Close the year`} ${closed ? html.async`<small>${t`closed until`} ${closed}</small>` : ""}</div>
-    <ul>
-      ${check(drafts, t`draft invoices of the year`)}
-      ${check(foreign, t`invoices in another currency, not booked`)}
-      ${app.modules.linked("fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
-      ${check(bare, t`entries by hand without a receipt`)}
-      ${check(unbooked, t`payments not for an invoice, not booked`)}
-      ${receivable
-        ? diff(receivables, t`receivables: books and open invoices differ by`, t`receivables match the open invoices`)
-        : ""}
-      ${payable ? diff(payables, t`payables: books and open invoices differ by`, t`payables match the open invoices`) : ""}
-    </ul>
-    <p><small>${t`By hand before: accruals, depreciation, the VAT reconciliation.`}</small>
+    <div>
+      <ul>
+        ${check(drafts, t`draft invoices of the year`)}
+        ${check(foreign, t`invoices in another currency, not booked`)}
+        ${app.modules.linked("fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
+        ${check(bare, t`entries by hand without a receipt`)}
+        ${check(unbooked, t`payments not for an invoice, not booked`)}
+        ${receivable
+          ? diff(receivables, t`receivables: books and open invoices differ by`, t`receivables match the open invoices`)
+          : ""}
+        ${payable ? diff(payables, t`payables: books and open invoices differ by`, t`payables match the open invoices`) : ""}
+      </ul>
+      <p><small>${t`By hand before: accruals, depreciation, the VAT reconciliation.`}</small>
+    </div>
     <form data-close>
       <input type=date name=until value="${until}" required>
       <button u2-confirm="${t`Close the year? Its result goes to equity, and nothing can be booked in it any more.`}">
@@ -187,7 +189,7 @@ async function overview(node: Node, url: URL) {
     </form>
   </div>
   ${closing(app)}
-  <div class=u2-card style="flex:0 1 auto">
+  <div class=u2-card style="flex:0 1 40rem">
     <div class=-head>${t`Settings`}</div>
     <settings-editor source="/api/core/settings/fin.accounting"></settings-editor>
   </div>
