@@ -2,7 +2,21 @@
   white-space:nowrap;
   & :is(input, button) { font:inherit; }
 
-  & input[name=url] { padding:.1em; border:0; line-height:1; }
+  & [data-pid] {
+    display:flex;
+    align-items:center;
+    gap:.25em;
+  }
+  & input[name=url] {
+    flex:1;
+    padding:.1em;
+    border:0;
+    line-height:1;
+    field-sizing:content;
+    inline-size:auto;
+    min-inline-size:13rem;
+    max-inline-size:20rem;
+  }
   & tbody tr { background:#fff; }
   & tbody td {
     border: 1px solid #ddd;
