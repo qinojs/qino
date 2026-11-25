@@ -47,6 +47,9 @@ export async function document(
     const vat = (o: Record<string, any>) => o.vatID ? html.async`\n${t`VAT ID`} ${o.vatID}` : "";
     // a reminder lists what is overdue, and asks for that and its own lines
     const due = sum.total + listed.reduce((total, row) => total + Number(row.open), 0);
+    // what came in shows below the total; paid in full, it asks for nothing more
+    const paid = asks ? Number(invoice.paid ?? 0) : 0;
+    const open = asks && paid < sum.total;
     return String(await html.async`<!doctype html>
 <html lang="${lang}">
 <meta charset="utf-8">
@@ -109,8 +112,8 @@ export async function document(
     ? t`Corrects invoice ${invoice.preceded}`
     : t`Follows pro forma invoice ${invoice.preceded}`}<br>` : ""}
   ${t`Date`}: ${day(invoice.date)}<br>
-  ${asks && invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}<br>` : ""}
-  ${asks && invoice.term != null ? t`Payable within ${invoice.term} days` : ""}
+  ${open && invoice.due ? html.async`${t`Due`}: ${day(invoice.due)}<br>` : ""}
+  ${open && invoice.term != null ? t`Payable within ${invoice.term} days` : ""}
 </p>
 ${listed.length ? html.async`<p>${t`The following invoices are overdue:`}</p>
 <table>
@@ -150,6 +153,12 @@ ${lines.length || !listed.length ? html.async`<table>
     <tr class=total>
       <th colspan=${span}>${t`Total`} ${invoice.currency}
       <td class=n>${money(sum.total)}
+    ${paid ? html.async`<tr>
+      <th colspan=${span}>${t`Paid`}
+      <td class=n>${money(paid)}
+    <tr>
+      <th colspan=${span}>${t`Amount due`}
+      <td class=n>${money(sum.total - paid)}` : ""}
 </table>` : ""}
 ${listed.length ? html.async`<p class=total>${t`Amount due`}: ${money(due)}</p>` : ""}
 ${invoice.text ? html`<div class=text>${html.raw(sanitizeHtml(String(invoice.text), inlinePolicy))}</div>` : ""}

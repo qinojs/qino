@@ -3,6 +3,8 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { fs } from "@qino/qino";
 
 import { withFinApp } from "../../tests/app.ts";
+import { record } from "@qino/qino/fin.payment";
+
 import { attach, create, creditNote, document, issue, print, revise, setSent } from "../mod.ts";
 
 import type { App } from "@qino/qino";
@@ -39,6 +41,22 @@ test("the document shows sender, recipient, lines and tax per rate, escaped", as
       "2.6 %",
       "Thank <mark>you</mark>.\nPayable within 30 days.", // the notes too
     ]) assertStringIncludes(doc, part);
+  });
+});
+
+test("what came in shows below the total; paid in full, no term is asked", async () => {
+  await withApp(async (app) => {
+    const issued = await issue(app, await create(app, { ...invoice, term: 30 }));
+    const id = Number(issued?.id), total = Number(issued?.total);
+    const pay = (amount: number) => record(app, { direction: "in", provider: "cash", amount, currency: "CHF", ref: `fin.invoice:${id}` });
+    assertEquals((await document(app, id)).includes("<th colspan=5>Paid"), false); // nothing in yet: no rows
+    await pay(1000);
+    let doc = await document(app, id);
+    for (const part of ["<th colspan=5>Paid", "<th colspan=5>Amount due", "Due: ", "Payable within 30 days"]) assertStringIncludes(doc, part);
+    await pay(total - 1000);
+    doc = await document(app, id);
+    assertStringIncludes(doc, "<th colspan=5>Paid");
+    assertEquals([doc.includes("Due: "), doc.includes("Payable within 30 days</p>")], [false, false]);
   });
 });
 
