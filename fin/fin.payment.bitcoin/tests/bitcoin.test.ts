@@ -47,8 +47,12 @@ test("an address per payment, the price fixed in satoshis, seen, then confirmed"
       assertEquals(await app.db.one`SELECT external_id FROM payment WHERE id = ${id}`, to);
       assertStringIncludes((await slip(app, id))!, `bitcoin:${to}?amount=0.00200000`);
 
+      chain.txs[to] = [tx(to, 50000)]; // a part in the mempool: only the rest is asked for
+      await sync(app, id);
+      assertStringIncludes((await slip(app, id))!, `bitcoin:${to}?amount=0.00150000`);
       chain.txs[to] = [tx(to, 200000)];
       assertEquals([(await sync(app, id))?.status, (await sync(app, id))?.paid], ["processing", 0]);
+      assertEquals((await slip(app, id))!.includes("bitcoin:"), false); // all seen: nothing more to pay
       chain.txs[to] = [tx(to, 200000, 100)];
       const paid = await sync(app, id);
       assertEquals([paid?.status, paid?.paid], ["paid", 10000]);

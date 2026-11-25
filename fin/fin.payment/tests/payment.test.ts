@@ -1,7 +1,7 @@
 import { test } from "node:test";
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { Db, Output, Redirect, unixTime } from "@qino/qino";
-import { testContext } from "@qino/qino/tests";
+import { fakeT, testContext } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { create, methods, record, refund, sync } from "../mod.ts";
@@ -41,6 +41,7 @@ async function setup() {
   const handlers: Record<string, (e: { ctx: Ctx }) => Promise<void>> = {};
   const fakeApp = {
     db,
+    t: fakeT,
     url: () => Promise.resolve("https://site.test/"),
     modules: { linked: () => [{ plugin: { paymentProvider: provider } }] },
     // deno-lint-ignore no-explicit-any
@@ -53,7 +54,13 @@ async function setup() {
   // the listener ends a request by throwing its response; undefined means it let the request pass
   const request = async (url: string) =>
     handlers.route({ ctx: await context(url) }).then(() => undefined, (e) => e);
-  return { app, provider, events, request };
+  // a page the listener rendered on the context
+  const page = async (url: string) => {
+    const ctx = await context(url);
+    await handlers.route({ ctx }).catch((e) => assertEquals(e instanceof Output, true));
+    return ctx.res;
+  };
+  return { app, provider, events, request, page };
 }
 
 const order = { amount: 4990, currency: "CHF", method: "fake.twint", ref: "shop.order:1", return: "/done" };
@@ -176,11 +183,11 @@ test("the payer comes back to the return url, the provider gets an ok, a forged 
 });
 
 test("the slip of an open payment is shown at its pay address, a settled one has none", async () => {
-  const { app, provider, request } = await setup();
+  const { app, provider, request, page } = await setup();
   await create(app, order);
-  const shown = await request(provider.urls!.pay);
-  assertEquals(shown instanceof Output && shown.status, 200);
-  assertEquals(String(shown.body).endsWith("<p>Pay 4990 to us</p>"), true);
+  const shown = await page(provider.urls!.pay);
+  assertEquals(shown.status, 200);
+  assertStringIncludes(shown.html.content, "<p>Pay 4990 to us</p></main>");
   provider.next = { status: "paid", paid: 4990 };
   await request(provider.urls!.notify);
   assertEquals((await request(provider.urls!.pay)).status, 404);

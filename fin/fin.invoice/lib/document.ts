@@ -53,10 +53,11 @@ export async function document(
 <title>${invoice.number}</title>
 <style>
   @page { size: A4; margin: 20mm 20mm 25mm }
-  /* a payment slip (QR bill: 210 × 105 mm) sits on a page of its own, at the bottom, without margins */
+  /* a payment slip sits on a page of its own, at the bottom, without margins: a QR bill brings its
+     size (210 × 105 mm), anything else its own layout */
   @page slip { margin: 0 }
-  .slip { page: slip; break-before: page; padding-top: 192mm }
-  .slip svg { display: block; width: 210mm; height: 105mm }
+  .slip { page: slip; break-before: page; height: 297mm; display: flex; flex-direction: column; justify-content: end }
+  .slip > svg { display: block }
   body { font-family: system-ui, sans-serif; font-size: 10pt; line-height: 1.4 }
   header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 3em }
   header img { max-height: 4em }

@@ -96,16 +96,28 @@ export const paymentProvider: Provider = {
     return unixTime() > Number(data.until) ? { status: "expired" } : {};
   },
 
-  async slip(_app, payment) {
-    const { address: to, sats, until, confirmed } = dataOf(payment);
+  // what is asked for is what has not arrived yet: money in the mempool is not asked for twice
+  async slip(app, payment) {
+    const { address: to, sats, until, seen } = dataOf(payment);
     if (!to) return "";
-    const btc = (Math.max(0, sats - Number(confirmed ?? 0)) / SATS).toFixed(8);
-    const uri = `bitcoin:${to}?amount=${btc}`;
+    const t = app.t.in("fin.payment.bitcoin");
+    const got = Number(seen ?? 0), due = Math.max(0, sats - got);
+    const btc = (n: number) => (n / SATS).toFixed(8);
+    const address = html`<p style="word-break:break-all"><small><code>${to}</code></small>`;
+    if (!due) {
+      return String(html`<div style="max-width:24rem; margin:auto; text-align:center">
+        <p><b>${await t`Received — waiting for confirmation.`}</b>
+        ${address}
+      </div>`);
+    }
+    const uri = `bitcoin:${to}?amount=${btc(due)}`;
+    const part = got ? await t`${btc(got)} BTC received, the rest is still open.` : "";
     return String(html`<div style="max-width:24rem; margin:auto; text-align:center">
       <a href="${uri}">${html.raw(qr(uri))}</a>
-      <p><b>${btc} BTC</b> ${payment.description ? html`· ${payment.description}` : ""}
-      <p style="word-break:break-all"><code>${to}</code>
-      <p><small>${new Date(Number(until) * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC</small>
+      <p><b>${btc(due)} BTC</b> ${payment.description ? html`· ${payment.description}` : ""}
+      ${part ? html`<p>${part}` : ""}
+      ${address}
+      <p><small>${await t`Price holds until ${new Date(Number(until) * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC.`}</small>
     </div>`);
   },
 };

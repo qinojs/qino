@@ -1,4 +1,5 @@
 import { App, html, Output, Redirect, s, unixTime } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 import { idOf, PATH } from "./lib/url.ts";
 import { provider, slip, sync } from "./mod.ts";
@@ -66,7 +67,7 @@ async function handle(ctx: Ctx) {
     throw new Output("Not Found", { status: 404 });
   }
   if (kind === "notify") throw new Output((await sync(app, id), "ok"));
-  if (kind === "pay") throw await payPage(app, id);
+  if (kind === "pay") throw await payPage(ctx, id);
   // the payer comes back even if the provider is slow to answer; the return page shows what is known
   const payment = await sync(app, id).catch((e) => {
     console.error("fin.payment sync", id, e);
@@ -76,7 +77,8 @@ async function handle(ctx: Ctx) {
 }
 
 /** The slip on a page of its own. A watched one asks again while open, and leads on once paid. */
-async function payPage(app: App, id: number): Promise<Output> {
+async function payPage(ctx: Ctx, id: number): Promise<Output> {
+  const app = ctx.app;
   const payment = await app.db.row`SELECT provider, return_url FROM payment WHERE id = ${id}`;
   const watch = !!provider(app, String(payment?.provider ?? ""))?.watch;
   if (watch) await sync(app, id).catch((e) => console.error("fin.payment sync", id, e));
@@ -85,10 +87,7 @@ async function payPage(app: App, id: number): Promise<Output> {
     if (watch && payment?.return_url) return new Redirect(String(payment.return_url));
     return new Output("Not Found", { status: 404 });
   }
-  return new Output(String(html`<!doctype html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-${watch ? html`<meta http-equiv="refresh" content="10">` : ""}
-${html.raw(shown)}`), { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
+  ctx.res.headers.set("Cache-Control", "no-store");
+  if (watch) ctx.res.html.head += '<meta http-equiv="refresh" content="10">\n';
+  return u2.page(ctx, await app.t.in("fin")`Payment`, html.raw(shown));
 }
