@@ -18,6 +18,7 @@ const settingsSchema = {
 };
 
 const num = (v: unknown) => {
+  if (v == null || typeof v === "string" && !v.trim()) return undefined;
   const n = Number(v);
   return Number.isFinite(n) ? n : undefined;
 };
