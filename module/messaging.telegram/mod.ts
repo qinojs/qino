@@ -57,8 +57,9 @@ async function deliver(app: App, rows: Row[], msg: Msg, { render }: Rendering) {
       const status = e instanceof BotError ? e.status : 0;
       const reason = errMsg(e);
       const error = `${status || "no status"}: ${reason}`;
-      await delivered(app, Number(row.id), e instanceof ChannelError ? e : error);
-      if (!chat) return;
+      const channelErr = e instanceof ChannelError ? e : (!status || status === 401 || status === 429 || status >= 500) ? new ChannelError(error) : undefined;
+      await delivered(app, Number(row.id), channelErr ?? error);
+      if (!chat || channelErr) return;
       if (status === 403 || (status === 400 && /chat not found/i.test(reason))) return void gone.push(Number(chat.id));
       console.warn(`telegram: chat ${chat.id} rejected —`, reason);
       await table.update(chat.id, { error: error.slice(0, 255) });

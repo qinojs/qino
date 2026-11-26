@@ -1,3 +1,5 @@
+import { ChannelError } from "@qino/qino/messaging";
+
 import type { App } from "@qino/qino";
 
 /** What a transport must offer; Upyo's classes satisfy it. */
@@ -38,10 +40,10 @@ export async function transport(app: App): Promise<Transport> {
 
   await close(app);
   const entry = UPYO[type];
-  if (!entry) throw new Error(`Unknown email transport "${type}"`);
+  if (!entry) throw new ChannelError(`Unknown email transport "${type}"`);
   const mod = await importUpyo(type);
   const ctor = mod[entry.exportName] as (new (options: Record<string, unknown>) => Transport) | undefined;
-  if (!ctor) throw new Error(`Upyo transport export missing: ${entry.exportName}`);
+  if (!ctor) throw new ChannelError(`Upyo transport export missing: ${entry.exportName}`);
   const fresh = new ctor(options);
   built.set(app, { key, transport: fresh });
   return fresh;
@@ -58,7 +60,7 @@ export async function close(app: App): Promise<void> {
 export async function createMessage(message: Record<string, unknown>): Promise<unknown> {
   const core = await importUpyo("core");
   const create = core.createMessage as ((message: Record<string, unknown>) => unknown) | undefined;
-  if (!create) throw new Error("Upyo createMessage export missing");
+  if (!create) throw new ChannelError("Upyo createMessage export missing");
   return create(clean(message));
 }
 
@@ -70,7 +72,7 @@ async function config(app: App) {
 
   if (type === "smtp") {
     const host = await get("host");
-    if (!host) throw new Error("SMTP transport needs messaging.email.transport.smtp.host");
+    if (!host) throw new ChannelError("SMTP transport needs messaging.email.transport.smtp.host");
     const port = Number(await get("port")) || 465;
     const user = await get("user") || await app.settings["messaging.email"].address;
     const pass = await get("pass");

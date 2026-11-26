@@ -27,7 +27,7 @@ export async function inbound(app: App) {
     address: address || systemAddress,
     host: host || smtpHost,
     port: Number(port) || 993,
-    secure: secure == null || secure === "" ? Number(port) !== 143 : secure === true || secure === "true" || secure === 1,
+    secure: secure == null || secure === "" ? Number(port) !== 143 : secure === true || secure === "true" || secure === 1 || secure === "1",
     user: user || smtpUser || systemAddress,
     pass: pass || smtpPass,
     mailbox: mailbox || "INBOX",
