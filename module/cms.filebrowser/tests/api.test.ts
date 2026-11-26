@@ -87,8 +87,9 @@ test("cms.filebrowser: search groups existing accessible files by md5", async ()
   const app = {
     db: {
       query: (...a: any[]) => {
-        const [, params] = fakeRender(a[0], a.slice(1));
-        assertEquals(params.slice(0, 3), ["cat", "%cat%", "%cat%"]); // no dialect → LIKE over the extracted text
+        const [sqlText, params] = fakeRender(a[0], a.slice(1));
+        assertEquals(params.slice(0, 2), ["%cat%", "%cat%"]); // no dialect → LIKE over the extracted text
+        assertEquals(sqlText.includes("`f`.`id` = ?"), false); // text input never compares the integer id
         return [
           { pid: 10, id: 1, mime: "image/jpeg", name: "a.jpg", md5: "same", access: 1 },
           { pid: 11, id: 2, mime: "image/jpeg", name: "a-copy.jpg", md5: "same", access: 1 },

@@ -113,13 +113,25 @@ test("util: sqlSearch builds parameterized LIKE fragments (words capped at 4)", 
 });
 
 test("util: sqlSearch exact columns, qualified names, wildcard escaping", () => {
-  const res = sqlSearch("50%", ["m.subject"], { exact: ["m.id"] });
+  const res = sqlSearch("50%", ["m.subject"], { exact: ["m.code"] });
   const [whereSql, whereParams] = fakeRender(res.where, []);
-  assertEquals(whereSql, "((LOWER(`m`.`subject`) LIKE ? ESCAPE '!') OR `m`.`id` = ?)");
+  assertEquals(whereSql, "((LOWER(`m`.`subject`) LIKE ? ESCAPE '!') OR `m`.`code` = ?)");
   assertEquals(whereParams, ["%50!%%", "50%"]);
   const [orderSql, orderParams] = fakeRender(res.order, []);
-  assertEquals(orderSql, "`m`.`id` = ? DESC, LOWER(`m`.`subject`) = ? DESC, LOWER(`m`.`subject`) LIKE ? ESCAPE '!' DESC");
+  assertEquals(orderSql, "`m`.`code` = ? DESC, LOWER(`m`.`subject`) = ? DESC, LOWER(`m`.`subject`) LIKE ? ESCAPE '!' DESC");
   assertEquals(orderParams, ["50%", "50%", "50!%%"]);
+});
+
+test("util: sqlSearch skips integer id exact columns on non-integer input and binds numbers", () => {
+  const text = sqlSearch("hello", ["m.subject"], { exact: ["m.id", "m.channel"] });
+  assertEquals(fakeRender(text.where, []), ["((LOWER(`m`.`subject`) LIKE ? ESCAPE '!') OR `m`.`channel` = ?)", ["%hello%", "hello"]]);
+  const num = sqlSearch("42", ["m.subject"], { exact: ["m.id"] });
+  assertEquals(fakeRender(num.where, []), ["((LOWER(`m`.`subject`) LIKE ? ESCAPE '!') OR `m`.`id` = ?)", ["%42%", 42]]);
+  const overflow = sqlSearch("9999999999999", ["m.subject"], { exact: ["m.id"] });
+  assertEquals(fakeRender(overflow.where, []), ["((LOWER(`m`.`subject`) LIKE ? ESCAPE '!'))", ["%9999999999999%"]]);
+  const idOnly = sqlSearch("abc", [], { exact: ["id"] });
+  assertEquals(fakeRender(idOnly.where, []), ["?", [false]]);
+  assertEquals(fakeRender(idOnly.order, [])[0], "(SELECT NULL)");
 });
 
 test("util: sqlSearch is neutral on empty input", () => {

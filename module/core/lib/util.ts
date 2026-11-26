@@ -144,8 +144,10 @@ export function urlize(str: string): string {
 }
 
 /** LIKE search by words: every word must match a `like` column (case-insensitive, wildcards
- *  escaped); `exact` columns match the whole input (ids, emails). `order` ranks exact hits before
- *  prefix hits. Empty input gives neutral fragments. Qualified names ("m.subject") work. */
+ *  escaped); `exact` columns match the whole input (ids, emails) — `id` columns only match
+ *  32-bit integer inputs (Postgres rejects text or out-of-range numbers against integer).
+ *  `order` ranks exact hits before prefix hits. Empty input gives neutral fragments. Qualified
+ *  names ("m.subject") work. */
 export function sqlSearch(input: string, like: string[], opt: { exact?: string[] } = {}): { where: Sql; order: Sql } {
   const trimmed = (input ?? "").trim(), term = trimmed.toLowerCase();
   const exact = opt.exact ?? [];
@@ -154,13 +156,16 @@ export function sqlSearch(input: string, like: string[], opt: { exact?: string[]
   // '!' is a neutral escape char in every dialect's string literals.
   const words = term.split(/\s+/, 4).map((w) => w.replace(/[!%_]/g, "!$&"));
   const cols = like.map(f => sql`LOWER(${id(f)})`);
+  const int = /^\d+$/.test(trimmed) && Number(trimmed) <= 2147483647 ? Number(trimmed) : null;
+  const matched = exact.flatMap((f) => /(?:^|\.)id$/.test(f) ? (int == null ? [] : [sql`${id(f)} = ${int}`]) : [sql`${id(f)} = ${trimmed}`]);
+  if (!cols.length && !matched.length) return { where: sql`${false}`, order: sql.raw("(SELECT NULL)") };
 
-  const ors = exact.map(f => sql`${id(f)} = ${trimmed}`);
+  const ors = [...matched];
   if (cols.length) ors.unshift(sql.join(words.map(w =>
     sql`(${sql.join(cols.map(f => sql`${f} LIKE ${"%" + w + "%"} ESCAPE '!'`), " OR ")})`), " AND "));
 
   const orders = [
-    ...exact.map(f => sql`${id(f)} = ${trimmed} DESC`),
+    ...matched.map((e) => sql`${e} DESC`),
     ...cols.map(f => sql`${f} = ${term} DESC`),
     ...words.flatMap(w => cols.map(f => sql`${f} LIKE ${w + "%"} ESCAPE '!' DESC`)),
   ];

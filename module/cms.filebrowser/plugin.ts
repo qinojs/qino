@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, requestStorage, sql, s, Access } from "@qino/qino";
+import { getCtx, requestStorage, sql, sqlSearch, s, Access } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 
 import type { Ctx, ApiTree, App } from "@qino/qino";
@@ -65,12 +65,9 @@ async function search(s_: string, ctx: Ctx) {
   const inText = db.dialect === "mysql"
     ? sql`MATCH(f.text) AGAINST (${s_ + "*"} IN BOOLEAN MODE)`
     : sql`f.text LIKE ${"%" + s_ + "%"}`;
-  const cond = s_
-    ? sql` AND ( f.id = ${s_} OR f.name LIKE ${"%" + s_ + "%"} OR ${inText} )`
-    : sql``;
-  const order = s_
-    ? sql` f.id = ${s_} DESC, f.name = ${s_} DESC, f.name LIKE ${s_ + "%"} DESC, f.name LIKE ${"% " + s_ + "%"} DESC, ${inText} DESC, f.name ASC,`
-    : sql``;
+  const sh = sqlSearch(s_, ["f.name"], { exact: ["f.id"] });
+  const cond = s_ ? sql` AND ( ${sh.where} OR ${inText} )` : sql``;
+  const order = s_ ? sql` ${sh.order}, ${inText} DESC, f.name ASC,` : sql``;
 
   const rows = await db.query`
     SELECT f.*, pf.page_id AS pid
