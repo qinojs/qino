@@ -1,0 +1,26 @@
+{
+  "name": "cms.cont.jassen",
+  "description": "Interactive card table for Swiss Jassen and general card games with anonymous sessions, nearby discovery, and canvas rendering.",
+  "dependencies": [
+    "cms",
+    "u2"
+  ],
+  "files": [
+    "README.md",
+    "decks.ts",
+    "hub.ts",
+    "locale/de.json",
+    "manifest.json",
+    "plugin.ts",
+    "pub/cards.js",
+    "pub/decks/french.svg",
+    "pub/decks/swiss-eicheln.svg",
+    "pub/decks/swiss-rosen.svg",
+    "pub/decks/swiss-schellen.svg",
+    "pub/decks/swiss-schilten.svg",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "pub/table.js"
+  ]
+}

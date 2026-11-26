@@ -1,0 +1,283 @@
+.cms-jassen {
+  display: grid;
+  gap: 1rem;
+  container-type: inline-size;
+}
+
+.cms-jassen [hidden] {
+  display: none !important;
+}
+
+.cms-jassen > .-lobby {
+  display: grid;
+  gap: 1rem;
+  max-width: 42rem;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.cms-jassen .-head {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.cms-jassen .-head h2,
+.cms-jassen .-head p {
+  margin: 0;
+}
+
+.cms-jassen .-row {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.cms-jassen .-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.cms-jassen .-actions,
+.cms-jassen .-join-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.cms-jassen .-join-form input {
+  flex: 1 1 8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.cms-jassen .-nearby-box {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cms-jassen .-nearby-box h3 {
+  margin: 0;
+}
+
+.cms-jassen .-nearby-list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cms-jassen .-nearby-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+}
+
+.cms-jassen .-status {
+  margin: 0;
+  min-height: 1.25rem;
+}
+
+.cms-jassen > .-stage {
+  display: grid;
+  grid-template-rows: auto minmax(28rem, 78dvh);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #1a120d;
+  color: #f8fafc;
+}
+
+.cms-jassen > .-stage.-is-fullscreen,
+.cms-jassen > .-stage:fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  border-radius: 0;
+  grid-template-rows: auto 1fr;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+}
+
+.cms-jassen .-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  background: rgba(15, 23, 18, 0.94);
+}
+
+.cms-jassen .-topbar .-info,
+.cms-jassen .-topbar .-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cms-jassen .-table-code {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 0.35rem;
+  font-weight: 700;
+}
+
+.cms-jassen .-topbar button {
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  cursor: pointer;
+}
+
+.cms-jassen .-topbar .-trump-btn {
+  border-radius: 999px;
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.6);
+}
+
+.cms-jassen .-canvas-wrap {
+  position: relative;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cms-jassen .-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cms-jassen .-overlay {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(22rem, calc(100% - 2rem));
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.85rem;
+  background: rgba(12, 26, 18, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f8fafc;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.cms-jassen .-overlay-title {
+  text-align: center;
+}
+
+.cms-jassen .-overlay-players {
+  display: grid;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cms-jassen .-overlay-players li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cms-jassen .-overlay-actions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.cms-jassen .-overlay-actions button {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+}
+
+.cms-jassen .-overlay-actions .-quick-start {
+  background: rgba(234, 179, 8, 0.28);
+  border-color: rgba(234, 179, 8, 0.78);
+  font-weight: 600;
+}
+
+.cms-jassen .-toast {
+  position: absolute;
+  top: 0.65rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(10, 22, 16, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #f8fafc;
+  pointer-events: none;
+  max-width: 90%;
+  text-align: center;
+}
+
+.cms-jassen .-trump-dialog {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.75rem;
+  background: #16231b;
+  color: #f8fafc;
+  padding: 1rem;
+  max-width: 22rem;
+  width: calc(100% - 2rem);
+}
+
+.cms-jassen .-trump-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.cms-jassen .-trump-dialog h3 {
+  margin: 0 0 0.75rem;
+}
+
+.cms-jassen .-trump-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cms-jassen .-trump-grid button,
+.cms-jassen .-dialog-close {
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+}
+
+@container (max-width: 34rem) {
+  .cms-jassen .-topbar {
+    gap: 0.25rem;
+    padding: 0.35rem 0.45rem;
+  }
+  .cms-jassen .-topbar button {
+    padding: 0.3rem 0.45rem;
+  }
+}
