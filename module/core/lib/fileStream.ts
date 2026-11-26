@@ -97,7 +97,16 @@ for (const [network, prefix] of [
 
 const PUBLIC_IPV6 = new BlockList();
 PUBLIC_IPV6.addSubnet("2000::", 3, "ipv6");
-PUBLIC_IPV6.addSubnet("64:ff9b::", 96, "ipv6");
+const NAT64 = new BlockList();
+NAT64.addSubnet("64:ff9b::", 96, "ipv6");
+
+/** The IPv4 address in the last 32 bits (RFC 6052). The URL parser normalizes to hex groups, and the
+ *  zero run after `64:ff9b` is the compressed one, so at most two groups follow `::`. */
+function embeddedIpv4(ip: string) {
+  const tail = new URL(`http://[${ip}]`).hostname.slice(1, -1).split("::")[1] ?? "";
+  const n = tail.split(":").filter(Boolean).reduce((n, group) => n * 0x10000 + parseInt(group, 16), 0);
+  return [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".");
+}
 
 const PUBLIC_IPV4_EXCEPTIONS = new BlockList();
 for (const ip of ["192.0.0.9", "192.0.0.10"]) PUBLIC_IPV4_EXCEPTIONS.addAddress(ip, "ipv4");
@@ -112,6 +121,7 @@ function isPublicIp(ip: string) {
   if (!version) return false;
   if (version === 4) return PUBLIC_IPV4_EXCEPTIONS.check(ip, "ipv4") || !NON_PUBLIC_IPV4.check(ip, "ipv4");
   if (PUBLIC_IPV6_EXCEPTIONS.check(ip, "ipv6")) return true;
+  if (NAT64.check(ip, "ipv6")) return isPublicIp(embeddedIpv4(ip)); // translated: as public as the IPv4 inside
   return !NON_PUBLIC_IPV6.check(ip, "ipv6") && PUBLIC_IPV6.check(ip, "ipv6");
 }
 
@@ -166,6 +176,18 @@ function pinnedFetch(url: URL, ip: string, init: RequestInit) {
   });
 }
 
+/** What a redirect sends on, as fetch() does: 303, and 301/302 after POST, turn into a GET without
+ *  body, and credentials stay with their origin. */
+function redirected(init: RequestInit, status: number, crossOrigin: boolean): RequestInit {
+  const method = (init.method ?? "GET").toUpperCase();
+  const toGet = (status === 303 && method !== "GET" && method !== "HEAD") || ([301, 302].includes(status) && method === "POST");
+  if (!toGet && !crossOrigin) return init;
+  const headers = new Headers(init.headers);
+  if (toGet) for (const name of ["content-type", "content-length", "content-encoding", "content-language", "content-location"]) headers.delete(name);
+  if (crossOrigin) for (const name of ["authorization", "cookie", "proxy-authorization"]) headers.delete(name);
+  return { ...init, headers, ...(toGet && { method: "GET", body: null }) };
+}
+
 export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 5): Promise<Response> {
   const target = new URL(url);
   if (target.protocol !== "http:" && target.protocol !== "https:") throw new Error(`Unsupported URL protocol: ${target.protocol}`);
@@ -176,7 +198,8 @@ export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 
     const location = resp.headers.get("location");
     resp.body?.cancel().catch(() => {}); // don't leak the redirect body
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");
-    return safeFetch(new URL(location, url).href, init, maxRedirects - 1);
+    const next = new URL(location, url);
+    return safeFetch(next.href, redirected(init, resp.status, next.origin !== target.origin), maxRedirects - 1);
   }
   return resp;
 }

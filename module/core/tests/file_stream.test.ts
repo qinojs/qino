@@ -129,10 +129,45 @@ test("fileStream: safeFetch pins public DNS and blocks non-public IPs", async ()
 
     for (const ip of ["0.0.0.1", "100.64.0.1", "192.0.2.1", "198.18.0.1", "224.0.0.1", "240.0.0.1"])
       await assertRejects(() => safeFetch(`http://${ip}/`), Error, "SSRF blocked");
-    for (const ip of ["::1", "::ffff:7f00:1", "100::1", "2001:db8::1", "3fff::1", "fc00::1", "fe90::1", "ff00::1"])
+    for (const ip of ["::1", "::ffff:7f00:1", "100::1", "2001:db8::1", "3fff::1", "fc00::1", "fe90::1", "ff00::1",
+      "64:ff9b::127.0.0.1", "64:ff9b::a9fe:a9fe", "64:ff9b::a00:1"]) // NAT64 carries the IPv4 it translates to
       await assertRejects(() => safeFetch(`http://[${ip}]/`), Error, "SSRF blocked");
     assertEquals(requested, 2);
     assertEquals(pinned, ["93.184.216.34", "93.184.216.34"]);
+  } finally {
+    Object.assign(dns.promises, { resolve4, resolve6 });
+    https.request = request;
+  }
+});
+
+test("fileStream: safeFetch redirects as fetch() does", async () => {
+  const { resolve4, resolve6 } = dns.promises;
+  const request = https.request;
+  const sent: { host: string; method?: string; headers: Record<string, unknown> }[] = [];
+  try {
+    Object.assign(dns.promises, { resolve4: () => Promise.resolve(["93.184.216.34"]), resolve6: () => Promise.resolve([]) });
+    https.request = ((url: string | URL, opt: RequestOptions, done?: (res: IncomingMessage) => void) => {
+      const { hostname, pathname } = new URL(String(url));
+      sent.push({ host: hostname, method: opt.method, headers: opt.headers as Record<string, unknown> });
+      const location = { "/same": "/next", "/other": "https://other.example/" }[pathname];
+      return new Writable({
+        write: (_chunk, _enc, callback) => callback(),
+        final(callback) {
+          done!(Object.assign(Readable.from(location ? [] : [new TextEncoder().encode("ok")]), {
+            statusCode: location ? 303 : 200, statusMessage: "", headers: location ? { location } : {},
+          }) as never);
+          callback();
+        },
+      }) as never;
+    }) as unknown as typeof https.request;
+
+    const init = { method: "POST", body: "x", headers: { authorization: "Bearer t", "content-type": "text/plain" } };
+    await safeFetch("https://files.example/same", init);
+    assertEquals(sent[1].method, "GET"); // 303: GET without body
+    assertEquals([sent[1].headers.authorization, sent[1].headers["content-type"]], ["Bearer t", undefined]);
+    sent.length = 0;
+    await safeFetch("https://files.example/other", init);
+    assertEquals([sent[1].host, sent[1].headers.authorization], ["other.example", undefined]); // credentials stay home
   } finally {
     Object.assign(dns.promises, { resolve4, resolve6 });
     https.request = request;
