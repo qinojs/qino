@@ -97,7 +97,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const where = sql`${sh.where}${filter ? sql` AND m.channel = ${filter}` : sql``}${
     way ? sql` AND m.direction = ${way}` : sql``}`;
   const rows = await app.db.query`
-    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.data, m.time, m.spam, g.name AS grp_name,
+    SELECT m.id, m.channel, m.direction, m.grp_id, m.title, m.text, m.format, m.data, m.time, m.spam, g.name AS grp_name,
       (SELECT COUNT(*) FROM message_attachment a WHERE a.message_id = m.id) AS attachment_count,
       (SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id) AS recipient_count,
       (SELECT COALESCE(d.address, u.username) FROM message_delivery d LEFT JOIN usr u ON u.id = d.usr_id

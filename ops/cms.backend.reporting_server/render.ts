@@ -51,7 +51,7 @@ function instanceRow(app: App, r: Record<string, unknown>) {
   const modules = String(r.modules ?? "").split(",").filter(Boolean);
   const silent = Date.parse(String(r.last_seen).replace(" ", "T") + "Z") < Date.now() - SILENT * 1000;
   return html.async`<tr>
-    <td>${r.url ? html`<a href="${r.url}" target=_blank rel=noopener>${r.url}</a>` : html`<code>${r.id}</code>`}
+    <td>${/^https?:\/\//i.test(String(r.url ?? "")) ? html`<a href="${r.url}" target=_blank rel=noopener>${r.url}</a>` : html`<code>${r.id}</code>`}
     <td>${r.qino} <small>${String(r.commit ?? "").slice(0, 8)}</small>
     <td>${r.runtime}
     <td title="${modules.join(", ")}">${modules.length}

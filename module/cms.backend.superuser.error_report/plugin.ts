@@ -414,7 +414,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
   <div class=u2-card style="overflow:auto;">
     <div class=-head>${t`User`}</div>
     <div>
-      ${usr ? html`<pre>${JSON.stringify(usr, null, 2)}</pre>` : html.async`(${t`no user`})`}
+      ${usr ? html`<pre>${JSON.stringify({ ...usr, pw: undefined }, null, 2)}</pre>` : html.async`(${t`no user`})`}
     </div>
   </div>
 

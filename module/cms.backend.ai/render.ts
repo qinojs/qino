@@ -419,7 +419,7 @@ async function tryCard(app: App) {
     <div class=-head>${t`Try`}</div>
     <form class="u2-flex -Col">
       <select name=capability>${options(ACTIONS.map((a) => ({ value: a, label: a })), "text")}</select>
-      <textarea name=prompt style="width:100%" rows=3 data-for="text structured translate decide embed image speak" placeholder="${t`Input — for embed one text per line`}"></textarea>
+      <textarea name=prompt style="width:100%" rows=3 data-for="text structured translate decide embed image speak music" placeholder="${t`Input — for embed one text per line`}"></textarea>
       <textarea name=schema rows=3 data-for=structured hidden title="JSON Schema">${SCHEMA}</textarea>
       <div class=u2-flex data-for=translate hidden>
         <input name=to value=en placeholder="${t`to, e.g. en`}">

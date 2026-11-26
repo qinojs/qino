@@ -8,7 +8,7 @@ export let maxProcesses: number = navigator.hardwareConcurrency || 4;
 export function setMaxProcesses(n: number): void { maxProcesses = Math.max(1, n); }
 
 export async function limited<T>(run: () => Promise<T>): Promise<T> {
-  if (running >= maxProcesses) await new Promise<void>((resolve) => waiting.push(resolve));
+  while (running >= maxProcesses) await new Promise<void>((resolve) => waiting.push(resolve));
   running++;
   try { return await run(); } finally { running--; waiting.shift()?.(); }
 }

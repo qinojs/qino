@@ -65,7 +65,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   ${href ? html`<h2 class=-title><a href="${href}">${title}</a></h2>` : node.cms.text(node, "title", { tag: "h2", class: "-title" })}
   ${file ? cms_image(file, { alt: title, width: 500 }) : ""}
   ${node.cms.text(node, "main", { class: "-text", if: true })}
-  <form shop-add ${action ? html`action=${action}` : ""} class=-buy>
+  <form shop-add ${action ? html`action="${action}"` : ""} class=-buy>
     <input type=hidden name=product value="${product.id}">
     <table class=u2-table><tbody>${rows}</tbody></table>
     ${product.fields({ order, currency })}

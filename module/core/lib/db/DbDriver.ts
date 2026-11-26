@@ -119,7 +119,7 @@ class MysqlDriver extends DbDriver {
     if (!this.#pool) await this.#ready;
     const conn = await this.#pool.getConnection();
     const box: { conn: any } = { conn };
-    await conn.beginTransaction();
+    await conn.beginTransaction().catch((e: unknown) => { conn.release(); throw e; });
     try { const r = await this.#tx.run(box, fn); await conn.commit(); return r; }
     catch (e) { await conn.rollback(); throw e; }
     finally { box.conn = null; conn.release(); }
@@ -334,7 +334,7 @@ class PostgresDriver extends DbDriver {
     if (!this.#pool) await this.#ready;
     const client = await this.#pool.connect();
     const box = { conn: client, last: Promise.resolve() as Promise<unknown> };
-    await client.query("BEGIN");
+    await client.query("BEGIN").catch((e: unknown) => { client.release(); throw e; });
     // COMMIT and ROLLBACK queue behind statements still running
     const end = (sql: string) => box.last.then(() => client.query(sql));
     try { const r = await this.#tx.run(box, fn); await end("COMMIT"); return r; }

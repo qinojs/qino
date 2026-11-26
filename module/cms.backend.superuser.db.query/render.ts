@@ -48,7 +48,7 @@ export async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlStr
   </form>
   ${result}
   ${renderHelper(app, tables)}
-  <script type=application/json class=-schema>${html.raw(JSON.stringify({ keywords: KEYWORDS, tables }))}</script>
+  <script type=application/json class=-schema>${html.raw(JSON.stringify({ keywords: KEYWORDS, tables }).replaceAll("<", "\\u003c"))}</script>
 </div>`;
 }
 
