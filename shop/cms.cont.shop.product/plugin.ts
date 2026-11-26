@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // shp3 kept attachments under arbitrary names and used the first image in file order.
   const [variants, file] = await Promise.all([product.variants(), node.cms.image(node, { orFirst: true })]);
   const cartId = Number(node.settings.cart() || 0);
-  const action = cartId ? await (await node.cms.node(cartId)).url() : "";
+  const action = cartId ? await (await node.cms.node(cartId)).exists()?.url() ?? "" : "";
 
   const rows = [], offers = [], title = await product.title(ctx.lang);
   let orderable = false; // a button that can only fail is none

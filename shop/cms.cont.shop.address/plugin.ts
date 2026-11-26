@@ -49,9 +49,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 /** The countries to choose from: the current one first, the shop's own next, the rest by name. */
 async function choices(node: Node, ctx: Ctx, order?: Order) {
   const first = [order?.country, await shopCountry(node.app)];
-  const collator = new Intl.Collator(ctx.lang);
-  return (await countries(node.app)).sort((a, b) =>
-    (first.indexOf(a) + 1 || 9) - (first.indexOf(b) + 1 || 9) || collator.compare(countryName.name(a, ctx.lang), countryName.name(b, ctx.lang)));
+  const collator = new Intl.Collator(ctx.lang), ids = await countries(node.app);
+  const names = new Map(ids.map((id) => [id, countryName.name(id, ctx.lang)])); // once, not per comparison
+  return ids.sort((a, b) =>
+    (first.indexOf(a) + 1 || 9) - (first.indexOf(b) + 1 || 9) || collator.compare(names.get(a)!, names.get(b)!));
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {

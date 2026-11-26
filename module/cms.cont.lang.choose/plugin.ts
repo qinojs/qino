@@ -9,10 +9,10 @@ const LANG_NAMES: Record<string, string> = {
   fr: "Français",
   en: "English",
   it: "Italiano",
-  es: "Espanol",
+  es: "Español",
   nl: "Nederlands",
   pl: "Polski",
-  cz: "Cesky",
+  cz: "Česky",
 };
 
 const settingsSchema = {

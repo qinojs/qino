@@ -23,7 +23,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const money = (v: number) => currency?.show(v) ?? v;
   const { rates, total } = await order!.totals();
   const cell = editable ? html`<td>` : "";
-  const next = Number(node.settings.next() || 0);
+  const nextId = Number(node.settings.next() || 0);
+  const next = nextId ? (await node.cms.node(nextId)).exists() : undefined; // a deleted page: no button
 
   const rows: Promise<HtmlString>[] = [];
   for (const line of lines) {
@@ -66,7 +67,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         <td>${money(total)}
         ${cell}
   </table>
-  ${next ? html.async`<a class=-next href="${(await node.cms.node(next)).url()}"><button type=button>${node.cms.text(node, "next", { tag: "span", initial: { de: "Zur Kasse", en: "Checkout" } })}</button></a>` : ""}
+  ${next ? html.async`<a class=-next href="${next.url()}"><button type=button>${node.cms.text(node, "next", { tag: "span", initial: { de: "Zur Kasse", en: "Checkout" } })}</button></a>` : ""}
 </div>`;
 }
 

@@ -22,7 +22,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const mode = String(node.settings.mode() ?? "short");
   const total = mode === "short" ? 0 : (await order!.totals()).total; // the count needs no prices
   const page = Number(node.settings.cart() || 0);
-  const url = page ? await (await node.cms.node(page)).url() : "";
+  const url = page ? await (await node.cms.node(page)).exists()?.url() ?? "" : "";
 
   const body = mode === "lines"
     ? html.async`<table>${lines.map((line) => html`<tr>

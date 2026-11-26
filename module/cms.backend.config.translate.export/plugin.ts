@@ -46,8 +46,9 @@ async function api(node: Node, vars: any): Promise<any> {
     for (const [lang, map] of Object.entries(byLang as Record<string, Record<string, string>>)) {
       const file = localeDir + lang + ".json";
       const change = await diffFile(name, lang, file, map);
-      if (preview && change) changes.push(change);
-      else if (!preview) {
+      if (!change) continue; // up to date
+      if (preview) changes.push(change);
+      else {
         await fs.mkdir(localeDir);
         await fs.write(file, JSON.stringify(map, null, 2) + "\n");
         written.push(file);

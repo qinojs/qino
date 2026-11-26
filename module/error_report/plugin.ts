@@ -5,7 +5,7 @@
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import { clientIp, fs, Output, requestStorage, unixTime } from "@qino/qino";
+import { clientIp, fs, Output, requestStorage, uaInfo, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
@@ -133,6 +133,7 @@ async function addReport(app: App, vs: Report) {
     row.request ??= ctx.req.appUrl + ctx.req.appPath;
     row.referer ??= ctx.req.header("referer");
     row.browser = ctx.req.header("user-agent");
+    row.bot = uaInfo(String(row.browser ?? "")).bot;
     row.ip = ctx.req.clientIp;
     row.log_id = await ctx.logId;
   }

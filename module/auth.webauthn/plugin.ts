@@ -15,7 +15,7 @@ export const authFactors: Factor[] = [{
   stepUp: true,
   order: 10,
   // without it every user would count as having a passkey: a second-factor login would ask them for one
-  has: async (app: App, usrId: number) => !!await app.db.one`SELECT 1 FROM webauthn_credential WHERE usr_id = ${usrId} LIMIT 1`,
+  has: async (app, usrId) => !!await app.db.one`SELECT 1 FROM webauthn_credential WHERE usr_id = ${usrId} LIMIT 1`,
 }];
 
 export const settingsSchema = {

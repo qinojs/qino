@@ -1,10 +1,12 @@
 import { test } from "node:test";
 import { invoke } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 import { assertEquals } from "@qino/qino/tests";
 
 import { asVisitor, withShop } from "../../tests/app.ts";
 import { api } from "../api.ts";
 import { cart } from "../mod.ts";
+import { stepUrl } from "../lib/steps.ts";
 
 import type { Product } from "../mod.ts";
 
@@ -163,6 +165,16 @@ test("an order goes where its address is, is placed once, takes a variant if the
       assertEquals(Number(await app.db.one`SELECT COUNT(*) FROM shop_order_line WHERE order_id = ${order.$id}`), 1);
       await invoke(api, "POST", `/order/${order.$id}/pay`, { return: "/done" });
       assertEquals(back, "http://shop.test/done");
+    });
+  });
+});
+
+test("a checkout step to a deleted page links nowhere instead of to a 404", async () => {
+  await withShop([], async (app) => {
+    await asVisitor(app, async () => {
+      const node = await cms(app).node(10);
+      assertEquals(await stepUrl(node, 999, "next"), "");
+      assertEquals((await stepUrl(node, 10, "next")) !== "", true);
     });
   });
 });

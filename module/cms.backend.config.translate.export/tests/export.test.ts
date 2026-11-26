@@ -24,3 +24,22 @@ test("smalltext export rejects invalid locale files", async () => {
     await fs.remove(root, { recursive: true });
   }
 });
+
+test("smalltext export writes only files that differ", async () => {
+  const root = await fs.tempDir();
+  await fs.mkdir(root + "/same/locale");
+  await fs.write(root + "/same/locale/en.json", JSON.stringify({ next: "Next" }, null, 2) + "\n");
+
+  const app = {
+    languages: { export: () => ({ same: { en: { next: "Next" } }, other: { en: { next: "Next" } } }) },
+    modules: { get: (name: string) => ({ dir: `${root}/${name}/` }) },
+  };
+  const node = { app, access: () => 2 };
+
+  try {
+    assertEquals(await cms.node.api(node as never, { export: 1 }), { written: [root + "/other/locale/en.json"], skipped: [] });
+    assertEquals(await cms.node.api(node as never, { preview: 1 }), { changes: [] });
+  } finally {
+    await fs.remove(root, { recursive: true });
+  }
+});

@@ -19,7 +19,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const page = await node.page();
   const success = Number(node.settings.success() || 0);
   const first = (await page.children()).values().find((n) => n.vs.type === "p");
-  const done = success ? await (await node.cms.node(success)).url() : first ? await first.url() : "";
+  const target = success ? (await node.cms.node(success)).exists() : first; // a deleted page falls back to none
+  const done = target ? await target.url() : "";
   const back = await stepUrl(node, node.settings.back(), "back");
   // main: what has to be agreed to before ordering (terms, privacy) — required fields hold the order back;
   // what else blocks it is said on the click (PHP: buy1)
