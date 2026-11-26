@@ -1,11 +1,11 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { breadcrumb, pageTitle, startPage } from "@qino/qino/cms.backend.cms.tree";
+import { breadcrumb, pageTitle, walk } from "@qino/qino/cms.backend.cms.tree";
 import { imageUrl, text } from "@qino/qino/cms.seo";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -46,53 +46,26 @@ function field(t: App["t"], value: string, min = 0, max = 0) {
     ? html.async` <small>(${t`${n} characters`}${n < min || n > max ? ", !" : ""})</small>` : ""}`;
 }
 
-async function listRows(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
-  const admin = ctx.settings.cms.admin;
-  const self = await (await node.page()).url();
-  const open = new Set(String(admin.openPageNodes() ?? "").split(",").filter(Boolean));
-  if (vars?.toggleOpen != null) {
-    const id = String(vars.toggleOpen);
-    vars.value == "1" ? open.add(id) : open.delete(id);
-    admin.openPageNodes([...open].join(","));
-  }
-
-  const root = await startPage(node, ctx);
-  const rows: Promise<HtmlString>[] = [];
-  const t = node.app.t;
-  await addChildren(root, 0);
-  return html.async`${rows}`;
-
-  async function addChildren(parent: Node, level: number) {
-    for (const page of (await parent.children({ type: "p" })).values()) {
-      const access = await page.access(ctx.user);
-      if (!access) continue;
-      const hasChildren = (await page.children({ type: "p" })).size > 0;
-      const isOpen = open.has(String(page.id));
-      const toggle = hasChildren
-        ? html`<button class="u2-unstyle -toggle" data-toggle-id="${page.id}" data-toggle-value="${isOpen ? 0 : 1}">
-          <u2-ico icon="${isOpen ? "remove" : "add"}">${isOpen ? "−" : "+"}</u2-ico></button>`
-        : html`<span class=-toggle></span>`;
-      const title = await pageTitle(page, ctx.lang);
-      const file = await page.cms.image(page, { use: "share" });
-      const seoTitle = await text(page, "_title") || title, descr = await text(page, "_description");
-      // editable rows open the edit dialog on click
-      const edit = access >= 2
-        ? html` data-pid="${page.id}" data-lang="${ctx.lang}" data-title="${title}"${
-          (await page.files()).has("share") ? html.raw(" data-share") : ""}` : "";
-      rows.push(html.async`<tr${edit}>
-  <td style="text-align:right; font-weight:bold">
-    <a title="${t`Set as start point`}" href="${backend.toUrl(self, { rp: page.id })}">${page.id}</a>
-  <td style="padding-left:${level * .9375}rem"><div style="display:flex; align-items:center">${toggle}
-    <a href="${page.url()}">${title}</a>${page.vs.searchable ? "" : html.async`
-      <small>(${t`not searchable`})</small>`}</div>
+function listRows(node: Node, args: { ctx: Ctx; vars?: Record<string, unknown> }) {
+  const t = node.app.t, ctx = args.ctx;
+  // pages only, and only those the user may read
+  return walk(node, args, async ({ page, access, lead }) => {
+    const title = await pageTitle(page, ctx.lang);
+    const file = await page.cms.image(page, { use: "share" });
+    const seoTitle = await text(page, "_title") || title, descr = await text(page, "_description");
+    // editable rows open the edit dialog on click
+    const edit = access >= 2
+      ? html` data-pid="${page.id}" data-lang="${ctx.lang}" data-title="${title}"${
+        (await page.files()).has("share") ? html.raw(" data-share") : ""}` : "";
+    return html.async`<tr${edit}>
+  ${lead(html.async`<a href="${page.url()}">${title}</a>${page.vs.searchable ? "" : html.async`
+      <small>(${t`not searchable`})</small>`}`)}
   ${field(t, seoTitle, 10, 55)}
   ${field(t, descr, 60, 156)}
   ${field(t, await text(page, "_share_title"))}
   ${field(t, await text(page, "_share_description"))}
-  <td>${file ? html`<img src="${await imageUrl(file, 240, 126)}" alt="">` : ""}`);
-      if (isOpen) await addChildren(page, level + 1);
-    }
-  }
+  <td>${file ? html`<img src="${await imageUrl(file, 240, 126)}" alt="">` : ""}`;
+  }, { type: "p", readable: true });
 }
 
 type Args = { ctx: Ctx; vars?: Record<string, unknown> };

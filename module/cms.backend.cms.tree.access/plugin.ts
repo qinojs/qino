@@ -1,11 +1,10 @@
-// Port of legacy m/cms.backend.struct.grpaccess — group access matrix per page.
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { breadcrumb, startPage } from "@qino/qino/cms.backend.cms.tree";
+import { breadcrumb, walk } from "@qino/qino/cms.backend.cms.tree";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -59,74 +58,39 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 </div>`;
 }
 
-async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
-  const app = node.app;
-  const db = app.db;
-  const admin = ctx.settings.cms.admin;
-  const self = await (await node.page()).url();
-  const openStr: string = admin.openPageNodes() ?? "";
-  const openPageNodes = new Set(openStr.split(",").filter(Boolean));
+async function list(node: Node, args: { ctx: Ctx; vars?: Record<string, unknown> }) {
+  const app = node.app, db = app.db, ctx = args.ctx;
+  const groups = await accessGroups(app);
+  return walk(node, args, async ({ page, access, lead }) => {
+    const id = page.id, isCont = page.vs.type === "c";
+    const accessPage = await page.accessInheritParent();
+    const inherited = page.vs.access === null;
 
-  if (vars?.toggleOpen != null) {
-    const p = String(vars.toggleOpen);
-    if (vars.value == "1") openPageNodes.add(p);
-    else openPageNodes.delete(p);
-    admin.openPageNodes([...openPageNodes].join(","));
-  }
+    const titleObj = await page.title();
+    const titleStr = titleObj ? await (await titleObj.orFallback(ctx.lang)).get() : "";
+    const titleCell = access >= 1
+      ? html.async`<span style="flex:1">${titleStr || "(no text)"} <span style="color:#888">${page.vs.name}</span></span><a style="vertical-align:middle" href="${page.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
+      : html.async`<span style="flex:1; color:#bbb">(${app.t`no access`})</span>`;
 
-  if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
+    // "Public" cell — toggles this page's own access (null = inherited)
+    const editable = access > 2;
+    const publicV = page.vs.access;
+    const publicCell = editable
+      ? html`<td class=-cell data-pid="${id}" v="${publicV == null ? "" : (publicV ? 1 : 0)}">`
+      : html`<td style="font-style:italic">`;
 
-  const treeType = admin.showContents() ? "*" : "p";
+    // one cell per group
+    const grpAccess = editable ? await pageGroupAccess(db, accessPage, groups) : {};
+    const grpCells = groups.map((g) => editable
+      ? html`<td class=-cell data-pid="${accessPage.id}" data-gid="${g.id}" v="${grpAccess[String(g.id)] ?? 0}" title="${g.name} (${g.id})">`
+      : html`<td>`);
 
-  const [rootNode, groups] = await Promise.all([startPage(node, ctx), accessGroups(app)]);
-
-  const trs: Promise<HtmlString>[] = [];
-  await renderChildren(rootNode, 0);
-  return html.async`${trs}`;
-
-  async function renderChildren(parent: Node, level: number) {
-    for (const [id, subPage] of await parent.children({ type: treeType })) {
-      const access = await subPage.access();
-      const open = openPageNodes.has(String(id));
-      const isCont = subPage.vs.type === "c";
-      const accessPage = await subPage.accessInheritParent();
-      const inherited = subPage.vs.access === null;
-
-      const toggleBtn = (await subPage.children({ type: treeType })).size
-        ? html`<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`
-        : html`<span class=-toggle></span>`;
-
-      const titleObj = await subPage.title();
-      const titleStr = titleObj ? await (await titleObj.orFallback(ctx.lang)).get() : "";
-      const titleCell = access >= 1
-        ? html.async`<span style="flex:1">${titleStr || "(no text)"} <span style="color:#888">${subPage.vs.name}</span></span><a style="vertical-align:middle" href="${subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
-        : html.async`<span style="flex:1; color:#bbb">(${app.t`no access`})</span>`;
-
-      // "Public" cell — toggles this page's own access (null = inherited)
-      const editable = access > 2;
-      const publicV = subPage.vs.access;
-      const publicCell = editable
-        ? html`<td class=-cell data-pid="${id}" v="${publicV == null ? "" : (publicV ? 1 : 0)}">`
-        : html`<td style="font-style:italic">`;
-
-      // one cell per group
-      const grpAccess = editable ? await pageGroupAccess(db, accessPage, groups) : {};
-      const grpCells = groups.map((g) => editable
-        ? html`<td class=-cell data-pid="${accessPage.id}" data-gid="${g.id}" v="${grpAccess[String(g.id)] ?? 0}" title="${g.name} (${g.id})">`
-        : html`<td>`);
-
-      trs.push(html.async`
+    return html.async`
 <tr${(isCont || inherited) ? html` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage.id}">
-  <td style="text-align:right; font-weight:bold">
-    <a title="${app.t`Set as start point`}" href="${backend.toUrl(self, { rp: id })}">${id}</a>
-  <td style="padding-left:${level * 15}px; white-space:nowrap">
-    <div style="display:flex; align-items:center">${toggleBtn}${titleCell}</div>
+  ${lead(titleCell)}
   ${publicCell}
-  ${grpCells}`);
-
-      if (open) await renderChildren(subPage, level + 1);
-    }
-  }
+  ${grpCells}`;
+  });
 }
 
 /** Map grp_id -> access for a page, for the given groups. */

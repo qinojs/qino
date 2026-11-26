@@ -1,37 +1,41 @@
 import { html, unixTime } from "@qino/qino";
-import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
-import { startPage } from "../mod.ts";
+import { walk } from "../mod.ts";
 
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
-  const t = node.app.t;
-  const admin = ctx.settings.cms.admin;
-  const self = await (await node.page()).url();
-  const openStr: string = admin.openPageNodes() ?? "";
-  const openPageNodes = new Set(openStr.split(",").filter(Boolean));
+export function list(node: Node, args: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+  const t = node.app.t, ctx = args.ctx;
+  return walk(node, args, async ({ page, access, lead }) => {
+    // a row without read access shows "---" throughout: its contents need no walk
+    const contsData = access > 0 ? await loopConts(page) : null;
 
-  if (vars?.toggleOpen != null) {
-    const p = String(vars.toggleOpen);
-    if (vars.value == "1") openPageNodes.add(p);
-    else openPageNodes.delete(p);
-    admin.openPageNodes([...openPageNodes].join(","));
-  }
+    // Title cell
+    let titleCell: HtmlString | Promise<HtmlString>;
+    if (access < 1) {
+      titleCell = html.async`<span style="flex:1; color:#bbb">(${t`no access`})</span>`;
+    } else {
+      const titleObj = await page.title();
+      const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
+      const titleText = titleLang ? await titleLang.get() : "";
+      const inputStyle = html.raw('style="flex:1; background:transparent; border:none; margin:0 .625rem 0 0; padding:0"');
+      const edit = access < 2 ? html.raw("disabled") : html`cmstxt="${titleObj?.id ?? 0}"`;
+      titleCell = html`<input value="${titleText}" ${inputStyle} ${edit}>`;
+    }
 
-  if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
-
-  const showContents = admin.showContents();
-  const treeType = showContents ? "*" : "p";
-
-  const rootNode = await startPage(node, ctx);
-
-  const trs: Promise<HtmlString>[] = [];
-
-  await renderChildren(rootNode, 0);
-  return html.async`${trs}`;
+    return html.async`
+<tr${page.vs.type === "c" ? html.raw(' class=-isCont') : ''}>
+  ${lead(html.async`${titleCell}
+      <a style="vertical-align:middle" href="${page.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`)}
+  <td>${renderOnlineStart(page, access)}
+  <td>${renderOnlineEnd(page, access, contsData?.onlineEnd ?? 0)}
+  <td>${renderAccess(page, access, contsData?.access ?? 0)}
+  <td>${renderFlag("visible", page, access)}
+  <td>${renderFlag("searchable", page, access)}
+  <td><span>${page.vs.module}</span>`;
+  });
 
   async function loopConts(page: Node) {
     const data = { onlineEnd: 0, access: 0 };
@@ -43,53 +47,6 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       if (cont.vs.access != null) data.access++;
     }
     return data;
-  }
-
-  async function renderChildren(parent: Node, level: number) {
-    const children = await parent.children({ type: treeType });
-    for (const [, subPage] of children) {
-      const subAccess = await subPage.access();
-      const open = openPageNodes.has(String(subPage.id));
-      const isCont = subPage.vs.type === "c";
-      // a row without read access shows "---" throughout: its contents need no walk
-      const contsData = subAccess > 0 ? await loopConts(subPage) : null;
-
-      const toggleBtn = (await subPage.children({ type: treeType })).size
-        ? html`<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${subPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`
-        : html`<span class=-toggle></span>`;
-
-      // Title cell
-      let titleCell: HtmlString | Promise<HtmlString>;
-      if (subAccess < 1) {
-        titleCell = html.async`<span style="flex:1; color:#bbb">(${t`no access`})</span>`;
-      } else {
-        const titleObj = await subPage.title();
-        const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
-        const titleText = titleLang ? await titleLang.get() : "";
-        const inputStyle = html.raw('style="flex:1; background:transparent; border:none; margin:0 .625rem 0 0; padding:0"');
-        const edit = subAccess < 2 ? html.raw("disabled") : html`cmstxt="${titleObj?.id ?? 0}"`;
-        titleCell = html`<input value="${titleText}" ${inputStyle} ${edit}>`;
-      }
-
-      trs.push(html.async`
-<tr${isCont ? html.raw(' class=-isCont') : ''}>
-  <td style="text-align:right; font-weight:bold">
-    <a title="${t`Set as start point`}" href="${backend.toUrl(self, { rp: subPage.id })}">${subPage.id}</a>
-  <td style="padding-left:${level * 15}px">
-    <div style="display:flex; align-items:center">
-      ${toggleBtn}
-      ${titleCell}
-      <a style="vertical-align:middle" href="${subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>
-    </div>
-  <td>${renderOnlineStart(subPage, subAccess)}
-  <td>${renderOnlineEnd(subPage, subAccess, contsData?.onlineEnd ?? 0)}
-  <td>${renderAccess(subPage, subAccess, contsData?.access ?? 0)}
-  <td>${renderFlag("visible", subPage, subAccess)}
-  <td>${renderFlag("searchable", subPage, subAccess)}
-  <td><span>${subPage.vs.module}</span>`);
-
-      if (open) await renderChildren(subPage, level + 1);
-    }
   }
 
   function renderOnlineStart(subPage: Node, access: number) {

@@ -1,10 +1,10 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { breadcrumb, pageTitle, startPage } from "@qino/qino/cms.backend.cms.tree";
+import { breadcrumb, pageTitle, walk } from "@qino/qino/cms.backend.cms.tree";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -40,56 +40,27 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 </div>`;
 }
 
-async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }) {
-  const admin = ctx.settings.cms.admin;
-  const self = await (await node.page()).url();
-  if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
-  const type = admin.showContents() ? "*" : "p";
-  const open = new Set(String(admin.openPageNodes() ?? "").split(",").filter(Boolean));
-  if (vars?.toggleOpen != null) {
-    const id = String(vars.toggleOpen);
-    vars.value == "1" ? open.add(id) : open.delete(id);
-    admin.openPageNodes([...open].join(","));
-  }
-
-  const root = await startPage(node, ctx);
-  const langs = node.app.languages.all;
-  const rows: Promise<HtmlString>[] = [];
-  await addChildren(root, 0);
-  return html.async`${rows}`;
-
-  async function addChildren(parent: Node, level: number) {
-    for (const page of (await parent.children({ type })).values()) {
-      const access = await page.access(ctx.user);
-      const hasChildren = (await page.children({ type })).size > 0;
-      const isOpen = open.has(String(page.id));
-      const title = access > 0
-        ? html.async`<span style="flex:1">${pageTitle(page, ctx.lang)}</span><a style="vertical-align:middle" href="${page.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
-        : html.async`<span style="flex:1; color:#bbb">(${node.app.t`no access`})</span>`;
-      const toggle = hasChildren
-        ? html`<button class="u2-unstyle -toggle" data-toggle-id="${page.id}" data-toggle-value="${isOpen ? 0 : 1}"><u2-ico icon="${isOpen ? "remove" : "add"}">${isOpen ? "−" : "+"}</u2-ico></button>`
-        : html`<span class=-toggle></span>`;
-      const urls: Promise<HtmlString>[] = [];
-      const custom = new Set(access >= 2
-        ? await node.app.db.col<string>`SELECT lang FROM page_url WHERE page_id = ${page.id} AND custom = ${true}`
-        : []);
-      for (const lang of langs) {
-        const url = access > 0 ? page.urlSeo(lang) : "---";
-        urls.push(html.async`<td>${access < 2 ? url : html.async`<div data-pid="${page.id}" data-lang="${lang}">
+function list(node: Node, args: { ctx: Ctx; vars?: Record<string, unknown> }) {
+  const t = node.app.t, ctx = args.ctx, langs = node.app.languages.all;
+  return walk(node, args, async ({ page, access, lead }) => {
+    const title = access > 0
+      ? html.async`<span style="flex:1">${pageTitle(page, ctx.lang)}</span><a style="vertical-align:middle" href="${page.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
+      : html.async`<span style="flex:1; color:#bbb">(${t`no access`})</span>`;
+    const custom = new Set(access >= 2
+      ? await node.app.db.col<string>`SELECT lang FROM page_url WHERE page_id = ${page.id} AND custom = ${true}`
+      : []);
+    const urls = langs.map((lang) => {
+      const url = access > 0 ? page.urlSeo(lang) : "---";
+      return html.async`<td>${access < 2 ? url : html.async`<div data-pid="${page.id}" data-lang="${lang}">
           <input name=url value="${url}" aria-label="${lang}">
-          <input type=checkbox name=auto title="${node.app.t`Automatic`}"${custom.has(lang) ? "" : " checked"}>
+          <input type=checkbox name=auto title="${t`Automatic`}"${custom.has(lang) ? "" : " checked"}>
           <output></output>
-        </div>`}`);
-      }
-
-      rows.push(html.async`<tr${page.vs.type === "c" ? html.raw(" class=-isCont") : ""}>
-  <td style="text-align:right; font-weight:bold">
-    <a title="${node.app.t`Set as start point`}" href="${backend.toUrl(self, { rp: page.id })}">${page.id}</a>
-  <td style="padding-left:${level * .9375}rem"><div style="display:flex; align-items:center">${toggle}${title}</div>
-  ${urls}`);
-      if (isOpen) await addChildren(page, level + 1);
-    }
-  }
+        </div>`}`;
+    });
+    return html.async`<tr${page.vs.type === "c" ? html.raw(" class=-isCont") : ""}>
+  ${lead(title)}
+  ${urls}`;
+  });
 }
 
 export const cms = {
