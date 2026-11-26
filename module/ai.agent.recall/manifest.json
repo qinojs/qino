@@ -10,6 +10,7 @@
     "README.md",
     "lib/recall.ts",
     "manifest.json",
-    "plugin.ts"
+    "plugin.ts",
+    "pub/module.svg"
   ]
 }

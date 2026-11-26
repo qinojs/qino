@@ -12,6 +12,7 @@
     "plugin.ts",
     "pub/main.css",
     "pub/main.js",
+    "pub/module.svg",
     "render.ts"
   ]
 }

@@ -11,6 +11,7 @@
     "locale/it.json",
     "manifest.json",
     "plugin.ts",
-    "pub/main.css"
+    "pub/main.css",
+    "pub/module.svg"
   ]
 }

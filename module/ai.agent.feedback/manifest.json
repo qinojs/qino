@@ -9,6 +9,7 @@
     "api.ts",
     "dbschema.json",
     "manifest.json",
-    "plugin.ts"
+    "plugin.ts",
+    "pub/module.svg"
   ]
 }
