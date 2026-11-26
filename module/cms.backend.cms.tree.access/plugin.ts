@@ -1,6 +1,7 @@
 // Port of legacy m/cms.backend.struct.grpaccess — group access matrix per page.
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import { breadcrumb, startPage } from "@qino/qino/cms.backend.cms.tree";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -21,21 +22,9 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // only accept existing nodes the user may read
   const admin = ctx.settings.cms.admin;
-  const self = await (await node.page()).url();
-  if (ctx.req.query.rp) {
-    const rp = await node.cms.node(Number(ctx.req.query.rp));
-    if (rp.exists() && await rp.access() > 0) admin.rootPageNode(rp.id);
-  }
-
   const app = node.app;
   const t = app.t;
-  const rootNode = await node.cms.node(Number(admin.rootPageNode()) || 1);
-
-  const pathParts: HtmlString[] = [];
-  for (const child of (await rootNode.path()).values()) {
-    const title = String(await child.title(ctx.lang) ?? "").trim();
-    pathParts.push(html`<a href="${backend.toUrl(self, { rp: child.id })}">${title || "(no text)"}</a> > `);
-  }
+  const pathParts = await breadcrumb(node, ctx);
 
   const groups = await accessGroups(app);
   const head = html.join(groups.map(g => html`<th style="width:1.875rem"><div>${g.name}</div>`));
@@ -89,7 +78,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
 
   const treeType = admin.showContents() ? "*" : "p";
 
-  const [rootNode, groups] = await Promise.all([node.cms.node(Number(admin.rootPageNode()) || 1), accessGroups(app)]);
+  const [rootNode, groups] = await Promise.all([startPage(node, ctx), accessGroups(app)]);
 
   const trs: Promise<HtmlString>[] = [];
   await renderChildren(rootNode, 0);

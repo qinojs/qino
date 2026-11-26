@@ -6,6 +6,7 @@
   ],
   "files": [
     "manifest.json",
+    "mod.ts",
     "parts/list.ts",
     "plugin.ts",
     "pub/main.css",

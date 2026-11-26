@@ -2,6 +2,8 @@ import { html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
+import { startPage } from "../mod.ts";
+
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
@@ -24,8 +26,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const showContents = admin.showContents();
   const treeType = showContents ? "*" : "p";
 
-  const rootId = Number(admin.rootPageNode()) || 1;
-  const rootNode = await node.cms.node(rootId);
+  const rootNode = await startPage(node, ctx);
 
   const trs: Promise<HtmlString>[] = [];
 

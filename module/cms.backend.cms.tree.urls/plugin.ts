@@ -1,5 +1,6 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+import { breadcrumb, pageTitle, startPage } from "@qino/qino/cms.backend.cms.tree";
 
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -19,18 +20,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;
-  const self = await (await node.page()).url();
-  if (ctx.req.query.rp) {
-    const root = await node.cms.node(Number(ctx.req.query.rp));
-    if (root.exists() && await root.access() > 0) admin.rootPageNode(root.id);
-  }
-
-  const root = await node.cms.node(Number(admin.rootPageNode()) || 1);
-  const path: HtmlString[] = [];
-  for (const page of (await root.path()).values()) {
-    const title = await pageTitle(page, ctx.lang);
-    path.push(html`<a href="${backend.toUrl(self, { rp: page.id })}">${String(title).trim() || "(no text)"}</a> > `);
-  }
+  const path = await breadcrumb(node, ctx);
 
   const langs = node.app.languages.all;
   const head = html.join(langs.map((lang) => html`<th>${lang}`));
@@ -62,7 +52,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
     admin.openPageNodes([...open].join(","));
   }
 
-  const root = await node.cms.node(Number(admin.rootPageNode()) || 1);
+  const root = await startPage(node, ctx);
   const langs = node.app.languages.all;
   const rows: Promise<HtmlString>[] = [];
   await addChildren(root, 0);
@@ -100,11 +90,6 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
       if (isOpen) await addChildren(page, level + 1);
     }
   }
-}
-
-async function pageTitle(page: Node, lang: string): Promise<string> {
-  const title = await page.title();
-  return (title && await (await title.orFallback(lang)).get()) || "(no text)";
 }
 
 export const cms = {

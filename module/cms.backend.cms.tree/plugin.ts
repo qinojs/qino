@@ -1,6 +1,8 @@
 import { html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
+import { breadcrumb } from "./mod.ts";
+
 import { list } from "./parts/list.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -14,24 +16,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 async function render(node: Node, {ctx}: {ctx: Ctx}) {
-
-  // handle GET params that change user settings; only accept existing nodes the user may read
-  if (ctx.req.query.rp) {
-    const rp = await node.cms.node(Number(ctx.req.query.rp));
-    if (rp.exists() && await rp.access() > 0) ctx.settings.cms.admin.rootPageNode(rp.id);
-  }
-
-  const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
-  const rootNode = await node.cms.node(rootId);
-
-  const self = await (await node.page()).url();
-  // Breadcrumb path to root node
-  const pathParts = [];
-  for (const child of (await rootNode.path()).values()) {
-    const title = String(await child.title(ctx.lang) ?? "").trim();
-    pathParts.push(html`<a href="${backend.toUrl(self, { rp: child.id })}">${title || "(no text)"}</a> > `);
-  }
-
+  const pathParts = await breadcrumb(node, ctx);
   const showContents = ctx.settings.cms.admin.showContents();
 
   const t = node.app.t;

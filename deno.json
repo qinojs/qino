@@ -32,6 +32,7 @@
     "./cms.event": "./module/cms.event/mod.ts",
     "./cms.accessRules": "./module/cms.accessRules/mod.ts",
     "./cms.backend": "./module/cms.backend/mod.ts",
+    "./cms.backend.cms.tree": "./module/cms.backend.cms.tree/mod.ts",
     "./cms.backend.ai": "./module/cms.backend.ai/mod.ts",
     "./cms.cont.my.chatgpt": "./module/cms.cont.my.chatgpt/mod.ts",
     "./cms.backend.superuser.requests": "./module/cms.backend.superuser.requests/mod.ts",
