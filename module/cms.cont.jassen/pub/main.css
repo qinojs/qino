@@ -27,13 +27,14 @@
 .cms-jassen .-head::before {
   content: "";
   block-size: 1.6rem;
-  inline-size: 7.6rem;
+  inline-size: 6.3rem;
   margin-block-end: 0.4rem;
+  /* fixed height, equal gaps: the suits differ in width (eicheln is 1:2, schilten 2:3) */
   background:
-    url("decks/swiss-schellen.svg") 0 50% / 1.6rem no-repeat,
-    url("decks/swiss-rosen.svg") 2rem 50% / 1.6rem no-repeat,
-    url("decks/swiss-schilten.svg") 4rem 50% / 1.6rem no-repeat,
-    url("decks/swiss-eicheln.svg") 6rem 50% / 1.6rem no-repeat;
+    url("decks/swiss-schellen.svg") 0 50% / auto 1.6rem no-repeat,
+    url("decks/swiss-rosen.svg") 2rem 50% / auto 1.6rem no-repeat,
+    url("decks/swiss-schilten.svg") 4rem 50% / auto 1.6rem no-repeat,
+    url("decks/swiss-eicheln.svg") 5.5rem 50% / auto 1.6rem no-repeat;
 }
 
 .cms-jassen .-head h2,
