@@ -33,8 +33,8 @@ function translate(ns, original, values) {
   let entry = cache.get(key);
   if (!entry) {
     entry = { translated: stored[ns]?.[original] };
-    // Fresh store: use it. Otherwise ask the server; stale texts are shown meanwhile.
-    if (fresh && entry.translated !== undefined) entry.promise = Promise.resolve(entry.translated);
+    // Stored: use it; a stale store is refreshed as a whole (refresh). Otherwise ask the server.
+    if (entry.translated !== undefined) entry.promise = Promise.resolve(entry.translated);
     else {
 //      if (!pending.size) queueMicrotask(flush); // the first text of a batch schedules it
       // The first text of a batch schedules the flush. A frame's delay collects a burst of widgets
@@ -79,14 +79,31 @@ const viaCache = true;
 const attempt = (fn, fallback) => { try { return fn(); } catch { return fallback; } };
 
 const stored = Object.create(null);
-let fresh = false;
+let at = 0;
 
-/** Load the stored set; its age only decides whether to ask the server. Expired texts are still
+/** Load the stored set; its age only decides whether to refresh it. Expired texts are still
  *  better than the untranslated original. */
 function adopt(saved) {
   if (!saved) return;
-  Object.assign(stored, saved.texts);
-  fresh = Date.now() - saved.at < FRESH;
+  for (const [ns, texts] of Object.entries(saved.texts ?? {})) {
+    stored[ns] = Object.assign(Object.create(null), texts, stored[ns]);
+  }
+  at = Number(saved.at) || 0;
+  if (Date.now() - at >= FRESH) refresh();
+}
+
+function refresh() {
+  const entries = Object.entries(stored).filter(([, m]) => Object.keys(m).length);
+  if (!entries.length) return;
+  Promise.all(entries.map(([ns, m]) => {
+    const keys = Object.keys(m), calls = [];
+    for (let i = 0; i < keys.length; i += MAX) calls.push(api.core.t.post({ texts: keys.slice(i, i + MAX), ...ns ? { ns } : {} }));
+    return Promise.all(calls).then((res) => [ns, Object.assign(Object.create(null), ...res)]);
+  })).then((all) => {
+    for (const [ns, map] of all) Object.assign(stored[ns] ??= Object.create(null), map);
+    at = Date.now();
+    save();
+  }).catch(() => {});
 }
 
 globalThis.caches?.delete(`qino.t|${ctx.appUrl}|${ctx.lang}`).catch(() => {}); // the store before namespaces (> 1.0: remove)
@@ -97,9 +114,9 @@ if (viaCache) {
   adopt(attempt(() => JSON.parse(localStorage.getItem(KEY)), null));
 }
 
-/** Save the current set. Fire and forget. */
+/** Save the current set, keeping its age (`at` advances only on a full refresh). Fire and forget. */
 function save() {
-  const json = JSON.stringify({ at: Date.now(), texts: stored });
+  const json = JSON.stringify({ at: at || (at = Date.now()), texts: stored });
   if (viaCache) globalThis.caches?.open(KEY).then((c) => c.put(ENTRY, new Response(json))).catch(() => {});
   else attempt(() => localStorage.setItem(KEY, json));
 }
