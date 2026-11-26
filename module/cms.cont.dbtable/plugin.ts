@@ -185,7 +185,7 @@ export async function api(node: Node, vars: Record<string, unknown>) {
       const f = field(vars.field);
       if (!f?.own || !f.is("edit") || isFile(f) || !await reached()) return { error: "not editable" };
       const value = toDb(f, String(vars.value ?? ""));
-      if (value !== undefined) await db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${value} WHERE ${key} = ${vars.row}`;
+      if (value !== undefined) await db.exec`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${value} WHERE ${key} = ${vars.row}`;
       const row = await q.row(db, vars.row);
       return { value: row?.[f.name] };
     }
@@ -194,7 +194,7 @@ export async function api(node: Node, vars: Record<string, unknown>) {
       if (!f?.own || !f.is("edit") || !isFile(f) || !await reached()) return { error: "not editable" };
       const old = await db.one`SELECT ${sql.id(f.column.name)} FROM ${sql.id(q.table)} WHERE ${key} = ${vars.row}`;
       if (Number(old)) await (await app.dbFiles.file(Number(old))).remove();
-      await db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${f.column.nullable ? null : 0} WHERE ${key} = ${vars.row}`;
+      await db.exec`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${f.column.nullable ? null : 0} WHERE ${key} = ${vars.row}`;
       return { done: true };
     }
     case "insert": {
@@ -220,7 +220,7 @@ export async function api(node: Node, vars: Record<string, unknown>) {
     }
     case "delete": {
       if (!q.settings.delete || !await reached()) return { error: "not deletable" };
-      await db.query`DELETE FROM ${sql.id(q.table)} WHERE ${key} = ${vars.row}`;
+      await db.exec`DELETE FROM ${sql.id(q.table)} WHERE ${key} = ${vars.row}`;
       return { done: true };
     }
     case "order": {
@@ -350,7 +350,7 @@ async function handleRoute(app: App, ctx: Ctx, name: string, id: number) {
   const stored = (old ? await (await app.dbFiles.file(old)).exists() : undefined) ?? await app.dbFiles.add();
   await stored.replaceFromUpload(file);
   await stored.access(1); // shown in the list to whoever sees it
-  await node.db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${Number(stored.id)} WHERE ${key} = ${query.row}`;
+  await node.db.exec`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${Number(stored.id)} WHERE ${key} = ${query.row}`;
   throw new Output("ok");
 }
 

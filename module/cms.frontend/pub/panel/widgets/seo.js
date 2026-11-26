@@ -11,7 +11,7 @@ export const css = `
 
 export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);
-  const texts = await ref.texts.get({ values: true }, { signal }); // ids + values in one request
+  const texts = await ref.texts.get({ values: true, names: '_title,_description' }, { signal }); // ids + values in one request, creates missing ones
   const title = texts?._title ?? {}, descr = texts?._description ?? {};
 
   widget.head = t`SEO`;

@@ -336,6 +336,17 @@ test("DbTable.rowBy: a lookup by a non-key column lands in the identity map", as
   assertEquals(String(await t.rowBy<Order>("title", "Renamed")), "1");
 });
 
+test("DbTable.rowBy: a row's own save of the column leaves no hit under the old value", async () => {
+  await using db = await testDb();
+  const t = db.table("shop_order");
+  await t.insert({ id: 1, title: "One" });
+  const row = (await t.rowBy<Order>("title", "One"))!;
+  row.$set("title", "Two");
+  await row.$save(); // its own update-after keeps it fresh, so only the value tells the key is old
+  assertEquals(await t.rowBy<Order>("title", "One"), undefined);
+  assert(await t.rowBy<Order>("title", "Two") === row);
+});
+
 test("DbTable.rowBy: a value with no row is not remembered", async () => {
   await using db = await testDb();
   const t = db.table("shop_order");

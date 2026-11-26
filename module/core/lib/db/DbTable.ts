@@ -316,7 +316,7 @@ export class DbTable {
   async rowBy<T extends DbRow = DbRow>(field: string, value: any): Promise<T | undefined> {
     const key = `${field}\0${value}`;
     const hit = this.#rowsBy.get(key)?.deref();
-    if (hit && !hit.$stale) return hit as T;
+    if (hit && !hit.$stale && String(hit.$get(field)) === String(value)) return hit as T; // a $set on the column leaves the old key
     const vs = await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${sql.id(field)} = ${value} LIMIT 1`;
     if (!vs) { this.#rowsBy.delete(key); return; }
     const row = this.row<T>(vs).$receive(vs);

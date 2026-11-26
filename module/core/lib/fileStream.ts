@@ -37,7 +37,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
 
   const m = resp.headers.get("content-disposition")?.match(/filename="([^"]+)"/);
   const name = baseName(m?.[1] ?? new URL(opt.url).pathname);
-  const type = mimeType(resp.headers.get("content-type") || mimeTypes.lookup(name.replace(/.*\./, "").toLowerCase()) || "");
+  const type = mimeType(resp.headers.get("content-type") || (name.includes(".") && mimeTypes.lookup(name.replace(/.*\./, "").toLowerCase())) || "");
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 

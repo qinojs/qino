@@ -46,7 +46,8 @@ export async function render(ctx: Ctx): Promise<void> {
   if (own) state.mainNode = pageObj;
   const mainNode = state.mainNode;
   const speaker = own ? requested : pageObj;
-  const plain = async (name: string) => (await speaker.showText(name)).plain();
+  // only existing texts: showText() would create missing ones on every public GET
+  const plain = async (name: string) => (await speaker.texts()).has(name) ? (await speaker.showText(name)).plain() : "";
   const doc = ctx.res.html;
   doc.title = await plain("_title") || (await speaker.showTitle()).plain();
   doc.meta.description = await plain("_description");
