@@ -1,6 +1,6 @@
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-initNode("cont.slider.nivoSlider", (el) => {
+initNode("cont.slider.nivoSlider", (el, { signal }) => {
   const slides = [...el.querySelectorAll(":scope > .-slides > .-slide")];
   if (!slides.length) return;
   const controls = [...el.querySelectorAll(":scope > .-controls > button")];
@@ -15,6 +15,7 @@ initNode("cont.slider.nivoSlider", (el) => {
     clearInterval(timer);
     if (slides.length > 1) timer = setInterval(() => show(active + 1), Number(el.dataset.pause) || 3000);
   };
+  signal.addEventListener("abort", () => clearInterval(timer));
   el.querySelector(":scope > .-next")?.addEventListener("click", () => { show(active + 1); play(); });
   el.querySelector(":scope > .-prev")?.addEventListener("click", () => { show(active - 1); play(); });
   for (const control of controls) control.addEventListener("click", () => { show(Number(control.dataset.slide)); play(); });

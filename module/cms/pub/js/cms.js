@@ -5,15 +5,26 @@ import { api } from '@qino/pub/api.js';
 export const cms = {};
 
 cms.modConnected = {};
+const controllers = new WeakMap();
+
+function mount(el, fn = cms.modConnected[cms.el.module(el)]) {
+  if (!fn || controllers.has(el)) return;
+  const ac = new AbortController();
+  controllers.set(el, ac);
+  fn(el, { signal: ac.signal });
+}
+
+function unmount(el) {
+  const ac = controllers.get(el);
+  if (!ac) return;
+  ac.abort();
+  controllers.delete(el);
+}
 
 export function initNode(module, fn) {
   if (cms.modConnected[module]) return;
   cms.modConnected[module] = fn;
-  for (const el of document.querySelectorAll('[qcms-mod="'+module+'"]')) {
-    if (el.__cms_initialized) continue;
-    fn(el);
-    el.__cms_initialized = true;
-  }
+  for (const el of document.querySelectorAll('[qcms-mod="'+module+'"]')) mount(el, fn);
 }
 
 /** Settings widgets: bind every `[setting]` field (its path in the node's settings) to
@@ -101,9 +112,4 @@ cms.reloadPart = (nid, part, vars) => {
 globalThis.cms      = cms;
 
 // last: on() runs at once for existing nodes and needs cms
-new SelectorObserver({ on: el => {
-  if (el.__cms_initialized) return;
-  const module = cms.el.module(el);
-  const fn = cms.modConnected[module];
-  if (fn) { fn(el); el.__cms_initialized = true; }
-}}).observe('[qcms-id]');
+new SelectorObserver({ on: el => mount(el), off: unmount }).observe('[qcms-id]');

@@ -1,6 +1,6 @@
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-initNode("cont.slideshow.schwups2", (el) => {
+initNode("cont.slideshow.schwups2", (el, { signal }) => {
   const track = el.querySelector(".b1_slideshow > .-slides");
   const slides = [...track.children];
   if (slides.length < 2) return;
@@ -19,7 +19,8 @@ initNode("cont.slideshow.schwups2", (el) => {
   };
   el.querySelector(".-next")?.addEventListener("click", () => { show(active + 1); play(); });
   el.querySelector(".-prev")?.addEventListener("click", () => { show(active - 1); play(); });
-  addEventListener("resize", () => show(active));
+  addEventListener("resize", () => show(active), { signal });
+  signal.addEventListener("abort", () => clearInterval(timer));
   show(0);
   play();
 });

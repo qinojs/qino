@@ -60,5 +60,5 @@ export async function proof(ctx: Ctx, factor: string, usrId: number): Promise<Of
   if (!declared) throw new Error(`auth: no factor "${factor}" — declare it in a module's authFactors export`);
   if (ctx.userId !== usrId) return loginProof(ctx, declared, usrId);
   if (!declared.stepUp) return [];
-  ctx.sess.data.core.via[factor](unixTime()); // the same place `via()` reads, one screen up
+  await ctx.sess.data.core.via[factor](unixTime()); // the same place `via()` reads, one screen up; the retried request reads it
 }

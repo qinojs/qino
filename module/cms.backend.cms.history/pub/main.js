@@ -1,7 +1,7 @@
 import { api } from "@qino/pub/api.js";
 import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-initNode("backend.cms.history", (el) => {
+initNode("backend.cms.history", (el, { signal }) => {
   const nid = Number(cms.el.nid(el));
   const form = el.querySelector(".-filter");
   const list = el.querySelector("[cms-part=history]");
@@ -54,5 +54,6 @@ initNode("backend.cms.history", (el) => {
   };
 
   updateStatus();
-  setInterval(refresh, 5000);
+  const poll = setInterval(refresh, 5000);
+  signal.addEventListener("abort", () => { clearTimeout(timer); clearInterval(poll); });
 });

@@ -87,13 +87,13 @@ export const identified = (ctx: Ctx): number => ctx.userId || pendingLogin(ctx)?
 
 /** Add `factor` to the pending login, or start one for `usrId`; returns its proofs. A `second`
  *  factor can't start a login and returns nothing then. */
-export function parkLogin(ctx: Ctx, factor: AuthFactor, usrId: number): Record<string, number> | undefined {
+export async function parkLogin(ctx: Ctx, factor: AuthFactor, usrId: number): Promise<Record<string, number> | undefined> {
   const open = pendingLogin(ctx);
   const same = open?.usrId === usrId; // another user starts a new login
   if (!same && factor.second) return;
   const now = unixTime();
   const via = { ...(same ? open.via : {}), [factor.name]: now };
-  ctx.sess.data.core.pending({ usrId, via, time: now });
+  await ctx.sess.data.core.pending({ usrId, via, time: now }); // the next factor's request reads it
   return via;
 }
 

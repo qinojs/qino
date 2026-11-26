@@ -10,7 +10,7 @@ const dialogs = () => import('@qino/u2/js/dialog/dialog.js');
 initNode('cont.dbtable', init); // also wires nodes replaced by cms.reloadNode
 
 /** Wires a node rendered like the list: its part (`cms-part`) reloads after uploads and row actions. */
-export function init(root) {
+export function init(root, { signal } = {}) {
   const node = api.cms.node(root.getAttribute('qcms-id'));
   const id = root.dataset.id || undefined; // the page's ?id=, which fixed fields may name
   const call = (vars) => node.api.post({ ...vars, id });
@@ -81,10 +81,10 @@ export function init(root) {
     root.classList.toggle('-fileDrag', on);
     if (!on) for (const tile of root.querySelectorAll('.-tile.-drop')) tile.classList.remove('-drop');
   };
-  document.addEventListener('dragenter', (e) => e.dataTransfer?.types.includes('Files') && dragging(true));
-  document.addEventListener('dragleave', (e) => !e.relatedTarget && dragging(false));
-  document.addEventListener('drop', () => dragging(false));
-  document.addEventListener('mousemove', () => root.classList.contains('-fileDrag') && dragging(false));
+  document.addEventListener('dragenter', (e) => e.dataTransfer?.types.includes('Files') && dragging(true), { signal });
+  document.addEventListener('dragleave', (e) => !e.relatedTarget && dragging(false), { signal });
+  document.addEventListener('drop', () => dragging(false), { signal });
+  document.addEventListener('mousemove', () => root.classList.contains('-fileDrag') && dragging(false), { signal });
   root.addEventListener('drop', async (e) => {
     const tile = tileOf(e);
     if (!tile) return;

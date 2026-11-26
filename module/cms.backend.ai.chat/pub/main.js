@@ -43,7 +43,7 @@ async function entry({ role, content, time: at }) {
   return div;
 }
 
-initNode("backend.ai.chat", (el) => {
+initNode("backend.ai.chat", (el, { signal }) => {
   const agents = api["ai.agent"];
   const ask = el.querySelector("[data-ask]"), log = el.querySelector("[data-log]"), title = el.querySelector("[data-title]");
   const alert = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
@@ -77,6 +77,7 @@ initNode("backend.ai.chat", (el) => {
     top = log.scrollTop;
   });
   const growing = new ResizeObserver(() => pinned && (log.scrollTop = log.scrollHeight));
+  signal.addEventListener("abort", () => { clearInterval(poll); hangUp(); growing.disconnect(); });
   const append = (...els) => {
     log.append(...els);
     for (const el of els) if (el instanceof Element) growing.observe(el);

@@ -49,7 +49,9 @@ cms.initNode("backend.superuser.requests.log", (el) => {
 ```
 
 `cms.initNode` runs once per node element (matched by `qcms-mod`, the module name without
-`cms.`). On the server, `render` and parts run in a request context, so `getCtx()` and `app.t`
+`cms.`). The second argument is `{ signal }`, an `AbortSignal` that aborts when the node is
+removed or replaced (e.g. by `cms.reloadNode`), so `document`/`window` listeners and timers
+can clean up cleanly. On the server, `render` and parts run in a request context, so `getCtx()` and `app.t`
 are available.
 
 ## What a node is (`cms.node.is`)

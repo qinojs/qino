@@ -95,7 +95,7 @@ const passwordFactor = (app: App): AuthFactor =>
 /** A factor identified `usrId` at login: store it as pending, open the session once enough.
  *  Returns nothing when signed in, else what is missing (empty = nothing helps). */
 export async function loginProof(ctx: Ctx, factor: AuthFactor, usrId: number): Promise<Offer[] | undefined> {
-  const via = parkLogin(ctx, factor, usrId);
+  const via = await parkLogin(ctx, factor, usrId);
   if (!via) return [];
   const missing = await loginNeeds(ctx, usrId, via);
   // Only a finished login resets the wait; resetting per factor would give a password holder new
@@ -129,7 +129,7 @@ export async function login(ctx: Ctx, id: number | string, via?: string | Record
 export async function logout(ctx: Ctx): Promise<void> {
   await rememberLogin(ctx, false);
   await ctx.client.$set({ usr_id: 0 });
-  ctx.sess.data({});
+  await ctx.sess.data({}); // in login(): lands before the rotated session writes to the same row
 }
 
 /** Whether this client may sign in as this user without password. */

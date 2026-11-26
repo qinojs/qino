@@ -1,7 +1,7 @@
 import { api } from "@qino/pub/api.js";
 import { cms, initNode } from "@qino/m/cms/pub/js/cms.js";
 
-initNode("backend.superuser.db.processes", (el) => {
+initNode("backend.superuser.db.processes", (el, { signal }) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
   const listEl = el.querySelector("[cms-part=list]"); // the <u2-table>
@@ -49,6 +49,7 @@ initNode("backend.superuser.db.processes", (el) => {
 
   const start = () => { stop(); timer = setInterval(refresh, ms); };
   const stop = () => { clearInterval(timer); timer = 0; };
+  signal.addEventListener("abort", stop);
 
   live?.addEventListener("change", () => live.checked ? start() : stop());
   if (live?.checked) start();

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { fs } from "../lib/fs.ts";
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
-import { attempt, beforeProof, login, loginFromRequest, loginProof, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
+import { attempt, beforeProof, login, loginFromRequest, loginProof, logout, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
 import { App, Ctx, requestStorage, unixTime } from "../mod.ts";
 import { initRequest } from "../lib/ctx/init.ts";
 import { addContact } from "../lib/contacts.ts";
@@ -29,8 +29,9 @@ test("loginFromRequest: login form requires POST", async () => {
   assertEquals(ctx.loginError, undefined);
 });
 
-/** A real app and a request in it. Session writes are fire-and-forget, so they are given the tick
- *  they need before the database goes away — otherwise they land on a closed connection. */
+/** A real app and a request in it. Session writes are fire-and-forget, so they are given the time
+ *  they need before the database goes away — otherwise they land on a closed connection. The
+ *  session's touch waits 50 ms. */
 async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
   const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json"));
@@ -43,7 +44,7 @@ async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
     ctx.clientId = "1";
     await requestStorage.run(ctx, () => fn(app, ctx));
   } finally {
-    await new Promise((r) => setTimeout(r));
+    await new Promise((r) => setTimeout(r, 60));
     await app.db.close();
   }
 }
@@ -257,5 +258,30 @@ test("initRequest: a deactivated user's session ends with the next request", asy
     await (await app.db.table("usr").get(7))!.$set({ active: false });
     assertEquals(await request(), 0);
     assertEquals(ctx.sess.data.core.userId(), undefined); // gone from the session, not just ignored
+  });
+});
+
+/** The session row as the next request reads it. */
+const stored = async (app: App, ctx: Ctx) =>
+  JSON.parse(String(await app.db.one`SELECT data FROM sess WHERE id = ${ctx.sess.id}`));
+
+test("session: what the next request needs is stored when the call returns", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("usr").update(7, { pw: await pwHash("secret") });
+    await app.settings.core.loginTwoFactor(true);
+    linkFactors(app, [totp]);
+
+    // the next factor's request finds the parked login
+    assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "pending");
+    assertEquals((await stored(app, ctx)).core.pending.usrId, 7);
+
+    // the request retried after a step-up finds the proof
+    assertEquals(await loginProof(ctx, totp, 7), undefined);
+    await app.api.core.password.verify.post({ pw: "secret" });
+    assert(Number((await stored(app, ctx)).core.via.password) > 0);
+
+    // and after a logout, the user is gone
+    await logout(ctx);
+    assertEquals(await stored(app, ctx), {});
   });
 });

@@ -29,10 +29,6 @@
   & > .-sidebar > .-item {
     border-bottom:calc(var(--rem) * .13) solid #fff;
   }
-  /* the sidebar is wider than the fixed switch (off.css): same spot, so on and off match */
-  & > .-sidebar > .qgCMS_editmode_switch {
-    padding-left:calc(100% - var(--rem) * 2.7);
-  }
   & > .-sidebar > .-item > .-title {
     white-space:nowrap; /* fixes chrome bug */
     display:flex;

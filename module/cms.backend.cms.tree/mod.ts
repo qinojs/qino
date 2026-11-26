@@ -5,7 +5,7 @@ import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** Where the page trees start: the page the user picked, else the root. */
-export const startPage = (node: Node, ctx: Ctx): Promise<Node> =>
+const startPage = (node: Node, ctx: Ctx): Promise<Node> =>
   node.cms.node(Number(ctx.settings.cms.admin.rootPageNode()) || 1);
 
 /** The way from the root to the start page, each step a link that starts there. `?rp=` moves the start
@@ -26,7 +26,7 @@ export async function breadcrumb(node: Node, ctx: Ctx): Promise<HtmlString> {
 
 /** The tree's state in the user's settings: the open pages and whether contents show, both changed by
  *  the list's `toggleOpen`/`value` and `showContents` vars. */
-export function treeState(ctx: Ctx, vars: Record<string, unknown> = {}): { open: Set<string>; type: string } {
+function treeState(ctx: Ctx, vars: Record<string, unknown> = {}): { open: Set<string>; type: string } {
   const admin = ctx.settings.cms.admin;
   const open = new Set(String(admin.openPageNodes() ?? "").split(",").filter(Boolean));
   if (vars.toggleOpen != null) {
@@ -39,7 +39,7 @@ export function treeState(ctx: Ctx, vars: Record<string, unknown> = {}): { open:
 
 /** One page as `walk` hands it to the row. `lead(title)` is the row's first two cells: the number, which
  *  makes it the start, and the title, indented, after the open/close button. */
-export type TreeRow = { page: Node; access: number; level: number; lead: (title: unknown) => Promise<HtmlString> };
+type TreeRow = { page: Node; access: number; level: number; lead: (title: unknown) => Promise<HtmlString> };
 
 /** The rows of the tree below the start page, open pages with their children. `type` overrides whether
  *  contents show; with `readable`, pages the user may not read are left out, with all below them. */

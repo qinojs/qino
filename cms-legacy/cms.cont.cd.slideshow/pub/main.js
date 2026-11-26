@@ -1,6 +1,6 @@
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-initNode("cont.cd.slideshow", (el) => {
+initNode("cont.cd.slideshow", (el, { signal }) => {
   const slides = [...el.querySelectorAll(".b1_slideshow > .-slides > *")];
   if (slides.length < 2) return;
 
@@ -23,6 +23,7 @@ initNode("cont.cd.slideshow", (el) => {
     clearInterval(timer);
     timer = setInterval(() => show(active + 1), 4000);
   };
+  signal.addEventListener("abort", () => clearInterval(timer));
 
   el.addEventListener("click", (e) => {
     const li = e.target.closest(".-pager li");

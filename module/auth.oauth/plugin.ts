@@ -32,8 +32,8 @@ export const api: ApiTree = {
       description: "Ask to connect a provider to this account — the round trip that follows needs it",
       access: Access.USER,
       requireStepUp: true,
-      execute: (_: unknown, ctx: Ctx) => {
-        ctx.sess.data.oauth.proved(unixTime());
+      execute: async (_: unknown, ctx: Ctx) => {
+        await ctx.sess.data.oauth.proved(unixTime()); // the round trip starts right after
         return { ok: true };
       },
     },

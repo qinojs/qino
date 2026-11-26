@@ -1,6 +1,6 @@
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-initNode("cont.text_and_slider.cd", (el) => {
+initNode("cont.text_and_slider.cd", (el, { signal }) => {
   const slides = [...el.querySelectorAll(".-slides > [data-id]")];
   const texts = [...el.querySelectorAll(".-content > [data-id]")];
   if (!slides.length) return;
@@ -15,6 +15,7 @@ initNode("cont.text_and_slider.cd", (el) => {
     clearInterval(timer);
     timer = setInterval(() => show(active + 1), 8000);
   };
+  signal.addEventListener("abort", () => clearInterval(timer));
   el.querySelector(".-next")?.addEventListener("click", () => { show(active + 1); play(); });
   el.querySelector(".-prev")?.addEventListener("click", () => { show(active - 1); play(); });
   show(0);

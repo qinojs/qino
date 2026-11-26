@@ -228,7 +228,7 @@ export const api: ApiTree = {
           if (order?.status !== "cart") return { ok: false, errors: { "has lines": "" }, redirect: "" };
           const placed = await order.place();
           if (!placed.ok) return { ...placed, order: order.$id };
-          ctx.sess.data["cms.shop"].placed(order.$id); // a guest may still pay for it, see order/:id/pay
+          await ctx.sess.data["cms.shop"].placed(order.$id); // a guest may still pay for it, see order/:id/pay
           if (placed.redirect || !order.total || !order.payment) return { ...placed, order: order.$id };
           return { ...placed, ...await startPayment(order, back), order: order.$id };
         },

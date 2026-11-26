@@ -67,7 +67,7 @@ export const api: ApiTree = {
             throw new ApiError(422, "That password does not match");
           }
           await proofPassed(ctx.app, ctx.userId);
-          ctx.sess.data.core.via.password(unixTime());
+          await ctx.sess.data.core.via.password(unixTime()); // the retried request reads it
           return { ok: true };
         },
       },

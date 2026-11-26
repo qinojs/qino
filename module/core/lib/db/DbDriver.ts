@@ -125,7 +125,7 @@ class MysqlDriver extends DbDriver {
     finally { box.conn = null; conn.release(); }
   }
   async listTables() {
-    return (await this.query("SHOW TABLES")).map((r) => Object.values(r)[0]);
+    return (await this.query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")).map((r) => Object.values(r)[0]);
   }
   columns(table: string) {
     return this.query(`SHOW FULL COLUMNS FROM ${this.quoteId(table)}`);

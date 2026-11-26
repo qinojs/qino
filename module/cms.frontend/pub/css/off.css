@@ -1,7 +1,7 @@
 .qgCMS_editmode_switch {
   display:block;
   top:0;
-  padding:calc(var(--rem) * .625) 0;
+  padding:calc(var(--rem) * .8);
   right:0;
   min-width:calc(var(--rem) * 2.7);
   text-align:center;
@@ -11,14 +11,13 @@
 
   & div {
     width:calc(var(--rem) * 2);
-    height:calc(var(--rem) * 1);
     box-sizing: border-box;
     box-shadow:0 0 calc(var(--rem) * .375) rgba(0,0,0,.5);
     border-radius:calc(var(--rem) * .625);
     background:#fff;
     position:relative;
     margin:auto;
-    padding:calc(var(--rem) * .125);
+    padding:calc(var(--rem) * .14);
   }
 
   & i {

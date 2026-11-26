@@ -5,6 +5,7 @@ import { App, Ctx, fs, requestStorage, sql } from "@qino/qino";
 
 import { tableEntriesCopyTo } from "../lib/Spaces.ts";
 import { ensureView, historicalViews, versedTables } from "../lib/Vers.ts";
+import { healthChecks } from "../healthChecks.ts";
 
 async function versionedApp() {
   const app = new App({ db: "sqlite::memory:", dir: await fs.tempDir() + "/" });
@@ -88,4 +89,20 @@ test("ensureView: space and log must be integers, they end up as raw SQL", async
   await using app = await versionedApp();
   for (const [space, log] of [["1) OR (1=1", 0], [0, 1.5], [NaN, 0]] as any[])
     await assertRejects(() => ensureView(app.db, "page", space, log), TypeError);
+});
+
+test("health check: old historical views go, open and head views stay", async () => {
+  await using app = await versionedApp();
+  await app.db.query`CREATE VIEW ${sql.id("_vers_5_space_0_page")} AS SELECT 1 AS x`; // from before views were dropped
+  await ensureView(app.db, "page", 1, 0); // a head view, reused
+  const ctx = { app, state: {} as any } as any;
+  {
+    await using _v = await historicalViews(ctx, 0, 7); // in use
+    const check = healthChecks(app).cleanup!["version views"];
+    const found = await check();
+    assertEquals(await found!.solutions!.drop.solve(), "1 views dropped");
+    assertEquals(await check(), undefined);
+    assertEquals(Number(await app.db.one`SELECT count(*) FROM sqlite_master WHERE type = 'view' AND name LIKE '_vers_7%'`), 7);
+  }
+  assertEquals(Number(await app.db.one`SELECT count(*) FROM sqlite_master WHERE type = 'view' AND name LIKE '_vers_0_space_1_page'`), 1);
 });

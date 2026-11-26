@@ -7,7 +7,7 @@ import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 const telegram = api["messaging.telegram"];
 
-initNode("cont.my.telegram", async (el) => {
+initNode("cont.my.telegram", async (el, { signal }) => {
   const state = el.querySelector("[data-state]");
   const msg = el.querySelector(".-msg");
 
@@ -43,11 +43,13 @@ initNode("cont.my.telegram", async (el) => {
   };
 
   // Telegram cannot tell the page that Start was pressed, so watch for it while the user is in the flow
+  if (signal.aborted) return;
   let until = 0;
-  setInterval(async () => {
+  const poll = setInterval(async () => {
     if (Date.now() > until || document.hidden) return;
     if (await refresh()) until = 0;
   }, 5000);
+  signal.addEventListener("abort", () => clearInterval(poll));
 
   el.addEventListener("click", async (e) => {
     if (e.target.closest("[data-connect]")) return void (until = Date.now() + 5 * 60_000);

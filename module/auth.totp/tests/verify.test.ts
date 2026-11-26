@@ -2,9 +2,8 @@ import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
 import { ApiError, Db } from "@qino/qino";
 import { store } from "@qino/qino/auth";
-import { authAttemptDbSchema } from "@qino/qino/tests";
+import { authAttemptDbSchema, authDbSchema } from "@qino/qino/tests";
 
-import authSchema from "../../auth/dbschema.json" with { type: "json" };
 import { at, secret } from "../lib/totp.ts";
 import { verify } from "../mod.ts";
 import { authFactors } from "../plugin.ts";
@@ -14,7 +13,7 @@ import type { Ctx } from "@qino/qino";
 /** A signed-in user 7 with one authenticator app, on a real database. */
 async function setup() {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...authSchema.properties, ...authAttemptDbSchema.properties } });
+  await db.migrate({ properties: { ...authDbSchema.properties, ...authAttemptDbSchema.properties } });
   await db.loadTables();
   const app = {
     db,
