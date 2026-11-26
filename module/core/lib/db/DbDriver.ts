@@ -232,12 +232,12 @@ class SqliteDriver extends DbDriver {
     // Outside work waits for the commit. A transaction awaiting such work waits for itself and
     // blocks everything (what `db.unit` avoids). If it happens anyway, pass the connection on: the
     // waiting work runs inside the transaction and shares its rollback — better than a hang.
-    const stuck = setTimeout(() => {
-      if (this.#queued < 2) return; // the transaction counts itself
-      console.error(`sqlite: transaction open for ${STUCK_MS / 1000}s with ${this.#queued - 1} queries queued behind it — letting them run inside it to break the deadlock; wrap multi-step background work in db.unit()`);
-      unblock();
-    }, STUCK_MS);
     return this.#serial(() => this.#txAls.run(box, async () => {
+      const stuck = setTimeout(() => {
+        if (this.#queued < 2) return; // the transaction counts itself
+        console.error(`sqlite: transaction open for ${STUCK_MS / 1000}s with ${this.#queued - 1} queries queued behind it — letting them run inside it to break the deadlock; wrap multi-step background work in db.unit()`);
+        unblock();
+      }, STUCK_MS);
       this.#db.exec("BEGIN");
       try { const r = await fn(); this.#db.exec("COMMIT"); return r; }
       catch (e) { this.#db.exec("ROLLBACK"); throw e; }
