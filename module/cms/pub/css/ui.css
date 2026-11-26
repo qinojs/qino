@@ -166,6 +166,7 @@ u2-ico[icon]:not(:has(> svg)) {
     & > :is(footer, .-foot) {
       margin:0;
       flex:0 0 auto;
+      background:inherit; /* sticky: content must not shine through */
       position: sticky;
       bottom:0;
       z-index:1;

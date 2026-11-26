@@ -7,6 +7,7 @@
     "cms.filebrowser"
   ],
   "files": [
+    "locale/de.json",
     "manifest.json",
     "plugin.ts",
     "pub/init.mjs",
