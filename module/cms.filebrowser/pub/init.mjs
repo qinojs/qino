@@ -251,7 +251,7 @@ cms.fileBrowser = class {
           const el = dom.el('<label data-type=dbFile><div class=-ext></div><input type=checkbox><div class=-title></div></label>');
           el.setAttribute('itemid', item.id);
           el.querySelector('.-title').textContent = item.name;
-          if (item.mime.includes('image/')) el.style.backgroundImage = 'url("'+item.url+'")';
+          if (item.thumb) el.style.backgroundImage = 'url("'+item.thumb+'")';
           else el.querySelector('.-ext').textContent = item.name.replace(/.*\.([^.]+)$/,'$1').slice(-4).toUpperCase();
           list.append(el);
         }

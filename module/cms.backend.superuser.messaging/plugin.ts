@@ -420,11 +420,11 @@ async function attachments(app: App, rows: Row[], compact = false) {
   const items = await Promise.all(rows.map(async (row) => {
     const file = await app.dbFiles.file(Number(row.file_id));
     const download = await file.url({ dl: true, grant: "session" });
-    const preview = previewable(row.mime)
-      ? await file.url({ fmt: "avif", w: compact ? 180 : 320, h: compact ? 120 : 240, max: true, grant: "session" })
+    const preview = compact ? await thumb(file, { size: "big", alt: row.name, grant: "session" })
+      : previewable(row.mime) ? html`<img src="${await file.url({ fmt: "avif", w: 320, h: 240, max: true, grant: "session" })}" alt="${row.name}" loading=lazy>`
       : "";
     return html`<div class=-attachment>
-      ${preview ? html`<a href="${download}" download><img src="${preview}" alt="${row.name}" loading=lazy></a>` : ""}
+      ${preview ? html`<a href="${download}" download>${preview}</a>` : ""}
       <a href="${download}" download><u2-ico inline icon=download>↓</u2-ico> ${row.name ?? "#" + row.file_id}</a>
       <small>${row.mime}${row.size == null ? "" : html` · <u2-bytes>${row.size}</u2-bytes>`}</small>
     </div>`;

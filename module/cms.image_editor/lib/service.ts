@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { DbFile, fs, html, isEmptyObject } from "@qino/qino";
-import { cms, THUMB_SIZE } from "@qino/qino/cms";
+import { cms, THUMB_SIZES } from "@qino/qino/cms";
 import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
 
 import type { App, Ctx } from "@qino/qino";
@@ -81,7 +81,7 @@ async function versionThumb(app: App, fileId: number, row: any) {
     try {
         const dbFile = new DbFile(app.dbFiles, fileId, row); // detached: path points at this version's md5, live cache untouched
         if (!dbFile.path) return;
-        const { path, mime } = await dbFile.transform({ w: THUMB_SIZE.width, h: THUMB_SIZE.height, max: true, q: 50, fmt: "avif" });
+        const { path, mime } = await dbFile.transform({ w: THUMB_SIZES.small.width, h: THUMB_SIZES.small.height, max: true, dpr: 2, q: 50, fmt: "avif" });
         const buf = await fs.bytes(path);
         return `data:${mime};base64,${buf.toBase64()}`;
     } catch {/**/}

@@ -12,7 +12,7 @@ async function render(part, id) {
   const ref = api.cms.node(id);
   const [texts, files] = await Promise.all([
     ref.texts.get({ values: true, names: NAMES }), // creates the share texts, so they have ids
-    ref.files.get({ thumb: '280x150' }),
+    ref.files.get({ thumb: 'big' }),
   ]);
   const { _title: title, _description: descr, _share_title: shareTitle, _share_description: shareDescr } = texts;
   const file = files?.share?.placeholder ? null : files?.share;

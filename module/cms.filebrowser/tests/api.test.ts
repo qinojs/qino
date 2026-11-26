@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { test } from "node:test";
-import { toTools } from "@qino/qino";
+import { FileTransformer, toTools } from "@qino/qino";
 import { assertEquals, fakeCms, fakeRender } from "@qino/qino/tests";
 
 import { api, init } from "../plugin.ts";
@@ -67,18 +67,21 @@ test("cms.filebrowser: search groups existing accessible files by md5", async ()
   const dbFiles: Record<number, any> = {
     1: {
       name: "a.jpg",
+      extension: "jpg",
       exists: () => true,
       access: () => true,
       url: () => "/file/a.jpg",
     },
     2: {
       name: "a-copy.jpg",
+      extension: "jpg",
       exists: () => true,
       access: () => true,
       url: () => "/file/a-copy.jpg",
     },
     3: {
       name: "private.jpg",
+      extension: "jpg",
       exists: () => true,
       access: () => false,
       url: () => "/file/private.jpg",
@@ -113,7 +116,7 @@ test("cms.filebrowser: search groups existing accessible files by md5", async ()
   assertEquals(res, [{
     id: 1,
     mime: "image/jpeg",
-    url: "/file/a.jpg",
+    thumb: await FileTransformer.capabilities.magick ? "/file/a.jpg" : undefined,
     name: "a.jpg",
     pages: { "10": "Page 10", "11": "Page 11" },
   }]);

@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { Db, requestStorage } from "@qino/qino";
+import { Db, FileTransformer, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, emailMessagingChannel as email, fakeT, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
@@ -33,6 +33,7 @@ test("messaging detail replies to the selected user's Telegram chat", async () =
     },
     dbFiles: {
       file: (id: number) => Promise.resolve({
+        extension: "png",
         url: (params: Record<string, unknown>) => {
           fileUrls.push(params);
           return Promise.resolve(params.dl ? `/dbFile/${id}/download` : `/dbFile/${id}/preview.avif`);

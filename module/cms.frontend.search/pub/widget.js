@@ -8,8 +8,7 @@ export const css = `
 .-search input { width:100%; box-sizing:border-box; }
 .-search table { width:100%; table-layout:fixed; }
 .-search td { overflow-wrap:anywhere; }
-.-search .-preview { width:4.5rem; }
-.-search .-preview img { width:100%; height:3.5rem; object-fit:contain; }
+.-search .-preview { width:4.375rem; }
 `;
 
 function mark(text, re) {
@@ -62,7 +61,7 @@ export default async function (widget, { node, signal }) {
             <h3 class=-h1><span>${titles[name]}</span><small>${rows.length >= found.limit ? t`First ${found.limit} results` : rows.length}</small></h3>
             <table class="-styled -noborder"><tbody>${rows.map((row) => html.async`<tr>
               ${name === 'files' ? html`<td class=-preview><a href="${row.url}" aria-label="${row.title}">
-                ${row.thumb ? html`<img src="${row.thumb}" alt="" loading=lazy>` : ''}
+                ${row.thumb ? html`<img class=cms-thumb src="${row.thumb}" alt="" loading=lazy>` : ''}
                 <u2-ico icon=description aria-hidden=true${row.thumb ? html.raw(' hidden') : ''}></u2-ico>
               </a>` : ''}
               <td>

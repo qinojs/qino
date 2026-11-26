@@ -4,6 +4,7 @@ export { Node } from "./lib/Node.ts";
 export { hasOwnUrl } from "./lib/urls.ts";
 export { postedVars } from "./lib/postedVars.ts";
 export { describeChange } from "./lib/nodeChanged.ts";
-export { cleanRequest, requestUsed, thumb, THUMB_SIZE } from "./api-exports.ts";
+export type { ThumbSize } from "./api-exports.ts";
+export { cleanRequest, requestUsed, thumb, thumbUrl, THUMB_SIZES } from "./api-exports.ts";
 export * from "./lib/access.ts";
 export { policyCss, policyOf, sanitizeHtml } from "./lib/sanitize.ts";

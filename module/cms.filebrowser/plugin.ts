@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, requestStorage, sql, sqlSearch, s, Access } from "@qino/qino";
-import { cms, cmsCtx } from "@qino/qino/cms";
+import { cms, cmsCtx, thumbUrl } from "@qino/qino/cms";
 
 import type { Ctx, ApiTree, App } from "@qino/qino";
 
@@ -89,7 +89,7 @@ async function search(s_: string, ctx: Ctx) {
     res[md5] ||= {
       id: vs.id,
       mime: vs.mime,
-      url: await dbFile.url({w: 180, h: 130, max: true}),
+      thumb: await thumbUrl(dbFile, { size: "big" }),
       name: dbFile.name,
       pages: {} as Record<string, string>,
     };

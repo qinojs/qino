@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { App, fs, getCtx, runAs } from "@qino/qino";
+import { App, FileTransformer, fs, getCtx, runAs } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 import { invalidateStandards } from "@qino/qino/cms.accessRules";
 import { apiRequest, assert, assertEquals } from "@qino/qino/tests";
@@ -75,7 +75,7 @@ test("cms.frontend.search: administration search respects node, file, user and m
     assertEquals(found.pages[0].breadcrumb.map((p) => p.id), [root.id]);
     assertEquals(found.contents[0].breadcrumb.map((p) => p.title), ["root", "Lemon archive", "Recipes"]);
     const preview = found.files.find((r) => r.id === image.id)!.thumb;
-    assert(preview?.includes("w-96/h-72/max") && preview.includes("sig="));
+    if (await FileTransformer.capabilities.magick) assert(preview?.includes("w-70/h-40/max/dpr-2") && preview.includes("sig="));
     assertEquals(found.files.find((r) => r.id === file.id)!.thumb, undefined);
     assertEquals(found.files.find((r) => r.id === file.id)!.pages.map((p) => p.id), [page.id, readOnly.id], "Usage is deduplicated per readable page and respects access.");
     assertEquals(found.contents[0].snippet, "Lemon tart");

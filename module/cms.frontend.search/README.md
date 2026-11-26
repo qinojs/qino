@@ -17,7 +17,7 @@ or reload. Clearing the field removes it. Results and signed links are not store
   Exact IDs, titles and module names rank ahead of general text matches. Plain-text excerpts
   show the matching passage; search words are highlighted without trusting stored HTML.
 - Files: filename, extracted text, MIME type and ID, using the existing file access checks.
-  Images have thumbnails; PDF and video previews use the installed conversion tools when available.
+  Images, PDFs and videos have previews when the conversion tools are installed.
   Usage links list readable pages containing the file, once per page.
 - Users: name, username, organization, contact address and ID, only with reading access to
   `cms.backend.users`. Superusers follow that module's existing visibility rules.

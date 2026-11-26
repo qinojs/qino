@@ -1,5 +1,5 @@
-import { FileTransformer, sql, sqlSearch, unhee } from "@qino/qino";
-import { ADMIN, cms, WRITE } from "@qino/qino/cms";
+import { sql, sqlSearch, unhee } from "@qino/qino";
+import { ADMIN, cms, thumbUrl, WRITE } from "@qino/qino/cms";
 
 import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
@@ -108,12 +108,7 @@ async function files(ctx: Ctx, query: string) {
   for (const row of rows) {
     const file = await dbFiles.file(Number(row.id), row);
     if (!await file.access() || !await file.exists()) continue;
-    const pdf = file.mime === "application/pdf", video = file.mime.startsWith("video/");
-    const preview = file.mime.startsWith("image/") || pdf && await FileTransformer.capabilities.magick || video && await FileTransformer.capabilities.ffmpeg;
-    const thumb = preview ? await file.url({
-      w: 96, h: 72, max: true, grant: "session",
-      ...(pdf ? { fmt: "png", page: 1 } : video ? { fmt: "jpg", frame: 1 } : {}),
-    }) : undefined;
+    const thumb = await thumbUrl(file, { grant: "session" });
     const pages = new Map<number, { id: number; title: string; url: string; breadcrumb: Awaited<ReturnType<typeof breadcrumb>> }>();
     for (const link of await db.query`SELECT page_id FROM page_file WHERE file_id = ${file.id} ORDER BY page_id`) {
       const node = await cm.node(Number(link.page_id));

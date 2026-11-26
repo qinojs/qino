@@ -125,7 +125,7 @@ test("cms.frontend.search: the widget escapes results, cancels stale queries and
   const result = String(output.innerHTML);
   assert(result.includes("&lt;script&gt;") && !result.includes("<script>"), result);
   assert(result.includes('href="/parent">Parent &lt;page&gt;</a>'), result);
-  assert(result.includes('<img src="/preview?sig=test" alt="" loading=lazy>'), result);
+  assert(result.includes('<img class=cms-thumb src="/preview?sig=test" alt="" loading=lazy>'), result);
   assert(result.includes('A <mark>cont.text</mark> &amp; &lt;example&gt;'), result);
   assert(result.includes('First 1 results') && result.includes('href="/usage">Usage</a>'), result);
   let keys = 0, blurred = false;

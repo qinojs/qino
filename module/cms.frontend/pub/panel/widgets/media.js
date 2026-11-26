@@ -44,7 +44,7 @@ const dnd = () => Promise.all([
 export default async function (widget, { node, dialogs, signal }) {
   const ref = api.cms.node(node.id);
   const [files] = await Promise.all([
-    ref.files.get({ thumb: '70x40' }, { signal }).then((f) => Object.entries(f ?? {})),
+    ref.files.get({ thumb: 'small' }, { signal }).then((f) => Object.entries(f ?? {})),
     dnd(),
   ]);
   const real = files.filter(([, f]) => !f.placeholder);

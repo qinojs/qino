@@ -164,30 +164,31 @@ const THUMB: Record<string, { fmt?: string; page?: number; frame?: number; tool:
     aac: { tool: "ffmpeg" }, wav: { tool: "ffmpeg" }, m4a: { tool: "ffmpeg" },
 };
 
-/** The shared preview size: it fits in this box, so lists can reserve it with width/height.
- *  Mirrored in `.cms-thumb` (cms/pub/css/ui.css). */
-export const THUMB_SIZE = { width: 70, height: 40 };
+/** The shared preview boxes; a preview fits inside, so lists can reserve it with width/height.
+ *  Loaded at twice the size for sharp high-DPI screens. Mirrored in `.cms-thumb` (cms/pub/css/ui.css). */
+export const THUMB_SIZES = { small: { width: 70, height: 40 }, big: { width: 210, height: 120 } };
+export type ThumbSize = keyof typeof THUMB_SIZES;
+type ThumbOptions = { size?: ThumbSize; grant?: "session" | "permanent" };
 
-/** The shared preview of a file, for lists and the panel: one size, so browsers cache it once. */
-async function thumbUrl(file: any, size = `${THUMB_SIZE.width}x${THUMB_SIZE.height}`, grant?: "session" | "permanent"): Promise<string | undefined> {
-    const spec = THUMB[String(file.extension)];
-    if (!spec || !await FileTransformer.capabilities[spec.tool]) return;
-    const [w, h] = size.split("x").map(Number);
-    if (!w || !h) return;
+/** The shared preview of a file, if the tools for its type are installed: few sizes, so browsers
+ *  cache each once. A `grant` signs it for files that are not public. */
+export async function thumbUrl(file: any, { size = "small", grant }: ThumbOptions = {}): Promise<string | undefined> {
+    const spec = THUMB[String(file.extension)], box = THUMB_SIZES[size];
+    if (!spec || !box || !await FileTransformer.capabilities[spec.tool]) return;
     const { tool: _tool, ...opt } = spec;
-    return file.url({ w, h, max: true, ...opt, grant });
+    return file.url({ w: box.width, h: box.height, max: true, dpr: 2, ...opt, grant });
 }
 
-/** The preview as a list image, its box reserved; empty if the file has none. A `grant` signs it
- *  for files that are not public. */
-export async function thumb(file: any, { alt = "", grant }: { alt?: string; grant?: "session" | "permanent" } = {}) {
-    const src = file && await thumbUrl(file, undefined, grant);
-    return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} alt="${alt}" loading=lazy>` : "";
+/** The preview as an image, its box reserved; empty if the file has none. */
+export async function thumb(file: any, { alt = "", ...options }: ThumbOptions & { alt?: string } = {}) {
+    const src = file && await thumbUrl(file, options);
+    const size = options.size ?? "small", box = THUMB_SIZES[size];
+    return src ? html`<img class="cms-thumb${size === "small" ? "" : " -" + size}" src="${src}" width=${box.width} height=${box.height} alt="${alt}" loading=lazy>` : "";
 }
 
 /** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order.
- *  `thumb` is a "WxH" the caller wants a preview in; without it none is built. */
-export async function nodeFilesJson(node: Node, thumbSize = ""): Promise<Record<string, any>> {
+ *  `thumb` is the preview size the caller wants; without it none is built. */
+export async function nodeFilesJson(node: Node, thumbSize?: ThumbSize): Promise<Record<string, any>> {
     const files = await node.files();
     const all = await node.filesAndPlaceholders();
     const res: Record<string, any> = {};
@@ -195,7 +196,7 @@ export async function nodeFilesJson(node: Node, thumbSize = ""): Promise<Record<
         if (!files.has(slot)) { res[slot] = { placeholder: true }; continue; }
         const info: Record<string, any> = { name: file.name, mime: file.mime, size: file.vs?.size, url: await file.url() };
         if (file.extension) info.ext = file.extension;
-        const thumb = thumbSize && await thumbUrl(file, thumbSize);
+        const thumb = thumbSize && await thumbUrl(file, { size: thumbSize });
         if (thumb) info.thumb = thumb;
         res[slot] = info;
     }
@@ -304,10 +305,9 @@ export async function searchFiles(s: string): Promise<any[]> {
         if (md5 && used.has(md5)) continue;
         if (res.length >= 10) break;
         if (md5) used.add(md5);
-        const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(dbFile.extension);
-        const imgSrc = isImg ? await dbFile.url({w: 32, h: 32}) : "about:blank";
+        const imgSrc = await thumbUrl(dbFile) ?? "about:blank";
         res.push({
-            html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:2rem; height:2rem; float:left; display:block; margin-right:.1875rem"></div>` +
+            html:  `<div style="background:url(${hee(imgSrc)}) center/contain no-repeat; width:2rem; height:2rem; float:left; display:block; margin-right:.1875rem"></div>` +
                    `<b>${hee(vs.name)}</b><br><i>${hee(await (await node.page()).showTitle())}</i>`,
             text:  vs.name,
             value: dbFile.id,

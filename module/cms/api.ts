@@ -455,8 +455,8 @@ const node = {
     get: {
       description: "List all files of the node, keyed by slot name, including empty placeholder slots",
       ...nodeRead,
-      query: s.object({ thumb: s.optional(s.string()).describe("Preview size as \"WxH\", e.g. \"70x40\" — omit for no preview") }),
-      execute: ({ node, thumb }: any) => fns.nodeFilesJson(node, String(thumb ?? "")),
+      query: s.object({ thumb: s.optional(s.enum(Object.keys(fns.THUMB_SIZES) as fns.ThumbSize[])).describe("Preview size — omit for no preview") }),
+      execute: ({ node, thumb }: any) => fns.nodeFilesJson(node, thumb),
     },
 
     post: {
