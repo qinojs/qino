@@ -169,7 +169,7 @@ export async function answered(app: App, { id, output, error }: { id: string; ou
 
 /** Only what rests on messages of its session: a thinker may invent, the merger would believe it. */
 async function evidenced(app: App, session: number, { missed = [], confirmed = [], outdated = [] }: Thoughts): Promise<Thoughts> {
-  const cited = [...missed, ...confirmed, ...outdated].flatMap((t) => t.evidence ?? []).map(Number);
+  const cited = [...missed, ...confirmed, ...outdated].flatMap((t) => t.evidence ?? []).map(Number).filter((n) => Number.isInteger(n) && n > 0 && n <= 2147483647);
   const real = new Set((await app.db.col`SELECT id FROM ai_session_message WHERE session_id = ${session} AND ${sql.in("id", [0, ...cited])}`).map(Number));
   const ok = <T extends { evidence: number[] }>(list: T[]) => list.filter((t) => t.evidence?.length && t.evidence.every((id) => real.has(Number(id))));
   return { missed: ok(missed), confirmed: ok(confirmed), outdated: ok(outdated) };

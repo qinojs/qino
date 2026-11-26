@@ -36,7 +36,8 @@ export class CMS extends Emitter<CmsEvents> {
   }
 
   node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
-    id = Number(id);
+    const n = Number(id);
+    id = Number.isInteger(n) && n > 0 && n <= 2147483647 ? n : 0;
     const nodes = scopeCache(this.#nodes, "cms.nodes", () => new Map<number, Promise<Node>>());
     let node = nodes.get(id);
     if (!node) {
