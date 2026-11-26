@@ -1,5 +1,5 @@
 import { html, sql, sqlSearch } from "@qino/qino";
-import { cms as cmsOf, hasOwnUrl } from "@qino/qino/cms";
+import { cms as cmsOf, hasOwnUrl, THUMB_SIZE, thumbUrl } from "@qino/qino/cms";
 import { backend, renderAccess } from "@qino/qino/cms.backend";
 import { input, renderRows, saveRows } from "@qino/qino/cms.backend.shop";
 import { mainCurrency, productUrl, shopT } from "@qino/qino/cms.shop";
@@ -25,7 +25,8 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 async function thumbnail(node: Node) {
   if (!await node.isReadable()) return "";
   const file = await node.cms.image(node, { orFirst: true });
-  return file ? html`<img src="${await file.url({ w: 60, h: 40, max: true })}" width=60 alt="" loading=lazy>` : "";
+  const src = file && await thumbUrl(file);
+  return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} alt="" loading=lazy>` : "";
 }
 
 /** The page that lists it: its own, in a category; else the one above its own page. */

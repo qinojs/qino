@@ -164,7 +164,12 @@ const THUMB: Record<string, { fmt?: string; page?: number; frame?: number; tool:
     aac: { tool: "ffmpeg" }, wav: { tool: "ffmpeg" }, m4a: { tool: "ffmpeg" },
 };
 
-async function thumbUrl(file: any, size: string): Promise<string | undefined> {
+/** The shared preview size: it fits in this box, so lists can reserve it with width/height.
+ *  Mirrored in `.cms-thumb` (cms/pub/css/ui.css). */
+export const THUMB_SIZE = { width: 70, height: 40 };
+
+/** The shared preview of a file, for lists and the panel: one size, so browsers cache it once. */
+export async function thumbUrl(file: any, size = `${THUMB_SIZE.width}x${THUMB_SIZE.height}`): Promise<string | undefined> {
     const spec = THUMB[String(file.extension)];
     if (!spec || !await FileTransformer.capabilities[spec.tool]) return;
     const [w, h] = size.split("x").map(Number);

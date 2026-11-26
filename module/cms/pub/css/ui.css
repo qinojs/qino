@@ -225,6 +225,14 @@ u2-ico[icon]:not(:has(> svg)) {
   &[data-type=error]   { background:var(--cms-access-3); }
 }
 
+/* File previews in lists: the box of THUMB_SIZE (cms/api-exports.ts), the preview fits inside. */
+.cms-thumb {
+  display: block;
+  inline-size: 4.375rem;
+  block-size: 2.5rem;
+  object-fit: contain;
+}
+
 /* possibly move to u2-framework? */
 .u2-unstyle.u2-unstyle.u2-unstyle:is(:hover, :focus) {
   background-color: unset;
