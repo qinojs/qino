@@ -123,6 +123,14 @@ test("uncdn: lookalike origin is not covered by a declared source", async () => 
   assertEquals(thrown.body, "Not cached");
 });
 
+test("uncdn: an encoded ? or # cannot slip a query past the cache path", async () => {
+  for (const path of ["a.js%3Fbuild=evil", "a.js%23x.css"]) {
+    const { route } = await routeFor(`https://qino.test/uncdn/cdn.example/${path}`, "https://cdn.example");
+    const thrown = await assertRejects(route, Output);
+    assertEquals([thrown.status, thrown.body], [404, "Not allowed"]);
+  }
+});
+
 test("uncdn: declared source is fetched", async () => {
   const { route } = await routeFor(
     "https://qino.test/uncdn/127.0.0.1/a.js",

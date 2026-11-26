@@ -103,8 +103,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     try { rest = decodeURIComponent(url.pathname.slice(prefix.length)); } catch { return; }
     if (!rest) return;
 
+    // decoded, a %3F or %23 would start a query or fragment the cache path does not keep
     const target = URL.parse("https://" + rest);
-    if (!target || url.search) throw notFound("Not allowed");
+    if (!target || url.search || target.search || target.hash) throw notFound("Not allowed");
     const type = MEDIA_TYPES[rest.split(".").pop()!.toLowerCase()];
     const filePath = nodePath.resolve(cacheDir, target.hostname + target.pathname);
     if (!type || !filePath.startsWith(cacheRoot)) throw notFound("Not allowed");
