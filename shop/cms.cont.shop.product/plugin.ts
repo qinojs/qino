@@ -25,7 +25,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const where = order?.country ?? await country(app);
   // shp3 kept attachments under arbitrary names and used the first image in file order.
   const [variants, file] = await Promise.all([product.variants(), node.cms.image(node, { orFirst: true })]);
-  const cartId = Number(await node.settings.cart || 0);
+  const cartId = Number(node.settings.cart() || 0);
   const action = cartId ? await (await node.cms.node(cartId)).url() : "";
 
   const rows = [], offers = [], title = await product.title(ctx.lang);

@@ -129,7 +129,7 @@ async function insert(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["class/table/table.css", "class/card/card.css", "class/unstyle/unstyle.css", "el/ico/ico.js", "el/ico/ico.css", "attr/href/href.js"]);
-  if (await node.settings.search_reset) await setState(ctx, node, (s) => delete s.search);
+  if (node.settings.search_reset()) await setState(ctx, node, (s) => delete s.search);
   const q = await query(node, ctx);
   const t = node.app.t;
   if (!q) return html.async`<div class=u2-card><div>${t`Choose the table in the widget.`}</div></div>`;
@@ -287,7 +287,7 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
         edit: own && !column.primary, search: ["text", "textarea"].includes(type) || column.primary,
         sort: true,
       });
-      const order = String(await node.settings.field_order ?? "");
+      const order = String(node.settings.field_order() ?? "");
       await node.settings.field_order(order ? `${order},${name}` : name);
       // the label is a text like any other, so it can be translated later
       await node.text(name + "_title", getCtx().lang, parts.at(-1));
@@ -298,7 +298,7 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
       // written, not `delete`d: a delete cannot be awaited, and the next write would abort it
       const { [name]: _, ...rest } = JSON.parse(String(node.vs.settings || "{}")).fields ?? {};
       await node.settings.fields(rest);
-      const order = String(await node.settings.field_order ?? "").split(",").filter((n) => n && n !== name).join(",");
+      const order = String(node.settings.field_order() ?? "").split(",").filter((n) => n && n !== name).join(",");
       await node.settings.field_order(order);
       await node.textDelete(name + "_title");
       return { name };
@@ -314,14 +314,18 @@ async function widgetApi(node: Node, vars: Record<string, unknown>) {
 
 /** A file for an image or file field (`?dbtable_upload=<node>&row=&field=&id=`, POST), and the list
  *  as CSV (`?dbtable_export=<node>&id=`), for nodes of the module `name`. */
-export async function route(app: App, ctx: Ctx, name = NAME) {
+export function route(app: App, ctx: Ctx, name = NAME) {
+  if (!ctx.req.url.search) return;
   const query = ctx.req.query;
-  const upload = Number(query.dbtable_upload), exported = Number(query.dbtable_export);
-  const id = upload || exported;
-  if (!id) return;
+  const id = Number(query.dbtable_upload) || Number(query.dbtable_export);
+  if (id) return handleRoute(app, ctx, name, id);
+}
+
+async function handleRoute(app: App, ctx: Ctx, name: string, id: number) {
+  const query = ctx.req.query;
   const node = await cmsOf(app).node(id);
   if (node.module?.name !== name || !await node.isReadable()) return;
-  if (exported) {
+  if (Number(query.dbtable_export)) {
     const q = await Query.of(node, { user: await state(ctx, node), id: query.id });
     if (!q?.settings.export) return;
     const fields = q.shown();
@@ -343,7 +347,7 @@ export async function route(app: App, ctx: Ctx, name = NAME) {
   const key = sql.id(q.primary!.name);
   const old = Number(await node.db.one`SELECT ${sql.id(f.column.name)} FROM ${sql.id(q.table)} WHERE ${key} = ${query.row}`);
   // the file keeps its id: whoever points to it still finds it
-  const stored = old && await (await app.dbFiles.file(old)).exists() ? await app.dbFiles.file(old) : await app.dbFiles.add();
+  const stored = (old ? await (await app.dbFiles.file(old)).exists() : undefined) ?? await app.dbFiles.add();
   await stored.replaceFromUpload(file);
   await stored.access(1); // shown in the list to whoever sees it
   await node.db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${Number(stored.id)} WHERE ${key} = ${query.row}`;

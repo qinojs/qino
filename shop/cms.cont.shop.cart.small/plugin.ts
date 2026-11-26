@@ -19,9 +19,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const currency = await order!.currencyRow();
   const money = (v: number) => currency?.show(v) ?? v;
-  const mode = String(await node.settings.mode ?? "short");
+  const mode = String(node.settings.mode() ?? "short");
   const total = mode === "short" ? 0 : (await order!.totals()).total; // the count needs no prices
-  const page = Number(await node.settings.cart || 0);
+  const page = Number(node.settings.cart() || 0);
   const url = page ? await (await node.cms.node(page)).url() : "";
 
   const body = mode === "lines"

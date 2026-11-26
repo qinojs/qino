@@ -19,7 +19,7 @@ const VID = new Set(["mp4","webm","mov","avi","mkv"]);
 const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
 const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
-async function mediaPreview(f: DbFile, exists: boolean) {
+function mediaPreview(f: DbFile, exists: boolean) {
   if (!exists) return html`<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
   return thumb(f);
 }

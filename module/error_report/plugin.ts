@@ -164,14 +164,15 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!apps.size) delete reporter.onError;
   }, { once: true });
 
-  app.on("route", async ({ ctx }) => {
+  app.on("route", ({ ctx }) => {
     const path = ctx.req.appPath;
     if (path !== "js-error" && path !== "css-error" && path !== "csp-error") return;
     if (!intakeAllowed(ctx)) throw new Output({});
     if (path === "csp-error") return handleCspError(ctx); // csp reports are not covered by the setting
-    if (!await app.settings.error_report.browserErrors) throw new Output({});
-    if (path === "js-error") return handleJsError(ctx);
-    if (path === "css-error") return handleCssError(ctx);
+    return (async () => {
+      if (!await app.settings.error_report.browserErrors) throw new Output({});
+      return path === "js-error" ? handleJsError(ctx) : handleCssError(ctx);
+    })();
   }, { signal });
 
   // Track every 404 response (pages, api, dbFile, static). A direct visit of the
@@ -195,13 +196,15 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     prio: "warning",
   }), { signal });
 
-  app.on("render", async ({ ctx }) => {
+  app.on("render", ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
     // browsers post csp violations themselves — no script or browserErrors setting needed
     ctx.res.csp.reportTo = ctx.req.appUrl + "csp-error";
-    if (!await ctx.app.settings.error_report.browserErrors) return;
-    ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.appUrl + "js-error", max: 50 };
-    ctx.res.csp["script-src"][REPORTER_ROOT] = true;
-    ctx.res.html.legacyScripts.add(REPORTER_PATH);
+    return (async () => {
+      if (!await ctx.app.settings.error_report.browserErrors) return;
+      ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.appUrl + "js-error", max: 50 };
+      ctx.res.csp["script-src"][REPORTER_ROOT] = true;
+      ctx.res.html.legacyScripts.add(REPORTER_PATH);
+    })();
   }, { signal });
 }

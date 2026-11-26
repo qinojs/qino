@@ -5,11 +5,13 @@ const column = (i: number) => {
   return name;
 };
 
+const ESC: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+
 /** Text as XML: escaped, without what XML cannot hold, cut to what a cell can hold. */
 const text = (value: string) => value
   .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F￾￿]/g, "")
   .slice(0, 32767)
-  .replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+  .replace(/[&<>"]/g, (c) => ESC[c]);
 
 const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const RELS = "http://schemas.openxmlformats.org/package/2006/relationships";

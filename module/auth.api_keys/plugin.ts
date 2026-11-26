@@ -8,12 +8,13 @@ export { api } from "./api.ts";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("authenticate", async ({ ctx }) => {
+  app.on("authenticate", ({ ctx }) => {
     // only the own naming scheme (qk_…) is claimed; foreign Bearer formats fall through
     const m = /^Bearer\s+(qk_[\w-]+)$/i.exec(ctx.req.header("authorization")?.trim() ?? "");
     if (!m) return;
-    const key = await verifyToken(app, m[1]);
-    if (!key) throw new Output({ error: "invalid api key" }, { status: 401, headers: { "WWW-Authenticate": "Bearer" } }); // loud, no anonymous fallback
-    await ctx.authenticate(key.usrId, "api_key:" + key.id);
+    return verifyToken(app, m[1]).then((key) => {
+      if (!key) throw new Output({ error: "invalid api key" }, { status: 401, headers: { "WWW-Authenticate": "Bearer" } }); // loud, no anonymous fallback
+      return ctx.authenticate(key.usrId, "api_key:" + key.id);
+    });
   }, { signal });
 }

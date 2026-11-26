@@ -76,18 +76,15 @@ export async function tableEntriesCopyTo(
 export function initSpaces(app: App, signal: AbortSignal) {
 
   // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
-  app.db.on("table:insert-after", async (e) => {
-    const ctx = requestStorage.getStore();
-    if (!ctx || getVers(ctx).space) return; // only in live space
+  app.db.on("table:insert-after", (e) => {
     const tableName = String(e.table);
     if (!tableName.startsWith("_vers_")) return;
-    const originalTable = tableName.slice(6);
+    const ctx = requestStorage.getStore();
+    if (!ctx || getVers(ctx).space) return; // only in live space
     const auto = e.table.autoIncrement;
     if (!auto) return;
-    const ids = e.table.entryIdValues(e.id) || {};
-    const value = Number(ids[auto.name]);
-    if (!value) return;
-    await ctx.app.db.syncAutoIncrement(originalTable, auto.name, value);
+    const value = Number(e.table.entryIdValues(e.id)?.[auto.name]);
+    if (value) return ctx.app.db.syncAutoIncrement(tableName.slice(6), auto.name, value);
   }, { signal });
 }
 

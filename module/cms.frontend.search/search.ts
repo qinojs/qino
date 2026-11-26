@@ -41,8 +41,7 @@ async function breadcrumb(node: Node, ctx: Ctx) {
 }
 
 /** A plain-text excerpt around a match; markup is added only by the client. */
-async function snippet(node: Node, ctx: Ctx, query: string) {
-  const words = query.toLowerCase().split(/\s+/, 4);
+async function snippet(node: Node, ctx: Ctx, words: string[], re: RegExp) {
   const rows = await ctx.app.db.query`SELECT t.text FROM page_text pt JOIN text_lang t ON t.text_id = pt.text_id
     WHERE pt.page_id = ${node.id} AND t.lang = ${ctx.lang} AND pt.name NOT LIKE ${"!_%"} ESCAPE '!' ORDER BY pt.name`;
   let text = "", score = -1;
@@ -53,7 +52,7 @@ async function snippet(node: Node, ctx: Ctx, query: string) {
     const matches = words.filter((word) => lower.includes(word)).length;
     if (matches > score) { text = plain; score = matches; }
   }
-  const match = text.search(new RegExp(words.map(RegExp.escape).join("|"), "i"));
+  const match = text.search(re);
   const start = Math.max(0, match - 60), end = start + 180;
   return (start ? "…" : "") + text.slice(start, end) + (end < text.length ? "…" : "");
 }
@@ -65,6 +64,7 @@ async function nodes(ctx: Ctx, query: string) {
   const text = sqlSearch(query, ["p.module", "p.name", "t.text"]);
   const url = sqlSearch(query, ["p.module", "p.name", "u.url"]);
   const lower = query.toLowerCase();
+  const words = lower.split(/\s+/, 4), re = new RegExp(words.map(RegExp.escape).join("|"), "i");
   const exactTitle = sql`EXISTS (SELECT 1 FROM text_lang t WHERE t.text_id = p.title_id AND t.lang = ${ctx.lang} AND LOWER(t.text) = ${lower})`;
   const titleMatch = sql`EXISTS (SELECT 1 FROM text_lang t WHERE t.text_id = p.title_id AND t.lang = ${ctx.lang} AND ${text.where})`;
   const id = idOf(query);
@@ -90,7 +90,7 @@ async function nodes(ctx: Ctx, query: string) {
       info: `${module} · #${node.id}`,
       url: await nodeUrl(node, ctx),
       breadcrumb: await breadcrumb(node, ctx),
-      snippet: await snippet(node, ctx, query),
+      snippet: await snippet(node, ctx, words, re),
     });
     if (pages.length >= LIMIT && contents.length >= LIMIT) break;
   }

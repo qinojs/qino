@@ -94,7 +94,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const allowed = uncdn(app).origins; // sources pages declared via CSP — the only thing this proxy fetches
 
   // Served before routing — a cached asset is a static file and needs neither session nor database.
-  app.on("request-start", async ({ request, base }) => {
+  app.on("request-start", ({ request, base }) => {
     const prefix = base + PROXY_PREFIX;
     if (!request.url.includes(prefix)) return;
     const url = new URL(request.url);
@@ -103,26 +103,28 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     try { rest = decodeURIComponent(url.pathname.slice(prefix.length)); } catch { return; }
     if (!rest) return;
 
-    // decoded, a %3F or %23 would start a query or fragment the cache path does not keep
-    const target = URL.parse("https://" + rest);
-    if (!target || url.search || target.search || target.hash) throw notFound("Not allowed");
-    const type = MEDIA_TYPES[rest.split(".").pop()!.toLowerCase()];
-    const filePath = nodePath.resolve(cacheDir, target.hostname + target.pathname);
-    if (!type || !filePath.startsWith(cacheRoot)) throw notFound("Not allowed");
+    return (async () => {
+      // decoded, a %3F or %23 would start a query or fragment the cache path does not keep
+      const target = URL.parse("https://" + rest);
+      if (!target || url.search || target.search || target.hash) throw notFound("Not allowed");
+      const type = MEDIA_TYPES[rest.split(".").pop()!.toLowerCase()];
+      const filePath = nodePath.resolve(cacheDir, target.hostname + target.pathname);
+      if (!type || !filePath.startsWith(cacheRoot)) throw notFound("Not allowed");
 
-    // streams and answers conditional requests; 404 is exactly the "not cached yet" case
-    const hit = await serveFile(request, filePath);
-    // ?? undefined: a 304 carries no body, and Output would turn a null one into "null"
-    if (hit.status !== 404) throw new Output(hit.body ?? undefined, { status: hit.status, headers: cacheHeaders(type, hit.headers) });
-    await hit.body?.cancel();
+      // streams and answers conditional requests; 404 is exactly the "not cached yet" case
+      const hit = await serveFile(request, filePath);
+      // ?? undefined: a 304 carries no body, and Output would turn a null one into "null"
+      if (hit.status !== 404) throw new Output(hit.body ?? undefined, { status: hit.status, headers: cacheHeaders(type, hit.headers) });
+      await hit.body?.cancel();
 
-    // The CSP declaration is the whole permission — what no page asked for is never fetched.
-    if (!allowed.values().some(o => covers(o, target.href))) throw notFound("Not cached");
+      // The CSP declaration is the whole permission — what no page asked for is never fetched.
+      if (!allowed.values().some(o => covers(o, target.href))) throw notFound("Not cached");
 
-    const pending = running.getOrInsertComputed(filePath, () =>
-      fetchAndCache(app, target.href, filePath, cacheDir).finally(() => running.delete(filePath))
-    );
-    throw new Output(await pending, { headers: cacheHeaders(type) });
+      const pending = running.getOrInsertComputed(filePath, () =>
+        fetchAndCache(app, target.href, filePath, cacheDir).finally(() => running.delete(filePath))
+      );
+      throw new Output(await pending, { headers: cacheHeaders(type) });
+    })();
   }, { signal });
 
   app.on("html-ready", ({ ctx }) => {

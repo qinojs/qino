@@ -23,7 +23,7 @@ export const tickets: Record<string, TicketKind> = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["class/card/card.css", "class/table/table.css"]);
   return html.async`<div class=u2-card>${body(node, ctx)}</div>`;
 }

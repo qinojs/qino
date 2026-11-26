@@ -31,6 +31,7 @@ export async function document(
     const locale = localeOf(lang, sender);
     const money = moneyFormat(locale, String(invoice.currency));
     const day = dayFormat(locale);
+    const qty = new Intl.NumberFormat(locale);
     const sum = totals(lines.map(lineOf), Boolean(invoice.tax_included));
     // no tax: no tax rows; one rate: it shows below the lines, a column only where rates differ
     const taxed = sum.rates.some((r) => r.rate);
@@ -139,7 +140,7 @@ ${lines.length || !listed.length ? html.async`<table>
   <tbody>${lines.map((line, i) => html`<tr>
     <td class=pos>${i + 1}
     <td>${line.name}${line.description ? html`<div class=description>${html.raw(sanitizeHtml(line.description, inlinePolicy))}</div>` : ""}
-    <td class="n quantity">${new Intl.NumberFormat(locale).format(Number(line.quantity))} ${line.unit}
+    <td class="n quantity">${qty.format(Number(line.quantity))} ${line.unit}
     <td class="n price">${money(Number(line.price))}
     ${perLine ? html`<td class="n rate">${Number(line.tax_rate)} %` : ""}
     <td class="n amount">${money(Number(line.amount))}`)}

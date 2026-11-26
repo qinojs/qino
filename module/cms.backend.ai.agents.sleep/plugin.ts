@@ -139,7 +139,7 @@ export async function plan(node: Node, { vars = {} }: { vars?: Vars } = {}): Pro
 }
 
 /** The agents and the latest sleeps; with `?sleep=` one sleep. */
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t, id = Number(ctx.req.query.sleep) || 0;
   if (id) return html.async`<div class=u2-flex cms-part=plan>${plan(node, { vars: { sleep: id } })}</div>`;
   return html.async`<div class=u2-flex>

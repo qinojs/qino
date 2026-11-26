@@ -24,13 +24,15 @@ export const settingsSchema = {
 
 /** The address instances of `reporting` post to: {appUrl}reporting. */
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("route", async ({ ctx }) => {
+  app.on("route", ({ ctx }) => {
     if (ctx.req.appPath !== "reporting") return;
     if (ctx.req.method !== "POST") throw new Output("POST only", { status: 405 });
-    const open = Boolean(await app.settings[name].open);
-    const failed = await intake(app, ctx.req.header("authorization") ?? "", ctx.req.body, ctx.req.clientIp, open);
-    if (failed) throw new Output({ error: failed }, { status: 403 });
-    throw new Output({ ok: true });
+    return (async () => {
+      const open = Boolean(await app.settings[name].open);
+      const failed = await intake(app, ctx.req.header("authorization") ?? "", ctx.req.body, ctx.req.clientIp, open);
+      if (failed) throw new Output({ error: failed }, { status: 403 });
+      throw new Output({ ok: true });
+    })();
   }, { signal });
 }
 

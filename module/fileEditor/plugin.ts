@@ -48,8 +48,8 @@ export const api: ApiTree = {
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   // A root route, not a CMS page: it builds the page and ends the request (else the cms would 404).
   app.on("route", ({ ctx }) => {
-    const file = ctx.req.query.file;
-    if (!file || ctx.req.appPath !== name) return;
+    const file = ctx.req.appPath === name && ctx.req.query.file;
+    if (!file) return;
     ctx.app.assertAllowedPath(file);
     if (!allowed(ctx, file, ctx.req.query.exp, ctx.req.query.sig)) throw new Output("no access");
     return (async () => {

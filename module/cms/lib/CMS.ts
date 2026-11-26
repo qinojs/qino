@@ -245,12 +245,7 @@ export class CMS extends Emitter<CmsEvents> {
     delete options.initial;
     if (tag === "textarea") delete options.contenteditable;
     if (tag === "input") { delete options.contenteditable; options.value = text; text = ""; }
-    let attrStr = "";
-    for (const [n, v] of Object.entries(options)) {
-      if (v === false) continue;
-      attrStr += v === true ? ` ${n}` : ` ${n}="${hee(v)}"`;
-    }
-    return html.raw(`<${tag}${attrStr}>${text}</${tag}>`);
+    return html.raw(`<${tag}${attrsHtml(options)}>${text}</${tag}>`);
   }
 
   async fileLang(node: Node, name: string, lang?: string): Promise<DbFile | undefined> {
@@ -294,8 +289,9 @@ export class CMS extends Emitter<CmsEvents> {
 
 }
 
-function attrsHtml(attrs: Record<string, string>) {
+function attrsHtml(attrs: Record<string, unknown>) {
   let s = "";
-  for (const k in attrs) s += ` ${k}="${hee(attrs[k])}"`;
+  for (const [k, v] of Object.entries(attrs))
+    if (v !== false) s += v === true ? ` ${k}` : ` ${k}="${hee(v)}"`;
   return s;
 }

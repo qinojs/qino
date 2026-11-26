@@ -69,23 +69,26 @@ export const api: ApiTree = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   cms(app).on("page:render-after", ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
+    if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.image_editor/pub/init.mjs");
   }, { signal });
 
   // Replace an existing image with the edited version (keeps the filename).
-  app.on("route", async ({ ctx }) => {
-    const upload = await ctx.req.files.editedImage;
-    if (!upload) return;
+  app.on("route", ({ ctx }) => {
+    if (ctx.req.method !== "POST" || !ctx.req.url.search) return;
+    return (async () => {
+      const upload = await ctx.req.files.editedImage;
+      if (!upload) return;
 
-    const fileId = Number(ctx.req.query.file_id ?? 0);
-    const page = isTrustedOrigin(ctx.req) && await writablePage(ctx, fileId);
-    if (!page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
+      const fileId = Number(ctx.req.query.file_id ?? 0);
+      const page = isTrustedOrigin(ctx.req) && await writablePage(ctx, fileId);
+      if (!page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
-    const dbFile = await app.dbFiles.file(fileId);
-    upload.name = dbFile.vs?.name; // preserve file name
-    await dbFile.replaceFromUpload(upload);
+      const dbFile = await app.dbFiles.file(fileId);
+      upload.name = dbFile.vs?.name; // preserve file name
+      await dbFile.replaceFromUpload(upload);
 
-    throw new Output({ id: String(dbFile), url: await dbFile.url() });
+      throw new Output({ id: String(dbFile), url: await dbFile.url() });
+    })();
   }, { signal });
 }

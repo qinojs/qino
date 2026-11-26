@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { Db, FileTransformer, requestStorage } from "@qino/qino";
+import { Db, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, emailMessagingChannel as email, fakeT, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";

@@ -13,13 +13,7 @@ export async function render(ctx: Ctx): Promise<void> {
   if (!page.exists()) {
     const redirect = await app.db.one`SELECT redirect FROM page_redirect WHERE request = ${ctx.req.appPath}`;
     if (redirect) {
-      let url: string;
-      if (!isNaN(Number(redirect))) {
-        const target = await cm.node(Number(redirect));
-        url = ctx.req.url.origin + (await target.url());
-      } else {
-        url = String(redirect);
-      }
+      const url = isNaN(Number(redirect)) ? String(redirect) : ctx.req.url.origin + await (await cm.node(Number(redirect))).url();
       ctx.res.headers.set("Location", url);
       ctx.res.status = 301;
       return;

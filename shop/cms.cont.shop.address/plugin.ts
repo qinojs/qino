@@ -58,8 +58,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const app = node.app, t = shopT(app);
   const order = await cart(ctx, false); // showing the form makes no cart
   const where = order?.country || await shopCountry(app);
-  const edit = await node.settings.editable !== false;
-  const h = `h${Number(await node.settings.heading || 2)}`;
+  const edit = node.settings.editable() !== false;
+  const h = `h${Number(node.settings.heading() || 2)}`;
   const req = app.settings["cms.cont.shop.address"].required;
   const labels: Record<string, string> = {
     honorificPrefix: await t`Salutation`, organization: await t`Company`, givenName: await t`First name`, familyName: await t`Last name`,

@@ -15,11 +15,13 @@ export const api: ApiTree = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  cms(app).on("page:render-after", async ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
-    if (!await app.settings.core.keys["api.pexels.com"]) return; // no key, no Pexels UI
-    ctx.res.csp["img-src"]["https://*.pexels.com"] = true;
-    ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser.pexels/pub/init.mjs");
+  cms(app).on("page:render-after", ({ ctx }) => {
+    if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
+    return (async () => {
+      if (!await app.settings.core.keys["api.pexels.com"]) return; // no key, no Pexels UI
+      ctx.res.csp["img-src"]["https://*.pexels.com"] = true;
+      ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser.pexels/pub/init.mjs");
+    })();
   }, { signal });
 }
 

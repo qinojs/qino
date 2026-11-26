@@ -74,10 +74,10 @@ async function bump(db: Db, t: Sql, key: Key, where: Sql, term: number, now: num
   const row = await db.row<{ score: number }>`SELECT score FROM ${t} WHERE ${where}`;
   const value = row ? logAdd(Number(row.score), term) : term;
   const update = () => db.exec`UPDATE ${t} SET score = ${value}, time = ${now} WHERE ${where}`;
+  if (row) return void await update();
   const cols = sql.join(Object.keys(key).map(sql.id), ", "), values = sql.join(Object.values(key).map((v) => sql`${v}`), ", ");
-  if (row) await update();
   // A parallel hit may have inserted the row; then this access is lost, which is fine.
-  else await db.exec`INSERT INTO ${t} (${cols}, score, time) VALUES (${values}, ${value}, ${now})`.catch(update);
+  await db.exec`INSERT INTO ${t} (${cols}, score, time) VALUES (${values}, ${value}, ${now})`.catch(update);
 }
 
 /** Forget a score, or `keep` a fraction: 0.5 halves it, 0 (default) deletes the row. Use this

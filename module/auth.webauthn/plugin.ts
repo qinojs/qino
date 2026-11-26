@@ -55,10 +55,12 @@ export async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]>
 
 /** Related origins: the app's other domains may use passkeys of rpId. */
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("route", async ({ ctx }) => {
+  app.on("route", ({ ctx }) => {
     if (ctx.req.appPath !== ".well-known/webauthn") return;
-    const hosts = new Set((await appHosts(app)).split(/[\s,]+/).filter((h) => h && !h.startsWith("*.")));
-    throw new Output({ origins: [...hosts].map((h) => "https://" + h) });
+    return (async () => {
+      const hosts = new Set((await appHosts(app)).split(/[\s,]+/).filter((h) => h && !h.startsWith("*.")));
+      throw new Output({ origins: [...hosts].map((h) => "https://" + h) });
+    })();
   }, { signal });
 }
 

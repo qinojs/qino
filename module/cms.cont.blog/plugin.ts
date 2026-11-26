@@ -1,17 +1,12 @@
 import { hee, html, Output } from "@qino/qino";
 import { cms as cmsOf } from "@qino/qino/cms";
 import { cms_image } from "@qino/qino/cms.image";
-import { fit } from "@qino/qino/cms.seo";
+import { fit, text } from "@qino/qino/cms.seo";
 
 import type { App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const LIMIT = 20;
-
-async function descriptionOf(node: Node) {
-  return (await node.texts()).has("_description")
-    ? (await node.showText("_description")).plain() : "";
-}
 
 async function posts(node: Node, publicOnly: boolean, { offset = 0, limit = LIMIT, dated = false } = {}) {
   const page = await node.page();
@@ -88,7 +83,7 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
   const items = [];
   const found = await posts(node, !edit, { offset: (pageNo - 1) * LIMIT, limit: LIMIT + 1 });
   for (const post of found.slice(0, LIMIT)) {
-    const excerpt = await descriptionOf(post.node);
+    const excerpt = await text(post.node, "_description");
     const url = await post.node.url();
     const file = await post.node.cms.image(post.node);
     const created = post.created && new Date(post.created * 1000);
@@ -129,7 +124,7 @@ async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {
       image: file && { url: new URL(await file.url(), site).href, type: file.mime, length: Number(file.vs?.size) || 0 },
       title: post.title,
       url: new URL(ctx.req.appUrl + await post.node.urlSeo(ctx.lang), site).href,
-      summary: await descriptionOf(post.node),
+      summary: await text(post.node, "_description"),
       date: new Date(post.created * 1000).toISOString(),
     });
   }
@@ -159,19 +154,21 @@ async function feed(node: Node, ctx: Ctx, format: "atom" | "rss") {
     body = `<?xml version="1.0" encoding="utf-8"?>
       <rss version="2.0"><channel>
         <title>${hee(title)}</title><link>${hee(canonical)}</link>
-        <description>${hee(await descriptionOf(page))}</description><language>${hee(ctx.lang)}</language>${items}
+        <description>${hee(await text(page, "_description"))}</description><language>${hee(ctx.lang)}</language>${items}
       </channel></rss>`;
   }
   throw new Output(body, { headers: { "Content-Type": `application/${format}+xml; charset=utf-8` } });
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  app.on("route", async ({ ctx }) => {
+  app.on("route", ({ ctx }) => {
+    if (ctx.req.method !== "GET") return;
     const id = Number(ctx.req.query.cms_blog);
-    if (!Number.isSafeInteger(id) || id < 1 || ctx.req.method !== "GET") return;
-    const node = await cmsOf(app).node(id);
-    if (node.vs.module !== "cms.cont.blog") throw new Output("Not Found", { status: 404 });
-    await feed(node, ctx, ctx.req.query.cms_blog_format === "rss" ? "rss" : "atom");
+    if (!Number.isSafeInteger(id) || id < 1) return;
+    return cmsOf(app).node(id).then((node) => {
+      if (node.vs.module !== "cms.cont.blog") throw new Output("Not Found", { status: 404 });
+      return feed(node, ctx, ctx.req.query.cms_blog_format === "rss" ? "rss" : "atom");
+    });
   }, { signal });
 }
 

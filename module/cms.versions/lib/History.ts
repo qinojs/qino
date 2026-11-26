@@ -7,7 +7,7 @@ import { requestStorage, sql, unixTime } from "@qino/qino";
 
 import { getVers, getVersTable } from "./Vers.ts";
 
-import type { App, Db, DbEvents, Sql } from "@qino/qino";
+import type { App, Db, Sql } from "@qino/qino";
 
 function replaceFrom(db: Db, versTable: string, cols: Record<string, any>[], source: Sql) {
   if (db.dialect !== "postgres") return db.exec`REPLACE INTO ${sql.id(versTable)} ${source}`;
@@ -33,47 +33,31 @@ export function initHistory(app: App, signal: AbortSignal) {
   // next one gets a newer entry, so the history keeps the order of the writes.
   let ownLog: Promise<string | null> | undefined;
 
-  // space + shadow table + logId for a tracked write, or null to skip. logId is awaited only after
-  // the table check; earlier, the log insert's own insert-after would wait for itself.
-  const track = async (e: any) => {
+  // Writes one _vers_* snapshot for every tracked table mutation. Sync until a tracked table hits,
+  // so untracked writes cost no promise or tick; logId is awaited only after, or log's own insert would deadlock.
+  const capture = (e: any, deleted: boolean) => {
     const ctx = requestStorage.getStore();
     const tableName = String(e.table);
     if (tableName === "log" && ctx) ownLog = undefined;
     const versTable = getVersTable(app.db, tableName);
-    if (!versTable) return null;
-    const logId = await (ctx ? ctx.logId : ownLog ??= app.db.table("log").insert({ time: unixTime() }).then((id) => id ? String(id) : null, () => null));
-    if (!logId) return null;
-    return { space: ctx ? getVers(ctx).space : 0, tableName, versTable, logId };
-  };
-
-  // ─── History capture: insert/update ──────────────────────────────────────
-  // Writes one _vers_* snapshot for every tracked table mutation.
-  const catchInsertUpdate = async (e: DbEvents["table:insert-after"]) => {
-    const t = await track(e);
-    if (!t) return;
-    const { space, tableName, versTable, logId } = t;
+    if (!versTable) return;
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
-    const versCols = columnsOf(app.db, versTable);
-    await replaceFrom(app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, space, logId, false)} FROM ${sql.id(tableName)} WHERE ${where}`);
+    return (async () => {
+      const logId = await (ctx ? ctx.logId : ownLog ??= app.db.table("log").insert({ time: unixTime() }).then((id) => id ? String(id) : null, () => null));
+      if (!logId) return;
+      const space = ctx ? getVers(ctx).space : 0;
+      const versCols = columnsOf(app.db, versTable);
+      // On delete the live row is gone: copy its latest snapshot with _vers_deleted set, so all NOT NULL columns are filled.
+      const source = deleted
+        ? sql`SELECT ${snapshot(versCols, space, logId, true)} FROM (SELECT * FROM ${sql.id(versTable)} WHERE ${where} AND _vers_space = ${space} ORDER BY _vers_log DESC LIMIT 1) AS src`
+        : sql`SELECT ${snapshot(versCols, space, logId, false)} FROM ${sql.id(tableName)} WHERE ${where}`;
+      await replaceFrom(app.db, versTable, versCols, source);
+    })();
   };
-  app.db.on("table:update-after", catchInsertUpdate, { signal });
-  app.db.on("table:insert-after", catchInsertUpdate, { signal });
-
-  // ─── History capture: delete ──────────────────────────────────────────────
-  app.db.on("table:delete-after", async (e) => {
-    const t = await track(e);
-    if (!t) return;
-    const { space, versTable, logId } = t;
-    const where = e.table.entryIdToFragment(e.id);
-    if (!where) return;
-    // The live row is gone: copy its latest snapshot with _vers_deleted set, so all NOT NULL
-    // columns are filled.
-    const versCols = columnsOf(app.db, versTable);
-    await replaceFrom(app.db, versTable, versCols, sql`SELECT ${snapshot(versCols, space, logId, true)} FROM (
-      SELECT * FROM ${sql.id(versTable)} WHERE ${where} AND _vers_space = ${space}
-      ORDER BY _vers_log DESC LIMIT 1) AS src`);
-  }, { signal });
+  app.db.on("table:update-after", (e) => capture(e, false), { signal });
+  app.db.on("table:insert-after", (e) => capture(e, false), { signal });
+  app.db.on("table:delete-after", (e) => capture(e, true), { signal });
 
   // ─── File protection: don't delete blobs referenced in _vers_file ────────
   // Blobs can't be restored (rows can, from snapshots). Historical pages serve them through

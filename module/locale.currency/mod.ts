@@ -8,14 +8,19 @@ export { updateRates } from "./lib/rates.ts";
 /** Values of the `update` setting: how often the rates are fetched. */
 export const EVERY = ["never", "daily", "hourly"];
 
+const DECIMALS = new Map<string, number>();
+const NAMES = new Map<string, Intl.DisplayNames>();
+const names = (lang: string) => {
+  if (NAMES.size > 50) NAMES.clear(); // lang comes from requests: bounded
+  return NAMES.getOrInsertComputed(lang, () => new Intl.DisplayNames([lang], { type: "currency" }));
+};
+
 export const currency = {
   /** Every currency Intl knows. */
   codes: (): string[] => Intl.supportedValuesOf("currency"),
 
   /** "Swiss Franc", "Schweizer Franken" — the code itself if the language has no name for it. */
-  name(id: string, lang: string): string {
-    return new Intl.DisplayNames([lang], { type: "currency" }).of(id) ?? id;
-  },
+  name: (id: string, lang: string): string => names(lang).of(id) ?? id,
 
   symbol(id: string, lang: string): string {
     const parts = new Intl.NumberFormat(lang, { style: "currency", currency: id }).formatToParts(0);
@@ -25,8 +30,8 @@ export const currency = {
   /** How many decimals its minor unit has: CHF 2, JPY 0, KWD 3 — `amount / 10 ** decimals` turns
    *  minor units into what people read. */
   decimals(id: string): number {
-    const format = new Intl.NumberFormat("en", { style: "currency", currency: id });
-    return format.resolvedOptions().maximumFractionDigits ?? 2;
+    return DECIMALS.getOrInsertComputed(id, () =>
+      new Intl.NumberFormat("en", { style: "currency", currency: id }).resolvedOptions().maximumFractionDigits ?? 2);
   },
 
   /** The amount as the language writes it, with the currency's own number of decimals. */

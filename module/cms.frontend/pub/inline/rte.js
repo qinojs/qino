@@ -330,7 +330,8 @@ class ImageZoomer {
   }
   activate() {
     this.canvas.addEventListener('wheel', e => {
-      eventStop(e);
+      e.stopPropagation();
+      e.preventDefault();
       const oldF = this.factor();
       let f = oldF * wheelIntervalToFaktor(e);
       f = Math.min( this.img.height/this.ctx.height, this.img.width/this.ctx.width,  f ); // limit
@@ -416,8 +417,4 @@ function wheelIntervalToFaktor(e) {
 
   x = e.deltaY > 0 ? x : 1/x; // up or down?
   return x;
-}
-function eventStop(e) {
-  e.stopPropagation();
-  e.preventDefault();
 }

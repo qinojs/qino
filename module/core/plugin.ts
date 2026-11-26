@@ -223,16 +223,15 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     // add the request's logId to every write — except the log tables
     // (the log insert would wait for its own logId → deadlock)
-    const stampLogId = (field: string) => async (e: DbEvents["table:insert-before"]) => {
-      if (/^log(_|$)/.test(String(e.table))) return;
-      const id = await requestStorage.getStore()?.logId; // none outside a request context
-      if (id) e.data[field] = id;
+    const stampLogId = (field: string) => (e: DbEvents["table:insert-before"]) => {
+      const logId = requestStorage.getStore()?.logId; // none outside a request context
+      if (logId && !/^log(_|$)/.test(String(e.table))) return logId.then((id) => { if (id) e.data[field] = id; });
     };
     app.db.on("table:insert-before", stampLogId("log_id"), { signal });
     app.db.on("table:update-before", stampLogId("log_id_ch"), { signal });
     // Stamping waits for the log row, which may be queueing for a connection: wait with none in hand.
     // Holding one meanwhile, enough such transactions would block the pool for good.
-    app.db.on("transaction:before", async () => { await requestStorage.getStore()?.logId; }, { signal });
+    app.db.on("transaction:before", () => requestStorage.getStore()?.logId.then(() => {}), { signal });
 
     app.on("auth:login", async ({ usrId }) => {
       const ctx = getCtx();

@@ -49,14 +49,16 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("html-ready", ({ ctx }) => head(ctx), { signal });
 }
 
-async function route(ctx: Ctx) {
+function route(ctx: Ctx) {
   const appPath = ctx.req.appPath;
   if (appPath === "manifest.webmanifest") return serveManifest(ctx);
   if (appPath !== "favicon.ico" && appPath !== "apple-touch-icon.png") return;
-  const icon = await (await identity.file(ctx.app, "icon"))?.exists();
-  if (!icon) return;
-  const size = appPath === "apple-touch-icon.png" ? 180 : 32;
-  throw new Redirect(await icon.url({ w: size, h: size, fmt: "png", q: 90 }), 302, { "Cache-Control": "public, max-age=86400" });
+  return (async () => {
+    const icon = await (await identity.file(ctx.app, "icon"))?.exists();
+    if (!icon) return;
+    const size = appPath === "apple-touch-icon.png" ? 180 : 32;
+    throw new Redirect(await icon.url({ w: size, h: size, fmt: "png", q: 90 }), 302, { "Cache-Control": "public, max-age=86400" });
+  })();
 }
 
 async function serveManifest(ctx: Ctx) {

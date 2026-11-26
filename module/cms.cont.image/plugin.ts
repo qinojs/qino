@@ -37,20 +37,20 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   // Style
   // bare numbers are pixel values
-  const cssLen = async (prop: string) => {
-    const v = String(await settings[prop] ?? "");
+  const cssLen = (prop: string) => {
+    const v = String(settings[prop]() ?? "");
     return v ? `${prop}:${/^\d+$/.test(v) ? v + "px" : v};` : "";
   };
-  const style = await cssLen("min-height") + await cssLen("max-height");
+  const style = cssLen("min-height") + cssLen("max-height");
 
   const options = {
     alt: text.plain(),
-    width: await settings.width,
-    height: await settings.height,
-    fit: await settings.contain ? "contain" : "cover",
+    width: settings.width(),
+    height: settings.height(),
+    fit: settings.contain() ? "contain" : "cover",
     if: 1,
     style,
-    quality: Number(await settings.quality) || null,
+    quality: Number(settings.quality()) || null,
     editable: edit ? await img?.url() : null,
   };
 

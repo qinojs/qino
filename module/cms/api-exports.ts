@@ -292,7 +292,7 @@ export async function searchFiles(s: string): Promise<any[]> {
         : sql`f.text LIKE ${"%" + s + "%"}`;
     for (const vs of await db.query`
         SELECT pf.page_id AS pid, f.*
-        FROM page_file pf, file f WHERE true AND pf.file_id = f.id
+        FROM page_file pf, file f WHERE pf.file_id = f.id
         AND ( f.id = ${id} OR f.name LIKE ${"%" + s + "%"} OR ${inText} )
         ORDER BY f.id = ${id} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
         f.name LIKE ${"% " + s + "%"} DESC, ${inText} DESC, f.name ASC

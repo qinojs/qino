@@ -42,22 +42,24 @@ async function read(app: App, token: string) {
  * One-click unsubscribe (RFC 8058) is a POST from the mail client with
  * `List-Unsubscribe=One-Click`; it gets no page.
  */
-export async function serveUnsubscribe(ctx: Ctx): Promise<void> {
+export function serveUnsubscribe(ctx: Ctx): Promise<void> | undefined {
   const path = ctx.req.appPath;
   if (!path.startsWith(PATH + "/")) return; // runs on every request: bail out cheaply
-  const app = ctx.app;
-  const t = app.t.in(NS);
-  const target = await read(app, path.slice(PATH.length + 1));
-  if (!target) return page(ctx, await t`This unsubscribe link is not valid.`, false, 404);
+  return (async () => {
+    const app = ctx.app;
+    const t = app.t.in(NS);
+    const target = await read(app, path.slice(PATH.length + 1));
+    if (!target) return page(ctx, await t`This unsubscribe link is not valid.`, false, 404);
 
-  const post = ctx.req.method === "POST";
-  // following the link is the click, like any link of the message; one-click comes without a visit
-  const followed = !post || ctx.req.body?.["List-Unsubscribe"] === "One-Click";
-  if (followed && target.deliveryId) track(app, target.deliveryId, NAME, "click");
-  const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
-  if (!post) return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
-  await app.db.table("usr_grp").delete({ usr_id: target.usrId, grp_id: target.grpId }); // leave the group, idempotent
-  return page(ctx, group ? await t`You have been removed from ${group}.` : await t`You have been removed.`);
+    const post = ctx.req.method === "POST";
+    // following the link is the click, like any link of the message; one-click comes without a visit
+    const followed = !post || ctx.req.body?.["List-Unsubscribe"] === "One-Click";
+    if (followed && target.deliveryId) track(app, target.deliveryId, NAME, "click");
+    const group = await app.db.one<string>`SELECT name FROM grp WHERE id = ${target.grpId}`;
+    if (!post) return page(ctx, group ? await t`Stop receiving messages sent to ${group}?` : await t`Stop receiving these messages?`, true);
+    await app.db.table("usr_grp").delete({ usr_id: target.usrId, grp_id: target.grpId }); // leave the group, idempotent
+    return page(ctx, group ? await t`You have been removed from ${group}.` : await t`You have been removed.`);
+  })();
 }
 
 /** A page of its own, apart from any layout: the token is in the url. */

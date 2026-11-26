@@ -37,8 +37,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const csrfToken = ctx.csrfToken;
 
   let errorHtml: HtmlString | string = "";
-  const errorT = await node.text("login failed");
-  if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
   if (ctx.loginError === "pending") {
     // no failure: the password was right and one more proof is owed; core loads the script that asks
     errorHtml = html`<div class=loginError>${await t`One more step: confirm it is you.`}</div>`;
@@ -49,6 +47,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       : await t`Too many attempts. Please try again in ${Math.ceil(secs / 60)} minutes.`;
     errorHtml = html`<div class=loginError>${msg}</div>`;
   } else if (ctx.loginError) {
+    const errorT = await node.text("login failed");
+    if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
     errorHtml = html`<div class=loginError>${html.raw(await node.showText("login failed"))}</div>`; // sanitized, like every text output
   }
 

@@ -170,7 +170,7 @@ export class DbFile extends File {
   }
 
   async ensureVs(): Promise<Record<string, any>> {
-    if (this.id && !this.vs) this.setLocalVs(await this.#manager.db.row`SELECT * FROM ${sql.id(tableRef("file"))} WHERE id = ${this.id}` ?? {});
+    if (!this.vs) this.setLocalVs(this.id && await this.#manager.db.row`SELECT * FROM ${sql.id(tableRef("file"))} WHERE id = ${this.id}` || {});
     return this.vs!;
   }
 

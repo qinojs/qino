@@ -67,7 +67,8 @@ export const ctxSettingsSchema = {
 
 export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
-    cmsInstances.set(app, new CMS(app));
+    const cm = new CMS(app);
+    cmsInstances.set(app, cm);
 
     initNodeChanged(app, signal);
 
@@ -87,7 +88,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         const cmsPageFile = await ctx.req.files.cmsPageFile;
         if (cmsPageFile) {
             const cmspid = Number(query.cmspid ?? 0);
-            const page = await cms(app).node(cmspid);
+            const page = await cm.node(cmspid);
             if (isTrustedOrigin(ctx.req) && await page.access() > 1) {
                 const replace = query.replace;
                 const dbFile = await (replace ? page.file(replace) : page.addFile());
@@ -99,7 +100,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         // Page files as ZIP
         const zipPid = query.cms_nodeFilesZip;
         if (zipPid) {
-            const page = await cms(app).node(Number(zipPid));
+            const page = await cm.node(Number(zipPid));
             if (!(await page.isReadable())) { ctx.res.status = 403; return; }
             const files = [...(await page.files()).values()];
             if (!files.length) { ctx.res.status = 404; return; }
@@ -116,30 +117,34 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     // url → page id is cached, so any write to page_url drops it
     for (const name of ["table:insert-after", "table:update-after", "table:delete-after"] as const)
-        app.db.on(name, (e) => { if (String(e.table) === "page_url") cms(app).clearUrlCache(); }, { signal });
+        app.db.on(name, (e) => { if (String(e.table) === "page_url") cm.clearUrlCache(); }, { signal });
 
     // What a node is: a row keyed by its id in each table its module names (`cms.node.is`). Given
     // once, when the node gets the module; it stays when the module changes, until the node goes.
     for (const name of ["table:insert-after", "table:update-after"] as const)
-        app.db.on(name, async (e) => {
+        app.db.on(name, (e) => {
             if (String(e.table) !== "page" || !e.data?.module) return;
             const is: string[] = app.modules.get(String(e.data.module))?.plugin.cms?.node?.is ?? [];
-            for (const table of is) await app.db.table(table).ensure({ id: Number(e.id) });
+            if (!is.length) return;
+            return (async () => {
+                for (const table of is) await app.db.table(table).ensure({ id: Number(e.id) });
+            })();
         }, { signal });
 
     // Uploading into a placeholder changes the file row, not page_file, so invalidate the nodes.
-    app.db.on("table:update-after", async (e) => {
+    app.db.on("table:update-after", (e) => {
         if (String(e.table) !== "file" || !("md5" in (e.data ?? {}))) return;
-        for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${Number(e.id)}`)
-            (await cms(app).node(Number(vs.page_id))).clearFileCache();
+        return (async () => {
+            for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${Number(e.id)}`)
+                (await cm.node(Number(vs.page_id))).clearFileCache();
+        })();
     }, { signal });
 
     // File access check
     app.on("dbFile:access-fallback", async (e) => {
         if (e.access) return;
-        const dbFile = e.file;
-        for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${dbFile.id}`) {
-            const page = await cms(app).node(vs.page_id);
+        for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${e.file.id}`) {
+            const page = await cm.node(vs.page_id);
             if (await page.isReadable()) {
                 e.access = true;
                 return;
@@ -151,7 +156,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     // the languages are read at the start, so a new one shows here: its addresses
     for (const lang of app.languages.all) {
         if (await app.db.one`SELECT 1 FROM page_url WHERE lang = ${lang} LIMIT 1`) continue;
-        if (await app.db.one`SELECT 1 FROM page WHERE id = 1`) await (await cms(app).node(1)).urlsGen(lang); // none yet: nothing to do, and no node to cache
+        if (await app.db.one`SELECT 1 FROM page WHERE id = 1`) await (await cm.node(1)).urlsGen(lang); // none yet: nothing to do, and no node to cache
     }
 }
 

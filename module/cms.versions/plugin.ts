@@ -122,7 +122,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
     // ─── Request init ─────────────────────────────────────────────────────────
     // settings + request params.
-    app.on("route", async ({ ctx }) => {
+    app.on("route", ({ ctx }) => {
         const vs = getCmsVers(ctx);
         // Draft/space mode is parked; active history stays in live space 0.
         // await ensureSpace(ctx.app, vs.space);
@@ -135,7 +135,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         vs.log = Number(ctx.req.query.cms_versions_log) || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
-        if (vs.log) {
+        if (!vs.log) return;
+        return (async () => {
             const pid = Number(ctx.req.query.cms_versions_page ?? 0);
 
             // Stopgap: the views are built up front, so without this check anyone could make the
@@ -155,7 +156,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
                 for (const cont of await node.conts()) await load(cont);
             };
             await load(await cms(app).node(pid));
-        }
+        })();
 
         // ─── Space-mode: draft reads ──────────────────────────────────────────
         // TODO: full space-mode read routing requires the page:sql hook in
@@ -181,12 +182,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     }, { signal });
 
     // ─── page:render-after: add frontend JS ──────────────────────────────────────────
-    cms(app).on("page:render-after", async ({ ctx }) => {
+    cms(app).on("page:render-after", ({ ctx }) => {
         if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
-        const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend");
-        ctx.res.html.jsData.cmsFrontend = frontend;
-        ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/inline/inline.js");
-        ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/vers.mjs");
+        return (async () => {
+            const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend");
+            ctx.res.html.jsData.cmsFrontend = frontend;
+            ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/inline/inline.js");
+            ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/vers.mjs");
+        })();
     }, { signal });
 
     // initDraftmode(app, signal); // parked until draft reads and writes are fully routed

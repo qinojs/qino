@@ -42,7 +42,7 @@ export const cron = {
 } satisfies Jobs;
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("route", ({ ctx }) => handle(ctx), { signal });
+  app.on("route", ({ ctx }) => ctx.req.appPath.startsWith(PREFIX) ? handle(ctx) : undefined, { signal });
 }
 
 const PREFIX = PATH + "/";
@@ -50,9 +50,7 @@ const PREFIX = PATH + "/";
 /** `return/<token>` for the payer, `notify/<token>` for the provider's server, `pay/<token>` shows
  *  the slip, `webhook/<provider>` takes a provider's notifications for all its payments. */
 async function handle(ctx: Ctx) {
-  const path = ctx.req.appPath;
-  if (!path.startsWith(PREFIX)) return; // every request passes here
-  const [kind, token] = path.slice(PREFIX.length).split("/");
+  const [kind, token] = ctx.req.appPath.slice(PREFIX.length).split("/");
   const app = ctx.app;
   if (kind === "webhook") {
     const ids = await provider(app, token ?? "")?.webhook?.(ctx);

@@ -77,12 +77,10 @@ async function search(s_: string, ctx: Ctx) {
     ORDER BY${order} f.id DESC
     LIMIT 500`; // one row per page from the join; only a safety cap
 
-  const res: Record<string, any> = {};
+  const res: Record<string, any> = {}, cm = cms(ctx.app);
 
   for (const vs of rows) {
-    const page = vs.pid ? await cms(ctx.app).node(Number(vs.pid)) : null;
     const dbFile = await ctx.app.dbFiles.file(Number(vs.id), vs);
-
     if (!await dbFile.exists() || !await dbFile.access()) continue;
 
     const md5 = vs.md5;
@@ -93,9 +91,9 @@ async function search(s_: string, ctx: Ctx) {
       name: dbFile.name,
       pages: {} as Record<string, string>,
     };
-    if (page) {
-      const title = await page.title();
-      res[md5].pages[String(page.id)] = await title.string();
+    if (vs.pid) {
+      const page = await cm.node(Number(vs.pid));
+      res[md5].pages[String(page.id)] = await (await page.title()).string();
     }
   }
 

@@ -11,19 +11,19 @@ type TFn = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<stri
 
 // tables whose rows belong to a node via their page_id column
 const LINKED = new Set(["page_text", "page_url", "page_file", "page_access_grp", "page_access_usr"]);
+const TRACKED = new Set(["page", "text_lang", "file", ...LINKED]);
 
 export function initNodeChanged(app: App, signal: AbortSignal) {
     const db = app.db;
 
     // nearest ancestor of type 'p', starting at (and including) id
     const containingPage = async (id: number) => {
-        let cur = id;
         for (let i = 0; i < 100; i++) {
-            const row = await db.row`SELECT type, basis FROM page WHERE id = ${cur}`;
-            if (!row || row.type === "p" || !row.basis) return cur;
-            cur = Number(row.basis);
+            const row = await db.row`SELECT type, basis FROM page WHERE id = ${id}`;
+            if (!row || row.type === "p" || !row.basis) return id;
+            id = Number(row.basis);
         }
-        return cur;
+        return id;
     };
 
     // the row's own id column — a text_lang row is addressed by the text it translates
@@ -40,33 +40,34 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         return [Number(id)];
     };
 
-    const capture = async (op: "insert" | "update" | "delete", e: any) => {
+    const capture = (op: "insert" | "update" | "delete", e: any) => {
         const ctx = requestStorage.getStore();
-        if (!ctx) return;
         const table = String(e.table);
-        if (table !== "page" && table !== "text_lang" && table !== "file" && !LINKED.has(table)) return;
+        if (!ctx || !TRACKED.has(table)) return;
         const vs = { ...(e.id != null ? e.table.entryIdValues?.(e.id) : {}), ...e.data };
         const id = idOf(table, vs);
         if (id == null) return; // incomplete id (e.g. composite key as single value)
-        const logId = Number(await ctx.logId) || 0;
-        if (!logId) return;
+        return (async () => {
+            const logId = Number(await ctx.logId) || 0;
+            if (!logId) return;
 
-        const nodes = await nodeIds(table, id);
-        if (!nodes.length) return;
-        // page delete: resolve the page via basis before the row is gone.
-        const fromBasis = table === "page" && op === "delete";
-        const data = JSON.stringify({
-            table, op,
-            ...(vs.name != null && table !== "page" ? { name: vs.name } : {}),
-            ...(vs.lang != null ? { lang: vs.lang } : {}),
-            ...(table === "page" && op === "update" ? { cols: Object.keys(e.data ?? {}) } : {}),
-        });
-        for (const nodeId of nodes) {
-            const start = fromBasis ? Number((await db.row`SELECT basis FROM page WHERE id = ${nodeId}`)?.basis) || nodeId : nodeId;
-            const pageId = await containingPage(start);
-            // fires insert-after, but node_changed itself is filtered out above
-            await db.table("node_changed").insert({ log_id: logId, node_id: nodeId, page_id: pageId, data });
-        }
+            const nodes = await nodeIds(table, id);
+            if (!nodes.length) return;
+            // page delete: resolve the page via basis before the row is gone.
+            const fromBasis = table === "page" && op === "delete";
+            const data = JSON.stringify({
+                table, op,
+                ...(vs.name != null && table !== "page" ? { name: vs.name } : {}),
+                ...(vs.lang != null ? { lang: vs.lang } : {}),
+                ...(table === "page" && op === "update" ? { cols: Object.keys(e.data ?? {}) } : {}),
+            });
+            for (const nodeId of nodes) {
+                const start = fromBasis ? Number((await db.row`SELECT basis FROM page WHERE id = ${nodeId}`)?.basis) || nodeId : nodeId;
+                const pageId = await containingPage(start);
+                // fires insert-after, but node_changed itself is filtered out above
+                await db.table("node_changed").insert({ log_id: logId, node_id: nodeId, page_id: pageId, data });
+            }
+        })();
     };
 
     db.on("table:insert-after", (e) => capture("insert", e), { signal });

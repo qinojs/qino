@@ -34,7 +34,7 @@ const detail = async (node: Node, { vars = {} }: { vars?: Record<string, unknown
   });
 };
 
-async function render(node: Node) {
+function render(node: Node) {
   const { t } = node.app;
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex:0 1 50rem">

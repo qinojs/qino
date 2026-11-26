@@ -44,10 +44,10 @@ const settingsSchema = {
 const terms = (search: string) => search.toLowerCase().split(/\s+/, 4);
 
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
-function snippet(text: string, words: string[], parts = 7, before = 30, after = 10) {
+function snippet(text: string, re: RegExp | null, parts = 7, before = 30, after = 10) {
   const plain = unhee(text.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim(); // \s takes the decoded &nbsp; too
-  if (!words.length) return html`${plain.slice(0, before + after)}`;
-  const out = plain.split(new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i"), parts).map((piece, i) =>
+  if (!re) return html`${plain.slice(0, before + after)}`;
+  const out = plain.split(re, parts).map((piece, i) =>
     i % 2
       ? html`<mark>${piece}</mark>`
       : html`${piece.length > before + after + 3 ? `${piece.slice(0, after)}… ${piece.slice(-before)}` : piece}`
@@ -115,7 +115,7 @@ async function hits(node: Node, ctx: Ctx, search: string, words: string[]) {
 }
 
 /** One link per hit, on its title; u2-href makes the whole hit follow it. */
-async function item(node: Node, page: Node, text: string, words: string[]) {
+async function item(node: Node, page: Node, text: string, re: RegExp | null) {
   const cms = node.cms;
 
   let image: HtmlString | string = "";
@@ -138,7 +138,7 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
     <div>
       <div class=-title>${cms.link(page)}</div>
       ${path}
-      <p class=-content>${snippet(text, words)}</p>
+      <p class=-content>${snippet(text, re)}</p>
     </div>
   </li>`;
 }
@@ -147,15 +147,16 @@ async function item(node: Node, page: Node, text: string, words: string[]) {
 async function results(node: Node, ctx: Ctx, search: string, vars: Record<string, unknown> = {}) {
   if (!search) return "";
   const words = terms(search);
+  const re = words.length ? new RegExp(`(${words.map(RegExp.escape).join("|")})`, "i") : null;
   const found = await hits(node, ctx, search, words);
   const entry = await record(node, ctx, search, found.length, vars);
   const list = found.length
-    ? html.async`<ol>${found.map((r) => item(node, r.page, r.text, words))}</ol>`
+    ? html.async`<ol>${found.map((r) => item(node, r.page, r.text, re))}</ol>`
     : html.async`<p class=-empty>${ctx.app.t.in("cms.cont.search")`No results found`}</p>`;
   return html.async`${entry}${list}`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = ctx.app.t.in("cms.cont.search");
   const search = (ctx.req.query[QUERY] ?? "").trim();
   u2.assets(ctx, ["attr/href/href.js"]);

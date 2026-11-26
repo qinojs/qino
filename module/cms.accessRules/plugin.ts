@@ -62,21 +62,24 @@ async function moduleCap(app: App, module: string, user?: Usr | null) {
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // limit node access by the module axis, but never below the guest level (standard = 0 hides it
   // for guests too).
-  cms(app).on("node:access", async (e) => {
+  cms(app).on("node:access", (e) => {
     if (!e.access || e.user?.superuser) return;
     const module = String(e.node.module?.name ?? "");
     if (!module) return;
-    const cap = await moduleCap(app, module, e.user);
-    if (cap == null) return;
-    if (!e.user) { e.access = Math.min(e.access, cap); return; }
-    const guest = (await standards(app)).get(module) === 0 ? 0 : (await e.node.isPublic()) ? 1 : 0;
-    e.access = Math.max(Math.min(e.access, cap), guest);
+    return (async () => {
+      const cap = await moduleCap(app, module, e.user);
+      if (cap == null) return;
+      if (!e.user) { e.access = Math.min(e.access, cap); return; }
+      const guest = (await standards(app)).get(module) === 0 ? 0 : (await e.node.isPublic()) ? 1 : 0;
+      e.access = Math.max(Math.min(e.access, cap), guest);
+    })();
   }, { signal });
 
   // module picker/add: lower e.access to what the user may do with this module
-  cms(app).on("module:access", async (e) => {
+  cms(app).on("module:access", (e) => {
     if (e.user?.superuser) return;
-    const cap = await moduleCap(app, String(e.module), e.user);
-    if (cap != null) e.access = Math.min(e.access, cap);
+    return moduleCap(app, String(e.module), e.user).then((cap) => {
+      if (cap != null) e.access = Math.min(e.access, cap);
+    });
   }, { signal });
 }

@@ -24,10 +24,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", ({ ctx }) => route(ctx), { signal });
 }
 
-async function route(ctx: Ctx) {
+function route(ctx: Ctx) {
   const path = ctx.req.appPath;
-  if (path === "robots.txt") await serve(ctx, "text/plain", robots);
-  if (path === "sitemap.xml") await serve(ctx, "application/xml", sitemap);
+  if (path === "robots.txt") return serve(ctx, "text/plain", robots);
+  if (path === "sitemap.xml") return serve(ctx, "application/xml", sitemap);
 }
 
 /** Answers from a per-app, per-base cache that expires after TTL seconds. */

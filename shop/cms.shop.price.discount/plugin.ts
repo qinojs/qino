@@ -26,12 +26,14 @@ export async function best(app: App, { product, quantity, order, usrId, time }: 
   usrId?: number | null;
   time: number;
 }): Promise<Row | undefined> {
+  const list = await discounts(app);
+  if (!list.length) return;
   const grps = order ? await order.grps() : await grpsOf(app, usrId);
   const lines = order ? await order.lines() : [];
   // what lies above the product, once: a shop may have tens of thousands of discounts
   const path = new Set<number>();
   for (let n: Node | undefined = await cms(app).node(Number(product.$id)); n; n = await n.parent()) path.add(n.id);
-  for (const d of await discounts(app)) { // lowest factor first
+  for (const d of list) { // lowest factor first
     const node = Number(d.node_id);
     if (node && !path.has(node)) continue;
     if (Number(d.grp_id) && !grps.includes(Number(d.grp_id))) continue;

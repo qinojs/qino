@@ -9,15 +9,17 @@ const pending = new Map();
 // Max texts per call — keep in sync with T_WARN in core/api.ts.
 const MAX = 400;
 
+const fetchTexts = (ns, texts) => {
+  const calls = [];
+  for (let i = 0; i < texts.length; i += MAX) calls.push(api.core.t.post({ texts: texts.slice(i, i + MAX), ...ns ? { ns } : {} }));
+  return Promise.all(calls).then((res) => Object.assign(Object.create(null), ...res)); // no prototype: a text "toString" must not match
+};
+
 function flush() {
   const batches = [...pending];
   pending.clear();
   for (const [ns, batch] of batches) {
-    const texts = [...batch.keys()];
-    const calls = [];
-    for (let i = 0; i < texts.length; i += MAX) calls.push(api.core.t.post({ texts: texts.slice(i, i + MAX), ...ns ? { ns } : {} }));
-    Promise.all(calls).then(results => {
-      const all = Object.assign(Object.create(null), ...results); // no prototype: a text "toString" must not match
+    fetchTexts(ns, [...batch.keys()]).then(all => {
       const into = stored[ns] ??= Object.create(null);
       for (const [text, resolve] of batch) resolve(into[text] = all[text] ?? text);
       save();
@@ -41,8 +43,7 @@ function translate(ns, original, values) {
       // (a microtask only one), and unlike requestAnimationFrame a timer also fires in hidden tabs.
       if (!pending.size) setTimeout(flush, 20);
       const waiting = pending.get(ns) ?? pending.set(ns, new Map()).get(ns);
-      const answer = new Promise(resolve => waiting.set(original, resolve)).then(text => entry.translated = text);
-      entry.promise = entry.translated === undefined ? answer : Promise.resolve(entry.translated);
+      entry.promise = new Promise(resolve => waiting.set(original, resolve)).then(text => entry.translated = text);
     }
     cache.set(key, entry);
   }
@@ -95,11 +96,7 @@ function adopt(saved) {
 function refresh() {
   const entries = Object.entries(stored).filter(([, m]) => Object.keys(m).length);
   if (!entries.length) return;
-  Promise.all(entries.map(([ns, m]) => {
-    const keys = Object.keys(m), calls = [];
-    for (let i = 0; i < keys.length; i += MAX) calls.push(api.core.t.post({ texts: keys.slice(i, i + MAX), ...ns ? { ns } : {} }));
-    return Promise.all(calls).then((res) => [ns, Object.assign(Object.create(null), ...res)]);
-  })).then((all) => {
+  Promise.all(entries.map(([ns, m]) => fetchTexts(ns, Object.keys(m)).then((map) => [ns, map]))).then((all) => {
     for (const [ns, map] of all) Object.assign(stored[ns] ??= Object.create(null), map);
     at = Date.now();
     save();

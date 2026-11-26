@@ -33,26 +33,28 @@ export async function nodeLoadRuntimeCache(node: Node): Promise<void> {
 
 /** Select current or fully loaded historical nodes by current edit access. */
 export function initHistoricalNodes(app: App, signal: AbortSignal): void {
-    cms(app).on("node:construct", async ({ node }) => {
+    const cm = cms(app);
+    cm.on("node:construct", ({ node }) => {
         const ctx = requestStorage.getStore();
         if (!ctx?.state.dbScope?.tables || !getCmsVers(ctx).log) return;
-
-        const [historical, current] = await Promise.all([
-            app.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${node.id}`,
-            app.db.row`SELECT * FROM page WHERE id = ${node.id}`,
-        ]);
-        node.vs = current ?? historical ?? {};
-        node.vs = (await node.access() >= 2 ? historical : current) ?? {};
-        if (node.vs !== historical) return;
-        node.vs.online_start = node.vs.online_end = 0;
-        await nodeLoadRuntimeCache(node);
+        return (async () => {
+            const [historical, current] = await Promise.all([
+                app.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${node.id}`,
+                app.db.row`SELECT * FROM page WHERE id = ${node.id}`,
+            ]);
+            node.vs = current ?? historical ?? {};
+            node.vs = (await node.access() >= 2 ? historical : current) ?? {};
+            if (node.vs !== historical) return;
+            node.vs.online_start = node.vs.online_end = 0;
+            await nodeLoadRuntimeCache(node);
+        })();
     }, { signal });
 
-    cms(app).on("node:children", async (e) => {
+    cm.on("node:children", (e) => {
         const ctx = requestStorage.getStore();
         if (!ctx?.state.dbScope?.tables || !getCmsVers(ctx).log) return;
-        const rows = await app.db.query`SELECT * FROM page WHERE basis = ${e.node.id} ORDER BY type DESC, sort, id DESC`;
-        e.rows.push(...rows);
+        return app.db.query`SELECT * FROM page WHERE basis = ${e.node.id} ORDER BY type DESC, sort, id DESC`
+            .then((rows) => void e.rows.push(...rows));
     }, { signal });
 }
 

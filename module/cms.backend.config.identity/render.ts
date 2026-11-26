@@ -17,7 +17,7 @@ const card = (title: string | Promise<string>, fields: (HtmlString | Promise<Htm
   <table class="u2-table -Fields -Flex">${fields}</table>
 </div>`;
 
-export async function render(node: Node): Promise<HtmlString> {
+export function render(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   return html.async`<div class=u2-flex>

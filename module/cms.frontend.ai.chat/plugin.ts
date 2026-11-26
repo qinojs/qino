@@ -66,12 +66,15 @@ export const api: ApiTree = {
 
 /** The chat is an item of the CMS panel, which is there in editmode, for those who may edit the page. */
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  cms(app).on("page:render-after", async ({ ctx }) => {
+  cms(app).on("page:render-after", ({ ctx }) => {
     const state = cmsCtx(ctx), node = state.mainNode;
-    if (ctx.req.query.cms_noFrontend || !state.editmode || !ctx.userId || !node || await node.access() < 2) return;
-    const qino = ctx.res.html.jsData.qino ??= {};
-    qino[name] = { page: node.id, editmode: true };
-    ctx.res.html.scripts.add(ctx.req.moduleUrl + name + "/pub/chat.js");
-    allowMarkdown(); // answers render as markdown
+    if (!state.editmode || !ctx.userId || !node || ctx.req.query.cms_noFrontend) return;
+    return (async () => {
+      if (await node.access() < 2) return;
+      const qino = ctx.res.html.jsData.qino ??= {};
+      qino[name] = { page: node.id, editmode: true };
+      ctx.res.html.scripts.add(ctx.req.moduleUrl + name + "/pub/chat.js");
+      allowMarkdown(); // answers render as markdown
+    })();
   }, { signal });
 }

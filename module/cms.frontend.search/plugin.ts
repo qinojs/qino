@@ -21,9 +21,9 @@ export const api: ApiTree = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  cms(app).on("page:render-after", async ({ ctx }) => {
+  cms(app).on("page:render-after", ({ ctx }) => {
     if (!ctx.res.html.scripts.has(ctx.req.moduleUrl + "cms.frontend/pub/panel/panel.js")) return;
     const node = cmsCtx(ctx).mainNode;
-    if (node && await allowed(ctx, node.id)) ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.frontend.search/pub/init.js");
+    if (node) return allowed(ctx, node.id).then((ok) => { if (ok) ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.frontend.search/pub/init.js"); });
   }, { signal });
 }

@@ -18,22 +18,24 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   };
 
   // Served before routing: no session or database needed, and update checks are frequent.
-  app.on("request-start", async ({ request, base }) => {
+  app.on("request-start", ({ request, base }) => {
     const path = base + "sw.js";
     if (!request.url.endsWith(path)) return; // this hook sees every request — reject without allocating
     if (request.url.slice(request.url.indexOf("/", 8)) !== path) return; // a mount at "/" must not swallow /page/sw.js
-    const worker = cache?.key === keyOf(base) ? cache : await build(base);
-    if (!worker) return;
-    const fresh = request.headers.get("if-none-match") === worker.etag;
-    // "no-cache" stores the worker but revalidates it; the ETag then answers most checks with a 304
-    throw new Output(fresh ? undefined : worker.script, {
-      status: fresh ? 304 : 200,
-      headers: {
-        "Content-Type": "text/javascript; charset=utf-8",
-        "Cache-Control": "no-cache",
-        ETag: worker.etag,
-      },
-    });
+    return (async () => {
+      const worker = cache?.key === keyOf(base) ? cache : await build(base);
+      if (!worker) return;
+      const fresh = request.headers.get("if-none-match") === worker.etag;
+      // "no-cache" stores the worker but revalidates it; the ETag then answers most checks with a 304
+      throw new Output(fresh ? undefined : worker.script, {
+        status: fresh ? 304 : 200,
+        headers: {
+          "Content-Type": "text/javascript; charset=utf-8",
+          "Cache-Control": "no-cache",
+          ETag: worker.etag,
+        },
+      });
+    })();
   }, { signal });
 
   app.on("html-ready", ({ ctx }) => register(ctx), { signal });
