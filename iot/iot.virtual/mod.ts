@@ -29,7 +29,7 @@ const forget = (app: App) => { delete (app as Owned)[SOURCES]; };
 export async function sourced(app: App, provider: number, entity: string): Promise<Virtual[]> {
   const sources = (app as Owned)[SOURCES] ??= virtuals(app).then((rows) => Map.groupBy(
     rows.filter((row) => row.source_provider), (row) => `${row.source_provider}:${row.source_entity}`,
-  ));
+  )).catch((e) => { forget(app); throw e; });
   return (await sources).get(`${provider}:${entity}`) ?? [];
 }
 

@@ -23,7 +23,7 @@ export default async function (widget, { node, signal }) {
            placeholder="${t`max. 55 characters`}">
     ${t`Description`}:
     <textarea class=-desc cmstxt=${descr.id} required pattern=".{60,156}" maxlength=220
-              placeholder="${t`max. 156 characters`}" rows=4>${descr.value}</textarea>
+              placeholder="${t`max. 156 characters`}" rows=4>${unhee(descr.value)}</textarea>
   </div>`;
 
   const check = (d) => d.classList.toggle('-invalid', !/^.{60,156}$/.test(d.value));

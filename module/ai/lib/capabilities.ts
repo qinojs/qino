@@ -78,7 +78,7 @@ export const aiCapabilities: Record<string, Capability> = {
           schema: s.object({ choice: s.string() }),
           temperature: 0,
         });
-        if (!(choice in options)) throw new AiError(`Not an option: ${choice}`);
+        if (!Object.hasOwn(options, choice)) throw new AiError(`Not an option: ${choice}`);
         return { choice };
       },
     },

@@ -49,7 +49,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const langs = node.app.languages.all;
   if (langs.length < 2) return html`<span></span>`;
 
-  const page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode;
+  const page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode ?? await node.page();
 
   if (type === "select") {
     const options = langs.map((l) => {

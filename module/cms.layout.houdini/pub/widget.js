@@ -52,11 +52,11 @@ export default async function (widget, { node, signal }) {
       </p>
       <output aria-live=polite></output>
     </form>
-    <details>
+    ${layout.files.length ? html`<details>
       <summary>${t`Template and CSS`}</summary>
       <p>${t`These files are shared by all pages using Houdini. Their contents are fully editable.`}</p>
       <div class=-files>${layout.files.map((file) => html`<a data-key="${file.key}" target=_blank rel=noopener href="${file.url}">${file.name}</a>`)}</div>
-    </details>
+    </details>` : ''}
     <details>
       <summary>${t`u2 release`}</summary>
       <form class=-version>

@@ -193,7 +193,7 @@ async function placeholders(app: App, values: Computed) {
       ${names.map((name) => html`<tr>
         <td>${codes([name], copy)}</td>
         <td title="${values[name]?.text}">${values[name]?.text}</td>
-        <td title="${values[name]?.html}"><code>${values[name]?.html}</code></td>
+        <td title="${String(values[name]?.html ?? "")}"><code>${String(values[name]?.html ?? "")}</code></td>
       </tr>`)}
     </table>`;
 

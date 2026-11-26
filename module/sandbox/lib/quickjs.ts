@@ -113,7 +113,7 @@ class QuickJsEngine implements Engine {
       b.run.dispose();
       b.vm.dispose();
       b.runtime.dispose();
-    });
+    }, () => {});
   }
 
   async #start(): Promise<Box> {

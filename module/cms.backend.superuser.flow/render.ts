@@ -52,17 +52,17 @@ export async function renderDetail(
   } = {},
 ): Promise<HtmlString> {
   const { t } = app;
+  if (!row) return html.async`<div class=-head>${t`Flow`}</div><p><small>${t`Pick a flow.`}</small></p>`;
   const [tRun, tConfirmRun] = await Promise.all([
     t`Run for real`, t`Run the flow for real? Its tools take effect.`,
   ]);
-  const [tFlow, tPick, tDescription, tWhen, tTools, tOnePerLine, tCode, tSave, tEvent, tTry] = await Promise.all([
-    t`Flow`, t`Pick a flow.`, t`Description`, t`When`, t`May use`, t`one tool per line`, t`Code`, t`Save`,
+  const [tDescription, tWhen, tTools, tOnePerLine, tCode, tSave, tEvent, tTry] = await Promise.all([
+    t`Description`, t`When`, t`May use`, t`one tool per line`, t`Code`, t`Save`,
     t`Example event (JSON)`, t`Test run`,
   ]);
   const [tRuns, tFiltered, tNoRuns, tReload] = await Promise.all([
     t`Runs since the start`, t`not for it (no tool call, no result)`, t`No runs yet.`, t`Reload`,
   ]);
-  if (!row) return html`<div class=-head>${tFlow}</div><p><small>${tPick}</small></p>`;
 
   const tools: string[] = JSON.parse(String(row.tools || "[]"));
   const on = `${row.host} ${row.event}`;

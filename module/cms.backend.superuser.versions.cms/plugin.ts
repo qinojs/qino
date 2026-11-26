@@ -24,7 +24,8 @@ async function nodeAnchor(node: Node, id: number) {
     const inner = own || String(page.vs?.module ?? "") || `#${id}`;
     label = pageTitle ? `${pageTitle} › ${inner}` : inner;
   }
-  return html`<a href="${await page.url()}" target=_blank>${label}</a>`;
+  const url = await page.url().catch(() => "");
+  return url ? html`<a href="${url}" target=_blank>${label}</a>` : html`${label}`;
 }
 
 async function render(node: Node) {

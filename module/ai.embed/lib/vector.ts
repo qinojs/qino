@@ -52,7 +52,10 @@ export async function fit(db: Db, table: string, c: Collection): Promise<void> {
 
 /** Drop what `fit` added for collection `id`. */
 export async function unfit(db: Db, table: string, id: number): Promise<void> {
-  if (db.dialect === "postgres") await db.exec`DROP INDEX IF EXISTS ${sql.id(`${table}_collection_${id}`)}`;
+  if (db.dialect !== "postgres") return;
+  const name = `${table}_collection_${id}`;
+  await db.exec`DROP INDEX IF EXISTS ${sql.id(name)}`;
+  indexed.get(db)?.delete(name);
 }
 
 /** JSON text of `values` at length 1, padded to MariaDB's column length; undefined if that is too

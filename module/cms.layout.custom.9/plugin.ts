@@ -1,3 +1,5 @@
+import { pathToFileURL } from "node:url";
+
 import { fs, hee, html } from "@qino/qino";
 
 import manifest from "./manifest.json" with { type: "json" };
@@ -29,7 +31,7 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlStri
   const customPath = module.data + "index.ts";
   if (await fs.isFile(customPath)) {
     try {
-      const mod = await import(customPath);
+      const mod = await import(pathToFileURL(customPath).href);
       if (typeof mod.default === "function") return mod.default(node, data);
     } catch { /* broken custom layout override */ }
   } // else: no custom layout override

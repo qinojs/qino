@@ -10,7 +10,8 @@ export async function backgroundStyle(node: Node, fileName: string, params: Reco
   let style = `background-image:url(${await file.url(params)});`;
   const hpos = await file.get("hpos");
   const vpos = await file.get("vpos");
-  if (hpos != null || vpos != null) style += `background-position:${Number(hpos) || 50}% ${Number(vpos) || 50}%;`;
+  const pos = (v: unknown) => v == null || v === "" || Number.isNaN(Number(v)) ? 50 : Number(v);
+  if (hpos != null || vpos != null) style += `background-position:${pos(hpos)}% ${pos(vpos)}%;`;
   return style;
 }
 

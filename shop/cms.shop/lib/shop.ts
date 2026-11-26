@@ -27,7 +27,7 @@ export const taxIncluded = async (app: App): Promise<boolean> => await settingsO
 const caches = new WeakMap<App, Map<string, Promise<unknown>>>();
 function cached<T>(app: App, table: string, load: () => Promise<T>): Promise<T> {
   const tables = caches.getOrInsertComputed(app, () => new Map());
-  return tables.getOrInsertComputed(table, load) as Promise<T>;
+  return tables.getOrInsertComputed(table, () => load().catch((e) => { tables.delete(table); throw e; })) as Promise<T>;
 }
 /** The tables behind the caches; a write to one of them (through its table) drops its cache. */
 export const CACHED = ["country", "shop_currency", "shop_product_tax"];

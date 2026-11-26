@@ -3,7 +3,7 @@
 
 /** "Hello {0}" with ["Qino"] → "Hello Qino".
  * @param {string} text @param {unknown[]} values @returns {string} */
-export const fill = (text, values) => values.reduce((s, v, i) => s.replaceAll(`{${i}}`, String(v ?? "")), text);
+export const fill = (text, values) => text.replace(/\{(\d+)\}/g, (m, i) => i in values ? String(values[i] ?? "") : m);
 
 /**
  * `translate(ns, original, values, lang)` answers a text; `scope` is `{ get(), run(scope, fn) }`.

@@ -35,7 +35,7 @@ export async function mcpFetch(ctx: Ctx): Promise<never> {
  *  headers (browser connectors) find the authorization server. */
 function unauthorized(ctx: Ctx) {
   const base = ctx.req.url.origin + ctx.req.appUrl.replace(/\/$/, "");
-  const challenge = ctx.app.modules.get("oauth_server")
+  const challenge = ctx.app.modules.linked("oauth_server")
     ? `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`
     : "Bearer";
   return new Output(rpcError(null, -32001, "Unauthorized: send an api key or OAuth access token as Bearer"), {

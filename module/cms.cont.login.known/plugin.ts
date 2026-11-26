@@ -27,6 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const clientUsr of Object.values(clientUsrs)) {
     if (++i > historyLimit) break;
     const email = (await clientUsr.user())?.username;
+    if (!email) continue;
     const saveLogin = clientUsr.save_login;
     const saveLoginChecked = saveLogin ? " checked" : "";
     const showPwField = !saveLogin;

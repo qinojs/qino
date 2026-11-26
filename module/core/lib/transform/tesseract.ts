@@ -13,9 +13,9 @@ available.reset = () => { _resetAvailable(); _langs = null; };
 function tesseractLangs() {
   return _langs ??= (async () => {
     const { stdout } = await sys.command('tesseract', { args: ['--list-langs'], stdout: 'piped', stderr: 'piped' });
-    return new TextDecoder().decode(stdout).split('\n').slice(1) // first line is a header
-      .map((l) => l.trim()).filter((l) => l && l !== 'osd').join('+');
-  })();
+    return new TextDecoder().decode(stdout).split('\n')
+      .map((l) => l.trim()).filter((l) => l && l !== 'osd' && !l.includes(' ')).join('+');
+  })().catch((e) => { _langs = null; throw e; });
 }
 
 /** Runs OCR on an image, returns the extracted plain text */

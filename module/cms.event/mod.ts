@@ -38,7 +38,7 @@ const link = (v: string) => {
 
 /** Normalizers of the details that follow a standard; they throw on what is none. Empty is unset. */
 const CHECKS: Record<string, (value: string) => string> = {
-  time_zone: (v) => v && new Intl.DateTimeFormat("en", { timeZone: v }).resolvedOptions().timeZone,
+  time_zone: (v) => { try { return v && new Intl.DateTimeFormat("en", { timeZone: v }).resolvedOptions().timeZone; } catch { throw new ApiError(400, "Invalid time zone"); } },
   currency: (v) => code(v.toUpperCase(), /^[A-Z]{3}$/, "currency (ISO 4217)"),
   address_country: (v) => code(v.toUpperCase(), /^[A-Z]{2}$/, "country (ISO 3166-1)"),
   language: (v) => { try { return v && new Intl.Locale(v).toString(); } catch { throw new ApiError(400, "Invalid language (BCP 47)"); } },

@@ -1,4 +1,4 @@
-import { Access, s } from "@qino/qino";
+import { Access, ApiError, s } from "@qino/qino";
 
 import { imageUrl } from "./mod.ts";
 
@@ -16,11 +16,11 @@ export const api: ApiTree = {
     access: Access.USER,
     input: s.object({ dataUrl: s.string().describe("data:image/…;base64,…") }),
     execute: async ({ dataUrl }: Params, ctx: Ctx) => {
-      if (!String(dataUrl).startsWith("data:image/")) throw new Error("Choose an image");
+      if (!String(dataUrl).startsWith("data:image/")) throw new ApiError(400, "Choose an image");
       const fresh = await ctx.app.dbFiles.add(String(dataUrl));
       if (!fresh.mime.startsWith("image/")) {
         await fresh.remove();
-        throw new Error("Choose an image");
+        throw new ApiError(400, "Choose an image");
       }
       await replace(ctx.app, ctx.userId!, fresh.id);
       return { image: await imageUrl(ctx.app, ctx.userId!) };

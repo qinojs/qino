@@ -7,7 +7,7 @@ const ID = /^[\w-]{16,64}$/;
 const MAX = 500;
 
 const str = (v: unknown, max = 65535) => String(v ?? "").slice(0, max);
-const int = (v: unknown) => Number.isInteger(Number(v)) ? Number(v) : null;
+const int = (v: unknown) => v == null || v === "" ? null : Number.isInteger(Number(v)) ? Number(v) : null;
 const now = () => new Date().toISOString().slice(0, 19).replace("T", " ");
 const time = (v: unknown) => /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(String(v)) ? String(v) : now();
 

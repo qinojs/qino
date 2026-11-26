@@ -24,6 +24,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     const url = `${await event.url()}?cmscid=${event.id}`;
     const color = String(await parent?.settings.color ?? "");
     const startDate = eventDate(row.start_date);
+    if (!startDate) continue;
     items.push(html.async`<div class=-item-wrapper><div class=-item data-c1-href="${url}"${html.raw(await backgroundAttr(event, "main"))}>
   <span class=-date${color ? html` style="background:${color}"` : ""}>${date.format(startDate)}</span>
   <span class=-text><a href="${url}">${event.showTitle()}</a>${await node.settings.show_category && parent ? html.async`<br>${parent.showTitle()}` : ""}</span>

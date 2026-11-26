@@ -12,7 +12,7 @@ async function field(app: App, path: string, label: string | Promise<string>, re
 }
 
 const card = (title: string | Promise<string>, fields: (HtmlString | Promise<HtmlString>)[]) =>
-  html.async`<div class=u2-card style="flex-grow:25rem">
+  html.async`<div class=u2-card style="flex-basis:25rem">
   <div class=-head>${title} <small data-status aria-live=polite></small></div>
   <table class="u2-table -Fields -Flex">${fields}</table>
 </div>`;

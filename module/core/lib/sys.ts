@@ -51,16 +51,19 @@ function nodeCommand(cmd: string, { args = [], cwd, env, signal, stdout = "piped
 function nodeServe({ port, hostname, signal }: ServeOptions, handler: ServeHandler) {
   const server = createServer(async (req, res) => {
     const abort = new AbortController();
-    res.on("close", () => abort.abort());
+    res.on("close", () => !res.writableEnded && abort.abort());
     const headers = new Headers();
     for (let i = 0; i < req.rawHeaders.length; i += 2) headers.append(req.rawHeaders[i], req.rawHeaders[i + 1]);
-    const request = new Request(`http://${req.headers.host ?? "localhost"}${req.url}`, {
-      method: req.method,
-      headers,
-      body: req.method === "GET" || req.method === "HEAD" ? null : Readable.toWeb(req) as ReadableStream,
-      signal: abort.signal,
-      duplex: "half",
-    } as RequestInit);
+    let request: Request;
+    try {
+      request = new Request(`http://${req.headers.host ?? "localhost"}${req.url}`, {
+        method: req.method,
+        headers,
+        body: req.method === "GET" || req.method === "HEAD" ? null : Readable.toWeb(req) as ReadableStream,
+        signal: abort.signal,
+        duplex: "half",
+      } as RequestInit);
+    } catch { res.writeHead(400); res.end(); return; }
     const info = { remoteAddr: { hostname: req.socket.remoteAddress ?? "" } };
     let response;
     try { response = await handler(request, info); }
@@ -68,7 +71,7 @@ function nodeServe({ port, hostname, signal }: ServeOptions, handler: ServeHandl
     res.writeHead(response.status, response.statusText, [...response.headers].flat());
     // pipeline destroys both ends, so a closed connection cancels the body (e.g. a stream that never ends)
     if (response.body && req.method !== "HEAD") pipeline(Readable.fromWeb(response.body), res, () => {});
-    else res.end();
+    else { response.body?.cancel(); res.end(); }
   });
   signal?.addEventListener("abort", () => server.close(), { once: true });
   server.listen(port, hostname);

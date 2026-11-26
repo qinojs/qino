@@ -16,7 +16,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }): Promi
   const flows = new Map<number, AbortController>();
   // one after the other: two quick changes must not both listen, one of them lost to abort
   let queue = Promise.resolve();
-  const load = (id: number) => queue = queue.then(() => listenTo(id), console.error);
+  const load = (id: number) => queue = queue.then(() => listenTo(id)).catch(console.error);
   const listenTo = async (id: number) => {
     flows.get(id)?.abort();
     flows.delete(id);

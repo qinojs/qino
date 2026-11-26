@@ -10,7 +10,7 @@ const { app } = await import(`file://${Deno.cwd()}/server.ts`) as { app: App };
 const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
 ctx.sess = await app.sessions.load();
 await app.settings.core.url("http://shop.test/");
-const admin = Number(await app.db.one`SELECT id FROM usr WHERE superuser = 1 LIMIT 1`);
+const admin = Number(await app.db.one`SELECT id FROM usr WHERE superuser = ${true} LIMIT 1`);
 await requestStorage.run(ctx, () => runAs(app, admin, "test", async () => {
   const pages = await app.db.query`SELECT id, module FROM page WHERE module LIKE 'cms.backend.sho%' OR module LIKE 'cms.backend.shp3%' ORDER BY module`;
   const product = String(await app.db.one`SELECT id FROM shop_product ORDER BY id DESC LIMIT 1`);

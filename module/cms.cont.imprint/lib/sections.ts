@@ -33,7 +33,7 @@ async function owner(node: Node, lang: string) {
       org.legalName, org.name, id.name, adr.extendedAddress, adr.streetAddress, adr.postalCode,
       adr.addressLocality, adr.addressCountry, contact.email, contact.telephone, org.taxID, org.vatID,
     ].map(async (item) => String(await item ?? "").trim()));
-  const region = country && new Intl.DisplayNames([lang], { type: "region" }).of(country.toUpperCase());
+  const region = country && (/^[a-z]{2}$/i.test(country) ? new Intl.DisplayNames([lang], { type: "region" }).of(country.toUpperCase()) : country);
   const blocks = [
     [legalName || orgName || siteName, extended, street, [zip, city].filter(Boolean).join(" "), region],
     [
