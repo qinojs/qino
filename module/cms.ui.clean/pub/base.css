@@ -1,0 +1,115 @@
+/* Minimal u2-native CMS base: architectural slate-blue palette on u2's own tokens. */
+
+@font-face {
+  font-family: "Material Icons";
+  src: url("../../cms/pub/font/material-icons.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+:root, :host, qino-cms {
+  color-scheme: light dark;
+  --color: #2d4f7c;
+  --radius: .375rem;
+  --gap: .9rem;
+  --control-padding-x: .65em;
+  --control-padding-y: .4em;
+  --shadow-x: 0;
+  --shadow-y: 1px;
+  --shadow-blur: 3px;
+  --shadow-color: light-dark(rgb(15 23 42 / .1), rgb(0 0 0 / .45));
+
+  /* Layered neutral surfaces (avoid pitch-black dark mode & baby-blue light areas) */
+  --color-bg: light-dark(#ffffff, #151b23);
+  --color-text: light-dark(#111827, #e6edf5);
+  --color-area: light-dark(#f1f4f8, #1c2430);
+  --color-line: light-dark(#cfd7e3, #2d3748);
+  --gray: light-dark(#5a6578, #8b98ab);
+
+  --cms-color: var(--color);
+  --cms-dark: var(--color-text);
+  --cms-light: var(--color-area);
+  --cms-access-0: var(--gray);
+  --cms-access-1: var(--green);
+  --cms-access-2: var(--orange);
+  --cms-access-3: var(--red);
+}
+
+:host, .qgCMS {
+  --u2-ico-dir: ;
+  --u2-ico-font: "Material Icons";
+  --rem: 13.5px;
+  -webkit-font-smoothing: antialiased;
+
+  & .-access-0 { color: var(--cms-access-0); }
+  & .-access-1 { color: var(--cms-access-1); }
+  & .-access-2 { color: var(--cms-access-2); }
+  & .-access-3 { color: var(--cms-access-3); }
+  & .-access-1-bg { background-color: var(--cms-access-1); }
+  & .-access-2-bg { background-color: var(--cms-access-2); }
+  & .-access-3-bg { background-color: var(--cms-access-3); }
+
+  & svg:has(> use) { fill: currentColor; }
+  & a {
+    color: light-dark(var(--color), #7aa7dc);
+    text-decoration: none;
+    &:hover { text-decoration: underline; text-underline-offset: .18em; }
+  }
+  & :is(button, .btn):not(.u2-unstyle) { color: #fff; font-weight: 500; }
+  & input:is([type=checkbox], [type=radio]) { background-color: var(--color-bg); }
+  & :is(input, textarea, select):not([type=range]):user-invalid { border-color: var(--red); }
+
+  & .qgSettingsEditor {
+    & > ul { background: transparent; }
+    & .-row { border-color: color-mix(in oklab, var(--color-line), transparent 45%); }
+    & .-row:hover { background: var(--color-area); }
+    @media (prefers-color-scheme: dark) {
+      & :is(.-toggle, .-rem) > a { filter: invert(1); }
+    }
+  }
+}
+
+u2-ico[icon] { --size: calc(var(--rem) * 1.4); }
+u2-ico[icon]:not(:has(> svg)) {
+  font-size: var(--size);
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  &::before { content: attr(icon); display: block; }
+}
+u2-ico[icon="delete"] { color: var(--red); }
+
+.cms-thumb {
+  vertical-align: middle;
+  inline-size: 4.375rem;
+  block-size: 2.5rem;
+  object-fit: contain;
+  &.-big { inline-size: 13.125rem; block-size: 7.5rem; }
+}
+
+#cmsConsole {
+  position: fixed;
+  width: max-content;
+  padding: .42rem 1.15rem;
+  inset: auto 0 1rem 0;
+  margin: auto;
+  border: 0;
+  border-radius: 999px;
+  background: #131922;
+  color: #f1f5f9;
+  box-shadow: 0 8px 24px rgb(0 0 0 / .28);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .15s, opacity .2s;
+  &.-active { opacity: .96; }
+  &.-new { opacity: 1; transform: scale(1.05); }
+  &[data-type=info]    { background: var(--color); color: #fff; }
+  &[data-type=warning] { background: var(--orange); color: #fff; }
+  &[data-type=error]   { background: var(--red); color: #fff; }
+}
+
+.u2-unstyle.u2-unstyle.u2-unstyle:is(:hover, :focus) {
+  background-color: unset;
+  color: unset;
+}

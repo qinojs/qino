@@ -126,7 +126,7 @@ async function render(node: Node) {
   <div class=u2-card>
     <div class=-head>${t`Modules of this app`} <small>${mine.length}</small></div>
     <table class=u2-table>
-      ${mine.map((mod) => { const url = modulesUrl({ mod }); return html.async`<tr>
+      ${mine.map((mod) => { const url = modulesUrl({ mod }); return html.async`<tr u2-href>
         <td>${url ? html`<a href="${url}">${mod}</a>` : mod}
         <td><small>${app.modules.linked(mod) ? t`active` : t`inactive`}</small>`; })}
     </table>

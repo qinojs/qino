@@ -1,0 +1,232 @@
+/* Minimal u2-native backend shell with refined architectural contrast. */
+
+html {
+  font-size: 14px;
+  --canvas: light-dark(#e8ecf2, #0d1117);
+  --rail: #131922;
+}
+
+body { font-size: 1rem; }
+small { color: var(--gray); }
+
+#container {
+  display: grid;
+  grid-template-columns: 15.25rem minmax(0, 1fr);
+  grid-template-rows: 3.4rem minmax(0, 1fr);
+  height: 100dvh;
+  background: var(--canvas);
+}
+
+/* Tailored dark-slate sidebar chrome */
+#logo, #nav {
+  color-scheme: dark;
+  background: var(--rail);
+  color: #e2e8f0;
+}
+
+#logo {
+  display: flex;
+  align-items: center;
+  padding-inline: 1.2rem;
+  border-block-end: 1px solid rgb(255 255 255 / .08);
+
+  & svg {
+    height: 1.7rem;
+    width: auto;
+    & path[fill="#282929"] { fill: #f1f5f9; }
+    & path[fill="#fffffe"] { fill: var(--rail); }
+    & path[fill="#d01f2b"] { fill: #7aa7dc; }
+    & path[fill="#ad1a24"] { fill: var(--color); }
+  }
+}
+
+#nav {
+  grid-row: 2 / -1;
+  padding: .7rem .6rem 1.4rem;
+  overflow-y: auto;
+  border-inline-end: 1px solid rgb(255 255 255 / .08);
+
+  & ul { padding: 0; margin: 0; }
+  & ul ul {
+    margin-inline-start: 1.1rem;
+    padding-inline-start: .55rem;
+    border-inline-start: 1px solid rgb(255 255 255 / .12);
+    margin-block: .15rem;
+  }
+
+  & .-item {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .46rem .72rem;
+    margin-block: 1px;
+    border-radius: var(--radius);
+    color: #9fb0c7;
+    font-size: .92rem;
+    font-weight: 500;
+    position: relative;
+
+    &:hover {
+      background: rgb(255 255 255 / .07);
+      color: #f8fafc;
+      text-decoration: none;
+    }
+    &.-active {
+      background: color-mix(in oklab, var(--color), #fff 10%);
+      color: #fff;
+      font-weight: 600;
+    }
+    &.-active.-hasSub {
+      background: rgb(255 255 255 / .1);
+      color: #fff;
+    }
+    & > svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; opacity: .82; }
+    &.-active > svg, &:hover > svg { opacity: 1; }
+    & > .-subIcon { margin-inline-start: auto; --size: 1.15em; opacity: .65; }
+  }
+}
+
+#toolbar {
+  display: flex;
+  align-items: center;
+  padding-inline: 1.4rem;
+  background: var(--color-bg);
+  border-block-end: 1px solid var(--color-line);
+
+  & u2-breadcrumb {
+    --u2-breadcrumb-separator: "›";
+    --u2-breadcrumb-separator-margin-inline: .55rem;
+    font-size: .94rem;
+    & a { color: var(--gray); font-weight: 500; }
+    & a:hover { color: var(--color-text); text-decoration: none; }
+    & > :last-child { color: var(--color-text); font-weight: 600; }
+  }
+  & nav ul { padding: 0; margin: 0; }
+  & nav a {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: .78rem;
+    letter-spacing: .04em;
+    padding: .22rem .5rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius);
+    color: var(--color-text);
+    background: var(--color-area);
+    &:hover { text-decoration: none; border-color: var(--color); }
+  }
+  & [shape=circle] {
+    font-size: .86rem;
+    font-weight: 500;
+    padding: .22rem .6rem;
+    border-radius: 999px;
+    background: var(--color-area);
+    border: 1px solid var(--color-line);
+  }
+  & [shape=circle]:has(.-avatar) { padding: 0; border: 0; background: transparent; }
+  & .-avatar { display: block; width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover; }
+}
+
+#content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 1.2rem;
+  padding: 1.4rem;
+  overflow: auto;
+  & > * { min-width: 0; flex: 0 1 auto; }
+  & > .u2-flex { width: 100%; gap: 1.2rem; }
+}
+
+body:has(qino-cms) :is(#toolbar, #content) { padding-inline-end: 4.1rem; }
+
+/* Cards & Tables: crisp editorial surfaces on top of u2 */
+.u2-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: .5rem;
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+
+  & > .-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-area);
+    color: var(--color-text);
+    border-block-end: 1px solid var(--color-line);
+    padding: .72rem 1.05rem;
+    font-weight: 600;
+    font-size: .94rem;
+    letter-spacing: -.01em;
+  }
+  & > a.-head {
+    transition: background-color .14s, color .14s;
+    &::after { content: "→"; font-weight: 400; color: var(--gray); }
+    &:hover { background: var(--color); color: #fff; text-decoration: none; &::after { color: #fff; } }
+  }
+  & > .u2-table, & > u2-table { padding: 0; }
+}
+
+.u2-table {
+  --u2-Col-gap: 1.4rem;
+  --u2-Row-gap: .85rem;
+  font-size: .92rem;
+
+  & > thead > tr {
+    background: var(--color-area);
+    color: var(--gray);
+    border-block-end: 1px solid var(--color-line);
+  }
+  & > thead > tr > th {
+    font-size: .76rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding-block: .58rem;
+  }
+  &.-Sticky > thead > tr > th { background-color: inherit; }
+  & > tbody > tr { border-top: 1px solid color-mix(in oklab, var(--color-line), transparent 45%); }
+  & > tbody > tr:hover { background: var(--color-area); }
+  &.cmsBeTree > tbody > tr { background: transparent; }
+  &.cmsBeTree > tbody > tr.-isCont { background: var(--color-area); }
+  &.cmsBeTree > tbody > tr > td { border-color: color-mix(in oklab, var(--color-line), transparent 45%); }
+}
+
+@media (max-width: 56.25rem) {
+  #container { grid-template-columns: minmax(0, 1fr); }
+  #logo { display: none; }
+  #nav {
+    position: fixed;
+    inset: 0 auto auto 0;
+    z-index: 20;
+    width: 2.2rem;
+    height: 2.2rem;
+    margin: .6rem;
+    padding: 0;
+    border-radius: var(--radius);
+    overflow: visible;
+    &::before { content: "☰"; display: grid; place-items: center; width: 100%; height: 100%; font-size: 1.1rem; }
+    & > ul {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: min(17rem, 80vw);
+      padding: 1rem .6rem;
+      background: var(--rail);
+      transform: translateX(-105%);
+      transition: transform .2s;
+      overflow: auto;
+      box-shadow: 0 12px 32px rgb(0 0 0 / .45);
+    }
+    &:where(:hover, :focus-within) > ul { transform: translateX(0); }
+  }
+  #toolbar { padding-inline-start: 3.4rem; }
+  #content { padding: 1rem; }
+  body:has(qino-cms) #content { padding-inline-end: 3.5rem; }
+}
+
+@media (forced-colors: active) {
+  .u2-card, #nav, #toolbar { border: 1px solid CanvasText; }
+  #nav .-item.-active { outline: 2px solid Highlight; }
+}

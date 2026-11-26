@@ -514,7 +514,7 @@ export async function backendDashboardWidget(app: App, node: Node): Promise<Html
   return html.async`<table class=u2-table style="white-space:nowrap">${
     html.join(rows.map((row) => {
       const fields = lines(row.changes);
-      return html`<tr>
+      return html`<tr u2-href>
       <td><a href="${detailLink(pageUrl, row.domain)}">${row.domain}</a>
       <td><small title="${fields.join(", ")}">${fields.slice(0, 2).join(", ")}${fields.length > 2 ? ` +${fields.length - 2}` : ""}</small>
       <td>${changedCell(row)}`;

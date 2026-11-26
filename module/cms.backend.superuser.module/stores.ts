@@ -174,7 +174,7 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
       ...(st === "active" ? [btn("repair"), ...(known?.plugin.uninstall ? [btn("reset")] : [])] : []),
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
     ];
-  return html`<tr data-mod="${mod}" data-store="${store?.url}" data-state=${st}>
+  return html`<tr data-mod="${mod}" data-store="${store?.url}" data-state=${st} u2-href>
     <td style="padding-block:.1em; padding-right:0">${icon}
     <td data-value="${mod}" title="${why ?? description}">${known ? html`<a href="${detail.search}">${mod}</a>` : mod}
     <td title="${store?.url}"><small>${store ? label(store.url) : app.modules.declared(mod) ? "server.ts" : "—"}</small>

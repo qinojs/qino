@@ -46,7 +46,7 @@ async function tableOverview(app: App, db: any) {
         ? html`<small class=u2-badge style="background:var(--yellow)">${primaries[0]}</small>`
         : html.join(primaries.map((f: any) => html`<small class=u2-badge>${f}</small>`), " ");
       u.searchParams.set("table", table.name);
-      return html.async`<tr data-table-name="${table.name}">
+      return html.async`<tr data-table-name="${table.name}" u2-href>
         <td><a href="${u.search}">${table.name}</a>
         <td style="text-align:right">${status?.rows ?? "?"}
         <td style="text-align:right">${bytes}

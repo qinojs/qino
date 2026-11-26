@@ -65,7 +65,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <th>${t`Country`}
       <th>${t`Total`}
       <th>${t`Status`}
-    <tbody>${orders.slice(0, PER_PAGE).map(async (o) => html.async`<tr>
+    <tbody>${orders.slice(0, PER_PAGE).map(async (o) => html.async`<tr u2-href>
       <td><a href="${link({ id: o.$id })}">${o.$id}</a>
       <td>${date(carts ? o.created : o.ordered)}
       <td>${o.party("bill")?.name}

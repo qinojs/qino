@@ -1,0 +1,15 @@
+{
+  "name": "cms.ui.clean",
+  "description": "Minimal, high-contrast CMS UI built directly on u2.",
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/base.css",
+    "pub/backend.css",
+    "pub/panel.css",
+    "pub/shadow.js"
+  ],
+  "dependencies": [
+    "u2"
+  ]
+}

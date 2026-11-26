@@ -273,7 +273,7 @@ async function renderDetail(node: Node, ctx: Ctx, id: number) {
             <tr><th>${t`ID`}<th>${t`Name`}
             ${dupes.map((d) => {
               dupeU.searchParams.set("id", String(d.id));
-              return html`<tr><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`;
+              return html`<tr u2-href><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`;
             })}
           </table>`
           : html.async`<div>${t`none`}</div>`}

@@ -271,7 +271,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 
     u.searchParams.set("id", String(row.id));
     trs.push(html`
-<tr style="white-space:nowrap">
+<tr u2-href style="white-space:nowrap">
   <td>
     <a href="${u.search}">${u2.el.time(row.time)} <br> ${row.log_id}</a>
     <br><button data-delete="${row.id}">delete</button>
@@ -457,7 +457,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
     const c = color[row.prio] ?? "#333";
     const detailUrl = backend.toUrl(baseUrl, { show: "entries", source: row.source, file: row.file, line: row.line, col: row.col });
     const msg = html`<span style="max-width:12.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${row.message}</span>`;
-    trs.push(html`<tr>
+    trs.push(html`<tr u2-href>
     <td><span style="color:${c};font-weight:bold">${row.prio}</span>
     <td>${row.source}
     <td>${detailUrl ? html`<a href="${detailUrl}">${msg}</a>` : msg}

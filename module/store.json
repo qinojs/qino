@@ -185,6 +185,7 @@
     "cms.seo": {},
     "cms.templateParser": {},
     "cms.text": {},
+    "cms.ui.clean": {},
     "cms.versions": {},
     "cms.webmcp": {},
     "core": {},

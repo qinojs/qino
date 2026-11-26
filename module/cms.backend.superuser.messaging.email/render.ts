@@ -316,7 +316,7 @@ export async function journal(node: Node): Promise<HtmlString> {
   ]);
   const [outgoing, incoming, nothing] = await Promise.all([t`sent`, t`received`, t`Nothing yet.`]);
   const body = rows.length
-    ? rows.map((m) => html`<tr>
+    ? rows.map((m) => html`<tr u2-href>
       <td>${url ? html`<a href="${backend.toUrl(url, { msg: m.id })}">${m.id}</a>` : m.id}
       <td>${u2.el.time(m.time)}
       <td>${m.direction === "out"

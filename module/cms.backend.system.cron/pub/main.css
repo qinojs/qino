@@ -3,7 +3,6 @@
   & > .-head > button:first-of-type { margin-left: auto; }
   /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
   & > u2-table { padding: 0; overflow: auto; }
-  & > u2-table > .-body { padding: var(--gap); }
 
   & .-jobs td { vertical-align: top; }
   /* inactive = the declaring module is no longer linked; the row stays for diagnostics */

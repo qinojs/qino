@@ -40,7 +40,7 @@ async function renderOverview(node: Node, ctx: Ctx) {
 
   const trs = rows.map((vs) => {
     const membersUrl = usersUrl({ grp_id: vs.id });
-    return html`<tr itemid=${vs.id}>
+    return html`<tr itemid=${vs.id} u2-href>
       <td>${vs.id}
       <td><a href="${backend.toUrl(self, { id: vs.id })}">${vs.name}</a>
       <td>${vs.type}
@@ -105,7 +105,7 @@ async function renderDetail(node: Node, id: number) {
   const memberRows = members.map((m) => {
     const label = [m.given_name, m.family_name].filter(Boolean).join(" ") || m.username || m.id;
     const userUrl = usersUrl({ id: m.id });
-    return html`<tr>
+    return html`<tr u2-href>
       <td>${userUrl ? html`<a href="${userUrl}">${label}</a>` : label}
       <td>${m.username}
       <td>${canManage ? html`<button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`;

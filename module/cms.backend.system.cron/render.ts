@@ -23,6 +23,7 @@ export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-card>
     <div class=-head>
       <span>${t`Cron jobs`}</span>
+      <small cms-part=summary>${summary(node)}</small>
       <button type=button data-run-due>${t`Run due jobs`}</button>
       <button type=button data-refresh>${t`Refresh`}</button>
     </div>
@@ -34,16 +35,15 @@ export async function list(node: Node): Promise<HtmlString> {
   return renderJobs(node.app, await status(node.app));
 }
 
+export async function summary(node: Node): Promise<HtmlString> {
+  const t = node.app.t;
+  const { active, running, failed } = counts(await status(node.app));
+  return html.async`<b>${active}</b> ${t`active jobs`} · ${running} ${t`running`} · ${failed} ${t`failed`}`;
+}
+
 export function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlString> {
   const t = app.t;
-  const { active, running, failed } = counts(jobs);
-
-  return html.async`<div>
-    <b>${active}</b> ${t`active jobs`}
-    · ${running} ${t`running`}
-    · ${failed} ${t`failed`}
-  </div>
-  <table class="u2-table -jobs -Sticky">
+  return html.async`<table class="u2-table -jobs -Sticky">
     <thead><tr>
       <th>${t`Job`}
       <th>${t`Schedule`}

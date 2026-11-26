@@ -485,7 +485,7 @@ async function detail(node: Node, id: number) {
   </div>
   ${listed.length ? html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Reminded invoices`}</div>
-    <table class=u2-table>${listed.map((l) => html.async`<tr>
+    <table class=u2-table>${listed.map((l) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { id: l.id })}">${l.number || `#${l.id}`}</a>
       <td>${t`Due`} ${l.due}
       <td style="text-align:end">${money(l.open, row.currency)}
@@ -538,7 +538,7 @@ export async function userInvoices(app: App, id: unknown, page: Node): Promise<H
   const all = count > rows.length
     ? html.async`<p><a href="${backend.toUrl(pageUrl, { usr: id })}">${t`All`} ${count} ${t`invoices`}</a>`
     : "";
-  return html.async`<table class=u2-table style="white-space:nowrap">${rows.map((row) => html.async`<tr>
+  return html.async`<table class=u2-table style="white-space:nowrap">${rows.map((row) => html.async`<tr u2-href>
     <td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.number || `#${row.id}`}</a>
     <td>${direction(row.direction, row.direction === "out" ? t`issued` : t`received`)}
     <td>${row.date}

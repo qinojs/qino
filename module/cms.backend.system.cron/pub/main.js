@@ -2,7 +2,7 @@ import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
 initNode("backend.system.cron", (el) => {
-  const { execute, refresh, alert: show } = nodePanel(el, ["list"]);
+  const { execute, refresh, alert: show } = nodePanel(el, ["list", "summary"]);
 
   el.addEventListener("click", (event) => {
     const job = event.target.closest("[data-run-job]");

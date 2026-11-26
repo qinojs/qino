@@ -61,17 +61,17 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
     ${all.length ? html.async`<div style="overflow:auto; max-height:70vh; padding:0">
       <table class=u2-table style="white-space:nowrap">
         <thead><tr>
-          <th>${t`Customer`}
           <th>${t`What`}
+          <th>${t`Customer`}
           <th>${t`Price`}
           <th>${t`Per`}
           <th>${t`Renews`}
           <th>${t`Ends`}
           <th>
-        <tbody>${all.map((s) => html.async`<tr>
-          <td>${rowLink(node, "cms.backend.fin.party", s.usr_id, names.get(Number(s.usr_id)))}
+        <tbody>${all.map((s) => html.async`<tr u2-href>
           <td><a href="${backend.toUrl(pageUrl, { id: s.id })}">${s.label}</a>
             ${s.detail ? html`<small>${s.detail}</small>` : ""}
+          <td>${rowLink(node, "cms.backend.fin.party", s.usr_id, names.get(Number(s.usr_id)))}
           <td style="text-align:end">${money(s.amount, s.currencyCode)}
           <td>${every(app, s.unit, s.count)}
           <td>${ended(s) ? badge(t`ended`) : s.next}
@@ -109,7 +109,7 @@ async function overview(node: Node, url: URL): Promise<HtmlString> {
   </div>
   <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Plans`}</div>
-    ${catalog.length ? html.async`<table class=u2-table style="white-space:nowrap">${catalog.map((p) => html.async`<tr>
+    ${catalog.length ? html.async`<table class=u2-table style="white-space:nowrap">${catalog.map((p) => html.async`<tr u2-href>
       <td><a href="${backend.toUrl(pageUrl, { plan: p.id })}">${p.name}</a>
       <td style="text-align:end">${money(p.price, p.currency)}
       <td>${every(app, p.interval_unit, p.interval_count)}
@@ -201,7 +201,7 @@ export async function userSubscriptions(app: App, id: unknown, page: Node): Prom
   if (!subs.length) return "";
   const pageUrl = await page.url();
   const ended = (s: Row) => s.end_date && String(s.next) >= date(s.end_date);
-  return html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr>
+  return html.async`<table class=u2-table style="white-space:nowrap">${subs.map((s) => html.async`<tr u2-href>
     <td><a href="${backend.toUrl(pageUrl, { id: s.id })}">${s.label}</a>
     <td style="text-align:end">${money(s.amount, s.currencyCode)}
     <td>${every(app, s.unit, s.count)}

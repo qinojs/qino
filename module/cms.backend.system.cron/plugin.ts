@@ -2,7 +2,7 @@ import { html } from "@qino/qino";
 import { status } from "@qino/qino/cron";
 import { backend } from "@qino/qino/cms.backend";
 
-import { counts, list, render } from "./render.ts";
+import { counts, list, render, summary } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
@@ -31,6 +31,6 @@ export const cms = {
     js: ["pub/main.js"],
     render,
     api,
-    parts: { list },
+    parts: { list, summary },
   },
 };
