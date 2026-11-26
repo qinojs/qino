@@ -55,7 +55,9 @@ function sign(sess: Session, resource: string, options?: { ttl?: number }): { ex
 function sign(app: App, resource: string): Promise<{ sig: string }>;
 function sign(owner: Session | App, resource: string, options: { ttl?: number } = {}) {
   if (!isSession(owner)) return appSecret(owner).then(secret => ({ sig: mac(secret, resource) }));
-  const exp = unixTime() + (options.ttl ?? TTL);
+  // a step of a quarter ttl: the link stays the same for that long, so browsers can cache it
+  const ttl = options.ttl ?? TTL, step = Math.max(1, Math.floor(ttl / 4));
+  const exp = Math.ceil((unixTime() + ttl) / step) * step;
   return { exp: String(exp), sig: mac(sessionSecret(owner), `${resource}\0${exp}`) };
 }
 

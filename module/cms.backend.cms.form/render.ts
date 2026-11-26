@@ -1,5 +1,5 @@
 import { html, sql, sqlSearch, tableRef } from "@qino/qino";
-import { cms } from "@qino/qino/cms";
+import { cms, thumb } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 import { entryData, fields, SPAM, uploads as uploadsOf } from "@qino/qino/cms.cont.form";
@@ -71,7 +71,6 @@ export async function entries(app: App, node: Node, opt: {
 }
 
 /** What the transformer can turn into an image: pictures, and a PDF's first page. */
-const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") || mime === "application/pdf";
 
 /**
  * Uploads of these entries, keyed `<entry>:<field>`, in one query. Links are signed for this
@@ -80,13 +79,11 @@ const previewable = (mime: unknown) => String(mime ?? "").startsWith("image/") |
 async function uploads(app: App, ids: number[]) {
   const out = new Map<string, HtmlString[]>();
   for (const [key, files] of await uploadsOf(app, ids)) {
-    out.set(key, await Promise.all(files.map(async ({ id, name, mime }) => {
+    out.set(key, await Promise.all(files.map(async ({ id, name }) => {
       const file = await app.dbFiles.file(id);
       const download = await file.url({ dl: true, grant: "session" });
-      const preview = previewable(mime) ? await file.url({ fmt: "avif", w: 60, h: 60, max: true, grant: "session" }) : "";
-      return html`<a href="${download}" download title="${name}">${
-        preview ? html`<img src="${preview}" alt="${name}" loading=lazy>` : html`<u2-ico inline icon=download>↓</u2-ico> ${name}`
-      }</a> `;
+      const preview = await thumb(file, { alt: name, grant: "session" });
+      return html`<a href="${download}" download title="${name}">${preview || html`<u2-ico inline icon=download>↓</u2-ico> ${name}`}</a> `;
     })));
   }
   return out;

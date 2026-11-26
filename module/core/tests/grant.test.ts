@@ -33,6 +33,12 @@ test("session grants distinguish unsigned, forged and expired values", async () 
   assertEquals(grant.verify(sess, "example\0one", proof), "expired");
 });
 
+test("session grants stay the same within a step, so links can be cached", async () => {
+  const sess = (await testContext({ sess: session() })).sess;
+  assertEquals(Number(grant.sign(sess, "example\0one").exp) % 3600, 0);
+  assertEquals(grant.sign(sess, "example\0one"), grant.sign(sess, "example\0one"));
+});
+
 test("permanent grants belong to one app and resource", async () => {
   const own = app("one");
   const proof = await grant.sign(own, "example\0one");

@@ -169,19 +169,20 @@ const THUMB: Record<string, { fmt?: string; page?: number; frame?: number; tool:
 export const THUMB_SIZE = { width: 70, height: 40 };
 
 /** The shared preview of a file, for lists and the panel: one size, so browsers cache it once. */
-async function thumbUrl(file: any, size = `${THUMB_SIZE.width}x${THUMB_SIZE.height}`): Promise<string | undefined> {
+async function thumbUrl(file: any, size = `${THUMB_SIZE.width}x${THUMB_SIZE.height}`, grant?: "session" | "permanent"): Promise<string | undefined> {
     const spec = THUMB[String(file.extension)];
     if (!spec || !await FileTransformer.capabilities[spec.tool]) return;
     const [w, h] = size.split("x").map(Number);
     if (!w || !h) return;
     const { tool: _tool, ...opt } = spec;
-    return file.url({ w, h, max: true, ...opt });
+    return file.url({ w, h, max: true, ...opt, grant });
 }
 
-/** The preview as a list image, its box reserved; empty if the file has none. */
-export async function thumb(file: any) {
-    const src = file && await thumbUrl(file);
-    return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} alt="" loading=lazy>` : "";
+/** The preview as a list image, its box reserved; empty if the file has none. A `grant` signs it
+ *  for files that are not public. */
+export async function thumb(file: any, { alt = "", grant }: { alt?: string; grant?: "session" | "permanent" } = {}) {
+    const src = file && await thumbUrl(file, undefined, grant);
+    return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} alt="${alt}" loading=lazy>` : "";
 }
 
 /** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order.

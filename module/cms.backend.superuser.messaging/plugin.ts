@@ -1,4 +1,5 @@
 import { html, sql, sqlSearch, unixTime } from "@qino/qino";
+import { thumb } from "@qino/qino/cms";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 import { channels, htmlOf, sanitizeHtml, textOf, userChannels } from "@qino/qino/messaging";
@@ -166,9 +167,8 @@ async function previews(app: App, rows: Row[]) {
   const out = new Map<number, HtmlString>();
   for (const [id, all] of byMessage) {
     const shown = await Promise.all(all.slice(0, PREVIEWS).map(async (file) => {
-      if (!previewable(file.mime)) return html`<u2-ico icon=insert_drive_file title="${file.name}">•</u2-ico>`;
-      const src = await (await app.dbFiles.file(Number(file.id), file)).url({ fmt: "avif", w: 64, h: 64, max: true, grant: "session" });
-      return html`<img src="${src}" alt="${file.name}" title="${file.name}" loading=lazy>`;
+      const preview = await thumb(await app.dbFiles.file(Number(file.id), file), { alt: file.name, grant: "session" });
+      return preview ? html`<span title="${file.name}">${preview}</span>` : html`<u2-ico icon=insert_drive_file title="${file.name}">•</u2-ico>`;
     }));
     out.set(id, html`<span class=-thumbs>${shown}${all.length > PREVIEWS ? html`<small>+${all.length - PREVIEWS}</small>` : ""}</span>`);
   }
