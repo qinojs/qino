@@ -191,6 +191,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const eUrl     = editorLink(row.file, row.line, row.col);
     const msgShort = msg.slice(0, 300) + (msg.length > 300 ? "…" : "");
     const msgCell  = eUrl ? html`<a target=_blank href="${eUrl}">${msgShort}</a>` : msgShort;
+    // the delete button's group as String() writes it, NULL as "null" like the links above (html`` would write "")
     trs.push(html`
 <tr u2-href>
   <td style="width:3rem; white-space:nowrap">
@@ -217,10 +218,10 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td>
     <button class=u2-unstyle type=button
       data-delete-group
-      data-source="${row.source}"
-      data-file="${row.file}"
-      data-line="${row.line}"
-      data-col="${row.col}"
+      data-source="${String(row.source)}"
+      data-file="${String(row.file)}"
+      data-line="${String(row.line)}"
+      data-col="${String(row.col)}"
       aria-label=Delete><u2-ico icon=delete aria-hidden=true>✕</u2-ico></button>`);
   }
 
@@ -335,7 +336,7 @@ async function renderDetail(node: Node, ctx: Ctx, id: number) {
       FROM log
         LEFT JOIN log_url url     ON log.url_id     = url.id
         LEFT JOIN log_url referer ON log.referer_id = referer.id
-      WHERE ${historyWhere} AND log.id <= ${error.log_id}
+      WHERE ${historyWhere}${error.log_id ? sql` AND log.id <= ${error.log_id}` : sql``}
       ORDER BY log.id DESC LIMIT 30`.catch(() => []);
 
     const eu = ctx.req.url.toURL(); eu.searchParams.delete("history_of");
