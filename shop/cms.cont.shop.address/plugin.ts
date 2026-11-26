@@ -78,7 +78,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       const input = !edit ? (f === "addressCountry" && v ? countryName.name(v, ctx.lang) : v)
         : f === "honorificPrefix" ? html`<select ${attrs}><option>${salutations.map((s) => html`<option ${s === v ? html`selected` : ""}>${s}`)}</select>`
         : f === "addressCountry" ? html`<select ${attrs}><option>${ids.map((id) => html`<option value="${id}" ${id === v ? html`selected` : ""}>${countryName.name(id, ctx.lang)}`)}</select>`
-        : html`<input maxlength=40 ${f === "email" ? html`type=email` : ""} ${attrs} value="${v}">`;
+        : html`<input ${f === "email" ? html`type=email` : ""} ${attrs} value="${v}">`;
       rows.push(html`<label><span class=-label>${labels[f]}: ${edit && must ? "*" : ""}</span><span>${input}</span></label>`);
     }
     return rows;
