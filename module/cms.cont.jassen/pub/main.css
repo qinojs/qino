@@ -9,16 +9,31 @@
 }
 
 .cms-jassen > .-lobby {
+  --line: color-mix(in srgb, currentColor 18%, transparent);
   display: grid;
-  gap: 1rem;
-  max-width: 42rem;
-  width: 100%;
-  margin-inline: auto;
+  gap: 1.25rem;
+  padding: clamp(1.25rem, 5cqi, 2.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 0.5rem);
+  background: color-mix(in srgb, currentColor 3%, transparent);
 }
 
 .cms-jassen .-head {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.4rem;
+}
+
+/* the four Swiss suits as a quiet ornament */
+.cms-jassen .-head::before {
+  content: "";
+  block-size: 1.6rem;
+  inline-size: 7.6rem;
+  margin-block-end: 0.4rem;
+  background:
+    url("decks/swiss-schellen.svg") 0 50% / 1.6rem no-repeat,
+    url("decks/swiss-rosen.svg") 2rem 50% / 1.6rem no-repeat,
+    url("decks/swiss-schilten.svg") 4rem 50% / 1.6rem no-repeat,
+    url("decks/swiss-eicheln.svg") 6rem 50% / 1.6rem no-repeat;
 }
 
 .cms-jassen .-head h2,
@@ -26,15 +41,46 @@
   margin: 0;
 }
 
+.cms-jassen .-head h2 {
+  font-size: clamp(1.5rem, 5cqi, 2.2rem);
+  line-height: 1.1;
+}
+
+.cms-jassen .-sub {
+  opacity: 0.75;
+}
+
 .cms-jassen .-row {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+/* name on its own line, deck and mode side by side: long option labels stay readable */
+@container (width > 32rem) {
+  .cms-jassen .-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cms-jassen .-row > :first-child {
+    grid-column: 1 / -1;
+    max-inline-size: calc(50% - 0.375rem);
+  }
 }
 
 .cms-jassen .-field {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  min-inline-size: 0;
+}
+
+.cms-jassen .-field > span {
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
+.cms-jassen .-field :is(input, select) {
+  inline-size: 100%;
+  min-inline-size: 0;
+  box-sizing: border-box;
 }
 
 .cms-jassen .-actions,
@@ -45,10 +91,23 @@
   align-items: stretch;
 }
 
+.cms-jassen .-actions .-nearby {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+}
+
+.cms-jassen .-join-form {
+  padding-block-start: 1.25rem;
+  border-block-start: 1px solid var(--line);
+}
+
 .cms-jassen .-join-form input {
-  flex: 1 1 8rem;
+  flex: 0 1 12rem;
+  min-inline-size: 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.2em;
 }
 
 .cms-jassen .-nearby-box {
@@ -81,6 +140,12 @@
 .cms-jassen .-status {
   margin: 0;
   min-height: 1.25rem;
+}
+
+/* an empty status takes no room in the lobby; it stays in place as live region */
+.cms-jassen > .-lobby > .-status:empty {
+  min-height: 0;
+  margin-block-start: -1.25rem;
 }
 
 .cms-jassen > .-stage {
