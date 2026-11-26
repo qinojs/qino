@@ -327,7 +327,7 @@ class PostgresDriver extends DbDriver {
     }
     const res = await this.#run(pgSql, params);
     const row = res.rows?.[0] ?? {};
-    return { insertId: Number(returning ? row[returning] : Object.values(row)[0] ?? 0), affectedRows: Number(res.rowCount ?? 0) };
+    return { insertId: Number((returning ? row[returning] : Object.values(row)[0]) ?? 0), affectedRows: Number(res.rowCount ?? 0) };
   }
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
     if (this.#tx.getStore()?.conn) return fn();
@@ -361,8 +361,8 @@ class PostgresDriver extends DbDriver {
         CASE c.data_type
           WHEN 'integer' THEN 'int'
           WHEN 'boolean' THEN 'boolean'
-          WHEN 'character varying' THEN 'varchar(' || c.character_maximum_length || ')'
-          WHEN 'character' THEN 'char(' || c.character_maximum_length || ')'
+          WHEN 'character varying' THEN COALESCE('varchar(' || c.character_maximum_length || ')', 'varchar')
+          WHEN 'character' THEN COALESCE('char(' || c.character_maximum_length || ')', 'char')
           WHEN 'timestamp without time zone' THEN 'datetime'
           WHEN 'timestamp with time zone' THEN 'timestamp'
           WHEN 'bytea' THEN 'blob'
