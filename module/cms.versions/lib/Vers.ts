@@ -91,7 +91,8 @@ export function shadowSchema(source: any): any {
  * - space≠0, log≠0  → VIEW of _vers_<table> up to that log entry (historical)
  *
  * Head views are cached per process and stay in the db (recreated on first use after boot).
- * Historical views are single-use: not cached, the caller drops them after use.
+ * Historical views are single-use: not cached, the caller drops them after use. Each has a name of
+ * its own, so parallel requests at the same log neither replace nor drop each other's.
  */
 export async function ensureView(db: Db, tableName: string, space: number, log: number): Promise<string> {
     // both end up as raw SQL in CREATE VIEW (no bound parameters there)
@@ -102,8 +103,9 @@ export async function ensureView(db: Db, tableName: string, space: number, log: 
     const view = `_vers_${log}_space_${space}_${tableName}`;
 
     if (log !== 0) { // one-shot, caller drops it
-        await createView(db, view, tableName, space, log);
-        return view;
+        const own = `${view}_${crypto.randomUUID().slice(0, 8)}`;
+        await createView(db, own, tableName, space, log);
+        return own;
     }
 
     const views = dbState(db).views;

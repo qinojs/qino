@@ -43,14 +43,19 @@ export async function tableEntriesCopyTo(
 ): Promise<void> {
   const tbl   = db.table(tableName);
   const where   = tbl.valuesToFragment(filter);
-  const fromView = await ensureView(db, tableName, fromSpace, fromLog);
   const toView   = await ensureView(db, tableName, toSpace, 0);
 
   const oldEntries: Record<string, Row> = {};
   const newEntries: Record<string, Row> = {};
 
   for (const e of await db.query`SELECT * FROM ${sql.id(toView)} WHERE ${where}`)   oldEntries[tbl.entryId(e)!] = e;
-  for (const e of await db.query`SELECT * FROM ${sql.id(fromView)} WHERE ${where}`) newEntries[tbl.entryId(e)!] = e;
+  // a historical view is single-use: dropped right after
+  const fromView = await ensureView(db, tableName, fromSpace, fromLog);
+  try {
+    for (const e of await db.query`SELECT * FROM ${sql.id(fromView)} WHERE ${where}`) newEntries[tbl.entryId(e)!] = e;
+  } finally {
+    if (fromLog && fromView !== tableName) await db.query`DROP VIEW IF EXISTS ${sql.id(fromView)}`;
+  }
 
   const ctx = getCtx();
   const s = getVers(ctx);

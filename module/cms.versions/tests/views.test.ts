@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { test } from "node:test";
 import { assertEquals, assertRejects } from "@std/assert";
-import { App, fs } from "@qino/qino";
+import { App, Ctx, fs, requestStorage, sql } from "@qino/qino";
 
+import { tableEntriesCopyTo } from "../lib/Spaces.ts";
 import { ensureView, historicalViews, versedTables } from "../lib/Vers.ts";
 
 async function versionedApp() {
@@ -29,6 +30,26 @@ test("historicalViews: routes reads while open, drops every view on dispose", as
 
   assertEquals(await views(app), []);
   assertEquals(ctx.state.dbScope.tables, undefined); // routing stopped, request cache stays
+});
+
+test("historicalViews: requests at the same log keep their own views", async () => {
+  await using app = await versionedApp();
+  const a = { app, state: {} as any } as any, b = { app, state: {} as any } as any;
+  const first = await historicalViews(a, 0, 5);
+  {
+    await using _b = await historicalViews(b, 0, 5);
+    await first[Symbol.asyncDispose](); // the first request ends while the second reads
+    assertEquals((await views(app)).length, 7);
+    await app.db.one`SELECT count(*) FROM ${sql.id(b.state.dbScope.tables.page)}`; // throws if it was dropped
+  }
+  assertEquals(await views(app), []);
+});
+
+test("tableEntriesCopyTo: copying from an old log leaves no view behind", async () => {
+  await using app = await versionedApp();
+  const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });
+  await requestStorage.run(ctx, () => tableEntriesCopyTo(app.db, "page", { id: 1 }, 0, 5, 1));
+  assertEquals(await views(app), []);
 });
 
 test("historicalViews: a failed render leaves no view behind", async () => {
