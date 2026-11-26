@@ -3,9 +3,8 @@
 import { fs, hee, s } from "@qino/qino";
 import { structured } from "@qino/qino/ai";
 import { parseAmount } from "@qino/qino/cms.backend.fin";
-import { mainCurrency } from "@qino/qino/fin";
+import { mainCurrency, toMinor } from "@qino/qino/fin";
 import { attach, create } from "@qino/qino/fin.invoice";
-import { currency as currencies } from "@qino/qino/locale.currency";
 
 import type { App, DbFile, StandardSchema } from "@qino/qino";
 import type { Part } from "@qino/qino/ai";
@@ -75,7 +74,6 @@ export async function partsOf(file: DbFile): Promise<Part[]> {
 export function valuesOf(read: Read, main = "") {
   const currency = String(read.currency || main).toUpperCase();
   if (!currency) throw new Error("No currency read, and no main currency (fin.mainCurrency)");
-  const unit = 10 ** currencies.decimals(currency);
   const date = (value?: string) => /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? "")) ? value : undefined;
   const s = read.supplier ?? { name: "" };
   const address = Object.fromEntries(Object.entries({
@@ -103,7 +101,7 @@ export function valuesOf(read: Read, main = "") {
     })),
     text: read.reference ? hee(`Reference: ${read.reference}`) : undefined,
     // kept to compare: what the model read as total, in minor units
-    data: { read: { total: Math.round(Number(read.total) * unit), reference: read.reference || null } },
+    data: { read: { total: toMinor(Number(read.total), currency), reference: read.reference || null } },
   };
 }
 

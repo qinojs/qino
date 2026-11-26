@@ -46,7 +46,10 @@ export class Store {
   /** Directory of the store; all its modules are below it. */
   get base(): string { return new URL(".", this.#url).href; }
   /** Base URL; each module is in a subfolder named after it. */
-  moduleUrl(name: string): string { return `${this.base}${name}/plugin.ts`; }
+  moduleUrl(name: string): string {
+    if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
+    return `${this.base}${name}/plugin.ts`;
+  }
 
   /** True if declared by the application itself — can't be uninstalled. */
   get declared(): boolean { return this.#declared; }
@@ -56,24 +59,17 @@ export class Store {
   names(): Promise<string[]> { return (this.#url.endsWith("/") ? readFolder : readCatalog)(this.#url); }
 
   /** A module's manifest (mainly its dependencies), without importing it. */
-  manifest(name: string): Promise<Manifest> {
-    if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
-    return readManifest(this.moduleUrl(name));
-  }
+  manifest(name: string): Promise<Manifest> { return readManifest(this.moduleUrl(name)); }
 
   /** Register one module; its URL follows from the name, so no catalog is read. */
   add(name: string): this {
-    if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
     this.#app.modules.add(this.moduleUrl(name), name);
     return this;
   }
 
   /** Install one module — the persistent version of add(). The URL comes from the store, so
    *  callers that take a name never handle a URL. */
-  install(name: string): Promise<Module> {
-    if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
-    return this.#app.modules.install(this.moduleUrl(name), name);
-  }
+  install(name: string): Promise<Module> { return this.#app.modules.install(this.moduleUrl(name), name); }
 
   /** Register every module of the catalog: names() + add(). */
   async addAll(): Promise<this> {

@@ -66,7 +66,7 @@ export async function entries(app: App, node: Node, opt: {
     });
   }
 
-  const from = opt.all ? 0 : Math.max(0, Number(opt.page ?? 0)) * PER_PAGE;
+  const from = opt.all ? 0 : Math.max(0, Number(opt.page) || 0) * PER_PAGE;
   return { total: all.length, rows: opt.all ? all : all.slice(from, from + PER_PAGE) };
 }
 

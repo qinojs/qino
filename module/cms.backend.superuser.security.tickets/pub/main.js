@@ -12,8 +12,8 @@ initNode("backend.superuser.security.tickets", (el) => {
     const dialog = await import("@qino/u2/js/dialog/dialog.js");
     try {
       const response = await node.api.post(data);
-      location.reload();
       await dialog.alert(response?.message || "");
+      location.reload();
     } catch (e) {
       await dialog.alert(e?.message || String(e));
     } finally {

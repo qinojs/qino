@@ -34,7 +34,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const url = await node.cms.url(settings["url_" + ctx.lang]()) || await node.cms.url(settings.url());
 
   const tag = !edit && url ? "a" : "div";
-  const hrefAttr = url ? html` href="${url}"` : "";
 
   // Style
   // bare numbers are pixel values
@@ -62,7 +61,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
             <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text.plain()}">
         </div>` : "";
 
-  return html.async`<${tag}${hrefAttr}>\n    ${imgHtml}${editHtml}\n</${tag}>`;
+  return html.async`<${tag}${tag === "a" ? html` href="${url}"` : ""}>\n    ${imgHtml}${editHtml}\n</${tag}>`;
 }
 
 export const cms = {

@@ -46,7 +46,7 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
       description: r.verb.description ?? r.name,
       parameters: isEmptyObject(properties) ? {} : { type: "object", properties, required },
       execute: (args) => {
-        const raw = { ...asParams(args) };
+        const raw = asParams(args);
         // zzz needed? for (const [name, schema] of routeParams(r)) if (schema && name in raw) raw[name] = coerce(raw[name], schema);
         const concretePath = r.segments
           .flatMap((seg) => seg.startsWith(":") ? pathValue(raw[paramName(seg)], isCatchall(seg)) : seg)

@@ -58,7 +58,7 @@ export function policyOf(app?: App): Policy {
   else if (now - known.at <= ttl) return known.policy;
   else known.at = now;
   refresh(app).catch(console.error); // for the next call
-  return resolved.get(app)!.policy;
+  return known?.policy ?? policy;
 }
 
 async function refresh(app: App) {

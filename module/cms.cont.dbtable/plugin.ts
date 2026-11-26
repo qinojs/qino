@@ -58,7 +58,7 @@ export const settingsSchema = {
 export const ctxSettingsSchema = { properties: { nodes: { additionalProperties: { type: "string" } } } };
 
 const label = async (node: Node, f: Field) => (await node.showText(f.name + "_title")).plain().trim() || f.name;
-const pageUrl = async (node: Node, link: string) => /^\d+$/.test(link) ? await (await node.cms.node(Number(link))).url() : link;
+const pageUrl = async (node: Node, link: string) => /^\d+$/.test(link) ? (await node.cms.node(Number(link))).url() : link;
 /** `url` with `id=` in its query — before an #anchor, which a content node's url ends in. */
 const withId = (url: string, id: unknown) => {
   const [path, hash] = url.split("#", 2);
@@ -146,7 +146,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       : `<label>${name} <input type=${f.type === "date" ? "date" : "search"} data-filter="${hee(f.name)}" value="${hee(value)}"></label>`;
   }
   const search = q.shown("search").length
-    ? html`<input type=search class=-search placeholder="${await t`search`}…" value="${user.search ?? String(q.settings.search ?? "")}">` : "";
+    ? html`<input type=search class=-search placeholder="${await t`search`}…" value="${user.search ?? q.settings.search}">` : "";
   const exportUrl = ctx.req.url.toURL();
   exportUrl.search = "";
   exportUrl.searchParams.set("dbtable_export", String(node.id));

@@ -14,7 +14,7 @@ export function healthChecks(app: App): HealthChecks {
     error: {
       "backend reachable without group": async () => {
         const open = [];
-        for (const page of Object.values(await backendPages(app))) {
+        for (const page of await backendPages()) {
           // access of a user without groups: only the page's (inherited) own value
           const access = await ownAccess(page);
           if (access >= 1) open.push(String(page));
@@ -28,11 +28,9 @@ export function healthChecks(app: App): HealthChecks {
   };
 
   /** All page nodes whose module is part of the backend. */
-  async function backendPages(app: App) {
+  async function backendPages() {
     const rows = await db.query`SELECT id FROM page WHERE module LIKE 'cms.backend%' OR module = 'cms.layout.backend'`;
-    const ret: Record<string, Node> = {};
-    for (const row of rows) ret[row.id] = await cms(app).node(Number(row.id));
-    return ret;
+    return Promise.all(rows.map((r) => cms(app).node(Number(r.id))));
   }
 }
 

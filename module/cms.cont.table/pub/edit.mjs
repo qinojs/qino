@@ -45,7 +45,7 @@ initNode('cont.table', function(el) {
     html = html.replace(/[\s\S]*<body>/, '').replace(/<\/body>[\s\S]*/, '');
     html = html.replace('<!--StartFragment-->', '').replace('<!--EndFragment-->', '');
     const table = dom.el(html);
-    if (table && table.tagName !== 'TABLE') return;
+    if (table?.tagName !== 'TABLE') return;
     e.preventDefault(); // not working!
     setTimeout(async () => {
       const cleaner = await foreignCleaner();

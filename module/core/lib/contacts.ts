@@ -89,7 +89,7 @@ export async function removeContact(db: Db, usrId: number, type: string, input: 
     const row = await db.row`SELECT main FROM usr_contact
       WHERE type = ${type} AND address = ${address} AND usr_id = ${usrId}`;
     if (!row) return;
-    await db.exec`DELETE FROM usr_contact WHERE type = ${type} AND address = ${address}`;
+    await db.table("usr_contact").delete({ type, address });
     if (!row.main) return;
     const next = await mainContact(db, usrId, type);
     if (next) await db.table("usr_contact").update({ type, address: next.address }, { main: true });

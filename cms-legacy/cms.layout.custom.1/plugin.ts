@@ -10,12 +10,8 @@ const { name } = manifest;
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const lpage = await node.cms.layoutPage(name);
   const font = String(await lpage.settings["google-font"] ?? "").trim();
-  if (font) {
-    try {
-      const url = new URL(font);
-      if (["http:", "https:"].includes(url.protocol)) ctx.res.html.head += `<link rel=stylesheet href="${hee(url.href.replace(/\|/g, "%7C"))}">\n`;
-    } catch {/**/}
-  }
+  const url = URL.parse(font);
+  if (url && ["http:", "https:"].includes(url.protocol)) ctx.res.html.head += `<link rel=stylesheet href="${hee(url.href.replace(/\|/g, "%7C"))}">\n`;
   return html.async`<div id=container><div id=fullHeight>
   <div id=head><div class=width>${lpage.cont("7")}<div class="nav -hover">${lpage.cont("1")}</div>${lpage.cont("6")}</div></div>
   <div id=main><div class=width>

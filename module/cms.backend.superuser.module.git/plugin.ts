@@ -109,16 +109,14 @@ async function act(app: App, action: string, root: string, message: string) {
   if (action === "pull") return { message: run(await git(repo.root, ["pull", "--ff-only"], 120_000)) };
   // Tracked edits go, untracked files stay: module data/cache/tmp live inside these directories.
   if (action === "reset") {
-    const fetched = await git(repo.root, ["fetch"], 120_000);
-    if (!fetched.ok) throw new Error(fetched.out);
+    run(await git(repo.root, ["fetch"], 120_000));
     return { message: run(await git(repo.root, ["reset", "--hard", "@{upstream}"])) };
   }
   if (action !== "commit") throw new Error(`Unknown action: ${action}`);
 
   if (!message.trim()) throw new Error("A commit needs a message");
   if (!repo.files.length) throw new Error("Nothing to commit");
-  const add = await git(repo.root, ["add", "-A"]);
-  if (!add.ok) throw new Error(add.out);
+  run(await git(repo.root, ["add", "-A"]));
   return { message: run(await git(repo.root, [...await author(), "commit", "-m", message])) };
 }
 

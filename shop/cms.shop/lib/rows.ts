@@ -336,7 +336,7 @@ export class Order extends ShopRow {
     // the total to pay lands on the currency's step (0.05 CHF); what that changes is shown, without tax
     const closing = Number((await this.currencyRow())?.closing) || 1;
     if (closing > 1) {
-      const { total } = totals([...await this.#lineSums(), ...extras.map((x) => ({ name: x.name, price: x.price, taxRate: x.taxRate }))], !!this.tax_included);
+      const { total } = totals([...await this.#lineSums(), ...extras], !!this.tax_included);
       const off = Math.round(total / closing) * closing - total;
       if (off) extras.push({ key: "rounding", name: await shopT(this.$app)`Rounding`, price: off, taxRate: 0, sort: 99 });
     }
@@ -444,9 +444,7 @@ export class Order extends ShopRow {
 
   /** Net, tax and total as fin computes them — tax rounded once per rate. */
   async totals(): Promise<{ net: number; tax: number; total: number; rates: { rate: number; net: number; tax: number }[] }> {
-    const lines = await this.#lineSums();
-    for (const extra of await this.extras()) lines.push({ name: extra.name, price: extra.price, taxRate: extra.taxRate });
-    return totals(lines, !!this.tax_included);
+    return totals([...await this.#lineSums(), ...await this.extras()], !!this.tax_included);
   }
 
   /** The goods alone, with tax — what thresholds compare against. */
@@ -549,7 +547,7 @@ export class Order extends ShopRow {
     for (const extra of extras) {
       await db.table("shop_order_line").insert({
         order_id: this.$id, sort: ++sort, key: extra.key, name: extra.name, quantity: 1, price: extra.price,
-        tax_rate: extra.taxRate, tax_category: extra.taxCategory ?? "S", amount: Math.round(extra.price),
+        tax_rate: extra.taxRate, tax_category: extra.taxCategory ?? "S", amount: round(extra.price),
       });
     }
     const { net, tax, total } = await this.totals();

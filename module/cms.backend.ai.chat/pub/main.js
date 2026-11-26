@@ -34,7 +34,7 @@ async function entry({ role, content, time: at }) {
     return shown.length ? h("div", { style: "align-self:flex-start; max-width:80%" }, ...shown) : "";
   }
   const text = textOf(content);
-  if (!text || role === "start" || role === "system" || role === "tool") return "";
+  if (!text || role === "start" || role === "system") return "";
   const bubble = role === "user" ? "background:color-mix(in oklch, var(--accent) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-left:1.5rem"
     : role === "assistant" ? "background:color-mix(in oklch, var(--gray) 10%, #fff); padding:.3rem; border-radius:.4rem; margin-right:1.5rem" : "";
   const div = h("div", { style: `align-self:${role === "user" ? "flex-end" : "flex-start"}; max-width:80%; ${bubble}` }, h("small", {}, at ? time(at) : ""));

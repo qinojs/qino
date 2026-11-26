@@ -121,14 +121,10 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
         : html`<td style="font-style:italic">`;
 
       // one cell per group
-      const grpCells: HtmlString[] = [];
-      const grpAccess = await pageGroupAccess(db, accessPage, groups);
-      for (const g of groups) {
-        const v = grpAccess[String(g.id)] ?? 0;
-        grpCells.push(editable
-          ? html`<td class=-cell data-pid="${accessPage.id}" data-gid="${g.id}" v="${v}" title="${g.name} (${g.id})">`
-          : html`<td>`);
-      }
+      const grpAccess = editable ? await pageGroupAccess(db, accessPage, groups) : {};
+      const grpCells = groups.map((g) => editable
+        ? html`<td class=-cell data-pid="${accessPage.id}" data-gid="${g.id}" v="${grpAccess[String(g.id)] ?? 0}" title="${g.name} (${g.id})">`
+        : html`<td>`);
 
       trs.push(html.async`
 <tr${(isCont || inherited) ? html` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage.id}">

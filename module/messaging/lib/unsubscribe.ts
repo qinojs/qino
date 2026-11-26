@@ -1,4 +1,4 @@
-import { hee, html, keyed, safeEqual, sql } from "@qino/qino";
+import { html, keyed, safeEqual, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 import { track } from "./track.ts";
@@ -101,5 +101,5 @@ export const placeholder: Placeholder = async (app, to) => {
   const url = await link(app, usrId, grpId, Number(to.deliveryId) || undefined);
   // the recipient's language, not that of whoever's request or job sends it
   const label = await app.t.with({ ns: NS, lang: String(to.lang ?? "") || undefined }, () => app.t`Unsubscribe`);
-  return { text: url, html: html.raw(`<a href="${hee(url)}">${hee(label)}</a>`) };
+  return { text: url, html: html`<a href="${url}">${label}</a>` };
 };

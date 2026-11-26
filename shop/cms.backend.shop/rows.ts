@@ -134,7 +134,7 @@ export async function saveRows(node: Node, specs: Rows[], vars: Record<string, u
   const given = (vars.values ?? {}) as Record<string, unknown>;
   const before = vars.id != null ? await table.selectByID(String(vars.id)) : undefined;
   if (vars.id != null ? !before : spec.fixed) return { ok: false };
-  const key = before ? new Set(Object.keys(table.entryIdValues(before) ?? {})) : new Set<string>();
+  const key = new Set(before ? table.primaries.map((f) => f.name) : []);
   const columns = spec.columns.filter((c) => c.name && !key.has(c.name) && c.name in given && !(before && c.locked?.(before)));
   const row: Row = { ...before, ...given, ...spec.where };
   const values = Object.fromEntries(columns.map((c) => [c.name!, parsed(c, given[c.name!], row)]));

@@ -25,9 +25,8 @@ export default async function (node: Node, vars: any): Promise<any> {
   }
 
   if ("save" in vars) {
-    const allowed: Record<string, boolean> = { name: true, type: true };
     const name = String(vars.name ?? "");
-    if (!allowed[name]) return false;
+    if (name !== "name" && name !== "type") return false;
     const grp = await db.table("grp").get(vars.save);
     if (!grp) return false;
     await grp.$set({ [name]: vars.value });

@@ -20,11 +20,11 @@ export function chart(samples: Sample[], { start, end, unit = "", discrete = fal
   let line = "", dots = "", range = "", connected = false;
   for (const point of values) {
     if (point.value === null) { connected = false; continue; }
-    const join = connected && !point.gap;
-    line += join && discrete ? `H${x(point.time)}V${y(point.value)}` : `${join ? "L" : "M"}${x(point.time)},${y(point.value)}`;
-    dots += `M${x(point.time)},${y(point.value)}h0`;
+    const join = connected && !point.gap, px = x(point.time), py = y(point.value);
+    line += join && discrete ? `H${px}V${py}` : `${join ? "L" : "M"}${px},${py}`;
+    dots += `M${px},${py}h0`;
     if (point.min !== undefined && point.max !== undefined && point.min !== point.max)
-      range += `M${x(point.time)},${y(point.min)}V${y(point.max)}`;
+      range += `M${px},${y(point.min)}V${y(point.max)}`;
     connected = true;
   }
   return html`<svg viewBox="0 0 800 230" role=img aria-label="${label}" style="width:100%;height:auto">

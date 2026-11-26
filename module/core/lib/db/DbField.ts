@@ -23,10 +23,10 @@ export class DbField {
     this.db = table.db;
     this.#name = name;
     this.vs = vs;
-    const match = vs.Type?.match(/^([a-z]+)(\(([^)]+)\)|.*)(.*)$/i);
+    const match = vs.Type?.match(/^([a-z]+)(?:\(([^)]+)\))?(.*)$/i);
     this.#type = match?.[1].toLowerCase() ?? "varchar";
-    this.#length = match?.[3]?.trim() ?? "";
-    this.#special = match?.[4]?.trim().toLowerCase() ?? "";
+    this.#length = match?.[2]?.trim() ?? "";
+    this.#special = match?.[3]?.trim().toLowerCase() ?? "";
   }
 
   get name(): string { return this.#name; }
@@ -52,7 +52,7 @@ export class DbField {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     if (NUM_TYPES.has(this.#type)) {
       // Number() is strict ("12abc" fails); "" and null become 0 on NOT NULL columns.
-      const num = typeof value === "number" ? value : Number(value);
+      const num = Number(value);
       if (!Number.isFinite(num)) throw new Error(`invalid numeric value for ${this.table}.${this.#name}: ${JSON.stringify(value)}`);
       value = num;
     }

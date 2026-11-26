@@ -66,19 +66,14 @@ export class ReqBody {
     if (isJson)
       body.#value = deepFreeze(await (src ?? request.clone()).json().catch(bad));
     else {
-      // Group by name in FormData order, including file fields.
-      const entries: Record<string, { fields: string[]; file?: File }> = Object.create(null);
+      const post: Record<string, string | string[]> = Object.create(null);
       for (const [key, value] of await (src ?? request.clone()).formData().catch(bad)) {
-        const entry = entries[key] ??= { fields: [] };
-        if (value instanceof File) entry.file = value; // several per name: last wins
-        else entry.fields.push(value);
+        if (value instanceof File) body.#rawFiles[key] = value; // several per name: last wins
+        else if (!(key in post)) post[key] = value;
+        else if (Array.isArray(post[key])) post[key].push(value);
+        else post[key] = [post[key], value];
       }
-      const post = Object.create(null);
-      for (const key in entries) {
-        const { fields, file } = entries[key];
-        if (file) body.#rawFiles[key] = file;
-        if (fields.length) post[key] = fields.length > 1 ? Object.freeze(fields) : fields[0];
-      }
+      for (const key in post) if (Array.isArray(post[key])) Object.freeze(post[key]);
       body.#value = Object.freeze(post);
     }
     return body;

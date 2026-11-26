@@ -1,9 +1,8 @@
 import { sys } from "../sys.ts";
 
 /** True when `cmd` exists and exits 0. */
-export async function tryCommand(cmd: string, args: string[]): Promise<boolean> {
-  try { return (await sys.command(cmd, { args, stdout: 'piped', stderr: 'piped' })).code === 0; }
-  catch { return false; }
+export function tryCommand(cmd: string, args: string[]): Promise<boolean> {
+  return sys.command(cmd, { args, stdout: 'piped', stderr: 'piped' }).then((r) => r.success, () => false);
 }
 
 export type Probe = (() => Promise<boolean>) & { reset(): void };

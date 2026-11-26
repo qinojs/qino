@@ -1,4 +1,4 @@
-import { Output, getCtx, Access, fs, s, unixTime } from "@qino/qino";
+import { Output, Access, fs, s, unixTime } from "@qino/qino";
 
 import codemirrorView from "./view/codemirror.ts";
 import { check } from "./lib/sign.ts";
@@ -10,7 +10,7 @@ const { name } = manifest;
 
 // Expired links are normal; a signature that never matched this session is suspicious and
 // reported. Superusers need no signature.
-async function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown) {
+function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown) {
   if (ctx.user?.superuser) return true;
   const state = check(ctx, file, exp, sig);
   if (state !== "ok" && state !== "expired") {
@@ -21,7 +21,7 @@ async function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown) {
 
 async function saveFile(ctx: Ctx, file: string, content: string, exp: unknown, sig: unknown) {
   ctx.app.assertAllowedPath(file);
-  if (!await allowed(ctx, file, exp, sig)) return 0;
+  if (!allowed(ctx, file, exp, sig)) return 0;
 
   const backupName = `fileEditorBackup_${encodeURIComponent(file)}_${Date.now()}`;
   const backupDir = ctx.app.modules.get(name)!.tmp;
@@ -45,23 +45,18 @@ export const api: ApiTree = {
   },
 };
 
-function editorFile() {
-  const ctx = getCtx();
-  const file = ctx.req.query.file;
-  return file && ctx.req.appPath === name ? file : null;
-}
-
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   // A root route, not a CMS page: it builds the page and ends the request (else the cms would 404).
-  app.on("route", async ({ ctx }) => {
-    const file = editorFile();
-    if (!file) return;
+  app.on("route", ({ ctx }) => {
+    const file = ctx.req.query.file;
+    if (!file || ctx.req.appPath !== name) return;
     ctx.app.assertAllowedPath(file);
+    if (!allowed(ctx, file, ctx.req.query.exp, ctx.req.query.sig)) throw new Output("no access");
+    return (async () => {
+      if (!await fs.isFile(file, { ttl: 0 })) throw new Output("file does not exist");
 
-    if (!await allowed(ctx, file, ctx.req.query.exp, ctx.req.query.sig)) throw new Output("no access");
-    if (!await fs.isFile(file, { ttl: 0 })) throw new Output("file does not exist");
-
-    ctx.res.html.content = await codemirrorView(file);
-    throw new Output(); // the document on ctx.res is the response
+      ctx.res.html.content = await codemirrorView(file);
+      throw new Output(); // the document on ctx.res is the response
+    })();
   }, { signal });
 }

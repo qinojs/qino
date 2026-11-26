@@ -26,13 +26,14 @@ export function routeParams(r: Route): [string, StandardSchema | undefined, stri
 export function* walk(tree: ApiTree, segments: string[] = [], nodes: ApiNode[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(tree)) {
     if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
+    const segs = [...segments, key], path = [...nodes, value];
     for (const verbKey of VERBS) {
       const verb = value[verbKey];
       if (verb && typeof verb === "object" && typeof verb.execute === "function") {
-        yield { method: verbKey, segments: [...segments, key], nodes: [...nodes, value], verb, name: toolName(verbKey, [...segments, key]) };
+        yield { method: verbKey, segments: segs, nodes: path, verb, name: toolName(verbKey, segs) };
       }
     }
-    yield* walk(value as ApiTree, [...segments, key], [...nodes, value]);
+    yield* walk(value as ApiTree, segs, path);
   }
 }
 

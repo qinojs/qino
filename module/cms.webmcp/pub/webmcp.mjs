@@ -27,8 +27,7 @@ function call(api, tool, args) {
     if (seg.startsWith(":")) {
       const name = seg.slice(1).replace(/\*$/, "");
       pathParams.add(name);
-      const v = args[name];
-      node = Array.isArray(v) ? node(...v) : node[v];
+      node = node(args[name]);
     } else {
       node = node[seg];
     }

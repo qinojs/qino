@@ -18,7 +18,7 @@ export class DbTextManager {
   get app(): App { return this.#app; }
 
   #texts() {
-    return scopeCache<Map<string, DbText>>(this.#cache, "dbTexts", () => new Map());
+    return scopeCache(this.#cache, "dbTexts", () => new Map());
   }
 
   text(id: number | string): DbText {
@@ -103,8 +103,8 @@ export class DbTextLang {
   }
 
   async set(value: any): Promise<void> {
-    this.value = null;
     await this.text.manager.db.table("text_lang").ensure({ text_id: this.text.id, lang: this.lang, text: value });
+    this.value = null;
   }
 
   toString() { throw new Error("DbTextLang: toString() not implemented"); }

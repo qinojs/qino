@@ -51,10 +51,10 @@ export async function live(call: Call, input: LiveInput): Promise<LiveOutput> {
     if (said || toolCalls.length) {
       await onMessage?.({ role: "assistant", content: said, ...toolCalls.length && { toolCalls } } as Message);
     }
-    for (const { id, ...call } of toolCalls) {
-      const result = await onToolCall({ id, ...call });
-      await onMessage?.({ role: "tool", id, content: result });
-      send({ type: "conversation.item.create", item: { type: "function_call_output", call_id: id, output: result } });
+    for (const tc of toolCalls) {
+      const result = await onToolCall(tc);
+      await onMessage?.({ role: "tool", id: tc.id, content: result });
+      send({ type: "conversation.item.create", item: { type: "function_call_output", call_id: tc.id, output: result } });
     }
     if (toolCalls.length) send({ type: "response.create" });
   }

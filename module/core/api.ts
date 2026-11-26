@@ -62,7 +62,7 @@ export const api: ApiTree = {
         access: Access.USER,
         input: s.object({ pw: s.string() }),
         execute: async ({ pw }: any, ctx: Ctx) => {
-          if (!await attempt(ctx.app, ctx.userId, () => pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? "")))) {
+          if (!await attempt(ctx.app, ctx.userId, () => pwVerify(pw, ctx.user?.pw ?? ""))) {
             ctx.app.fire("suspicious", { ctx, weight: 2, reason: "password step-up failed" }).catch(() => {});
             throw new ApiError(422, "That password does not match");
           }
@@ -80,7 +80,7 @@ export const api: ApiTree = {
       execute: async ({ pw }: any, ctx: Ctx) => {
         const usr = ctx.user;
         if (!usr) throw new AccessError();
-        if (String(pw ?? "").length < 8) throw new ApiError(422, "The password is too short");
+        if (pw.length < 8) throw new ApiError(422, "The password is too short");
         await usr.$set({ pw: await pwHash(pw) });
         return { ok: true };
       },

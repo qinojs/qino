@@ -9,25 +9,24 @@ import { bindSettings } from '@qino/m/cms/pub/js/cms.js';
 export default async function (widget, { node, signal }) {
   const ref = api.cms.node(node.id);
   const settings = await ref.settings.get({}, { signal });
-  const value = (v) => v ?? '';
 
   await widget.html`<table class="u2-table -Fields -Flex -NoSideGaps">
     <tr>
       <td>${t`Form`}
-      <td><input class=-form type=qgcms-page value="${value(settings.form)}" placeholder="${t`the first form on this page`}">
+      <td><input class=-form type=qgcms-page value="${settings.form}" placeholder="${t`the first form on this page`}">
         <div class=-denied></div>
     <tr>
       <td>${t`Show fields`}
-      <td><input setting=show_fields value="${value(settings.show_fields)}" placeholder="${t`all, in the form's order`}">
+      <td><input setting=show_fields value="${settings.show_fields}" placeholder="${t`all, in the form's order`}">
     <tr>
       <td>${t`Only if this field is set`}
-      <td><input setting=only_if value="${value(settings.only_if)}">
+      <td><input setting=only_if value="${settings.only_if}">
     <tr>
       <td>${t`Entries`}
-      <td><input type=number min=1 setting=limit value="${value(settings.limit)}" placeholder=20>
+      <td><input type=number min=1 setting=limit value="${settings.limit}" placeholder=20>
     <tr>
       <td>${t`Hide spam from`}
-      <td><input type=number min=0 max=1 step=0.05 setting=spam_threshold value="${value(settings.spam_threshold)}" placeholder=0.5>
+      <td><input type=number min=0 max=1 step=0.05 setting=spam_threshold value="${settings.spam_threshold}" placeholder=0.5>
     <tr>
       <td>${t`Moderated`}
       <td><label><input type=checkbox setting=moderated ${settings.moderated ? 'checked' : ''}> ${t`Show an entry once it was released`}</label>
@@ -49,7 +48,7 @@ export default async function (widget, { node, signal }) {
     return ok;
   };
 
-  let form = value(settings.form);
+  let form = String(settings.form ?? '');
   widget.on('focusout', '.-form', async (inp) => {
     if (inp.value === form) return;
     if (inp.value && !await allow(inp.value)) return inp.value = form;

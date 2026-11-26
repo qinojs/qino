@@ -30,7 +30,7 @@ export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 async function closing(app: App): Promise<HtmlString> {
   const t = app.t;
   const closed = String(await app.settings["fin.accounting"].closedUntil ?? "");
-  const from = closed ? addDays(closed, 1) : "0000-01-01";
+  const from = closed ? addDays(closed, 1) : "0001-01-01";
   const until = closed ? addMonths(closed, 12) : `${new Date().getFullYear() - 1}-12-31`;
   const count = (query: Promise<unknown>) => query.then(Number);
   const currency = await mainCurrency(app) ?? "";

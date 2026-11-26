@@ -15,14 +15,14 @@ export const settingsSchema = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("route", async ({ ctx }) => {
+  app.on("route", ({ ctx }) => {
     const path = ctx.req.appPath;
-    if (path === "authorize") await authorize(ctx);
-    else if (path === "token") await token(ctx);
-    else if (path === "register") await register(ctx);
+    if (path === "authorize") return authorize(ctx);
+    if (path === "token") return token(ctx);
+    if (path === "register") return register(ctx);
     // the resource path may be appended to the well-known name (RFC 9728 §3.1)
-    else if (path.startsWith(".well-known/oauth-authorization-server")) throw new Output(await metadata(ctx));
-    else if (path.startsWith(".well-known/oauth-protected-resource")) throw new Output(resourceMetadata(ctx));
+    if (path.startsWith(".well-known/oauth-authorization-server")) return metadata(ctx).then((m) => { throw new Output(m); });
+    if (path.startsWith(".well-known/oauth-protected-resource")) throw new Output(resourceMetadata(ctx));
   }, { signal });
 
   app.on("authenticate", async ({ ctx }) => {

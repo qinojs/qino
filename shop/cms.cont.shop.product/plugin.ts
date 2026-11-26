@@ -28,20 +28,21 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const cartId = Number(await node.settings.cart || 0);
   const action = cartId ? await (await node.cms.node(cartId)).url() : "";
 
-  const rows = [], offers = [];
+  const rows = [], offers = [], title = await product.title(ctx.lang);
   let orderable = false; // a button that can only fail is none
   for (const variant of variants.length ? variants : [undefined]) {
     const [{ gross }, errors] = await Promise.all([product.prices({ variant, order, currency }), product.errors(variant)]);
     const message = Object.values(errors)[0];
     if (!message) orderable = true;
+    const label = variant ? await variant.title(ctx.lang) : title;
     // the price as shown, so the structured data says what the page says
     if (currency && gross >= 0) offers.push({
-      "@type": "Offer", ...(variant && { name: await variant.title(ctx.lang) }),
+      "@type": "Offer", ...(variant && { name: label }),
       price: currency.format(gross), priceCurrency: currency.id,
       availability: `https://schema.org/${message ? "OutOfStock" : "InStock"}`,
     });
     rows.push(html.async`<tr ${variant ? html`data-variant=${variant.id}` : ""}>
-      <td class=-title>${variant ? variant.title(ctx.lang) : product.title(ctx.lang)}
+      <td class=-title>${label}
       <td class=-price>${currency?.show(gross) ?? gross}
       <td class=-quantity>${message
         ? html`<span class=-error>${message}</span>`
@@ -51,7 +52,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // whose list says nothing), else on its page
   const about = await hasOwnUrl(node) ? node : await node.page();
   const own = cmsCtx(ctx).requestedNode?.id === about.id;
-  const title = await product.title(ctx.lang);
   if (offers.length && own) jsonLd(ctx, {
     "@type": "Product", name: title,
     ...(file && { image: new URL(await file.url(), ctx.req.url.href).href }), // the original: search engines want them large

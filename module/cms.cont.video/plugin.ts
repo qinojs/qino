@@ -32,7 +32,7 @@ async function render(node: Node) {
   const poster = image ? await image.url()
     : await FileTransformer.capabilities.ffmpeg ? await video.url({ fmt: "jpg", frame: 1 }) : "";
 
-  return html.async`<div>
+  return html`<div>
   <video src="${await video.url()}"${html.raw(attrs)} playsinline preload=metadata${poster ? html` poster="${poster}"` : ""}></video>
 </div>`;
 }

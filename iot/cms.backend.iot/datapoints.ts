@@ -127,12 +127,11 @@ export async function detail(node: Node, { vars = {} }: { vars?: Record<string, 
     <p>${t`The datapoint was not found.`}</p>
   </div>`;
   const recording = app.modules.linked("iot.record");
-  const provider = (await stored(app)).find((row) => row.id === point.provider);
-  const entity = await entities(app, point.provider)
-    .then((list) => list.find((entity) => entity.id === point.entity) ?? null, () => null);
   const end = Date.now(), start = end - 86_400_000;
   const period = { start: new Date(start).toISOString(), end: new Date(end).toISOString() };
-  const [plotted, raw] = await Promise.all([
+  const [provider, entity, plotted, raw] = await Promise.all([
+    stored(app).then((rows) => rows.find((row) => row.id === point.provider)),
+    entities(app, point.provider).then((list) => list.find((entity) => entity.id === point.entity) ?? null, () => null),
     history(app, point.id, { ...period, width: 300 }).catch((error: unknown) => error),
     history(app, point.id, period).catch((error: unknown) => error),
   ]);

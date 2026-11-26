@@ -108,7 +108,6 @@ export async function bookings(node: Node, id?: number) {
 }
 
 export async function cancel(node: Node, id: number) {
-  await readable(node);
   if (!(await bookings(node, id)).length) throw new AccessError();
   await node.db.transaction(async () => {
     await lock(node);

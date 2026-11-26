@@ -364,9 +364,7 @@ async function providers(node: Node) {
     const key = String(await app.settings.core.keys[p.name] ?? "");
     const cat = CATALOG.find((c) => c.name === p.name);
     const keyUrl = cat?.console;
-    const url = getCtx().req.url.toURL(); // its models, switched off too
-    for (const [k, v] of Object.entries({ show: "models", all: "1", provider: String(p.id) })) url.searchParams.set(k, v);
-    const models = url.pathname + url.search;
+    const models = href({ show: "models", all: 1, provider: p.id }); // its models, switched off too
     return html.async`<tr data-row=ai_provider data-id="${p.id}" data-name="${p.name}">
       <td>${checkbox(p.enabled)}
       <th><a href="${models}" style="color:${backend.uniqueColor(p.name)}">${p.name}</a>

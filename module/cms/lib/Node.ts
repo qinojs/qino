@@ -50,7 +50,7 @@ export class Node {
     }
 
     async init(): Promise<this> {
-        if (!this.vs || isEmptyObject(this.vs)) {
+        if (isEmptyObject(this.vs)) {
             this.vs = await this.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${this.id}` ?? {};
         }
         await this.cms.fire("node:construct", { node: this });
@@ -242,8 +242,8 @@ export class Node {
         const p = this.vs[field] === null ? await this.parent() : undefined;
         return p ? p.#online(field) : Number(this.vs[field] ?? 0);
     }
-    async onlineStart(): Promise<number> { return this.#online("online_start"); }
-    async onlineEnd(): Promise<number> { return this.#online("online_end"); }
+    onlineStart(): Promise<number> { return this.#online("online_start"); }
+    onlineEnd(): Promise<number> { return this.#online("online_end"); }
     async isOnline(): Promise<boolean> {
         const [start, end] = await Promise.all([this.onlineStart(), this.onlineEnd()]);
         // small grace window so a freshly set online_start/end takes effect despite clock skew
@@ -357,7 +357,7 @@ export class Node {
         return this.#showTextLang(await this.title(), lang);
     }
 
-    async texts(): Promise<Map<string, DbText>> {
+    texts(): Promise<Map<string, DbText>> {
         // the promise, so parallel callers share one map: each own one would lose what the others add
         this.#texts ??= this.db.indexCol`SELECT name, text_id FROM ${sql.id(tableRef("page_text"))} WHERE page_id = ${this.id}`
             .then((rows) => new Map([...rows].map(([name, id]) => [name, this.app.dbTexts.text(Number(id))])))

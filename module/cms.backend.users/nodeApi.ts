@@ -64,12 +64,9 @@ export default async function (node: Node, vars:any): Promise<any> {
   if ("save" in vars) {
     const targetUsr = await target(vars.save);
     if (!targetUsr) return false;
-    const allowed: Record<string, boolean> = {
-      active: true, username: true, given_name: true, family_name: true,
-      organization: true, superuser: true, pw: true,
-    };
+    const allowed = new Set(["active", "username", "given_name", "family_name", "organization", "superuser", "pw"]);
     const name = String(vars.name ?? "");
-    if (!allowed[name] || (name === "superuser" && !isSuperuser)) return false;
+    if (!allowed.has(name) || (name === "superuser" && !isSuperuser)) return false;
     if (name === "pw" && !String(vars.value ?? "")) return false;
     const value = name === "pw" ? await pwHash(String(vars.value)) : name === "username" ? String(vars.value ?? "").trim() : vars.value;
     await targetUsr.$set({ [name]: value });

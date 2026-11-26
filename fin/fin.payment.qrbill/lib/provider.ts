@@ -48,7 +48,7 @@ export const paymentProvider: Provider = {
   },
 
   async slip(app, payment) {
-    return new SwissQRBill(await billOf(app, payment), { language: await language(app) }).toString();
+    return new SwissQRBill(await billOf(app, payment), { language: language(app) }).toString();
   },
 };
 
@@ -96,7 +96,7 @@ function debtorOf(payment: Row, country: string) {
 }
 
 /** The slip in the language of the request, else of the site; English where a QR bill has none. */
-async function language(app: App): Promise<"DE" | "FR" | "IT" | "EN"> {
+function language(app: App): "DE" | "FR" | "IT" | "EN" {
   const lang = String(requestStorage.getStore()?.lang ?? app.languages.def).slice(0, 2).toUpperCase();
   return (LANGUAGES.has(lang) ? lang : "EN") as "DE" | "FR" | "IT" | "EN";
 }

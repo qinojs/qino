@@ -30,12 +30,12 @@ export const calendar: Source = {
       if (!Number.isSafeInteger(months) || months < 1) throw new RangeError("Invalid subscription interval");
       let index = Math.max(0, Math.floor(((from.year - anchor.year) * 12 + from.month - anchor.month) / months));
       const title = [row.plan_name, row.name].filter(Boolean).join(" · ");
+      const link = url ? new URL(url, ctx.req.url.href) : undefined;
+      link?.searchParams.set("id", String(row.id));
       for (let date = anchor.add({ months: index * months }); date.toString() < days.end; date = anchor.add({ months: ++index * months })) {
         const start = date.toString();
         if (row.end_date && start >= String(row.end_date).slice(0, 10)) break;
         if (start < days.start) continue;
-        const link = url ? new URL(url, ctx.req.url.href) : undefined;
-        link?.searchParams.set("id", String(row.id));
         result.push({ id: `${row.id}:${start}`, title, start, end: date.add({ days: 1 }).toString(), ...(link && { editUrl: link.href }) });
       }
     }

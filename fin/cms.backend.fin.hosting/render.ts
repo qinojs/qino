@@ -202,7 +202,7 @@ async function detail(node: Node, name: string): Promise<HtmlString> {
   ]);
   const subs = by.get(String(d.name)) ?? [];
   // the owner's running subscriptions that are for nothing yet
-  const free = usrId == null ? [] : (await subscriptions(app, usrId)).filter((s) => !s.ref && running(s));
+  const free = !usrId ? [] : (await subscriptions(app, usrId)).filter((s) => !s.ref && running(s));
   const aliases = all.filter((a) => a.alias_of === d.name);
   const owner = users.find((u) => Number(u.id) === usrId);
   const monitorUrl = monitor({ id: d.name });

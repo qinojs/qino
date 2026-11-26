@@ -20,5 +20,3 @@ initNode("cont.text_and_slider.cd", (el) => {
   show(0);
   play();
 });
-
-export {};

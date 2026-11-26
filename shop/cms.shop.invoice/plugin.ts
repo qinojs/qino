@@ -15,11 +15,13 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   // Every placed order is invoiced: its lines one to one, issued at once.
   on("shop:ordered", async ({ order }: { order: Order }) => {
-    const lines = (await order.lines()).map((l) => ({
-      name: l.name, description: l.description || undefined, quantity: Number(l.quantity), price: Number(l.price),
-      taxRate: Number(l.tax_rate), taxCategory: l.tax_category || undefined,
-    }));
-    for (const extra of await order.extras()) lines.push({ name: extra.name, description: undefined, quantity: 1, price: extra.price, taxRate: extra.taxRate, taxCategory: extra.taxCategory });
+    const lines = [
+      ...(await order.lines()).map((l) => ({
+        name: l.name, description: l.description || undefined, quantity: Number(l.quantity), price: Number(l.price),
+        taxRate: Number(l.tax_rate), taxCategory: l.tax_category || undefined,
+      })),
+      ...await order.extras(),
+    ];
     const party = order.party("bill");
     const id = await create(app, {
       currency: order.currency,

@@ -10,19 +10,19 @@ const OTC = Object.assign(document.createElement("input"), { autocomplete: "one-
 /** Ask for a fresh proof. Resolves true on success, false if cancelled. */
 export async function stepUp({ factors = [] } = {}) {
   const dialog = document.createElement("dialog");
-  const labels = {
-    title: await t`Please confirm it is you`,
-    none: await t`This needs a fresh proof of identity, and none of your sign-in methods can give one here. Sign out and in again.`,
-    cancel: await t`Cancel`,
-    back: await t`Use another method`,
-  };
+  const [title, none, cancel, backLabel] = await Promise.all([
+    t`Please confirm it is you`,
+    t`This needs a fresh proof of identity, and none of your sign-in methods can give one here. Sign out and in again.`,
+    t`Cancel`,
+    t`Use another method`,
+  ]);
 
   // No form here: factors bring their own, and nested forms are dropped by the parser.
-  dialog.innerHTML = html`<h2>${labels.title}</h2>
+  dialog.innerHTML = html`<h2>${title}</h2>
     <div data-body style="display:flex; flex-direction:column;"></div>
     <menu>
-      <button type=button data-back hidden>${labels.back}</button>
-      <button type=button data-cancel>${labels.cancel}</button>
+      <button type=button data-back hidden>${backLabel}</button>
+      <button type=button data-cancel>${cancel}</button>
     </menu>`;
   const body = dialog.querySelector("[data-body]");
   const back = dialog.querySelector("[data-back]");
@@ -37,7 +37,7 @@ export async function stepUp({ factors = [] } = {}) {
       back.hidden = true;
       body.innerHTML = factors.length
         ? html`${factors.map((factor, i) => html`<button type=button data-pick=${i}>${factor.label}</button>`)}`
-        : labels.none;
+        : none;
     };
 
     const choose = async (factor) => {

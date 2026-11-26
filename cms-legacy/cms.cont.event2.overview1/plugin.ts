@@ -7,8 +7,7 @@ import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }) {
-  let rows: Record<string, unknown>[] = [];
-  try { rows = await node.db.query`SELECT * FROM ${sql.id("event2_dates")} ORDER BY start_date`; } catch {/**/}
+  let rows = await node.db.query`SELECT * FROM ${sql.id("event2_dates")} ORDER BY start_date`.catch(() => []);
   const past = !!await node.settings.past;
   rows = rows.filter((row) => past !== startsTodayOrLater(row.start_date));
   if (past) rows.reverse();

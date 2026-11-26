@@ -45,8 +45,7 @@ const known = new WeakMap<App, Map<string, string>>();
 /** A variable font's weight and width ranges for its `@font-face`, else the browser draws only its
  *  default instance. Read in the background, once per file: no request waits for the file. */
 function ranges(app: App, font: DbFile): string {
-  let files = known.get(app);
-  if (!files) known.set(app, files = new Map());
+  const files = known.getOrInsertComputed(app, () => new Map());
   const hit = files.get(font.path);
   if (hit !== undefined) return hit;
   files.set(font.path, "");

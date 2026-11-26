@@ -47,7 +47,7 @@ export class DbFileManager {
   get directory(): string { return this.#directory; }
 
   #files() {
-    return scopeCache<Map<string, DbFile>>(this.#cache, "dbFiles", () => new Map());
+    return scopeCache(this.#cache, "dbFiles", () => new Map());
   }
 
   /** The cached object for this file; `vs` preloads a new one (ignored on a cache hit). */

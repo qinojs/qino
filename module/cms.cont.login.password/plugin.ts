@@ -16,7 +16,6 @@ const settingsSchema = {
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
   const app = node.app;
   const t = app.t;
-  u2.assets(ctx, ["class/table/table.css"]);
   const edit = await node.edit();
   const cms = node.cms;
   const settings = node.settings;
@@ -34,6 +33,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     }
     return html.raw("");
   }
+  u2.assets(ctx, ["class/table/table.css"]);
   const csrfToken = ctx.csrfToken;
 
   let errorHtml: HtmlString | string = "";
@@ -57,7 +57,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const fixUser = settings["fix user"]();
   const noAutofocus = settings["no autofocus"]();
   // the way out for who forgot it, where the site offers one
-  const reset = await node.cms.nodeByModule("cms.cont.password_reset");
+  const reset = await cms.nodeByModule("cms.cont.password_reset");
   const resetUrl = reset ? await reset.url() : "";
 
   return html.async`<div>

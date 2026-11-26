@@ -27,7 +27,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       goods += await line.gross();
     }
     if (!goods || goods >= minimum) return;
-    const price = order.tax_included ? surcharge : surcharge / ((await taxRate(app, order.country)) / 100 + 1);
-    extras.push({ key: "minimum", name: await t`Small quantity surcharge`, price, taxRate: await taxRate(app, order.country), sort: 1 });
+    const rate = await taxRate(app, order.country);
+    const price = order.tax_included ? surcharge : surcharge / (rate / 100 + 1);
+    extras.push({ key: "minimum", name: await t`Small quantity surcharge`, price, taxRate: rate, sort: 1 });
   });
 }

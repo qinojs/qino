@@ -17,8 +17,7 @@ export type CmsVersState = {
 const STATE_KEY = "cms.versions";
 
 export function getCmsVers(ctx: Ctx): CmsVersState {
-    ctx.state[STATE_KEY] ??= { space: 0, log: 0 };
-    return ctx.state[STATE_KEY];
+    return ctx.state[STATE_KEY] ??= { space: 0, log: 0 };
 }
 
 /** Preload all page data into the cache, so later reads in another space/log stay correct. */

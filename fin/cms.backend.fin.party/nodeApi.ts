@@ -36,7 +36,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const values = valuesOf(vars.create as Record<string, string>);
       if (!values.organization && !values.family_name) return { ok: false, message: await t`A name, please` };
       const id = await addUser(app, values);
-      const url = backend.toUrl(await (await node.page()).url(), { usr: id });
+      const url = backend.toUrl(await (await node.page()).url(), { id });
       return { ok: true, url };
     }
     // credit added by hand (or taken, negative): a goodwill, money paid in for it

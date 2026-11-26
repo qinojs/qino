@@ -7,7 +7,7 @@ import { country } from "@qino/qino/locale.country";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { App, Ctx, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Method } from "@qino/qino/cms.shop";
 import type { Column, Rows } from "@qino/qino/cms.backend.shop";
@@ -23,14 +23,14 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 }
 
 async function tables(app: App): Promise<Rows[]> {
-  const t = shopT(app), own = (row: Record<string, unknown>) => String(row.id), isMain = (row: Record<string, unknown>) => !!Number(row.main);
+  const t = shopT(app), own = (row: Row) => String(row.id), isMain = (row: Row) => !!Number(row.main);
   const currencies = await app.db.col<string>`SELECT id FROM shop_currency ORDER BY id`;
   // a currency is picked, not typed: those the shop does not price in yet
   const others = (await app.db.col<string>`SELECT id FROM currency ORDER BY id`).filter((id) => !currencies.includes(id));
-  const collator = new Intl.Collator(getCtx().lang), named = (row: Record<string, unknown>) => country.name(String(row.id), getCtx().lang);
+  const lang = getCtx().lang, collator = new Intl.Collator(lang), named = (row: Row) => country.name(String(row.id), lang);
   // what an unassigned country pays in: its own currency if the shop offers it, else the main one
   const active = await activeCurrencies(app), main = active[0] ?? "", auto = await t`Auto`;
-  const pays = (row?: Record<string, unknown>) => active.includes(String(row?.currency)) ? row!.currency : main;
+  const pays = (row?: Row) => active.includes(String(row?.currency)) ? row!.currency : main;
   const minimum: Column[] = app.modules.get("cms.shop.minimum")
     ? [{ name: "minimum", label: t`Minimum order`, type: "money", currency: own }, { name: "minimum_surcharge", label: t`Surcharge below it`, type: "money", currency: own }]
     : [];

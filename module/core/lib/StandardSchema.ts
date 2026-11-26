@@ -16,7 +16,7 @@ export interface StandardIssue {
 // ───── Schema type ────────────────────────────────────────────────────────
 
 type Kind = "string" | "enum" | "number" | "boolean" | "object" | "array" | "optional" | "record" | "any" | "instance";
-type Validator<T> = (value: unknown, path: PropertyKey[]) => StandardResult<T>;
+type Validator<T> = (value: unknown) => StandardResult<T>;
 
 declare const OPTIONAL_BRAND: unique symbol;
 type Optional<T> = StandardSchema<T | undefined> & { readonly [OPTIONAL_BRAND]: true };
@@ -42,7 +42,7 @@ export class StandardSchema<T = unknown> {
     this["~standard"] = {
       version: 1,
       vendor: "api",
-      validate: (value) => value === undefined && def ? { value: def() } : validator(value, []),
+      validate: (value) => value === undefined && def ? { value: def() } : validator(value),
     };
   }
 
@@ -57,31 +57,31 @@ export class StandardSchema<T = unknown> {
 
 // ───── Helpers ────────────────────────────────────────────────────────────
 
-function err(path: PropertyKey[], message: string) {
-  return [{ message, path }];
+function err(message: string) {
+  return [{ message, path: [] as PropertyKey[] }];
 }
 
 // ───── Builder `s` ────────────────────────────────────────────────────────
 
 export const s = {
-  string: (): StandardSchema<string> => new StandardSchema<string>("string", (v, p) =>
-    typeof v === "string" ? { value: v } : { issues: err(p, "expected string") }),
+  string: (): StandardSchema<string> => new StandardSchema<string>("string", (v) =>
+    typeof v === "string" ? { value: v } : { issues: err("expected string") }),
 
   /** One of `values`, e.g. `s.enum(["config", "bug"])`. */
   enum: <const T extends readonly string[]>(values: T): StandardSchema<T[number]> =>
-    new StandardSchema<T[number]>("enum", (v, p) =>
-      values.includes(v as string) ? { value: v as T[number] } : { issues: err(p, `expected one of: ${values.join(", ")}`) }, { values }),
+    new StandardSchema<T[number]>("enum", (v) =>
+      values.includes(v as string) ? { value: v as T[number] } : { issues: err(`expected one of: ${values.join(", ")}`) }, { values }),
 
-  number: (): StandardSchema<number> => new StandardSchema<number>("number", (v, p) =>
-    typeof v === "number" && Number.isFinite(v) ? { value: v } : { issues: err(p, "expected number") }),
+  number: (): StandardSchema<number> => new StandardSchema<number>("number", (v) =>
+    typeof v === "number" && Number.isFinite(v) ? { value: v } : { issues: err("expected number") }),
 
-  boolean: (): StandardSchema<boolean> => new StandardSchema<boolean>("boolean", (v, p) =>
-    typeof v === "boolean" ? { value: v } : { issues: err(p, "expected boolean") }),
+  boolean: (): StandardSchema<boolean> => new StandardSchema<boolean>("boolean", (v) =>
+    typeof v === "boolean" ? { value: v } : { issues: err("expected boolean") }),
 
   object: <Shape extends Record<string, StandardSchema<any>>>(shape: Shape): StandardSchema<InferObject<Shape>> => {
     const keys = Object.keys(shape);
-    return new StandardSchema<InferObject<Shape>>("object", (v, p) => {
-      if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
+    return new StandardSchema<InferObject<Shape>>("object", (v) => {
+      if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err("expected object") };
       const out: Record<string, unknown> = {};
       const issues = [];
       for (const key of keys) {
@@ -94,8 +94,8 @@ export const s = {
   },
 
   array: <T>(item: StandardSchema<T>): StandardSchema<T[]> =>
-    new StandardSchema<T[]>("array", (v, p) => {
-      if (!Array.isArray(v)) return { issues: err(p, "expected array") };
+    new StandardSchema<T[]>("array", (v) => {
+      if (!Array.isArray(v)) return { issues: err("expected array") };
       const out = [];
       const issues = [];
       for (let i = 0; i < v.length; i++) {
@@ -117,12 +117,12 @@ export const s = {
     new StandardSchema<unknown>("any", (v) => ({ value: v })),
 
   instance: <T>(cls: abstract new (...args: any[]) => T): StandardSchema<T> =>
-    new StandardSchema<T>("instance", (v, p) =>
-      v instanceof cls ? { value: v } : { issues: err(p, `expected ${cls.name}`) }),
+    new StandardSchema<T>("instance", (v) =>
+      v instanceof cls ? { value: v } : { issues: err(`expected ${cls.name}`) }),
 
   record: <T = unknown>(value?: StandardSchema<T>): StandardSchema<Record<string, T>> =>
-    new StandardSchema<Record<string, T>>("record", (v, p) => {
-      if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
+    new StandardSchema<Record<string, T>>("record", (v) => {
+      if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err("expected object") };
       if (!value) return { value: v as Record<string, T> };
       const out: Record<string, T> = {};
       const issues = [];

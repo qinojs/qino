@@ -1,5 +1,7 @@
 import { $item, sql } from "@qino/qino";
 
+import { settingId } from "./plugin.ts";
+
 import type { App } from "@qino/qino";
 
 /** Settings below `basis` as a plain object. Rows with children are branches, others values. */
@@ -13,18 +15,8 @@ async function settingTree(app: App, basis: number): Promise<Record<string, unkn
     return out;
 }
 
-async function findSettingNodeId(app: App, path: string[]): Promise<number | null> {
-    let basis = 0;
-    for (const offset of path) {
-        const id = await app.db.one`SELECT id FROM qg_setting WHERE basis = ${basis} AND ${sql.id("offset")} = ${offset}`;
-        if (!id) return null;
-        basis = Number(id);
-    }
-    return basis;
-}
-
 export async function migrateLegacyPageSettings(app: App): Promise<void> {
-    const pagesNodeId = await findSettingNodeId(app, ["cms", "pages"]);
+    const pagesNodeId = await settingId(app, ["cms", "pages"]);
     if (!pagesNodeId) return;
 
     const legacyRows = await app.db.query`SELECT id, ${sql.id("offset")} FROM qg_setting WHERE basis = ${pagesNodeId} ORDER BY id`;

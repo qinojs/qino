@@ -42,8 +42,8 @@ const ownHost = async (app: App) => URL.parse(String(await app.settings.core.url
 const appHosts = async (app: App) => `${await app.settings.core.hosts ?? ""} ${await ownHost(app)}`;
 
 async function getRpId(app: App) {
-  const own = (await ownHost(app)).replace(/^www\./, "");
-  return String(await app.settings["auth.webauthn"].rpId ?? "") || own || "localhost";
+  return String(await app.settings["auth.webauthn"].rpId ?? "")
+    || (await ownHost(app)).replace(/^www\./, "") || "localhost";
 }
 
 /** Origins accepted in clientDataJSON: the request's, if its host is under rpId or one of the app's hosts. */

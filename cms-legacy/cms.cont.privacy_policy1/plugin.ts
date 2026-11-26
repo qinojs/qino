@@ -17,13 +17,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   for (const key of keys) {
     if (key === "https" && ctx.req.url.protocol !== "https:") continue;
     if (key === "google_fonts") {
-      let font = "";
-      try {
-        font = String(await node.db.one`SELECT value FROM ${sql.id("qg_setting")} WHERE ${sql.id("offset")} = ${"font-css-file"}` ?? "");
-      } catch {/**/}
-      try {
-        if (new URL(font).hostname !== "fonts.googleapis.com") continue;
-      } catch { continue; }
+      const font = String(await node.db.one`SELECT value FROM ${sql.id("qg_setting")} WHERE ${sql.id("offset")} = ${"font-css-file"}`.catch(() => "") ?? "");
+      if (URL.parse(font)?.hostname !== "fonts.googleapis.com") continue;
     }
     const name = "content_" + key;
     if (!texts.has("title_" + key)) continue;

@@ -60,8 +60,8 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
   let verb = branch(cursor[m]) as Verb | undefined;
   if (!verb) {
     const paramKey = Object.keys(cursor).find((k) => isCatchall(k) && branch(cursor[k]));
-    const child = paramKey ? branch(cursor[paramKey]) : undefined;
-    if (paramKey && child) {
+    if (paramKey) {
+      const child = branch(cursor[paramKey])!;
       pathValues[paramName(paramKey)] = [];
       pathNodes.push([paramKey, child]);
       verb = branch(child[m]) as Verb | undefined;

@@ -162,7 +162,6 @@ export default async function (widget, { node, signal }) {
     }
   });
   return () => {
-    scheme.removeEventListener('change', paint);
     replace(original);
     probe.remove();
   };

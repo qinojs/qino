@@ -3,20 +3,12 @@ import { fs, sql, unhee } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
 import { fieldName } from "@qino/qino/cms.cont.form.fields";
 
+import { settingId } from "./plugin.ts";
+
 import type { App } from "@qino/qino";
 
 /** Both field blocks of form1 keep their inputs alike; fields3 only adds a label position. */
 const FIELDS = sql.join(["cms.cont.form1.fields2", "cms.cont.form1.fields3"].map((m) => sql`${m}`));
-
-async function settingId(app: App, path: string[]): Promise<number | null> {
-  let basis = 0;
-  for (const offset of path) {
-    const id = await app.db.one`SELECT id FROM qg_setting WHERE basis = ${basis} AND ${sql.id("offset")} = ${offset} ORDER BY id LIMIT 1`;
-    if (!id) return null;
-    basis = Number(id);
-  }
-  return basis;
-}
 
 /** form1.fields2/3 used each setting row id as its text/input id, not the row offset. Preserve that
  *  relation before the generic page-settings migration removes the legacy rows. */

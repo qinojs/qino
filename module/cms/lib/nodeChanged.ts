@@ -33,13 +33,11 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
     // affected node ids; row values = key values merged with changed data.
     // text_lang/file rows are found via the link tables. New unlinked rows give none (the link
     // insert records it); a new language on an existing text is still found.
-    const nodeIds = async (table: string, vs: Record<string, any>) => {
-        const id = idOf(table, vs);
-        if (table === "page" || LINKED.has(table)) return [Number(id)];
+    const nodeIds = async (table: string, id: unknown) => {
         if (table === "text_lang") return (await db.col`SELECT page_id FROM page_text WHERE text_id = ${id}
                 UNION SELECT id FROM page WHERE title_id = ${id}`).map(Number);
         if (table === "file") return (await db.col`SELECT page_id FROM page_file WHERE file_id = ${id}`).map(Number);
-        return [];
+        return [Number(id)];
     };
 
     const capture = async (op: "insert" | "update" | "delete", e: any) => {
@@ -48,11 +46,12 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         const table = String(e.table);
         if (table !== "page" && table !== "text_lang" && table !== "file" && !LINKED.has(table)) return;
         const vs = { ...(e.id != null ? e.table.entryIdValues?.(e.id) : {}), ...e.data };
-        if (idOf(table, vs) == null) return; // incomplete id (e.g. composite key as single value)
+        const id = idOf(table, vs);
+        if (id == null) return; // incomplete id (e.g. composite key as single value)
         const logId = Number(await ctx.logId) || 0;
         if (!logId) return;
 
-        const nodes = await nodeIds(table, vs);
+        const nodes = await nodeIds(table, id);
         if (!nodes.length) return;
         // page delete: resolve the page via basis before the row is gone.
         const fromBasis = table === "page" && op === "delete";

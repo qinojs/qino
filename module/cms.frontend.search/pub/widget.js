@@ -12,9 +12,9 @@ export const css = `
 .-search .-preview img { width:100%; height:3.5rem; object-fit:contain; }
 `;
 
-function mark(text, words) {
-  if (!words.length) return html`${text}`;
-  const parts = String(text ?? '').split(new RegExp(`(${words.map(RegExp.escape).join('|')})`, 'ig'));
+function mark(text, re) {
+  if (!re) return html`${text}`;
+  const parts = String(text ?? '').split(re);
   return html.join(parts.map((part, i) => i % 2 ? html`<mark>${part}</mark>` : html`${part}`));
 }
 
@@ -54,7 +54,7 @@ export default async function (widget, { node, signal }) {
       const found = await api['cms.frontend.search'].search.get({ pid: node.id, search }, { signal: requestSignal });
       const titles = { pages: t`Pages`, contents: t`Contents`, files: t`Files`, users: t`Users` };
       const groups = Object.keys(titles).filter((name) => found[name]?.length);
-      const words = search ? search.toLowerCase().split(/\s+/).slice(0, 4) : [];
+      const re = search ? new RegExp(`(${search.split(/\s+/, 4).map(RegExp.escape).join('|')})`, 'i') : null;
       const result = groups.length
         ? await html.async`${groups.map((name) => {
           const rows = found[name];
@@ -66,10 +66,10 @@ export default async function (widget, { node, signal }) {
                 <u2-ico icon=description aria-hidden=true${row.thumb ? html.raw(' hidden') : ''}></u2-ico>
               </a>` : ''}
               <td>
-                <a href="${row.url}" data-result><strong>${mark(row.title, words)}</strong></a>
+                <a href="${row.url}" data-result><strong>${mark(row.title, re)}</strong></a>
                 ${row.breadcrumb?.length ? html.async`<nav aria-label="${t`Breadcrumb`}"><small>${pathLinks(row.breadcrumb)}</small></nav>` : ''}
-                <div><small>${mark(row.info, words)}</small></div>
-                ${row.snippet ? html`<p>${mark(row.snippet, words)}</p>` : ''}
+                <div><small>${mark(row.info, re)}</small></div>
+                ${row.snippet ? html`<p>${mark(row.snippet, re)}</p>` : ''}
                 ${row.pages?.length ? html.async`<div><small>${t`Used on`}: ${html.join(row.pages.map((page) => html`
                   <span>${pathLinks([...page.breadcrumb, page])}</span>`), ' · ')}</small></div>` : ''}
             `)}</tbody></table>

@@ -25,11 +25,11 @@ export const calendar: Source = {
     const result: Entry[] = [];
     for (const row of rows) {
       const id = Number(row.product_id);
-      if (!products.has(id)) {
+      let product = products.get(id);
+      if (!product) {
         const node = await tree.node(id);
-        products.set(id, { title: (await node.showTitle()).plain(), url: await node.url() });
+        products.set(id, product = { title: (await node.showTitle()).plain(), url: await node.url() });
       }
-      const product = products.get(id)!;
       const link = url && row.order_id ? new URL(url, ctx.req.url.href) : undefined;
       link?.searchParams.set("id", String(row.order_id));
       result.push({

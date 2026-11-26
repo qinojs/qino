@@ -121,11 +121,11 @@ async function renderRow(node: Node, ev: Event) {
 async function actorCell(r: Record<string, any>, t: TFn) {
   if (!r.usr_id) return html`<small>${await t`guest`}</small>`;
   const name = `${r.given_name ?? ""} ${r.family_name ?? ""}`.trim();
-  return html.async`<b style="color:${backend.uniqueColor(r.usr_id)}">${name || r.username}</b>${name && r.username ? html`<br><small>${r.username}</small>` : ""}`;
+  return html`<b style="color:${backend.uniqueColor(r.usr_id)}">${name || r.username}</b>${name && r.username ? html`<br><small>${r.username}</small>` : ""}`;
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
-async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
+function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }) {
   const t = node.app.t;
   const initial = list(node, { ctx, vars: { filter: vars.filter ?? {} } });
   return html.async`
@@ -177,9 +177,9 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString | str
 
   const latest = new Map<string, { time: number; name: string; pageId: number }>();
   for (const r of rows) {
-    if (await (await cmsOf(app).node(Number(r.node_id))).access() < WRITE) continue;
     const uid = r.usr_id ? "u" + r.usr_id : "guest";
     if (latest.has(uid)) continue; // rows are newest-first → first hit is this user's latest
+    if (await (await cmsOf(app).node(Number(r.node_id))).access() < WRITE) continue;
     const name = r.usr_id ? (`${r.given_name ?? ""} ${r.family_name ?? ""}`.trim() || r.username || "#" + r.usr_id) : await t`guest`;
     latest.set(uid, { time: Number(r.time), name, pageId: Number(r.page_id) });
     if (latest.size >= 12) break;

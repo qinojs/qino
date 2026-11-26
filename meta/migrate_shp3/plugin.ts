@@ -404,10 +404,9 @@ export async function install({ app }: { app: App }): Promise<void> {
         }
         const keep = to.startsWith("cms.backend.") ? s : out; // backend lists keep their own view settings
         // through the node, it may be loaded already; its settings item is built on load, so set it too
-        const node = await cms(app).node(Number(page.id));
-        await node.set({ module: to });
-        await node.urlsGen(); // what lists it may give it an address now
-        await node.settings[$item].set(keep);
+        await old.set({ module: to });
+        await old.urlsGen(); // what lists it may give it an address now
+        await old.settings[$item].set(keep);
       }
       if (pages.length) report.push(`${pages.length} × ${from} → ${to}`);
     }

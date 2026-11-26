@@ -275,7 +275,7 @@ async function take(app: App, field: "registrar" | "host", source: Source): Prom
     // what a host serves is no alias
     await put(name, field === "registrar" ? { registrar: source.name } : { host: source.name, aliasOf: null });
     if (entry.expires !== undefined) await app.db.exec`UPDATE fin_hosting_domain SET expires = ${entry.expires} WHERE name = ${name}`;
-    for (const alias of entry.aliases ?? []) if (normalize(alias)) aliases.set(normalize(alias), name);
+    for (const a of entry.aliases ?? []) { const k = normalize(a); if (k) aliases.set(k, name); }
   }
   for (const [alias, main] of aliases) await put(alias, { aliasOf: main, host: null });
   const time = unixTime();
@@ -311,9 +311,9 @@ export async function blockers(app: App, name: string): Promise<("synced" | "ali
 /** Remove a domain nothing holds on to any more (see `blockers`). Its ended subscriptions keep
  *  their `ref`: what they were for stays readable. The monitor keeps watching until told otherwise. */
 export async function remove(app: App, name: string): Promise<void> {
-  const why = await blockers(app, name);
-  if (why.length) throw new Error(`fin.hosting: ${normalize(name)} is held: ${why.join(", ")}`);
-  await table(app).delete(normalize(name));
+  const why = await blockers(app, name = normalize(name));
+  if (why.length) throw new Error(`fin.hosting: ${name} is held: ${why.join(", ")}`);
+  await table(app).delete(name);
 }
 
 /** Remove every domain linked to nothing — no subscription, ended ones too, no alias either way, not

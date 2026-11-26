@@ -3,10 +3,11 @@ export type XmlNode = { tag: string; attrs: Record<string, string>; children: Xm
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " " };
 const decode = (s: string) => s.replace(/&(#?\w+);/g, (m, e) => ENTITIES[e] ?? m);
 
+const TAG_RE = /<(\/?)([\w.-]+)((?:\s+[\w.:-]+="[^"]*")*)\s*(\/?)>/g;
+const ATTR_RE = /([\w.:-]+)="([^"]*)"/g;
+
 /** Minimal XML parser for CMS subpage definitions (elements + attributes only). */
 export function parseXml(xml: string): XmlNode | null {
-  const TAG_RE = /<(\/?)([\w.-]+)((?:\s+[\w.:-]+="[^"]*")*)\s*(\/?)>/g;
-  const ATTR_RE = /([\w.:-]+)="([^"]*)"/g;
   const root: XmlNode = { tag: "", attrs: {}, children: [] };
   const stack = [root];
   for (const [, close, tag, attrStr, selfClose] of xml.matchAll(TAG_RE)) {

@@ -20,7 +20,7 @@ export const ctxSettingsSchema = {
 async function session(ctx: Ctx, fresh = false): Promise<{ id: number }> {
   const db = ctx.app.db, kept = Number(await ctx.settings[name].session) || 0;
   const owner = !fresh && kept && Number(await db.one`SELECT usr_id FROM ai_session WHERE id = ${kept}`);
-  if (!fresh && kept && owner === ctx.userId) return { id: kept };
+  if (owner === ctx.userId) return { id: kept };
   const agent = await Agent.named(ctx.app, AGENT);
   if (!agent) throw new Error(`No agent ${AGENT}`);
   const { id } = await agent.start(ctx.userId);
@@ -67,10 +67,10 @@ export const api: ApiTree = {
 /** The chat is an item of the CMS panel, which is there in editmode, for those who may edit the page. */
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   cms(app).on("page:render-after", async ({ ctx }) => {
-    const node = cmsCtx(ctx).mainNode;
-    if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode || !ctx.userId || !node || await node.access() < 2) return;
+    const state = cmsCtx(ctx), node = state.mainNode;
+    if (ctx.req.query.cms_noFrontend || !state.editmode || !ctx.userId || !node || await node.access() < 2) return;
     const qino = ctx.res.html.jsData.qino ??= {};
-    qino[name] = { page: node.id, editmode: !!cmsCtx(ctx).editmode };
+    qino[name] = { page: node.id, editmode: true };
     ctx.res.html.scripts.add(ctx.req.moduleUrl + name + "/pub/chat.js");
     allowMarkdown(); // answers render as markdown
   }, { signal });

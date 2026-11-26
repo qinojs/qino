@@ -26,13 +26,13 @@ export async function cart(ctx: Ctx, create = true): Promise<Order | undefined> 
   const session = ctx.sess.data["cms.shop"];
   const stored = session.cart();
   let order = stored ? (await table.get<Order>(stored))?.forget() : undefined;
+  if (order?.status !== "cart") order = undefined; // placed meanwhile — that cart is spent
 
   // An open cart of the logged-in user is the same cart on the next device.
   if (!order && ctx.userId) {
     const id = await app.db.one`SELECT id FROM shop_order WHERE usr_id = ${ctx.userId} AND status = ${"cart"} ORDER BY id DESC LIMIT 1`;
     if (id) order = (await table.get<Order>(id))?.forget();
   }
-  if (order && order.status !== "cart") order = undefined; // placed meanwhile — that cart is spent
   if (!order) {
     if (!create) return;
     const where = await country(app);

@@ -36,17 +36,18 @@ export function halfLife(db: Db, name: string, seconds: number): void {
   halves.getOrInsertComputed(db, () => new Map()).set(name, seconds);
 }
 
+const score = (db: Db, table: string) => {
+  const props = table.startsWith("score_") && db.tables[table] && db.schema.properties[table]?.additionalProperties?.properties;
+  if (!props) return;
+  const name = table.slice(6);
+  return { name, table, keys: Object.keys(props).filter((c) => props[c]["x-index"] === "primary"), half: halves.get(db)?.get(name) ?? HALF_LIFE };
+};
+
 /** All score tables of the database. */
-export const scores = (db: Db): Score[] => Object.keys(db.tables).flatMap((table) => {
-  const props = table.startsWith("score_") && db.schema.properties[table]?.additionalProperties?.properties;
-  if (!props) return [];
-  const name = table.slice("score_".length);
-  const keys = Object.keys(props).filter((col) => props[col]["x-index"] === "primary");
-  return [{ name, table, keys, half: halves.get(db)?.get(name) ?? HALF_LIFE }];
-});
+export const scores = (db: Db): Score[] => Object.keys(db.tables).flatMap((t) => score(db, t) ?? []);
 
 function scoreOf(db: Db, name: string) {
-  const found = scores(db).find((s) => s.name === name);
+  const found = score(db, "score_" + name);
   if (!found) throw new Error(`No table "score_${name}": declare it to score "${name}"`);
   return found;
 }

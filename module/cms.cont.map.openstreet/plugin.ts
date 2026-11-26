@@ -1,4 +1,4 @@
-import { hee, html } from "@qino/qino";
+import { html } from "@qino/qino";
 
 import { geocode } from "./lib/geocode.ts";
 
@@ -94,10 +94,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   // learn the embedding page.
   //
   // t`` is async, so the title is awaited, and the markup is html.async.
-  const frame = html.raw(
-    `<iframe src="${hee(embed)}" title="${hee(title)}" loading="lazy" referrerpolicy="no-referrer"` +
-      ` allowfullscreen></iframe>`,
-  );
+  const frame = html`<iframe src="${embed}" title="${title}" loading="lazy" referrerpolicy="no-referrer" allowfullscreen></iframe>`;
 
   return html.async`
 <figure style="--map-height:${height}rem">

@@ -228,10 +228,7 @@ export async function healthChecks(app: App) {
 
   // ── db files ─────────────────────────────────────────────────────────────
   cleanup["unused dbFiles"] = async () => {
-    const children = db.table("file").children;
-    if (!children.length) return;
-    const unlinked = children.map((child) => sql`id NOT IN (SELECT ${sql.id(child.name)} FROM ${sql.id(child.table.name)})`);
-    const count = Number(await db.one`SELECT count(*) FROM file WHERE ${sql.join(unlinked, " AND ")}`);
+    const count = Number(await db.one`SELECT count(*) FROM file WHERE ${notLinked(db, "file")}`);
     if (!count) return;
     return {
       info: `${count} files (used()-hooks not checked yet)`,

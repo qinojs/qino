@@ -67,7 +67,7 @@ export async function remindDue(app: App, { signal }: { signal?: AbortSignal } =
  *  level's fee and default interest; issued and mailed as set. Resolves with its id. */
 export async function remind(app: App, ids: number[]): Promise<number> {
   const settings = await settingsOf(app);
-  const items = await candidates(app, sql`${sql.in("i.id", ids)}`);
+  const items = await candidates(app, sql.in("i.id", ids));
   if (!items.length || items.length !== new Set(ids).size) {
     throw new Error("fin.invoice.reminder: only open invoices of ours");
   }

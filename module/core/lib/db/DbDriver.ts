@@ -196,7 +196,7 @@ class SqliteDriver extends DbDriver {
   // Wait for an open transaction; its own queries (#txAls set) run directly to avoid deadlock.
   // `hold` lets a transaction pass the connection on before it ends — see below.
   #serial<T>(fn: () => T | Promise<T>, hold?: Promise<unknown>): Promise<T> {
-    if (this.#txAls.getStore()?.open) return Promise.resolve(fn());
+    if (this.#txAls.getStore()?.open) return Promise.try(fn);
     this.#queued++;
     const run = this.#chain.then(fn);
     const finish = () => this.#queued--;

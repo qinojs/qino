@@ -32,11 +32,7 @@ const minor = (chf: unknown) => Math.round(Number(chf) * 100);
 /** `YYYY-MM-DD` of a DATE or DATETIME; MySQL's zero date is none. */
 const day = (v: unknown) => /^\d{4}-\d\d-\d\d/.test(String(v ?? "")) && !String(v).startsWith("0000") ? String(v).slice(0, 10) : null;
 const country = (v: unknown) => /^[a-z]{2}$/i.test(String(v ?? "")) ? String(v).toUpperCase() : null;
-const groupBy = (rows: Rows, key: string) => {
-  const map = new Map<number, Rows>();
-  for (const row of rows) map.set(Number(row[key]), [...map.get(Number(row[key])) ?? [], row]);
-  return map;
-};
+const groupBy = (rows: Rows, key: string) => Map.groupBy(rows, (row) => Number(row[key]));
 
 /** All fin data and the customers of an earlier import. */
 async function clear(app: App) {

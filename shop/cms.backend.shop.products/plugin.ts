@@ -72,7 +72,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
   ].filter((w) => w != null);
   const rows = await app.db.table("shop_product").all<Product>`${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``} ORDER BY id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
   const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname + url.search, { search: q("search"), category: q("category"), ...params });
-  const columns = listColumns(app, main?.$id ?? ""), labels = await Promise.all(columns.map((c) => c.label));
+  const columns = await Promise.all(listColumns(app, main?.$id ?? "").map(async (c) => ({ ...c, label: await c.label })));
   const options = await Promise.all([...named.values()].map(async (c) => [String(c.id), String(await c.title(lang) || c.id)] as const));
   options.sort((a, b) => a[1].localeCompare(b[1]));
   const targets = await creatable(app);
@@ -94,7 +94,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <th>${t`Article`}
       <th>${t`Category`}
       <th>${t`Article number`}
-      ${labels.map((l) => html`<th>${l}`)}
+      ${columns.map((c) => html`<th>${c.label}`)}
     <tbody>${rows.slice(0, PER_PAGE).map(async (p) => {
       const product = await p.node();
       return html.async`<tr data-id="${p.$id}">
@@ -102,7 +102,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <td><a href="${link({ id: p.$id })}">${p.title(lang)}</a>${await product.isOnline() ? "" : html.async` <small>${t`Offline`}</small>`}
       <td>${(await categoryOf(product))?.showTitle()}
       <td>${p.sku}
-      ${columns.map((c, i) => html`<td>${input({ ...c, label: labels[i] }, { [c.name!]: p.$get(c.name!) })}`)}`;
+      ${columns.map((c) => html`<td>${input(c, { [c.name!]: p.$get(c.name!) })}`)}`;
     })}
   </table>
   <div>

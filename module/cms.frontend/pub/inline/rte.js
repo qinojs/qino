@@ -19,12 +19,11 @@ const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
 
 /** Finds simple class selectors available to an element in same-origin stylesheets. */
 function possibleClasses(el) {
-  const ret = {};
+  const ret = {}, reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : /^\.[^ ]+$/;
   function test(sel) {
     sel = sel.trim();
     if (!sel.includes('.')) return;
     if (!/\.[A-Z]/.test(sel)) return;
-    const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : /^\.[^ ]+$/;
     if (reg.test(sel)) {
       const name = sel.replace(/^(.*\.)([^: ]*)(.*)$/, '$2');
       ret[name] = sel;

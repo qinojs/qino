@@ -18,7 +18,7 @@ test("customers and suppliers follow from the invoices; a new one keeps its addr
     const base = "http://qino.test/backend/parties";
 
     const made = await as(base, () => api(node, { create: { organization: "Druck AG" } })) as Answer;
-    const id = Number(new URL(made.url!, "http://-").searchParams.get("usr"));
+    const id = Number(new URL(made.url!, "http://-").searchParams.get("id"));
     assertEquals((await app.db.row`SELECT active FROM usr WHERE id = ${id}`)?.active, 0); // no login
     const address = {
       street_address: "Seeweg 2", postal_code: "3000", address_locality: "Bern", address_country: "ch",
