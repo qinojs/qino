@@ -87,11 +87,16 @@ export async function proveForm(root, fields, check) {
   const done = new Promise((resolve) => {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const button = form.querySelector("button");
+      if (button.disabled) return; // a double submit would spend the code twice
+      button.disabled = true;
       try {
         if (await check(form)) return resolve(true);
         out.value = await t`That counted for nothing here.`;
       } catch (e) {
         out.value = e?.message || String(e);
+      } finally {
+        button.disabled = false;
       }
     });
   });

@@ -27,6 +27,13 @@ test("a claim is proven by its code and spent either way it ends", async () => {
   await assertRejects(() => redeemCode(a, "email", 1, "one@qino.test", code), ApiError, "Nothing to verify");
 });
 
+test("a code redeemed twice at once counts once", async () => {
+  const a = await app();
+  const code = await requestCode(a, "email", 1, "one@qino.test");
+  const both = await Promise.allSettled([1, 2].map(() => redeemCode(a, "email", 1, "one@qino.test", code)));
+  assertEquals(both.map((r) => r.status).sort(), ["fulfilled", "rejected"]);
+});
+
 test("an address receives one code at a time, and wrong codes buy a growing wait", async () => {
   const a = await app();
   const code = await requestCode(a, "phone", 1, "+41791234567");

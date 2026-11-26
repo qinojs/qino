@@ -33,14 +33,17 @@ export async function verify(ctx: Ctx, code: string): Promise<boolean> {
   const hit = await attempt(ctx.app, usrId, async () => {
     for (const row of await stored(ctx.app, usrId, TYPE)) {
       const used = await valid(String(JSON.parse(String(row.data)).secret), code);
-      if (used && used > Number(row.last_used ?? 0)) return { row, used }; // RFC 6238 §5.2: a code is good once
+      // RFC 6238 §5.2: a code is good once — claimed in SQL, so a parallel replay finds it taken
+      if (!used || used <= Number(row.last_used ?? 0)) continue;
+      const taken = await ctx.app.db.exec`UPDATE usr_auth_factor SET last_used = ${used}
+        WHERE id = ${row.id} AND (last_used IS NULL OR last_used < ${used})`;
+      if (taken.affectedRows) return true;
     }
   });
   if (!hit) {
     ctx.app.fire("suspicious", { ctx, weight: 2, reason: "totp verification failed" }).catch(() => {});
     throw new ApiError(422, "That code does not match");
   }
-  ctx.app.db.table("usr_auth_factor").update(Number(hit.row.id), { last_used: hit.used }).catch(() => {}); // background write
   return !await proof(ctx, TYPE, usrId); // nothing missing = it counted
 }
 

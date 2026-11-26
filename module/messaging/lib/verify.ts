@@ -57,11 +57,12 @@ export async function redeemCode(app: App, type: string, usrId: number, input: s
       await drop();
       throw new ApiError(410, "Verification code expired");
     }
-    return /^\d{6}$/.test(code) && safeEqual(await codeHash(app, type, address, code), String(open.hash));
+    // a correct code is used up in the same turn, so a parallel replay finds nothing left
+    return /^\d{6}$/.test(code) && safeEqual(await codeHash(app, type, address, code), String(open.hash))
+      && (await drop()).affectedRows > 0;
   });
   if (!right) throw new ApiError(422, "Verification code is invalid");
   await proofPassed(app, usrId);
-  await drop();
 }
 
 /** A user's open claims of one kind. */
