@@ -1,10 +1,10 @@
-import { html, sql, FileTransformer, deleteUnlinkedDbFiles, fs } from "@qino/qino";
+import { DbFile, html, sql, FileTransformer, deleteUnlinkedDbFiles, fs } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
 import manifest from "./manifest.json" with { type: "json" };
 
-import type { HtmlString, App, DbField, DbFile, Ctx, Sql } from "@qino/qino";
+import type { HtmlString, App, DbField, Ctx, Sql } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
@@ -149,7 +149,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
 async function runAction(node: Node, doName: string) {
   if (doName === "delete_unlinked") {
-    const r = await deleteUnlinkedFs(node);
+    const r = await deleteUnlinkedFs(node.app);
     return html.async`${r.deleted} ${node.app.t`files deleted`} <small>(<u2-bytes>${r.size}</u2-bytes>)</small>`;
   }
   if (doName === "delete_unlinked_db") {
@@ -297,12 +297,13 @@ async function renderDetail(node: Node, ctx: Ctx, id: number) {
 </div>`;
 }
 
-async function deleteUnlinkedFs(node: Node) {
-  const { db, dbFiles: fm } = node.app;
+export async function deleteUnlinkedFs(app: App): Promise<{ deleted: number; size: number }> {
+  const { db, dbFiles: fm } = app;
   const dbMd5s = new Set(await db.col`SELECT md5 FROM file WHERE md5 IS NOT NULL`);
   let deleted = 0, size = 0;
   for (const e of await fs.list(fm.directory)) {
     if (e.name.length < 32 || e.name[0] === "." || dbMd5s.has(e.name)) continue;
+    if ((await app.fire("dbFile:unlink-before", { file: new DbFile(fm, 0, { md5: e.name }), prevent: false })).prevent) continue;
     const path = fm.directory + e.name;
     const fileSize = await fs.size(path) ?? 0;
     if (!await fs.remove(path).then(()=>true, ()=>false)) continue;
