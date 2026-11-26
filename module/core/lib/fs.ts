@@ -99,7 +99,12 @@ export const fs = {
     }
     const h = await open(path);
     put(path, h.stat().then(toInfo, () => undefined));
-    return Readable.toWeb(h.createReadStream({ start, end })) as ReadableStream<Uint8Array>;
+    try {
+      return Readable.toWeb(h.createReadStream({ start, end })) as ReadableStream<Uint8Array>;
+    } catch (e) {
+      h.close().catch(() => {});
+      throw e;
+    }
   },
   /** Like `Deno.readDir`, as an array — works with `for` and `for await`. */
   async list(dir: string): Promise<{ name: string; isFile: boolean; isDirectory: boolean }[]> {
