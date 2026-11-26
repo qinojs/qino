@@ -1,4 +1,4 @@
-import { DECK_META, drawSuit, getCardBackCanvas, getCardCanvas, loadDeckAssets } from "./cards.js";
+import { getCardBackCanvas, getCardCanvas, loadDeckAssets } from "./cards.js";
 
 function canPlayTschau(card, top, wishSuit, pendingDraw) {
   if (pendingDraw > 0) return card.rank === "7";
@@ -247,6 +247,7 @@ export class CardTableCanvas {
     this.#drawOpponents(ctx, state, deckId);
     needsMore = this.#drawCenter(ctx, state, deckId, cw, ch, now) || needsMore;
     needsMore = this.#drawHand(ctx, state, deckId, cw, ch, now) || needsMore;
+    this.#drawStatusPill(ctx, state);
 
     ctx.restore();
     if (needsMore || this.#drag) this.#schedule();
@@ -274,7 +275,7 @@ export class CardTableCanvas {
       const frac = others.length === 1 ? 0.5 : (idx + 0.5) / others.length;
       const angle = Math.PI * (0.18 + frac * 0.64);
       const sx = w * 0.5 - Math.cos(angle) * (w * 0.36);
-      const sy = Math.max(32, h * 0.12 - Math.sin(angle) * (h * 0.035));
+      const sy = Math.max(56, h * 0.15 - Math.sin(angle) * (h * 0.03));
       this.#seatPos.set(p.id, { x: sx, y: sy });
 
       const isTurn = state.turnPlayerId === p.id && state.round > 0 && !state.trickComplete && !state.winnerId;
@@ -357,38 +358,6 @@ export class CardTableCanvas {
       ctx.fillText(drawLabel, dx, dy + pileH / 2 - 2);
       ctx.restore();
       this.#drawRect = { x: dx - pileW / 2, y: dy - pileH / 2, w: pileW, h: pileH };
-    }
-
-    // Center status / turn pill between opponent row and center pile
-    if (state.round > 0) {
-      let statusMsg = state.banner || "";
-      let highlight = Boolean(state.banner);
-      if (state.trickComplete) {
-        statusMsg = "Stich fertig — tippe auf den Stapel";
-        highlight = true;
-      } else if (!statusMsg && (state.mode === "jass" || state.mode === "tschau") && state.turnPlayerId === state.me?.id) {
-        statusMsg = state.pendingDraw > 0
-          ? `7er legen oder +${state.pendingDraw} ziehen!`
-          : "Du bist dran — Karte antippen oder hochziehen";
-        highlight = true;
-      } else if (!statusMsg && state.mode === "free") {
-        statusMsg = "Oben auf dem Stapel — Karte spielen oder ziehen";
-      }
-      if (statusMsg) {
-        ctx.save();
-        ctx.font = "600 11px system-ui, sans-serif";
-        const tw = Math.min(this.#width - 32, ctx.measureText(statusMsg).width + 20);
-        const py = Math.max(76, cy - pileH * 0.5 - 32);
-        ctx.fillStyle = highlight ? "rgba(234, 179, 8, 0.92)" : "rgba(10, 22, 16, 0.65)";
-        ctx.beginPath();
-        ctx.roundRect(cx - tw / 2, py, tw, 22, 11);
-        ctx.fill();
-        ctx.fillStyle = highlight ? "#1c1917" : "#e2e8f0";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(statusMsg, cx, py + 11.5, tw - 14);
-        ctx.restore();
-      }
     }
 
     // Highlight center drop zone while dragging a card upward
@@ -504,34 +473,45 @@ export class CardTableCanvas {
       ctx.restore();
     }
 
-    // Active trump (Jass) or wished suit (Tschau Sepp) pill in top-left corner of felt
-    const activeSuit = state.mode === "jass" ? state.trump : state.mode === "tschau" ? state.wishSuit : "";
-    if (activeSuit) {
-      const meta = DECK_META[deckId] ?? DECK_META.swiss36;
-      const suit = meta.suits.find((s) => s.id === activeSuit);
-      ctx.save();
-      ctx.fillStyle = "rgba(10, 22, 16, 0.68)";
-      ctx.beginPath();
-      ctx.roundRect(18, 18, 92, 30, 15);
-      ctx.fill();
-      if (suit) {
-        drawSuit(ctx, suit.id, 35, 33, 9);
-        ctx.fillStyle = "#f8fafc";
-        ctx.font = "700 11px system-ui, sans-serif";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillText(suit.name, 50, 33.5);
-      } else {
-        ctx.fillStyle = "#fde047";
-        ctx.font = "700 11px system-ui, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(activeSuit === "obe" ? "Obenabe" : "Undeufe", 64, 33.5);
-      }
-      ctx.restore();
-    }
-
     return animating;
+  }
+
+  #drawStatusPill(ctx, state) {
+    if (state.round <= 0) return;
+    let statusMsg = state.banner || "";
+    let highlight = Boolean(state.banner);
+    if (state.trickComplete) {
+      statusMsg = "Stich fertig — tippe auf den Stapel";
+      highlight = true;
+    } else if (!statusMsg && (state.mode === "jass" || state.mode === "tschau") && state.turnPlayerId === state.me?.id) {
+      statusMsg = state.pendingDraw > 0
+        ? `7er legen oder +${state.pendingDraw} ziehen!`
+        : "Du bist dran — Karte antippen oder hochziehen";
+      highlight = true;
+    } else if (!statusMsg && state.mode === "free") {
+      statusMsg = "Oben auf dem Stapel — Karte spielen oder ziehen";
+    }
+    if (!statusMsg) return;
+
+    const cx = this.#width * 0.5;
+    ctx.save();
+    ctx.font = "600 12px system-ui, sans-serif";
+    const tw = Math.min(this.#width - 28, ctx.measureText(statusMsg).width + 24);
+    const py = 14;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = highlight ? "rgba(234, 179, 8, 0.95)" : "rgba(10, 22, 16, 0.8)";
+    ctx.beginPath();
+    ctx.roundRect(cx - tw / 2, py, tw, 24, 12);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.fillStyle = highlight ? "#1c1917" : "#f8fafc";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(statusMsg, cx, py + 12.5, tw - 16);
+    ctx.restore();
   }
 
   #drawHand(ctx, state, deckId, cw, ch, now) {

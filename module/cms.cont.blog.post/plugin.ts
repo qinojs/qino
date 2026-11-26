@@ -67,6 +67,7 @@ async function renderContent(node: Node, { ctx }: { ctx: Ctx }) {
         ${node.app.t`Share`}</button>
     </header>
     ${node.cms.text(node, "main")}
+    ${node.cont("main")}
     ${entries ? html.async`<section><h2>${node.app.t`Comments`}</h2>${entries.html()}</section>` : ""}
     ${form ? html.async`<section><h2>${node.app.t`Leave a comment`}</h2>${form.html()}</section>` : ""}
   </article>`;

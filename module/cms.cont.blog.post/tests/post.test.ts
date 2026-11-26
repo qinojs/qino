@@ -20,7 +20,7 @@ test("blog post creates a moderated comment form only for an editor", async () =
     const initial = await (await app.fetch(new Request("https://qino.test/" + await page.urlSeo("en")))).text();
     assertStringIncludes(initial, '<link rel="canonical" href="https://qino.test/en/first-post">');
     assertStringIncludes(initial, '"@type":"BlogPosting","headline":"First post","mainEntityOfPage":{"@id":"https://qino.test/en/first-post"}');
-    assertEquals((await post.conts()).length, 0);
+    assertEquals((await post.conts()).map((child) => child.vs.name), ["main"], "only the free area, no comments yet");
     assertStringIncludes(initial, "<h1>First post</h1>", "the page's title until the block has its own");
     assertStringIncludes(initial, 'u2-behavior=share data-url="https://qino.test/en/first-post" data-title="First post"');
     assertStringIncludes(initial, '<script src="https://cdn.jsdelivr.net/gh/nuxodin/lazyfill@1.7.12/polyfills/navigator/share.min.js">');
@@ -47,7 +47,8 @@ test("blog post creates a moderated comment form only for an editor", async () =
       cmsCtx(getCtx()).editmode = 1;
       await post.html();
     });
-    assertEquals((await post.conts()).length, 2, "subsequent edits keep the same form");
+    assertEquals((await post.conts()).length, 3, "subsequent edits keep the same form and main area");
+    assertEquals((await post.conts()).find((child) => child.vs.name === "main")?.vs.module, "cms.cont.flexible");
 
     const url = "https://qino.test/" + await page.urlSeo("en");
     const shown = await app.fetch(new Request(url));

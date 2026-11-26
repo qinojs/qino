@@ -16,7 +16,8 @@ uses another layout.
 
 `cms.cont.blog.post` shows its own title as the post's heading, else the page's title; on first edit
 it takes the page's title. The list and feeds keep using the page's title. A share button opens the
-system's share dialog, or copies the link where there is none. The post also creates a moderated
-comment form on first edit. Editors release comments through the existing `cms.cont.form.entries`
-block. The form keeps submissions and applies its normal validation and spam handling. The public
-list shows name and comment, never the e-mail address.
+system's share dialog, or copies the link where there is none. Below the text, the free area
+`main` (a `cms.cont.flexible`) takes further blocks such as images, forms or demos. The post also
+creates a moderated comment form on first edit. Editors release comments through the existing
+`cms.cont.form.entries` block. The form keeps submissions and applies its normal validation and
+spam handling. The public list shows name and comment, never the e-mail address.
