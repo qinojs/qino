@@ -1,5 +1,5 @@
 import { DbFile, html, sql, FileTransformer, deleteUnlinkedDbFiles, fs } from "@qino/qino";
-import { THUMB_SIZE, thumbUrl } from "@qino/qino/cms";
+import { thumb } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 
@@ -21,8 +21,7 @@ const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md",
 
 async function mediaPreview(f: DbFile, exists: boolean) {
   if (!exists) return html`<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
-  const src = await thumbUrl(f);
-  return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} loading=lazy alt="">` : "";
+  return thumb(f);
 }
 
 async function mediaView(f: DbFile) {

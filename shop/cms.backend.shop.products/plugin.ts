@@ -1,5 +1,5 @@
 import { html, sql, sqlSearch } from "@qino/qino";
-import { cms as cmsOf, hasOwnUrl, THUMB_SIZE, thumbUrl } from "@qino/qino/cms";
+import { cms as cmsOf, hasOwnUrl, thumb } from "@qino/qino/cms";
 import { backend, renderAccess } from "@qino/qino/cms.backend";
 import { input, renderRows, saveRows } from "@qino/qino/cms.backend.shop";
 import { mainCurrency, productUrl, shopT } from "@qino/qino/cms.shop";
@@ -24,9 +24,7 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 /** Its main image, or the first attached image as in shp3; an offline product's would be refused. */
 async function thumbnail(node: Node) {
   if (!await node.isReadable()) return "";
-  const file = await node.cms.image(node, { orFirst: true });
-  const src = file && await thumbUrl(file);
-  return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} alt="" loading=lazy>` : "";
+  return thumb(await node.cms.image(node, { orFirst: true }));
 }
 
 /** The page that lists it: its own, in a category; else the one above its own page. */

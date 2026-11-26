@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { AccessError, ApiError, FileTransformer, getCtx, hee, sql, sqlSearch, unixTime } from "@qino/qino";
+import { AccessError, ApiError, FileTransformer, getCtx, hee, html, sql, sqlSearch, unixTime } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { ADMIN } from "./lib/access.ts";
@@ -169,13 +169,19 @@ const THUMB: Record<string, { fmt?: string; page?: number; frame?: number; tool:
 export const THUMB_SIZE = { width: 70, height: 40 };
 
 /** The shared preview of a file, for lists and the panel: one size, so browsers cache it once. */
-export async function thumbUrl(file: any, size = `${THUMB_SIZE.width}x${THUMB_SIZE.height}`): Promise<string | undefined> {
+async function thumbUrl(file: any, size = `${THUMB_SIZE.width}x${THUMB_SIZE.height}`): Promise<string | undefined> {
     const spec = THUMB[String(file.extension)];
     if (!spec || !await FileTransformer.capabilities[spec.tool]) return;
     const [w, h] = size.split("x").map(Number);
     if (!w || !h) return;
     const { tool: _tool, ...opt } = spec;
     return file.url({ w, h, max: true, ...opt });
+}
+
+/** The preview as a list image, its box reserved; empty if the file has none. */
+export async function thumb(file: any) {
+    const src = file && await thumbUrl(file);
+    return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} alt="" loading=lazy>` : "";
 }
 
 /** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order.

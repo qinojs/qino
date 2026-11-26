@@ -1,5 +1,5 @@
 import { AccessError, html, sql, sqlSearch } from "@qino/qino";
-import { THUMB_SIZE, thumbUrl } from "@qino/qino/cms";
+import { thumb } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 import { formatDates } from "@qino/qino/cms.cont.event";
 import { overview, zoneOf } from "@qino/qino/cms.event";
@@ -14,9 +14,7 @@ const CATEGORY = "cms.cont.event.category";
 
 /** Its image, small. */
 async function thumbnail(node: Node) {
-  const file = await node.cms.image(node);
-  const src = file && await thumbUrl(file);
-  return src ? html`<img class=cms-thumb src="${src}" width=${THUMB_SIZE.width} height=${THUMB_SIZE.height} alt="" loading=lazy>` : "";
+  return thumb(await node.cms.image(node));
 }
 
 /** Editors see offline nodes as well. */

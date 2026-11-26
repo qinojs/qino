@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { DbFile, fs, html, isEmptyObject } from "@qino/qino";
-import { cms } from "@qino/qino/cms";
+import { cms, THUMB_SIZE } from "@qino/qino/cms";
 import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
 
 import type { App, Ctx } from "@qino/qino";
@@ -75,13 +75,13 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
     return html`<table style="width:100%">${trs}</table>`.html; // api endpoint: plain string output
 }
 
-// 60×40 thumbnail (same size as the media preview) of a specific version row, as data URL.
+// Thumbnail (same size as the media preview) of a specific version row, as data URL.
 async function versionThumb(app: App, fileId: number, row: any) {
     if (!row.md5) return;
     try {
         const dbFile = new DbFile(app.dbFiles, fileId, row); // detached: path points at this version's md5, live cache untouched
         if (!dbFile.path) return;
-        const { path, mime } = await dbFile.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
+        const { path, mime } = await dbFile.transform({ w: THUMB_SIZE.width, h: THUMB_SIZE.height, max: true, q: 50, fmt: "avif" });
         const buf = await fs.bytes(path);
         return `data:${mime};base64,${buf.toBase64()}`;
     } catch {/**/}
