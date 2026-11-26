@@ -72,7 +72,7 @@ test("following a link that names its delivery is a click on it; one-click too; 
   await a.db.table("usr_grp").insert({ usr_id: 7, grp_id: 1 });
   const ctx = await testContext({ url: "https://qino.test/" + path, method: "POST", app: a,
     headers: { "content-type": "application/x-www-form-urlencoded" }, body: "List-Unsubscribe=One-Click" });
-  await serveUnsubscribe(ctx as Ctx).catch((e) => { if (!(e instanceof Output)) throw e; });
+  await serveUnsubscribe(ctx as Ctx)?.catch((e) => { if (!(e instanceof Output)) throw e; });
   assertEquals((await clicks()).length, 2);
   assertEquals(await members(a), 0);
 
