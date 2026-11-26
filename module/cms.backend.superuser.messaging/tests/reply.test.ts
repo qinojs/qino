@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { Db, requestStorage } from "@qino/qino";
+import { Db, FileTransformer, requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, contactDbSchema, emailMessagingChannel as email, fakeT, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
 
 import api from "../nodeApi.ts";
@@ -82,7 +82,7 @@ test("messaging detail replies to the selected user's Telegram chat", async () =
     assertStringIncludes(normal, 'class=u2-badge style="--color-dark:var(--blue)">Telegram');
     assertStringIncludes(normal, '<option value="email">Email'); // reachable, because the user has an address
     assertStringIncludes(normal, "invoice.png");
-    assertStringIncludes(normal, "/dbFile/1/preview.avif");
+    if (await FileTransformer.capabilities.magick) assertStringIncludes(normal, "/dbFile/1/preview.avif"); // the thumb needs the tool
     assertStringIncludes(normal, "/dbFile/1/download");
 
     const overview = await render("http://qino.test/de/backend/superuser/nachrichten");
