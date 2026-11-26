@@ -152,12 +152,16 @@ export class CardTableCanvas {
     const w = this.#width;
     const h = this.#height;
 
-    // Warm dark oak table rim
-    ctx.fillStyle = "#2b1b12";
+    // Layered walnut wooden table rail
+    const rail = ctx.createLinearGradient(0, 0, w, h);
+    rail.addColorStop(0, "#3b2316");
+    rail.addColorStop(0.5, "#26150c");
+    rail.addColorStop(1, "#351f13");
+    ctx.fillStyle = rail;
     ctx.fillRect(0, 0, w, h);
 
     // Recessed Jass-Teppich felt surface
-    const rim = Math.max(6, Math.min(w, h) * 0.02);
+    const rim = Math.max(7, Math.min(w, h) * 0.022);
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(rim, rim, w - rim * 2, h - rim * 2, 16);
@@ -191,7 +195,7 @@ export class CardTableCanvas {
     // Center play zone ring
     const centerY = h * 0.44;
     const zoneR = Math.min(w, h) * 0.22;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.11)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(w * 0.5, centerY, zoneR, 0, Math.PI * 2);
@@ -199,9 +203,15 @@ export class CardTableCanvas {
 
     ctx.restore();
 
-    // Inner rim shadow
-    ctx.strokeStyle = "rgba(0,0,0,0.45)";
-    ctx.lineWidth = 2;
+    // Inner rail bevel & shadow onto felt
+    ctx.strokeStyle = "rgba(255, 215, 160, 0.14)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(rim - 1, rim - 1, w - (rim - 1) * 2, h - (rim - 1) * 2, 17);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.roundRect(rim, rim, w - rim * 2, h - rim * 2, 16);
     ctx.stroke();
@@ -381,6 +391,19 @@ export class CardTableCanvas {
       }
     }
 
+    // Highlight center drop zone while dragging a card upward
+    if (this.#drag && this.#drag.moved && this.#drag.y < this.#height * 0.64) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(250, 204, 21, 0.6)";
+      ctx.fillStyle = "rgba(250, 204, 21, 0.08)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, this.#height * 0.44, Math.min(this.#width, this.#height) * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // Center table pile / current trick
     const pileCx = state.mode !== "jass" && state.drawCount > 0 ? cx + pileW * 0.42 : cx;
     this.#pileRect = { x: pileCx - pileW * 0.85, y: cy - pileH * 0.75, w: pileW * 1.7, h: pileH * 1.5 };
@@ -503,7 +526,7 @@ export class CardTableCanvas {
         ctx.font = "700 11px system-ui, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(activeSuit === "obe" ? "↑ Obenabe" : "↓ Undeufe", 64, 33.5);
+        ctx.fillText(activeSuit === "obe" ? "Obenabe" : "Undeufe", 64, 33.5);
       }
       ctx.restore();
     }

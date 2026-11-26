@@ -135,12 +135,41 @@
 }
 
 .cms-jassen .-topbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.35rem 0.6rem;
   border-radius: 0.4rem;
   border: 1px solid rgba(255, 255, 255, 0.24);
   background: rgba(255, 255, 255, 0.08);
   color: inherit;
   cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.cms-jassen .-topbar button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.cms-jassen button:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+}
+
+.cms-jassen .-ico {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cms-jassen .-pin[data-active="1"] {
+  background: rgba(34, 197, 94, 0.22);
+  border-color: rgba(74, 222, 128, 0.65);
 }
 
 .cms-jassen .-topbar .-trump-btn {
@@ -264,12 +293,26 @@
 
 .cms-jassen .-trump-grid button,
 .cms-jassen .-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
   padding: 0.6rem 0.75rem;
   border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.1);
   color: inherit;
   cursor: pointer;
+}
+
+.cms-jassen .-dialog-close {
+  justify-content: center;
+}
+
+.cms-jassen .-suit-ico {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
 }
 
 @container (max-width: 34rem) {
@@ -279,5 +322,12 @@
   }
   .cms-jassen .-topbar button {
     padding: 0.3rem 0.45rem;
+  }
+}
+
+@container (max-width: 30rem) {
+  .cms-jassen .-fullscreen span,
+  .cms-jassen .-leave span {
+    display: none;
   }
 }

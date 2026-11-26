@@ -283,13 +283,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
     <section class=-stage hidden aria-label="${t`Card table`}">
       <div class=-topbar>
         <div class=-info>
-          <button type=button class=-table-code title="${t`Copy invite link`}"></button>
-          <button type=button class=-pin title="${t`Share location so friends nearby can join`}">${t`Nearby`}</button>
+          <button type=button class=-table-code title="${t`Copy invite link`}"><span class=-code-val></span><svg class=-ico viewBox="0 0 24 24" aria-hidden=true><rect x=9 y=9 width=13 height=13 rx=2/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          <button type=button class=-pin title="${t`Share location so friends nearby can join`}"><svg class=-ico viewBox="0 0 24 24" aria-hidden=true><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Z"/><circle cx=12 cy=11 r=2.5/></svg><span class=-pin-label>${t`Nearby`}</span></button>
           <button type=button class=-trump-btn hidden>${t`Trump`}</button>
         </div>
         <div class=-tools>
-          <button type=button class=-fullscreen title="${t`Fullscreen`}">${t`Fullscreen`}</button>
-          <button type=button class=-leave title="${t`Leave table`}">${t`Leave`}</button>
+          <button type=button class=-fullscreen title="${t`Fullscreen`}"><svg class=-ico viewBox="0 0 24 24" aria-hidden=true><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>${t`Fullscreen`}</span></button>
+          <button type=button class=-leave title="${t`Leave table`}"><svg class=-ico viewBox="0 0 24 24" aria-hidden=true><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>${t`Leave`}</span></button>
         </div>
       </div>
 

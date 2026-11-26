@@ -9,10 +9,10 @@ export type Rank = { id: string; label: string; short: string; order: number };
 export type Card = { id: string; suit: string; rank: string };
 
 const SWISS_SUITS: readonly Suit[] = [
-  { id: "schellen", name: "Schellen", symbol: "🔔", color: "#d4940a" },
-  { id: "schilten", name: "Schilten", symbol: "🛡️", color: "#1d4ed8" },
-  { id: "rosen", name: "Rosen", symbol: "✿", color: "#c81e1e" },
-  { id: "eicheln", name: "Eicheln", symbol: "♣", color: "#15803d" },
+  { id: "schellen", name: "Schellen", symbol: "S", color: "#d4940a" },
+  { id: "schilten", name: "Schilten", symbol: "W", color: "#1d4ed8" },
+  { id: "rosen", name: "Rosen", symbol: "R", color: "#c81e1e" },
+  { id: "eicheln", name: "Eicheln", symbol: "E", color: "#15803d" },
 ];
 
 const FRENCH_SUITS: readonly Suit[] = [

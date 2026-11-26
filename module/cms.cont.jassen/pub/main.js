@@ -1,7 +1,7 @@
 import { api } from "@qino/pub/api.js";
 import { initNode } from "@qino/m/cms/pub/js/cms.js";
 
-import { DECK_META } from "./cards.js";
+import { DECK_META, drawSuit } from "./cards.js";
 import { CardTableCanvas } from "./table.js";
 
 const NAME_STORAGE_KEY = "qino.jassen.name";
@@ -139,12 +139,25 @@ initNode("cont.jassen", (box, { signal }) => {
     trumpGrid.innerHTML = "";
     const choices = [
       ...meta.suits.map((s) => ({ id: s.id, label: s.name })),
-      ...(includeJassModes ? [{ id: "obe", label: "↑ Obenabe" }, { id: "unde", label: "↓ Undeufe" }, { id: "", label: "Kein Trumpf" }] : []),
+      ...(includeJassModes ? [{ id: "obe", label: "Obenabe" }, { id: "unde", label: "Undeufe" }, { id: "", label: "Kein Trumpf" }] : []),
     ];
     for (const c of choices) {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.textContent = c.label;
+      if (!includeJassModes || (c.id !== "obe" && c.id !== "unde" && c.id !== "")) {
+        const ico = document.createElement("canvas");
+        ico.className = "-suit-ico";
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        ico.width = Math.round(20 * dpr);
+        ico.height = Math.round(20 * dpr);
+        const sctx = ico.getContext("2d");
+        sctx.scale(dpr, dpr);
+        drawSuit(sctx, c.id, 10, 10, 8);
+        btn.append(ico);
+      }
+      const span = document.createElement("span");
+      span.textContent = c.label;
+      btn.append(span);
       btn.addEventListener("click", () => {
         trumpDialog.close();
         onPick(c.id);
@@ -187,8 +200,9 @@ initNode("cont.jassen", (box, { signal }) => {
     lobby.hidden = true;
     stage.hidden = false;
 
-    tableCodeEl.textContent = `${next.code} 📋`;
-    pinBtn.textContent = next.hasLocation ? "📍 Aktiv" : "📍 Teilen";
+    tableCodeEl.querySelector(".-code-val").textContent = next.code;
+    pinBtn.dataset.active = next.hasLocation ? "1" : "0";
+    pinBtn.querySelector(".-pin-label").textContent = next.hasLocation ? "Aktiv" : "Position";
 
     const isJass = next.mode === "jass";
     const isTschau = next.mode === "tschau";
@@ -196,7 +210,7 @@ initNode("cont.jassen", (box, { signal }) => {
     if (isJass) {
       const suit = meta.suits.find((s) => s.id === next.trump);
       trumpBtn.textContent = next.trump
-        ? (suit ? `Trumpf: ${suit.name}` : next.trump === "obe" ? "↑ Obenabe" : "↓ Undeufe")
+        ? (suit ? `Trumpf: ${suit.name}` : next.trump === "obe" ? "Obenabe" : "Undeufe")
         : "Trumpf wählen";
       trumpBtn.disabled = false;
       trumpBtn.hidden = false;
@@ -234,7 +248,7 @@ initNode("cont.jassen", (box, { signal }) => {
       overlayDealBtn.textContent = roundFinished ? "Neue Runde geben" : "Karten geben";
       overlayShareBtn.hidden = next.round > 0;
       overlayPinBtn.hidden = next.round > 0;
-      overlayPinBtn.textContent = next.hasLocation ? "📍 Position aktiv" : "📍 Position teilen";
+      overlayPinBtn.textContent = next.hasLocation ? "Position aktiv" : "Position teilen";
     } else {
       overlay.hidden = true;
     }
