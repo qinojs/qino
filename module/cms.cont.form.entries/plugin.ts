@@ -31,22 +31,23 @@ const settingsSchema = {
  * in JS, since JSON paths differ per database.
  */
 async function read(app: App, form: Node, opt: { onlyIf: string; spam: number; limit: number; moderated: boolean; all: boolean; client: unknown }) {
-  /* The client comes from the entry's log row, so an unreleased entry is shown to its author only. */
+  /* The client comes from the entry's log row, so an unreleased entry is shown to its author only.
+     Spam and release are filtered here, so a form with many entries loads no more than it shows;
+     `onlyIf` is not, and so needs the rows without a limit. */
+  const released = sql`COALESCE(e.released, 0) <> 0`, client = Number(opt.client) || 0;
   const rows = await app.db.query`
-    SELECT e.id, e.created, e.data, e.released, e.spam, l.client_id
+    SELECT e.id, e.created, e.data, ${released} AS released
     FROM ${sql.id(tableRef("form_entry"))} e
     LEFT JOIN ${sql.id(tableRef("log"))} l ON l.id = e.log_id
-    WHERE e.node_id = ${form.id} ORDER BY e.created DESC, e.id DESC`;
+    WHERE e.node_id = ${form.id} AND COALESCE(e.spam, 0) < ${opt.spam}${
+      opt.moderated && !opt.all ? sql` AND (${released}${client ? sql` OR l.client_id = ${client}` : sql``})` : sql``}
+    ORDER BY e.created DESC, e.id DESC${opt.onlyIf ? sql`` : sql` LIMIT ${opt.limit}`}`;
 
   const out = [];
   for (const row of rows) {
-    if (Number(row.spam) >= opt.spam) continue;
     const data = entryData(row.data);
     if (opt.onlyIf && data[opt.onlyIf] === undefined) continue;
-    const released = !!Number(row.released);
-    const mine = !!opt.client && String(row.client_id ?? "") === String(opt.client);
-    if (opt.moderated && !released && !opt.all && !mine) continue;
-    out.push({ id: Number(row.id), created: Number(row.created), data, released });
+    out.push({ id: Number(row.id), created: Number(row.created), data, released: !!Number(row.released) });
     if (out.length >= opt.limit) break;
   }
   return out;
@@ -73,8 +74,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       : html`<div></div>`;
   }
 
-  /* Releasing only in edit mode; outside it, the page looks like for visitors (no waiting entries). */
-  const mayRelease = edit;
+  /* Releasing only in edit mode; outside it, the page looks like for visitors (no waiting entries).
+     The right is the form's, as in the api: who may edit this block only, sees what visitors see. */
+  const mayRelease = edit && await form.access() >= 2;
   const moderated = !!node.settings.moderated();
   if (mayRelease && moderated) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
