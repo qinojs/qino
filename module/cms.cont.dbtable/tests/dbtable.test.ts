@@ -13,7 +13,7 @@ async function setup() {
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cms.cont.dbtable");
   await app.init();
   await app.db.exec`CREATE TABLE school (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`;
-  await app.db.exec`CREATE TABLE pupil (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, school_id INTEGER, owner INTEGER)`;
+  await app.db.exec`CREATE TABLE pupil (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, school_id INTEGER, owner INTEGER, photo INTEGER)`;
   await app.db.exec`INSERT INTO school (name) VALUES ('North'), ('South')`;
   await app.db.exec`INSERT INTO pupil (name, school_id, owner) VALUES ('Anna', 1, 7), ('Ben', 2, 7), ('Cleo', 1, 8)`;
   await app.db.loadTables();
@@ -75,6 +75,11 @@ test("cms.cont.dbtable: a row the list does not reach is not touched", async () 
     // a new row takes the fixed value
     const { id } = await run(() => dbtable.node.api(node, { do: "insert", values: { owner: 99 }, id: "7" })) as unknown as { id: number };
     assertEquals(await app.db.one`SELECT owner FROM pupil WHERE id = ${id}`, 7);
+    // a file field is set by an upload only: an id typed in could point at anyone's file
+    const photos = await page.createCont({ module: "cms.cont.dbtable", settings: { table: "pupil", fields: { photo: { type: "image", edit: true, insert: true } } } });
+    assertEquals(await run(() => dbtable.node.api(photos, { do: "update", row: 1, field: "photo", value: "5" })), { error: "not editable" });
+    const added = await run(() => dbtable.node.api(photos, { do: "insert", values: { photo: 5 } })) as unknown as { id: number };
+    assertEquals(await app.db.one`SELECT photo FROM pupil WHERE id = ${added.id}`, null);
     // a list asking for no field adds no rows
     const closed = await page.createCont({ module: "cms.cont.dbtable", settings: { table: "pupil", fields: { name: { edit: true } } } });
     assertEquals(await run(() => dbtable.node.api(closed, { do: "insert", values: {} })), { error: "not insertable" });

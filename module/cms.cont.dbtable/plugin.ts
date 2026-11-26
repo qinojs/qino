@@ -174,6 +174,8 @@ export async function api(node: Node, vars: Record<string, unknown>) {
   const q = await Query.of(node, { id: vars.id });
   if (!q) return { error: "not configured" };
   const field = (name: unknown) => q.fields.get(String(name));
+  // a file field holds an id: only an upload sets it (see route), so no one points it at a file they don't own
+  const isFile = (f: Field) => ["image", "file"].includes(f.type);
   const key = q.primary ? sql.id(q.primary.name) : undefined;
   // a row is only touched while the list reaches it
   const reached = async () => key && await q.row(db, vars.row);
@@ -181,7 +183,7 @@ export async function api(node: Node, vars: Record<string, unknown>) {
   switch (vars.do) {
     case "update": {
       const f = field(vars.field);
-      if (!f?.own || !f.is("edit") || !await reached()) return { error: "not editable" };
+      if (!f?.own || !f.is("edit") || isFile(f) || !await reached()) return { error: "not editable" };
       const value = toDb(f, String(vars.value ?? ""));
       if (value !== undefined) await db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${value} WHERE ${key} = ${vars.row}`;
       const row = await q.row(db, vars.row);
@@ -189,7 +191,7 @@ export async function api(node: Node, vars: Record<string, unknown>) {
     }
     case "clear": {
       const f = field(vars.field);
-      if (!f?.own || !f.is("edit") || !["image", "file"].includes(f.type) || !await reached()) return { error: "not editable" };
+      if (!f?.own || !f.is("edit") || !isFile(f) || !await reached()) return { error: "not editable" };
       const old = await db.one`SELECT ${sql.id(f.column.name)} FROM ${sql.id(q.table)} WHERE ${key} = ${vars.row}`;
       if (Number(old)) await (await app.dbFiles.file(Number(old))).remove();
       await db.query`UPDATE ${sql.id(q.table)} SET ${sql.id(f.column.name)} = ${f.column.nullable ? null : 0} WHERE ${key} = ${vars.row}`;
@@ -205,7 +207,7 @@ export async function api(node: Node, vars: Record<string, unknown>) {
       }
       for (const [name, v] of Object.entries((vars.values ?? {}) as Record<string, unknown>)) {
         const f = field(name);
-        if (!f?.own || !f.is("insert") || f.is("fix")) continue;
+        if (!f?.own || !f.is("insert") || f.is("fix") || isFile(f)) continue;
         const value = toDb(f, String(v ?? ""));
         if (value !== undefined) values[f.column.name] = value;
       }

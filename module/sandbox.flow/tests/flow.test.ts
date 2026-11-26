@@ -47,6 +47,13 @@ test("sandbox.flow: an error ends the run", () =>
     assertEquals([failed.end, failed.error], ["error", "boom"]);
   }));
 
+test("sandbox.flow: code that closes its function still does not reach the wrapper", () =>
+  withApp(async (app) => {
+    // spliced into the wrapper's source, this would swap the wrapper for a function holding `tool`
+    const out = await run(app, flow(`}), ((f) => f)(async (input, { tool }) => ({ result: typeof tool }), () => {`), 1);
+    assertEquals(JSON.stringify(out.result ?? null).includes("function"), false);
+  }));
+
 test("sandbox.flow: only allowed tools exist; a test run records what would change", () =>
   withApp(async (app) => {
     const trace = await run(app, flow(`return [

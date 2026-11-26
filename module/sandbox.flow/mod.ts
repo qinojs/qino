@@ -105,21 +105,15 @@ async function exec(app: App, flow: Flow, event: unknown, context: Context, box:
   });
 
   try {
-    // the code goes in as an argument, so it sees nothing of the wrapper (`tool`, the run)
-    const input = { event, context, owner: flow.owner, run: id, tools: flow.tools ?? [], state: flow.state ?? {} };
-    const { result, state } = await box.sandbox.run<{ result: unknown; state: State }>(
-      `((fn) => async (input, { tool }) => ({
-        result: await fn(
-          input.event,
-          Object.fromEntries(input.tools.map((n) => [n, (args) => tool(input.run, n, args)])),
-          input.state,
-          input.context,
-          input.owner,
-        ),
-        state: input.state,
-      }))(async (event, tools, state, context, owner) => {\n${flow.code}\n})`,
-      input,
-    );
+    // the code goes in as data and becomes a function in there, of the engine's global scope: whatever
+    // it closes, it never reaches the wrapper (`tool`, the run)
+    const input = { code: flow.code, event, context, owner: flow.owner, run: id, tools: flow.tools ?? [], state: flow.state ?? {} };
+    const { result, state } = await box.sandbox.run<{ result: unknown; state: State }>(async (input: any, { tool }: any) => {
+      const AsyncFunction = (async () => {}).constructor as FunctionConstructor;
+      const fn = new AsyncFunction("event", "tools", "state", "context", "owner", input.code);
+      const tools = Object.fromEntries(input.tools.map((n: string) => [n, (args: unknown) => tool(input.run, n, args)]));
+      return { result: await fn(input.event, tools, input.state, input.context, input.owner), state: input.state };
+    }, input);
     trace.result = result;
     // a test keeps nothing; runs at once each start from the state before them, the last one wins
     if (flow.test === false && JSON.stringify(state) !== JSON.stringify(flow.state ?? {})) {
