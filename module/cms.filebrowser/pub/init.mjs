@@ -62,8 +62,8 @@ cms.fileBrowser = class {
     this.options = options;
   }
   async show(){
-    const [{ default: loading }, { default: form }] = await Promise.all([
-      import('@qino/pub/c1/loading.mjs'),
+    const [loading, { default: form }] = await Promise.all([
+      import('@qino/u2/js/loading/loading.js'),
       import('@qino/pub/c1/form.mjs'),
     ]);
     const root = await panelRoot;
@@ -131,6 +131,7 @@ cms.fileBrowser = class {
         }
         & .-list {
           min-height:2.5rem;
+          & > .-empty { grid-column:1 / -1; }
           display:grid;
           gap:3px;
           grid-template-columns:repeat(auto-fill, minmax(9.5rem, 1fr));
@@ -238,10 +239,13 @@ cms.fileBrowser = class {
     });
 
     const search = needle => {
-      loading.mark(list);
-      api['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result => {
-        loading.done(list);
-
+      loading.mark(list, { delay: 150 }); // dims the current tiles; ends itself when the list changes
+      api['cms.filebrowser'].search.get({ s: needle ?? '' }).then(async result => {
+        if (!result.length) {
+          const empty = dom.el('<p class=-empty></p>');
+          empty.textContent = await (needle ? t.in('cms')`No results found` : t.in('cms')`No files available`);
+          return list.replaceChildren(empty);
+        }
         list.replaceChildren();
         for (const item of result) {
           const el = dom.el('<label data-type=dbFile><div class=-ext></div><input type=checkbox><div class=-title></div></label>');

@@ -1,7 +1,7 @@
 import { test } from "node:test";
-import { App, fs, requestStorage } from "@qino/qino";
+import { App, Ctx, fs, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
+import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 import { searchNodes } from "../api-exports.ts";
 
@@ -19,7 +19,9 @@ test("cms: searchNodes finds by title and cmspid, deduplicates languages, render
     const leaf = await sub.createChild({ access: 1 });
     await (await leaf.title()).lang("en").set("Team");
 
-    const ctx = await testContext({ app, set: { lang: "en" } });
+    const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });
+    ctx.sess = await app.sessions.load();
+    ctx.lang = "en";
     await requestStorage.run(ctx, async () => {
       const byText = await searchNodes("about");
       assertEquals(byText.map((r) => r.value), [sub.id]);

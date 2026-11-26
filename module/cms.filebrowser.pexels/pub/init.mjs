@@ -1,5 +1,7 @@
 import { debounce, dom } from '@qino/pub/c1.js';
 import { api } from '@qino/pub/api.js';
+import { t } from '@qino/pub/t.js';
+import { mark } from '@qino/u2/js/loading/loading.js';
 
 // scoped query helper
 const find = (el, sel) => el.querySelector(':scope '+sel);
@@ -31,7 +33,13 @@ customElements.whenDefined('qino-cms').then(async () => {
       if (panel.hidden || search.value === searched) return;
       searched = search.value;
       const hasPixabay = el.querySelector('.-pixabay');
+      mark(list, { delay: 150 }); // ends itself when the list changes
       const items = await api['cms.filebrowser.pexels'].search.get({ s: search.value });
+      if (!items.length) {
+        const empty = dom.el('<p class=-empty></p>');
+        if (search.value) empty.textContent = await t.in('cms')`No results found`;
+        return list.replaceChildren(empty);
+      }
       list.innerHTML = '';
       for (const item of items) {
         if (hasPixabay && item.photographer === 'Pixabay') continue;
