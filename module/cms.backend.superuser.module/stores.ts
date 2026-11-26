@@ -296,7 +296,7 @@ export async function renderOverview(node: Node): Promise<HtmlString> {
   const su = isSuperuser();
 
   return html.async`<div class="u2-flex">
-  <div class=u2-card>
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>${t`Module stores`}</div>
     <table class=u2-table>
       ${cats.map(({ store, error }) => storeRow(store, error, l, label, su))}
