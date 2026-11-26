@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { AccessError, ApiError, FileTransformer, getCtx, hee, sql, unixTime } from "@qino/qino";
+import { AccessError, ApiError, FileTransformer, getCtx, hee, sql, sqlSearch, unixTime } from "@qino/qino";
 
 import { cms } from "./lib/CMS.ts";
 import { ADMIN } from "./lib/access.ts";
@@ -243,30 +243,26 @@ export async function requestUsed(v: string): Promise<boolean> {
 }
 
 export async function searchNodes(search: string): Promise<any[]> {
-    const ctx = getCtx();
-    search = search.replace(/^cmspid:\/\//, "");
-    const id = /^\d+$/.test(search) ? Number(search) : 0;
-    const res = [];
-    for (const vs of await ctx.app.db.query`
-        SELECT p.id AS id FROM page p, text_lang t WHERE true
-        AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.text_id
-        AND ( p.id = ${id} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
-        p.id = ${id} DESC, t.lang = ${ctx.lang} DESC,
-        t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
-        const page = await cms(ctx.app).node(vs.id);
+    const ctx = getCtx(), sh = sqlSearch(search.replace(/^cmspid:\/\//, ""), ["t.text"], { exact: ["p.id"] });
+    const ids = await ctx.app.db.col<number>`
+        SELECT p.id FROM page p JOIN text_lang t ON p.title_id = t.text_id
+        WHERE (p.type = 'p' OR p.visible) AND ${sh.where}
+        ORDER BY ${sh.order}, t.lang = ${ctx.lang} DESC, t.text ASC LIMIT 60`;
+    const res = [], cmsApp = cms(ctx.app);
+    for (const pid of new Set(ids.map(Number))) {
+        const page = await cmsApp.node(pid);
         if (!await page.access()) continue;
-        const titleStr = (await page.showTitle()).plain();
-        if (!titleStr) continue;
-        const parent   = await page.parent();
-        const pTitle   = parent ? (await parent.showTitle()).plain() : "";
-        const gp       = parent ? await parent.parent() : null;
-        const gpTitle  = gp ? (await gp.showTitle()).plain() : "";
+        const title = (await page.showTitle()).plain();
+        if (!title) continue;
+        const parent = await page.parent(), gp = await parent?.parent();
+        const sub = (await Promise.all([parent, gp].filter((n): n is Node => !!n).map(async (n) => (await n.showTitle()).plain())))
+            .filter((t, i) => i === 0 || t).map((t) => `<i style="font-size:10px;display:block">${hee(t)}</i>`).join("");
         res.push({
-            html:  `<b>${hee(titleStr)}</b> (${page.vs?.type === "c" ? "Content" : "Page"} ${page.id})` +
-                   (parent ? `<i style="font-size:10px;display:block">${hee(pTitle)}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${hee(gpTitle)}</i>` : "") : ""),
-            text:  `${titleStr} (${page.id})`,
+            html: `<b>${hee(title)}</b> (${page.vs?.type === "c" ? "Content" : "Page"} ${page.id})${sub}`,
+            text: `${title} (${page.id})`,
             value: page.id,
         });
+        if (res.length >= 20) break;
     }
     return res;
 }
