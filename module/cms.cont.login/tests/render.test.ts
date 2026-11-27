@@ -84,6 +84,7 @@ test("the login speaks German: its own texts and the password form's", async () 
       assert(html.includes(text), text);
     }
   } finally {
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await app.db.close();
     await fs.remove(dir, { recursive: true });
   }

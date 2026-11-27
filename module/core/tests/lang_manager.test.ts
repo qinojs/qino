@@ -157,7 +157,9 @@ async function texts(rows: Texts, langs: string, lang: string, set: Record<strin
   const ctx = await testContext({ app, set: { dev: false, ...set } });
   ctx.lang = lang;
   const run = <R>(fn: () => R) => requestStorage.run(ctx, fn);
-  return { db, lm, ctx, run, [Symbol.asyncDispose]: () => db.close() };
+  // new texts are added in the background: let them land before closing
+  const dispose = async () => { await new Promise((r) => setTimeout(r, 20)); await db.close(); };
+  return { db, lm, ctx, run, [Symbol.asyncDispose]: dispose };
 }
 
 test("t: the namespace, then the global texts, then the next language by priority", async () => {
