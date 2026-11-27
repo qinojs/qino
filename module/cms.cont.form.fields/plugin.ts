@@ -60,6 +60,7 @@ async function field(node: Node, name: string, form: Form | undefined, ctx: Ctx,
   const type = String(set.type() ?? "") || "text";
   const label = await plain(node, name + "_title") || name;
   const required = !!set.required();
+  // read for every type on purpose: it creates the _options/_placeholder texts the widget edits by id
   const choices = await choicesOf(node, name);
 
   const posted = form?.value(name);

@@ -28,10 +28,7 @@ async function replaceFileUrls(cms: CMS, id: string) {
 }
 
 async function replaceAsync(str: string, regex: RegExp, fn: (id: string) => Promise<string>) {
-  let out = "", last = 0;
-  for (const m of str.matchAll(regex)) {
-    out += str.slice(last, m.index) + await fn(m[1]);
-    last = m.index + m[0].length;
-  }
-  return out + str.slice(last);
+  const parts = await Promise.all(str.matchAll(regex).map((m) => fn(m[1])));
+  let i = 0;
+  return str.replace(regex, () => parts[i++]);
 }
