@@ -16,7 +16,7 @@ document.addEventListener("change", async (e) => {
   if (setting) return api.cms.node(Number(cms.el.nid(setting))).api.post({ setting: setting.name, value: setting.type === "checkbox" ? setting.checked : setting.value });
   const row = e.target.closest?.("[data-rows] [data-id]");
   if (!row) return;
-  const res = await send(row, { id: row.dataset.id, values: values(row) });
+  const res = await send(row, { row: row.dataset.id, values: values(row) });
   if (res && "reload" in e.target.dataset) cms.reloadNode(Number(cms.el.nid(row)), JSON.parse(row.closest("[data-rows]").dataset.vars));
 });
 document.addEventListener("click", async (e) => {

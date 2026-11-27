@@ -140,10 +140,10 @@ async function api(node: Node, vars: Record<string, unknown>) {
   const saved = await saveRows(node, await tables(app), vars);
   // one main currency: whichever was marked last, and it is active
   const values = vars.values as Record<string, unknown> | undefined;
-  if (saved?.ok && vars.table === "shop_currency" && values?.main && vars.id != null) {
+  if (saved?.ok && vars.table === "shop_currency" && values?.main && vars.row != null) {
     const db = app.db.table("shop_currency");
-    for (const id of await app.db.col<string>`SELECT id FROM shop_currency WHERE ${sql.id("main")} = ${true} AND id <> ${String(vars.id)}`) await db.update(id, { main: false });
-    await db.update(String(vars.id), { active: true });
+    for (const id of await app.db.col<string>`SELECT id FROM shop_currency WHERE ${sql.id("main")} = ${true} AND id <> ${String(vars.row)}`) await db.update(id, { main: false });
+    await db.update(String(vars.row), { active: true });
   }
   return saved;
 }

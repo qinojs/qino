@@ -75,7 +75,7 @@ export function input(column: Column, row?: Row): HtmlString {
   if (column.type === "checkbox") return html`<input type=checkbox name="${name}" ${off} ${column.reload ? html`data-reload` : ""} ${row && Number(row[name]) ? html`checked` : ""} aria-label="${column.label}">`;
   if (column.type === "select") {
     const options = typeof column.options === "function" ? column.options(row) : column.options!;
-    return html`<select name="${name}" aria-label="${column.label}">${options.map(([v, label]) => html`<option value="${v}" ${v === value ? html`selected` : ""}>${label}`)}</select>`;
+    return html`<select name="${name}" ${off} aria-label="${column.label}">${options.map(([v, label]) => html`<option value="${v}" ${v === value ? html`selected` : ""}>${label}`)}</select>`;
   }
   const type = { number: "number", money: "number", date: "date", page: "qgcms-page" }[String(column.type)] ?? "text";
   // a number is short: room for a rate or an amount, not a line of text
@@ -120,7 +120,11 @@ export async function renderRows(node: Node, spec: Rows): Promise<HtmlString> {
 </div>`;
 }
 
-/** A change from `renderRows`' table; undefined if it names none of the page's tables. */
+/** Whether a row is one of the table's: what all its rows have in common, it has too. */
+const isOf = (spec: Rows, row: Row) => Object.entries(spec.where ?? {}).every(([k, v]) => String(row[k]) === String(v));
+
+/** A change from `renderRows`' table (`row`: the changed row's id, beside the page's own `vars`);
+ *  undefined if it names none of the page's tables. */
 export async function saveRows(node: Node, specs: Rows[], vars: Record<string, unknown>): Promise<{ ok: boolean } | undefined> {
   const spec = specs.find((s) => s.table === vars.table);
   if (!spec) return;
@@ -128,18 +132,18 @@ export async function saveRows(node: Node, specs: Rows[], vars: Record<string, u
   await table.init();
   if (vars.remove != null) {
     const row = await table.selectByID(String(vars.remove));
-    if (spec.fixed || !row || spec.keep?.(row)) return { ok: false };
+    if (spec.fixed || !row || !isOf(spec, row) || spec.keep?.(row)) return { ok: false };
     return { ok: await table.delete(String(vars.remove)) };
   }
   const given = (vars.values ?? {}) as Record<string, unknown>;
-  const before = vars.id != null ? await table.selectByID(String(vars.id)) : undefined;
-  if (vars.id != null ? !before : spec.fixed) return { ok: false };
+  const before = vars.row != null ? await table.selectByID(String(vars.row)) : undefined;
+  if (vars.row != null ? !before || !isOf(spec, before) : spec.fixed) return { ok: false };
   const key = new Set(before ? table.primaries.map((f) => f.name) : []);
   const columns = spec.columns.filter((c) => c.name && !key.has(c.name) && c.name in given && !(before && c.locked?.(before)));
   const row: Row = { ...before, ...given, ...spec.where };
   const values = Object.fromEntries(columns.map((c) => [c.name!, parsed(c, given[c.name!], row)]));
   if (before) {
-    await table.update(String(vars.id), values);
+    await table.update(String(vars.row), values);
     return { ok: true };
   }
   // what was left empty takes the column's default

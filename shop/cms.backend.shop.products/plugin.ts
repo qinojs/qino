@@ -1,5 +1,5 @@
 import { html, sql, sqlSearch } from "@qino/qino";
-import { cms as cmsOf, hasOwnUrl, thumb } from "@qino/qino/cms";
+import { cms as cmsOf, hasOwnUrl, thumb, WRITE } from "@qino/qino/cms";
 import { backend, renderAccess } from "@qino/qino/cms.backend";
 import { input, renderRows, saveRows } from "@qino/qino/cms.backend.shop";
 import { mainCurrency, productUrl, shopT } from "@qino/qino/cms.shop";
@@ -42,14 +42,23 @@ function listColumns(app: App, main: string): Column[] {
   ];
 }
 
-/** Where a new product can go: the contents that give their children addresses. */
+/** A product is changed only by who may edit its node. */
+async function editable(app: App, id: number): Promise<boolean> {
+  if (!await app.db.one`SELECT id FROM shop_product WHERE id = ${id}`) return false;
+  return await (await cmsOf(app).node(id)).access() >= WRITE;
+}
+
+/** Shown, not to be changed: inputs disabled, no rows added or removed. */
+const readonly = (spec: Rows): Rows => ({ ...spec, fixed: true, columns: spec.columns.map((c) => ({ ...c, locked: () => true })) });
+
+/** Where a new product can go: the contents that give their children addresses, and the user may edit. */
 async function creatable(app: App): Promise<Node[]> {
   const modules = app.modules.linked().filter((m) => m.plugin.cms?.node?.childUrls).map((m) => m.name);
   if (!modules.length) return [];
   const ids = await app.db.col`SELECT id FROM page WHERE type = ${"c"} AND ${sql.in("module", modules)}`;
   const nodes = await Promise.all(ids.map((id) => cmsOf(app).node(Number(id))));
-  const readable = await Promise.all(nodes.map((n) => n.isOnline()));
-  return nodes.filter((_, i) => readable[i]);
+  const usable = await Promise.all(nodes.map(async (n) => await n.isOnline() && await n.access() >= WRITE));
+  return nodes.filter((_, i) => usable[i]);
 }
 
 async function list(node: Node, url: URL): Promise<HtmlString> {
@@ -100,13 +109,13 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <th>${t`Article number`}
       ${columns.map((c) => html`<th>${c.label}`)}
     <tbody>${rows.map(async (p) => {
-      const product = await p.node();
+      const product = await p.node(), mine = await product.access() >= WRITE;
       return html.async`<tr data-id="${p.$id}">
       <td>${thumbnail(product)}
       <td><a href="${link({ id: p.$id })}">${p.title(lang)}</a>${await product.isOnline() ? "" : html.async` <small>${t`Offline`}</small>`}
       <td>${(await categoryOf(product))?.showTitle()}
       <td>${p.sku}
-      ${columns.map((c) => html`<td>${input(c, { [c.name!]: p.$get(c.name!) })}`)}`;
+      ${columns.map((c) => html`<td>${input(mine ? c : { ...c, locked: () => true }, { [c.name!]: p.$get(c.name!) })}`)}`;
     })}
   </table>
   ${pages > 1 ? html.async`<u2-pagination total="${pages}" current="${page}" href="${link({ page: "{page}" })}">
@@ -205,13 +214,14 @@ async function detail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app, t = shopT(app);
   const product = await app.db.table("shop_product").get<Product>(id);
   if (!product) return html.async`<div class=u2-card><div>${t`Not found.`}</div></div>`;
+  const mine = await (await product.node()).access() >= WRITE;
   return html.async`<div class=u2-flex>
   <div class=u2-card>
     <div class=-head>${product.title(app.languages.def)}</div>
     <div><a href="${productUrl(product)}" target=_blank>${t`Open the page`}</a></div>
   </div>
   ${product.node().then(async (target) => renderAccess(target, await node.access() >= 2))}
-  ${(await tables(app, id)).map((spec) => renderRows(node, spec))}
+  ${(await tables(app, id)).map((spec) => renderRows(node, mine ? spec : readonly(spec)))}
 </div>`;
 }
 
@@ -224,7 +234,7 @@ function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string
 /** A new product, in a category, of the kind that lives there. */
 async function create(app: App, category: number, title: string) {
   const parent = await cmsOf(app).node(category);
-  if (!title.trim() || !parent.module?.plugin.cms?.node?.childUrls) return { ok: false };
+  if (!title.trim() || !parent.module?.plugin.cms?.node?.childUrls || await parent.access() < WRITE) return { ok: false };
   const kind = await app.db.one<string>`SELECT p.module FROM page p JOIN shop_product s ON s.id = p.id WHERE p.basis = ${category} LIMIT 1`;
   const child = await parent.createCont({ module: kind ?? "cms.cont.shop.product", visible: true });
   await app.db.table("shop_product").ensure({ id: child.id });
@@ -237,7 +247,7 @@ export async function backendEdit(node: Node) {
   if (await node.db.one`SELECT id FROM shop_product WHERE id = ${node.id}`) return shopT(node.app)`Edit product in the backend`;
 }
 
-/** Node access is the permission: whoever may open this page may change a product. */
+/** Whoever may open this page may use it; a product changes only with the right to edit its node. */
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
   if (vars.create) {
@@ -245,9 +255,11 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
     return create(app, Number(category), String(title ?? ""));
   }
   if (vars.list) {
+    if (!await editable(app, Number(vars.row))) return { ok: false };
     const main = (await mainCurrency(app))?.$id ?? "";
     return saveRows(node, [{ table: "shop_product", title: "", fixed: true, columns: listColumns(app, main) }], vars);
   }
+  if (!await editable(app, Number(vars.id))) return { ok: false };
   return saveRows(node, await tables(app, Number(vars.id)), vars);
 }
 

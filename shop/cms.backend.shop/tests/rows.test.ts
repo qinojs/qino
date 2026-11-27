@@ -25,9 +25,9 @@ test("a table of rows: added, changed by its other columns only, removed, none b
       assertEquals(await db.row`SELECT country, method, weight, price FROM shop_shipping_rate`, { country: "CH", method: "a", weight: 500, price: 950 });
       const id = "CH:a:500";
       assert(String(await renderRows(node, rates)).includes('value="9.5"'));
-      await saveRows(node, [rates], { table: rates.table, id, values: { country: "DE", price: "12" } }); // a key stays
+      await saveRows(node, [rates], { table: rates.table, row: id, values: { country: "DE", price: "12" } }); // a key stays
       assertEquals(await db.row`SELECT country, price FROM shop_shipping_rate`, { country: "CH", price: 1200 });
-      assertEquals((await saveRows(node, [rates], { table: rates.table, id: "nope:a:1", values: { price: "1" } }))?.ok, false);
+      assertEquals((await saveRows(node, [rates], { table: rates.table, row: "nope:a:1", values: { price: "1" } }))?.ok, false);
       assertEquals((await saveRows(node, [rates], { table: rates.table, remove: id }))?.ok, true);
       assertEquals(await db.one`SELECT COUNT(*) FROM shop_shipping_rate`, 0);
       // sorted by what no column holds; searched once there is much to read
@@ -67,6 +67,22 @@ test("a fixed table neither grows nor shrinks; a date holds through its last day
   });
 });
 
+test("a table of some rows changes and removes only those, not a row of another", async () => {
+  await withShop(["cms.shop.price.discount"], async (app) => {
+    await asVisitor(app, async () => {
+      const node = await cms(app).node(10), db = app.db;
+      const spec: Rows = { table: "shop_discount", title: "", where: { node_id: 1 }, columns: [{ name: "factor", label: "F", type: "number" }] };
+      const other = String(await db.table("shop_discount").insert({ node_id: 2, factor: 0.9 }));
+      assertEquals((await saveRows(node, [spec], { table: spec.table, row: other, values: { factor: "0.5" } }))?.ok, false);
+      assertEquals((await saveRows(node, [spec], { table: spec.table, remove: other }))?.ok, false);
+      assertEquals(Number(await db.one`SELECT factor FROM shop_discount WHERE node_id = ${2}`), 0.9);
+      const own = String(await db.table("shop_discount").insert({ node_id: 1, factor: 0.9 }));
+      assertEquals((await saveRows(node, [spec], { table: spec.table, row: own, values: { factor: "0.5" } }))?.ok, true);
+      assert(String(await renderRows(node, { ...spec, columns: [{ ...spec.columns[0], type: "select", options: [["1", "1"]], locked: () => true }] })).includes("disabled"));
+    });
+  });
+});
+
 test("a table of very many rows stops, and says how many there are", async () => {
   await withShop(["cms.shop.price.discount"], async (app) => {
     await asVisitor(app, async () => {
@@ -85,7 +101,7 @@ test("money reads as typed, a locked cell stays as it is", async () => {
       const spec: Rows = { ...rates, columns: rates.columns.map((c) => c.name === "weight" ? { ...c, locked: () => true } : c) };
       await saveRows(node, [spec], { table: spec.table, values: { country: "CH", method: "a", weight: "500", price: "19.99" } });
       assert(String(await renderRows(node, spec)).includes('value="19.99"'));
-      await saveRows(node, [spec], { table: spec.table, id: "CH:a:500", values: { weight: "1", price: "5" } });
+      await saveRows(node, [spec], { table: spec.table, row: "CH:a:500", values: { weight: "1", price: "5" } });
       assertEquals(await db.row`SELECT weight, price FROM shop_shipping_rate`, { weight: 500, price: 500 });
     });
   });
