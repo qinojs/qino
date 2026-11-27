@@ -46,11 +46,15 @@ async function closing(app: App): Promise<HtmlString> {
       AND direction = ${direction} AND type <> 'proforma' AND currency = ${currency}`)
     : 0;
   const [unixFrom, unixUntil] = [from, addDays(until, 1)].map((day) => Date.parse(day) / 1000);
-  const [drafts, foreign, unassigned, bare, unbooked, receivables, payables] = await Promise.all([
+  const [drafts, foreign, missing, unassigned, bare, unbooked, receivables, payables] = await Promise.all([
     count(app.db.one`SELECT COUNT(*) FROM invoice WHERE status = 'draft' AND (date IS NULL OR date <= ${until})`),
     // booked only in the book's currency: the others are missing from the books
     count(app.db.one`SELECT COUNT(*) FROM invoice WHERE currency <> ${currency} AND type <> 'proforma'
       AND status NOT IN ('draft', 'canceled') AND date >= ${from} AND date <= ${until}`),
+    // in the book's currency, but no entry: it failed or was skipped (see the log)
+    count(app.db.one`SELECT COUNT(*) FROM invoice i WHERE i.currency = ${currency} AND i.type <> 'proforma'
+      AND i.status NOT IN ('draft', 'canceled') AND i.total <> 0 AND i.date >= ${from} AND i.date <= ${until}
+      AND NOT EXISTS (SELECT 1 FROM accounting_entry e WHERE e.ref = CONCAT('fin.invoice:', i.id))`),
     app.modules.linked("fin.bank")
       ? count(app.db.one`SELECT COUNT(*) FROM bank_tx WHERE payment_id IS NULL AND date >= ${from}
         AND date <= ${until}`)
@@ -77,6 +81,7 @@ async function closing(app: App): Promise<HtmlString> {
       <ul>
         ${check(drafts, t`draft invoices of the year`)}
         ${check(foreign, t`invoices in another currency, not booked`)}
+        ${check(missing, t`invoices not booked`)}
         ${app.modules.linked("fin.bank") ? check(unassigned, t`bank lines not assigned`) : ""}
         ${check(bare, t`entries by hand without a receipt`)}
         ${check(unbooked, t`payments not for an invoice, not booked`)}

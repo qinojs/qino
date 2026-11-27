@@ -20,9 +20,9 @@ const settingsSchema = {
     },
     mode: {
       type: "string",
-      enum: ["jass", "tschau", "free"],
+      enum: ["jass", "tschau", "aloechlen", "hoseabe", "free"],
       default: "jass",
-      description: "Default game mode: jass (Swiss Jass tricks & trump), tschau (Tschau Sepp), or free (draw & discard pile).",
+      description: "Default game mode: jass, tschau (Tschau Sepp), aloechlen (A-löchlen), hoseabe (Hose abe / 31), or free.",
     },
     radius: {
       type: "integer",
@@ -75,6 +75,7 @@ export const api: ApiTree = {
         dealCount: s.optional(s.number()),
         cardId: s.optional(s.string()),
         wishSuit: s.optional(s.string()),
+        tableIndex: s.optional(s.number()),
         lat: s.optional(s.number()),
         lon: s.optional(s.number()),
         radius: s.optional(s.number()),
@@ -83,7 +84,7 @@ export const api: ApiTree = {
         const input = raw as {
           op: string; nodeId?: number; code?: string; name?: string; tableName?: string;
           deck?: string; mode?: string; trump?: string; dealCount?: number; cardId?: string;
-          wishSuit?: string; lat?: number; lon?: number; radius?: number;
+          wishSuit?: string; tableIndex?: number; lat?: number; lon?: number; radius?: number;
         };
         const tables = hub(ctx.app);
         const nodeId = Number(input.nodeId ?? 0);
@@ -101,7 +102,9 @@ export const api: ApiTree = {
               table: tables.create(nodeId, player, {
                 name: input.tableName,
                 deck: isDeckId(input.deck) ? input.deck : undefined,
-                mode: input.mode === "free" || input.mode === "tschau" ? input.mode : "jass",
+                mode: input.mode === "free" || input.mode === "tschau" || input.mode === "aloechlen" || input.mode === "hoseabe"
+                  ? input.mode
+                  : "jass",
                 lat: input.lat,
                 lon: input.lon,
               }),
@@ -133,7 +136,9 @@ export const api: ApiTree = {
               player,
               table: tables.configure(String(input.code ?? ""), player.id, {
                 deck: isDeckId(input.deck) ? input.deck : undefined,
-                mode: input.mode === "jass" || input.mode === "tschau" || input.mode === "free" ? input.mode : undefined,
+                mode: input.mode === "jass" || input.mode === "tschau" || input.mode === "aloechlen" || input.mode === "hoseabe" || input.mode === "free"
+                  ? input.mode
+                  : undefined,
                 trump: input.trump,
                 dealCount: input.dealCount,
                 name: input.tableName,
@@ -153,6 +158,13 @@ export const api: ApiTree = {
               table: tables.play(String(input.code ?? ""), player.id, String(input.cardId ?? ""), {
                 wishSuit: input.wishSuit,
               }),
+            };
+          case "pass":
+            return { player, table: tables.pass(String(input.code ?? ""), player.id) };
+          case "swap":
+            return {
+              player,
+              table: tables.swap(String(input.code ?? ""), player.id, String(input.cardId ?? ""), Number(input.tableIndex ?? -1)),
             };
           case "draw":
             return { player, table: tables.draw(String(input.code ?? ""), player.id) };
@@ -219,7 +231,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const rawDeck = node.settings.deck();
   const deck: DeckId = isDeckId(rawDeck) ? rawDeck : "swiss36";
   const rawMode = node.settings.mode();
-  const mode: GameMode = rawMode === "free" || rawMode === "tschau" ? rawMode : "jass";
+  const mode: GameMode = rawMode === "free" || rawMode === "tschau" || rawMode === "aloechlen" || rawMode === "hoseabe"
+    ? rawMode
+    : "jass";
   const radius = Math.min(Math.max(Number(node.settings.radius() ?? 2000), 100), 50000);
   const showCounts = node.settings.showCounts() !== false;
   const savedName = String(ctx.sess.data[NAME].name() ?? "");
@@ -257,6 +271,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
           <select class=-mode-pick>
             <option value=jass ${mode === "jass" ? html.raw("selected") : ""}>${t`Jassen (Schieber / Tricks)`}</option>
             <option value=tschau ${mode === "tschau" ? html.raw("selected") : ""}>${t`Tschau Sepp`}</option>
+            <option value=aloechlen ${mode === "aloechlen" ? html.raw("selected") : ""}>${t`A-löchlen`}</option>
+            <option value=hoseabe ${mode === "hoseabe" ? html.raw("selected") : ""}>${t`Hose abe`}</option>
             <option value=free ${mode === "free" ? html.raw("selected") : ""}>${t`Free card table (Draw & Pile)`}</option>
           </select>
         </label>

@@ -56,6 +56,8 @@ export async function onInvoice(app: App, invoice: Row, previous: string): Promi
     ...rates.map((r) => ({ account: out ? roles.vatDue : roles.vatInput, amount: sign * r.tax, taxCode: r.code })),
     { account: out ? roles.receivable : roles.payable, amount: -sign * total },
   ];
+  // an invoice of nothing books nothing
+  if (lines.every((line) => !line.amount)) return;
   // a role without an account: nothing is booked rather than half of it
   if (lines.some((line) => line.amount && !line.account)) return;
   const date = closed && String(invoice.date) <= closed ? today() : String(invoice.date || today());

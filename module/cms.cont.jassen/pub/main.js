@@ -130,6 +130,14 @@ initNode("cont.jassen", (box, { signal }) => {
       if (!state) return;
       run({ op: "takePile", code: state.code }).catch((e) => toast(e?.message || String(e)));
     },
+    onPass: () => {
+      if (!state) return;
+      run({ op: "pass", code: state.code }).catch((e) => toast(e?.message || String(e)));
+    },
+    onSwap: (cardId, tableIndex) => {
+      if (!state) return;
+      run({ op: "swap", code: state.code, cardId, tableIndex }).catch((e) => toast(e?.message || String(e)));
+    },
   });
 
   function openSuitDialog(title, onPick, includeJassModes = false) {
@@ -206,6 +214,8 @@ initNode("cont.jassen", (box, { signal }) => {
 
     const isJass = next.mode === "jass";
     const isTschau = next.mode === "tschau";
+    const isAloechlen = next.mode === "aloechlen";
+    const isHose = next.mode === "hoseabe";
     const meta = DECK_META[next.deck] ?? DECK_META.swiss36;
     if (isJass) {
       const suit = meta.suits.find((s) => s.id === next.trump);
@@ -229,7 +239,9 @@ initNode("cont.jassen", (box, { signal }) => {
       const winner = next.players.find((p) => p.id === next.winnerId);
       overlayTitle.textContent = next.round === 0
         ? `Tisch ${next.code} (${next.players.length} Spieler)`
-        : winner ? `Sepp! ${winner.name} gewinnt!` : `Runde ${next.round} beendet`;
+        : isAloechlen && winner
+        ? `Präsident: ${winner.name}!`
+        : winner ? `${winner.name} gewinnt!` : `Runde ${next.round} beendet`;
       overlayPlayers.innerHTML = "";
       const list = roundFinished ? [...next.players].sort((a, b) => b.points - a.points) : next.players;
       for (const p of list) {
@@ -238,13 +250,19 @@ initNode("cont.jassen", (box, { signal }) => {
         left.textContent = p.name + (p.id === next.me?.id ? " (Du)" : "");
         const right = document.createElement("span");
         right.textContent = roundFinished
-          ? (isJass ? `${p.points} P. (${p.tricks} Stiche)` : `${p.points} Siege`)
+          ? (isJass ? `${p.points} P. (${p.tricks} Stiche)` : isAloechlen ? (p.rankLabel || `${p.points} Siege`) : isHose ? (p.lives < 0 ? "Aus" : `${p.lives} Leben`) : `${p.points} Siege`)
           : (p.isBot ? "Bot" : "Bereit");
         li.append(left, right);
         overlayPlayers.append(li);
       }
-      quickStartBtn.hidden = next.round > 0 || (isJass && next.players.length >= 4) || (isTschau && next.players.length >= 3) || (next.mode === "free" && next.players.length >= 2);
-      quickStartBtn.textContent = isJass ? "Mit Bots starten (4er-Jass)" : isTschau ? "Mit Bots starten (Tschau Sepp)" : "Mit Bot starten";
+      const targetBots = (isJass || isAloechlen) ? 4 : next.mode === "free" ? 2 : 3;
+      quickStartBtn.hidden = next.round > 0 || next.players.length >= targetBots;
+      quickStartBtn.textContent = isJass
+        ? "Mit Bots starten (4er-Jass)"
+        : isAloechlen ? "Mit Bots starten (A-löchlen)"
+        : isHose ? "Mit Bots starten (Hose abe)"
+        : isTschau ? "Mit Bots starten (Tschau Sepp)"
+        : "Mit Bot starten";
       overlayDealBtn.textContent = roundFinished ? "Neue Runde geben" : "Karten geben";
       overlayShareBtn.hidden = next.round > 0;
       overlayPinBtn.hidden = next.round > 0;

@@ -1,7 +1,7 @@
 /** Card deck definitions and Swiss Jass trick/scoring rules. */
 
 export type DeckId = "swiss36" | "french36" | "french52" | "german32";
-export type GameMode = "jass" | "tschau" | "free";
+export type GameMode = "jass" | "tschau" | "aloechlen" | "hoseabe" | "free";
 export type Trump = "" | "obe" | "unde" | string;
 
 export type Suit = { id: string; name: string; symbol: string; color: string };
@@ -184,4 +184,32 @@ export function canPlayTschau(card: Card, top: Card | undefined, activeSuit: str
   if (!top) return true;
   if (card.rank === "J") return true;
   return card.suit === (activeSuit || top.suit) || card.rank === top.rank;
+}
+
+export function rankOrder(rank: string): number {
+  return RANK_ORDER[rank] ?? 0;
+}
+
+/** Hose abe (Schwimmen / 31) hand score: 33 for 3 Aces, 30.5 for 3 of a kind, else best suit sum. */
+export function hoseScore(hand: readonly Card[]): number {
+  if (!hand.length) return 0;
+  if (hand.length === 3 && hand[0].rank === hand[1].rank && hand[1].rank === hand[2].rank) {
+    return hand[0].rank === "A" ? 33 : 30.5;
+  }
+  const bySuit = new Map<string, number>();
+  for (const c of hand) {
+    const val = c.rank === "A" ? 11 : (c.rank === "K" || c.rank === "Q" || c.rank === "J" || c.rank === "10") ? 10 : Number(c.rank) || 0;
+    bySuit.set(c.suit, (bySuit.get(c.suit) ?? 0) + val);
+  }
+  let best = 0;
+  for (const sum of bySuit.values()) if (sum > best) best = sum;
+  return best;
+}
+
+/** Whether `card` (and matching duplicates in `hand`) can lead or beat `(topRank, comboCount)` in A-löchlen. */
+export function canPlayAloechlen(hand: readonly Card[], card: Card, topRank: string | null, comboCount: number): boolean {
+  const sameCount = hand.filter((c) => c.rank === card.rank).length;
+  if (!sameCount) return false;
+  if (!topRank || comboCount <= 0) return true;
+  return rankOrder(card.rank) > rankOrder(topRank) && sameCount >= comboCount;
 }

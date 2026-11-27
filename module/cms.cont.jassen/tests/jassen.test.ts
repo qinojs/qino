@@ -3,7 +3,7 @@ import { App, bildJsonItem, fs, requestStorage } from "@qino/qino";
 import { cms as tree } from "@qino/qino/cms";
 import { assertEquals, assertStringIncludes, testContext } from "@qino/qino/tests";
 
-import { buildDeck, canPlayTschau, cardPoints, scoreTrick, shuffle } from "../decks.ts";
+import { buildDeck, canPlayAloechlen, canPlayTschau, cardPoints, hoseScore, scoreTrick, shuffle } from "../decks.ts";
 import { distanceMeters, hub } from "../hub.ts";
 import { api, cms } from "../plugin.ts";
 
@@ -49,6 +49,63 @@ test("Tschau Sepp handles +2, skip, reverse, ace, wish suit and quickStart", () 
   const quick = h.quickStart(solo.code, "s1");
   assertEquals(quick.players.length, 3);
   assertEquals(quick.me?.hand.length, 7);
+});
+
+test("Hose abe scores suit sums, 31, three-of-a-kind and supports swap & knock", () => {
+  assertEquals(hoseScore([
+    { id: "hearts:A", suit: "hearts", rank: "A" },
+    { id: "hearts:K", suit: "hearts", rank: "K" },
+    { id: "hearts:10", suit: "hearts", rank: "10" },
+  ]), 31);
+  assertEquals(hoseScore([
+    { id: "hearts:9", suit: "hearts", rank: "9" },
+    { id: "spades:9", suit: "spades", rank: "9" },
+    { id: "clubs:9", suit: "clubs", rank: "9" },
+  ]), 30.5);
+  assertEquals(hoseScore([
+    { id: "hearts:A", suit: "hearts", rank: "A" },
+    { id: "spades:A", suit: "spades", rank: "A" },
+    { id: "clubs:A", suit: "clubs", rank: "A" },
+  ]), 33);
+
+  const h = hub({} as App);
+  const t = h.create(1, { id: "h1", name: "Hansi" }, { mode: "hoseabe", deck: "swiss36" });
+  h.join(t.code, { id: "h2", name: "Vreni" });
+  const dealt = h.deal(t.code, "h1");
+  assertEquals(dealt.me?.hand.length, 3);
+  assertEquals(dealt.pile.length, 3);
+
+  // Swap 1 card, then opponent knocks, then h1 swaps all 3 -> round finishes
+  const afterSwap = h.swap(t.code, "h1", dealt.me!.hand[0].id, 0);
+  if (!afterSwap.winnerId) {
+    const afterKnock = h.pass(t.code, "h2");
+    assertEquals(afterKnock.knockerId, "h2");
+    const finished = h.swap(t.code, "h1", "", -1);
+    assertEquals(finished.winnerId !== null, true);
+  }
+});
+
+test("A-löchlen validates rank combos, plays sets and clears pile on pass", () => {
+  const hand = [
+    { id: "rosen:8", suit: "rosen", rank: "8" },
+    { id: "eicheln:8", suit: "eicheln", rank: "8" },
+    { id: "rosen:A", suit: "rosen", rank: "A" },
+  ];
+  assertEquals(canPlayAloechlen(hand, hand[0], null, 0), true);
+  assertEquals(canPlayAloechlen(hand, hand[0], "7", 2), true);
+  assertEquals(canPlayAloechlen(hand, hand[2], "7", 2), false); // only 1 Ace in hand
+  assertEquals(canPlayAloechlen(hand, hand[0], "9", 1), false); // 8 < 9
+
+  const h = hub({} as App);
+  const t = h.create(1, { id: "a1", name: "Toni" }, { mode: "aloechlen", deck: "swiss36" });
+  h.join(t.code, { id: "a2", name: "Bea" });
+  const dealt = h.deal(t.code, "a1");
+  assertEquals(dealt.me?.hand.length, 18);
+
+  const played = h.play(t.code, "a1", dealt.me!.hand[0].id);
+  assertEquals(played.pile.length >= 1, true);
+  const afterPass = h.pass(t.code, "a2");
+  assertEquals(afterPass.pile.length, 0);
 });
 
 test("decks build expected card counts and Jass scoring handles trump, Puur, Nell, Obenabe and Undeufe", () => {

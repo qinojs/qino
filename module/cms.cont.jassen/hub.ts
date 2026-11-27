@@ -1,6 +1,6 @@
 import { ApiError } from "@qino/qino";
 
-import { buildDeck, canPlayTschau, DECKS, isDeckId, scoreTrick, shuffle, sortHand } from "./decks.ts";
+import { buildDeck, canPlayAloechlen, canPlayTschau, DECKS, hoseScore, isDeckId, rankOrder, scoreTrick, shuffle, sortHand } from "./decks.ts";
 
 import type { App } from "@qino/qino";
 import type { Card, DeckId, GameMode, Trump } from "./decks.ts";
@@ -16,6 +16,7 @@ type Seat = {
   hand: Card[];
   tricks: number;
   points: number;
+  lives: number;
   isBot: boolean;
   lastSeen: number;
 };
@@ -51,6 +52,12 @@ type Table = {
   wishSuit: string;
   winnerId: string | null;
   banner: string;
+  comboCount: number;
+  lastPlayerId: string | null;
+  passedIds: string[];
+  finishOrder: string[];
+  prevFinishOrder: string[];
+  knockerId: string | null;
   location: { lat: number; lon: number; updated: number } | null;
   players: Seat[];
   drawPile: Card[];
@@ -113,6 +120,16 @@ function jitter(seed: number) {
   return n - Math.floor(n);
 }
 
+function aloechlenRank(order: string[], id: string, total: number): string {
+  const idx = order.indexOf(id);
+  if (idx < 0) return "";
+  if (idx === 0) return "Präsident";
+  if (idx === total - 1) return "A-loch";
+  if (total >= 4 && idx === 1) return "Vize";
+  if (total >= 4 && idx === total - 2) return "Vize-A";
+  return `Platz ${idx + 1}`;
+}
+
 function tableView(table: Table, playerId: string) {
   const me = table.players.find((p) => p.id === playerId);
   const myIndex = table.players.findIndex((p) => p.id === playerId);
@@ -128,6 +145,9 @@ function tableView(table: Table, playerId: string) {
     wishSuit: table.wishSuit,
     winnerId: table.winnerId,
     banner: table.banner,
+    comboCount: table.comboCount,
+    knockerId: table.knockerId,
+    finishOrder: [...table.finishOrder],
     hasLocation: Boolean(table.location),
     round: table.round,
     turn: table.turn,
@@ -138,7 +158,13 @@ function tableView(table: Table, playerId: string) {
     topCard: table.pile.at(-1) ?? null,
     lastTrick: table.lastTrick,
     version: table.version,
-    me: me ? { id: me.id, name: me.name, seat: myIndex, hand: [...me.hand] } : null,
+    me: me ? {
+      id: me.id,
+      name: me.name,
+      seat: myIndex,
+      hand: [...me.hand],
+      hoseScore: table.mode === "hoseabe" ? hoseScore(me.hand) : 0,
+    } : null,
     players: table.players.map((p, seat) => ({
       id: p.id,
       name: p.name,
@@ -146,6 +172,8 @@ function tableView(table: Table, playerId: string) {
       cardCount: p.hand.length,
       tricks: p.tricks,
       points: p.points,
+      lives: p.lives,
+      rankLabel: table.mode === "aloechlen" ? aloechlenRank(table.finishOrder, p.id, table.players.length) : "",
       isBot: p.isBot,
     })),
   };
@@ -236,7 +264,9 @@ export class JassHub {
     this.#prune();
     const code = makeCode(this.#tables);
     const deck: DeckId = isDeckId(opts.deck) ? opts.deck : "swiss36";
-    const mode: GameMode = opts.mode === "free" || opts.mode === "tschau" ? opts.mode : "jass";
+    const mode: GameMode = opts.mode === "free" || opts.mode === "tschau" || opts.mode === "aloechlen" || opts.mode === "hoseabe"
+      ? opts.mode
+      : "jass";
     const coords = validCoords(opts.lat, opts.lon);
     const now = Date.now();
     const table: Table = {
@@ -252,6 +282,12 @@ export class JassHub {
       wishSuit: "",
       winnerId: null,
       banner: "",
+      comboCount: 0,
+      lastPlayerId: null,
+      passedIds: [],
+      finishOrder: [],
+      prevFinishOrder: [],
+      knockerId: null,
       location: coords ? { ...coords, updated: now } : null,
       players: [{
         id: player.id,
@@ -259,6 +295,7 @@ export class JassHub {
         hand: [],
         tricks: 0,
         points: 0,
+        lives: 3,
         isBot: false,
         lastSeen: now,
       }],
@@ -293,6 +330,7 @@ export class JassHub {
           hand: [],
           tricks: 0,
           points: 0,
+          lives: 3,
           isBot: false,
           lastSeen: now,
         };
@@ -304,6 +342,7 @@ export class JassHub {
           hand: [],
           tricks: 0,
           points: 0,
+          lives: 3,
           isBot: false,
           lastSeen: now,
         });
@@ -364,6 +403,7 @@ export class JassHub {
       hand: [],
       tricks: 0,
       points: 0,
+      lives: 3,
       isBot: true,
       lastSeen: Date.now(),
     });
@@ -380,11 +420,11 @@ export class JassHub {
     return tableView(table, playerId);
   }
 
-  /** Fill up seats with bots (4 in Jass, 3 in Tschau Sepp, 2 in free mode) and deal immediately. */
+  /** Fill up seats with bots (4 in Jass/A-löchlen, 3 in Tschau Sepp/Hose abe, 2 in free mode) and deal immediately. */
   quickStart(code: string, playerId: string) {
     const table = this.#get(code);
     if (!table.players.some((p) => p.id === playerId)) throw new ApiError(403, "Not seated at this table");
-    const target = table.mode === "jass" ? 4 : table.mode === "tschau" ? 3 : 2;
+    const target = table.mode === "jass" || table.mode === "aloechlen" ? 4 : table.mode === "free" ? 2 : 3;
     while (table.players.length < target) {
       const botNum = table.players.filter((p) => p.isBot).length + 1;
       table.players.push({
@@ -393,6 +433,7 @@ export class JassHub {
         hand: [],
         tricks: 0,
         points: 0,
+        lives: 3,
         isBot: true,
         lastSeen: Date.now(),
       });
@@ -413,7 +454,7 @@ export class JassHub {
       table.trump = "";
       table.wishSuit = "";
     }
-    if (opts.mode === "jass" || opts.mode === "tschau" || opts.mode === "free") {
+    if (opts.mode === "jass" || opts.mode === "tschau" || opts.mode === "aloechlen" || opts.mode === "hoseabe" || opts.mode === "free") {
       table.mode = opts.mode;
       if (opts.dealCount === undefined) table.dealCount = opts.mode === "jass" ? 9 : 7;
     }
@@ -439,18 +480,7 @@ export class JassHub {
 
     const cards = shuffle(buildDeck(table.deck));
     const count = table.players.length;
-    const requested = opts.dealCount ? Math.round(Number(opts.dealCount)) : table.dealCount;
-    const maxPerPlayer = Math.floor(cards.length / count);
-    const perPlayer = table.mode === "jass"
-      ? Math.min(9, maxPerPlayer)
-      : Math.max(1, Math.min(requested || 7, maxPerPlayer));
-
-    for (let i = 0; i < count; i++) {
-      const p = table.players[i];
-      p.hand = sortHand(cards.splice(0, perPlayer), table.deck);
-      p.tricks = 0;
-    }
-    table.drawPile = cards;
+    table.drawPile = [];
     table.pile = [];
     table.lastTrick = null;
     table.trickComplete = false;
@@ -459,17 +489,74 @@ export class JassHub {
     table.wishSuit = "";
     table.winnerId = null;
     table.banner = "";
+    table.comboCount = 0;
+    table.lastPlayerId = null;
+    table.passedIds = [];
+    table.finishOrder = [];
+    table.knockerId = null;
     table.round++;
+
+    if (table.mode === "hoseabe") {
+      if (table.round === 1 || table.players.filter((p) => p.lives >= 0).length <= 1) {
+        for (const p of table.players) p.lives = 3;
+      }
+      for (const p of table.players) {
+        p.hand = p.lives >= 0 ? sortHand(cards.splice(0, 3), table.deck) : [];
+        p.tricks = 0;
+      }
+      for (let i = 0; i < 3 && cards.length; i++) {
+        table.pile.push({ card: cards.pop()!, playerId: "", playerName: "Mitte", x: 0, y: 0, rot: 0 });
+      }
+      table.drawPile = cards;
+      let start = (table.round - 1) % count;
+      for (let i = 0; i < count; i++) {
+        const idx = (start + i) % count;
+        if (table.players[idx].lives >= 0) { start = idx; break; }
+      }
+      table.turn = start;
+      this.#advanceBots(table);
+      this.#emit(table);
+      return tableView(table, playerId);
+    }
+
+    const requested = opts.dealCount ? Math.round(Number(opts.dealCount)) : table.dealCount;
+    const maxPerPlayer = Math.floor(cards.length / count);
+    const perPlayer = table.mode === "jass"
+      ? Math.min(9, maxPerPlayer)
+      : table.mode === "aloechlen"
+      ? Math.max(1, maxPerPlayer)
+      : Math.max(1, Math.min(requested || 7, maxPerPlayer));
+
+    for (let i = 0; i < count; i++) {
+      const p = table.players[i];
+      p.hand = sortHand(cards.splice(0, perPlayer), table.deck);
+      p.tricks = 0;
+    }
+    table.drawPile = table.mode === "aloechlen" ? [] : cards;
     table.turn = (table.round - 1) % count;
+
+    // A-löchlen: automatic card swap between Präsident (best) and A-loch (worst) from previous round
+    if (table.mode === "aloechlen" && table.prevFinishOrder.length >= 2) {
+      const pres = table.players.find((p) => p.id === table.prevFinishOrder[0]);
+      const last = table.players.find((p) => p.id === table.prevFinishOrder.at(-1));
+      if (pres && last && pres.id !== last.id) {
+        this.#swapRankCards(pres, last, count >= 4 ? 2 : 1, table.deck);
+        if (count >= 4) {
+          const vice = table.players.find((p) => p.id === table.prevFinishOrder[1]);
+          const viceLast = table.players.find((p) => p.id === table.prevFinishOrder.at(-2));
+          if (vice && viceLast && vice.id !== viceLast.id) this.#swapRankCards(vice, viceLast, 1, table.deck);
+        }
+        table.banner = "Kartentausch: Präsident / A-loch";
+      }
+    }
 
     if (opts.trump !== undefined) table.trump = opts.trump;
     else if (table.mode === "jass" && !table.trump) {
-      // Suggest a default trump suit only if none chosen yet, or keep empty so players can choose
       table.trump = "";
     }
 
     // Flip one starter card onto the discard pile for Tschau Sepp and free table mode.
-    if (table.mode !== "jass" && table.drawPile.length > 0) {
+    if ((table.mode === "tschau" || table.mode === "free") && table.drawPile.length > 0) {
       const starter = table.drawPile.pop()!;
       table.pile.push({ card: starter, playerId: "", playerName: "Stapel", x: 0, y: 0, rot: -0.04 });
     }
@@ -477,6 +564,15 @@ export class JassHub {
     this.#advanceBots(table);
     this.#emit(table);
     return tableView(table, playerId);
+  }
+
+  #swapRankCards(winner: Seat, loser: Seat, count: number, deckId: DeckId) {
+    if (winner.hand.length < count || loser.hand.length < count) return;
+    const byRankAsc = (a: Card, b: Card) => rankOrder(a.rank) - rankOrder(b.rank);
+    const giveToLoser = [...winner.hand].sort(byRankAsc).slice(0, count);
+    const giveToWinner = [...loser.hand].sort(byRankAsc).slice(-count);
+    winner.hand = sortHand([...winner.hand.filter((c) => !giveToLoser.includes(c)), ...giveToWinner], deckId);
+    loser.hand = sortHand([...loser.hand.filter((c) => !giveToWinner.includes(c)), ...giveToLoser], deckId);
   }
 
   #stepTurn(table: Table, seatIdx: number, steps = 1) {
@@ -553,8 +649,11 @@ export class JassHub {
     // If a previous Jass trick is still sitting complete on the table, collect it first automatically.
     if (table.mode === "jass" && table.trickComplete) this.#collectTrick(table);
 
-    if (table.mode === "tschau" && table.winnerId) {
+    if ((table.mode === "tschau" || table.mode === "aloechlen" || table.mode === "hoseabe") && table.winnerId) {
       throw new ApiError(400, "Runde beendet — bitte neu geben");
+    }
+    if (table.mode === "hoseabe") {
+      throw new ApiError(400, "Bei Hose abe eine Handkarte mit der Mitte tauschen");
     }
 
     const cardIdx = seat.hand.findIndex((c) => c.id === cardId);
@@ -567,6 +666,19 @@ export class JassHub {
       }
       seat.hand.splice(cardIdx, 1);
       this.#applyTschauPlay(table, seatIdx, seat, candidate, opts.wishSuit);
+      if (!table.winnerId) this.#advanceBots(table);
+      this.#emit(table);
+      return tableView(table, playerId);
+    }
+
+    if (table.mode === "aloechlen") {
+      if (table.players[table.turn]?.id !== seat.id) throw new ApiError(400, "Du bist nicht dran");
+      const candidate = seat.hand[cardIdx];
+      const topRank = table.pile.at(-1)?.card.rank ?? null;
+      if (!canPlayAloechlen(seat.hand, candidate, topRank, table.comboCount)) {
+        throw new ApiError(400, "Zu tief oder zu wenige gleiche Karten");
+      }
+      this.#applyAloechlenPlay(table, seatIdx, seat, candidate);
       if (!table.winnerId) this.#advanceBots(table);
       this.#emit(table);
       return tableView(table, playerId);
@@ -595,6 +707,188 @@ export class JassHub {
       this.#advanceBots(table);
     }
 
+    this.#emit(table);
+    return tableView(table, playerId);
+  }
+
+  #nextActiveSeat(table: Table, fromIdx: number, pred: (s: Seat) => boolean): number {
+    const n = table.players.length;
+    for (let i = 1; i <= n; i++) {
+      const idx = (fromIdx + i) % n;
+      if (pred(table.players[idx])) return idx;
+    }
+    return fromIdx;
+  }
+
+  #applyAloechlenPlay(table: Table, seatIdx: number, seat: Seat, candidate: Card) {
+    const matching = seat.hand.filter((c) => c.rank === candidate.rank);
+    const count = table.comboCount > 0 ? table.comboCount : matching.length;
+    const played = matching.slice(0, count);
+    const playedIds = new Set(played.map((c) => c.id));
+    seat.hand = seat.hand.filter((c) => !playedIds.has(c.id));
+
+    table.pile = played.map((card, i) => {
+      const seed = table.version + i * 9 + seatIdx * 13;
+      return {
+        card,
+        playerId: seat.id,
+        playerName: seat.name,
+        x: (i - (played.length - 1) / 2) * 0.28 + (jitter(seed) - 0.5) * 0.08,
+        y: (jitter(seed + 1) - 0.5) * 0.08,
+        rot: (jitter(seed + 2) - 0.5) * 0.16,
+      };
+    });
+    table.comboCount = played.length;
+    table.lastPlayerId = seat.id;
+    table.passedIds = [];
+    table.banner = played.length > 1 ? `${played.length}× ${candidate.rank}` : "";
+
+    if (seat.hand.length === 0 && !table.finishOrder.includes(seat.id)) {
+      table.finishOrder.push(seat.id);
+    }
+    const remaining = table.players.filter((p) => p.hand.length > 0);
+    if (remaining.length <= 1) {
+      if (remaining.length === 1 && !table.finishOrder.includes(remaining[0].id)) {
+        table.finishOrder.push(remaining[0].id);
+      }
+      table.prevFinishOrder = [...table.finishOrder];
+      table.winnerId = table.finishOrder[0] ?? seat.id;
+      const winSeat = table.players.find((p) => p.id === table.winnerId);
+      if (winSeat) {
+        winSeat.points++;
+        table.banner = `Präsident: ${winSeat.name}!`;
+      }
+      return;
+    }
+    table.turn = this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0);
+  }
+
+  #applyAloechlenPass(table: Table, seatIdx: number, seat: Seat) {
+    if (!table.passedIds.includes(seat.id)) table.passedIds.push(seat.id);
+    const active = table.players.filter((p) => p.hand.length > 0);
+    const needPasses = active.filter((p) => p.id !== table.lastPlayerId);
+    const allPassed = needPasses.every((p) => table.passedIds.includes(p.id));
+    if (allPassed) {
+      table.pile = [];
+      table.comboCount = 0;
+      table.passedIds = [];
+      table.banner = "Stapel abgeräumt";
+      const leaderIdx = table.players.findIndex((p) => p.id === table.lastPlayerId && p.hand.length > 0);
+      table.turn = leaderIdx >= 0 ? leaderIdx : this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0);
+    } else {
+      table.turn = this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0 && !table.passedIds.includes(p.id) && p.id !== table.lastPlayerId || p.id === table.lastPlayerId);
+      // Prefer next active non-passed player
+      const nextIdx = this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0 && !table.passedIds.includes(p.id));
+      table.turn = nextIdx;
+    }
+  }
+
+  #finishHoseRound(table: Table, instantWinnerId?: string) {
+    const active = table.players.filter((p) => p.lives >= 0);
+    if (!active.length) return;
+    if (instantWinnerId) {
+      for (const p of active) if (p.id !== instantWinnerId) p.lives--;
+      const winner = active.find((p) => p.id === instantWinnerId);
+      table.winnerId = instantWinnerId;
+      if (winner) {
+        winner.points++;
+        table.banner = `31! ${winner.name} gewinnt!`;
+      }
+      return;
+    }
+    const scored = active.map((p) => ({ p, score: hoseScore(p.hand) }));
+    const minScore = Math.min(...scored.map((s) => s.score));
+    const maxScore = Math.max(...scored.map((s) => s.score));
+    const losers: string[] = [];
+    for (const item of scored) {
+      if (item.score === minScore) {
+        item.p.lives--;
+        losers.push(item.p.name);
+      }
+    }
+    const winner = scored.find((s) => s.score === maxScore)?.p ?? active[0];
+    table.winnerId = winner.id;
+    winner.points++;
+    const survivors = table.players.filter((p) => p.lives >= 0);
+    table.banner = survivors.length <= 1
+      ? `${winner.name} gewinnt das Spiel!`
+      : `${losers.join(", ")} verliert Leben (${minScore} P.)`;
+  }
+
+  pass(code: string, playerId: string) {
+    const table = this.#get(code);
+    const seatIdx = table.players.findIndex((p) => p.id === playerId);
+    if (seatIdx < 0) throw new ApiError(403, "Not seated at this table");
+    const seat = table.players[seatIdx];
+    if (table.winnerId) throw new ApiError(400, "Runde beendet — bitte neu geben");
+    if (table.players[table.turn]?.id !== seat.id) throw new ApiError(400, "Du bist nicht dran");
+
+    if (table.mode === "aloechlen") {
+      if (!table.pile.length) throw new ApiError(400, "Du musst anspielen");
+      this.#applyAloechlenPass(table, seatIdx, seat);
+      if (!table.winnerId) this.#advanceBots(table);
+      this.#emit(table);
+      return tableView(table, playerId);
+    }
+
+    if (table.mode === "hoseabe") {
+      if (seat.lives < 0) throw new ApiError(400, "Du bist ausgeschieden");
+      if (!table.knockerId) {
+        table.knockerId = seat.id;
+        table.banner = `${seat.name} klopft — letzte Runde!`;
+      }
+      const nextIdx = this.#nextActiveSeat(table, seatIdx, (p) => p.lives >= 0);
+      if (table.players[nextIdx]?.id === table.knockerId) {
+        this.#finishHoseRound(table);
+      } else {
+        table.turn = nextIdx;
+        this.#advanceBots(table);
+      }
+      this.#emit(table);
+      return tableView(table, playerId);
+    }
+
+    throw new ApiError(400, "Passen ist in diesem Modus nicht aktiv");
+  }
+
+  swap(code: string, playerId: string, cardId: string, tableIndex: number) {
+    const table = this.#get(code);
+    if (table.mode !== "hoseabe") throw new ApiError(400, "Tauschen nur bei Hose abe");
+    const seatIdx = table.players.findIndex((p) => p.id === playerId);
+    if (seatIdx < 0) throw new ApiError(403, "Not seated at this table");
+    const seat = table.players[seatIdx];
+    if (table.winnerId) throw new ApiError(400, "Runde beendet — bitte neu geben");
+    if (seat.lives < 0) throw new ApiError(400, "Du bist ausgeschieden");
+    if (table.players[table.turn]?.id !== seat.id) throw new ApiError(400, "Du bist nicht dran");
+
+    if (tableIndex === -1) {
+      const oldHand = seat.hand;
+      seat.hand = sortHand(table.pile.map((e) => e.card), table.deck);
+      table.pile = oldHand.map((card) => ({ card, playerId: seat.id, playerName: seat.name, x: 0, y: 0, rot: 0 }));
+      table.banner = `${seat.name} tauscht alle 3`;
+    } else {
+      if (tableIndex < 0 || tableIndex >= table.pile.length) throw new ApiError(400, "Invalid table card");
+      const handIdx = seat.hand.findIndex((c) => c.id === cardId);
+      if (handIdx < 0) throw new ApiError(400, "Card not in hand");
+      const picked = table.pile[tableIndex].card;
+      const given = seat.hand[handIdx];
+      seat.hand[handIdx] = picked;
+      seat.hand = sortHand(seat.hand, table.deck);
+      table.pile[tableIndex] = { card: given, playerId: seat.id, playerName: seat.name, x: 0, y: 0, rot: 0 };
+      table.banner = `${seat.name} tauscht`;
+    }
+
+    if (hoseScore(seat.hand) >= 31) {
+      this.#finishHoseRound(table, seat.id);
+    } else {
+      const nextIdx = this.#nextActiveSeat(table, seatIdx, (p) => p.lives >= 0);
+      if (table.knockerId && table.players[nextIdx]?.id === table.knockerId) {
+        this.#finishHoseRound(table);
+      } else {
+        table.turn = nextIdx;
+        this.#advanceBots(table);
+      }
+    }
     this.#emit(table);
     return tableView(table, playerId);
   }
@@ -679,6 +973,74 @@ export class JassHub {
   }
 
   #advanceBots(table: Table) {
+    if (table.mode === "aloechlen") {
+      let guard = 0;
+      while (guard++ < 16 && !table.winnerId) {
+        const seatIdx = table.turn;
+        const current = table.players[seatIdx];
+        if (!current || !current.isBot || !current.hand.length) break;
+        const topRank = table.pile.at(-1)?.card.rank ?? null;
+        const playable = current.hand.filter((c) => canPlayAloechlen(current.hand, c, topRank, table.comboCount));
+        if (playable.length) {
+          // Bots play lowest valid card
+          const chosen = [...playable].sort((a, b) => rankOrder(a.rank) - rankOrder(b.rank))[0];
+          this.#applyAloechlenPlay(table, seatIdx, current, chosen);
+        } else if (table.pile.length) {
+          this.#applyAloechlenPass(table, seatIdx, current);
+        } else {
+          break;
+        }
+      }
+      return;
+    }
+
+    if (table.mode === "hoseabe") {
+      let guard = 0;
+      while (guard++ < 12 && !table.winnerId) {
+        const seatIdx = table.turn;
+        const current = table.players[seatIdx];
+        if (!current || !current.isBot || current.lives < 0) break;
+        const baseScore = hoseScore(current.hand);
+        let bestMove: { handIdx: number; tableIdx: number; score: number } | null = null;
+        for (let hi = 0; hi < current.hand.length; hi++) {
+          for (let ti = 0; ti < table.pile.length; ti++) {
+            const testHand = [...current.hand];
+            testHand[hi] = table.pile[ti].card;
+            const sc = hoseScore(testHand);
+            if (sc > (bestMove?.score ?? baseScore)) bestMove = { handIdx: hi, tableIdx: ti, score: sc };
+          }
+        }
+        if (bestMove) {
+          const given = current.hand[bestMove.handIdx];
+          current.hand[bestMove.handIdx] = table.pile[bestMove.tableIdx].card;
+          current.hand = sortHand(current.hand, table.deck);
+          table.pile[bestMove.tableIdx] = { card: given, playerId: current.id, playerName: current.name, x: 0, y: 0, rot: 0 };
+          table.banner = `${current.name} tauscht`;
+          if (hoseScore(current.hand) >= 31) {
+            this.#finishHoseRound(table, current.id);
+            break;
+          }
+        } else if (!table.knockerId && baseScore >= 24) {
+          table.knockerId = current.id;
+          table.banner = `${current.name} klopft — letzte Runde!`;
+        } else if (table.pile.length && current.hand.length) {
+          // Swap weakest card with first center card to keep game moving
+          const given = current.hand[0];
+          current.hand[0] = table.pile[0].card;
+          current.hand = sortHand(current.hand, table.deck);
+          table.pile[0] = { card: given, playerId: current.id, playerName: current.name, x: 0, y: 0, rot: 0 };
+          table.banner = `${current.name} tauscht`;
+        }
+        const nextIdx = this.#nextActiveSeat(table, seatIdx, (p) => p.lives >= 0);
+        if (table.knockerId && table.players[nextIdx]?.id === table.knockerId) {
+          this.#finishHoseRound(table);
+          break;
+        }
+        table.turn = nextIdx;
+      }
+      return;
+    }
+
     if (table.mode === "tschau") {
       let guard = 0;
       while (guard++ < 12 && !table.winnerId) {

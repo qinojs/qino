@@ -51,7 +51,7 @@ attached after the invoice was booked is not added to the entry (yet).
 A payment is booked as the difference to what is booked for it already (`ref` `fin.payment:<id>`),
 so partial payments, refunds and fees add up whenever `payment:change` fires. A fee with no
 `fees` account books nothing rather than too much money; once the account is set, the next change
-books it all. A failed automatic
+books it all. An invoice of nothing books nothing. A failed automatic
 entry (closed period, missing account) is logged and never stops the invoice or the payment.
 
 ## Closing a year
@@ -65,11 +65,12 @@ closed year still shows: `balances(app, { from, to, closings: false })` leaves t
 `businessYear(app, day?)` is the year a day is in: years on from the last closing, else the
 calendar year — what the backend shows by default.
 
-There is no carry-over into the new year: the book runs on, the balance sheet adds up all that
-came before. The accounting backend lists what is still open in the year (drafts, unassigned
-bank lines, entries by hand without a receipt, payments for something else than an invoice not
-booked), compares receivables and payables in the books with the open invoices, and closes it. Accruals, depreciation, the
-appropriation of the result and the VAT reconciliation are booked by hand.
+There is no carry-over into the new year: the book runs on, the balance sheet adds up all that came
+before. The accounting backend lists what is still open in the year (drafts, invoices without an
+entry — failed or skipped, see the log —, unassigned bank lines, entries by hand without a receipt,
+payments for something else than an invoice not booked), compares receivables and payables in the
+books with the open invoices, and closes it. Accruals, depreciation, the appropriation of the result
+and the VAT reconciliation are booked by hand.
 
 ## Decisions that may change
 

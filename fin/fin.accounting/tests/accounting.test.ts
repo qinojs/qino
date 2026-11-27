@@ -6,6 +6,7 @@ import { cancel as cancelPayment, record } from "@qino/qino/fin.payment";
 
 import { withFinApp } from "../../tests/app.ts";
 import { balances, book, businessYear, close, reopen, reverse } from "../mod.ts";
+import { onInvoice } from "../lib/auto.ts";
 
 import type { App } from "@qino/qino";
 
@@ -215,6 +216,14 @@ test("a credit note books revenue and tax back; paying it back books the money o
     assertEquals(await saldo(app), { "1020": 108100, "1100": -21620, "2200": -6480, "3400": -80000 });
     await record(app, { direction: "out", provider: "bank", amount: 21620, currency: "CHF", ref: refOf(note) });
     assertEquals(await saldo(app), { "1020": 86480, "2200": -6480, "3400": -80000 });
+  });
+});
+
+test("an invoice of nothing books nothing", async () => {
+  await withApp(async (app) => {
+    const invoice = await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Free", price: 0 }] }));
+    await onInvoice(app, invoice!, "draft");
+    assertEquals(await saldo(app), {});
   });
 });
 

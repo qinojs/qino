@@ -1,10 +1,21 @@
 import { getCardBackCanvas, getCardCanvas, loadDeckAssets } from "./cards.js";
 
+const RANK_ORDER = {
+  "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10, J: 11, Q: 12, K: 13, A: 14,
+};
+
 function canPlayTschau(card, top, wishSuit, pendingDraw) {
   if (pendingDraw > 0) return card.rank === "7";
   if (!top) return true;
   if (card.rank === "J") return true;
   return card.suit === (wishSuit || top.suit) || card.rank === top.rank;
+}
+
+function canPlayAloechlen(hand, card, topRank, comboCount) {
+  const sameCount = hand.filter((c) => c.rank === card.rank).length;
+  if (!sameCount) return false;
+  if (!topRank || comboCount <= 0) return true;
+  return (RANK_ORDER[card.rank] ?? 0) > (RANK_ORDER[topRank] ?? 0) && sameCount >= comboCount;
 }
 
 let audioCtx = null;
@@ -55,6 +66,8 @@ export class CardTableCanvas {
   #onPlay;
   #onDraw;
   #onTake;
+  #onPass;
+  #onSwap;
   #showCounts;
   #state = null;
   #width = 0;
@@ -62,6 +75,8 @@ export class CardTableCanvas {
   #dpr = 1;
   #feltCanvas = null;
   #handRects = [];
+  #tableCardRects = [];
+  #actionPills = [];
   #drawRect = null;
   #pileRect = null;
   #seatPos = new Map();
@@ -73,12 +88,14 @@ export class CardTableCanvas {
   #animStart = new Map();
   #resizeObserver = null;
 
-  constructor(canvas, { onPlay, onDraw, onTake, showCounts = true }) {
+  constructor(canvas, { onPlay, onDraw, onTake, onPass, onSwap, showCounts = true }) {
     this.#canvas = canvas;
     this.#ctx = canvas.getContext("2d");
     this.#onPlay = onPlay;
     this.#onDraw = onDraw;
     this.#onTake = onTake;
+    this.#onPass = onPass;
+    this.#onSwap = onSwap;
     this.#showCounts = showCounts;
 
     this.#bindEvents();
@@ -297,6 +314,10 @@ export class CardTableCanvas {
       // Seat badge
       const label = state.mode === "jass" && state.round > 0
         ? `${p.name} · ${p.points} P.`
+        : state.mode === "hoseabe" && state.round > 0
+        ? `${p.name} · ${p.lives < 0 ? "Aus" : p.lives === 0 ? "Schwimmt" : `${p.lives} Leben`}`
+        : state.mode === "aloechlen" && p.rankLabel
+        ? `${p.name} · ${p.rankLabel}`
         : `${p.name}${this.#showCounts ? ` (${p.cardCount})` : ""}`;
       ctx.font = "600 12px system-ui, -apple-system, sans-serif";
       const tw = ctx.measureText(label).width;
@@ -320,6 +341,28 @@ export class CardTableCanvas {
     });
   }
 
+  #drawPillButton(ctx, cx, cy, label, highlight = false) {
+    ctx.save();
+    ctx.font = "700 11px system-ui, sans-serif";
+    const w = Math.max(72, ctx.measureText(label).width + 22);
+    const h = 26;
+    const x = cx - w / 2;
+    const y = cy - h / 2;
+    ctx.fillStyle = highlight ? "rgba(234, 179, 8, 0.94)" : "rgba(15, 23, 18, 0.86)";
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 13);
+    ctx.fill();
+    ctx.strokeStyle = highlight ? "#fef08a" : "rgba(255,255,255,0.28)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.fillStyle = highlight ? "#1c1917" : "#f8fafc";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, cx, cy + 0.5);
+    ctx.restore();
+    return { x, y, w, h };
+  }
+
   #drawCenter(ctx, state, deckId, cw, ch, now) {
     let animating = false;
     const cx = this.#width * 0.5;
@@ -327,6 +370,51 @@ export class CardTableCanvas {
     const pile = state.pile ?? [];
     const pileW = Math.round(cw * 0.94);
     const pileH = Math.round(ch * 0.94);
+    this.#tableCardRects = [];
+    this.#actionPills = [];
+
+    // Hose abe: 3 open center cards side-by-side + swap-all / knock pills
+    if (state.mode === "hoseabe") {
+      this.#drawRect = null;
+      this.#pileRect = null;
+      if (pile.length) {
+        const spacing = pileW * 1.1;
+        const canAct = state.round > 0 && state.turnPlayerId === state.me?.id && !state.winnerId;
+        pile.forEach((entry, idx) => {
+          const tx = cx + (idx - (pile.length - 1) / 2) * spacing;
+          const ty = cy;
+          const img = getCardCanvas(deckId, entry.card, pileW, pileH, this.#dpr);
+          ctx.save();
+          ctx.translate(tx, ty);
+          ctx.shadowColor = "rgba(0,0,0,0.4)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 5;
+          ctx.drawImage(img, -pileW / 2, -pileH / 2, pileW, pileH);
+          if (canAct && this.#selectedId) {
+            ctx.strokeStyle = "rgba(250, 204, 21, 0.85)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(-pileW / 2, -pileH / 2, pileW, pileH, pileW * 0.09);
+            ctx.stroke();
+          }
+          ctx.restore();
+          this.#tableCardRects.push({ index: idx, x: tx - pileW / 2, y: ty - pileH / 2, w: pileW, h: pileH });
+        });
+        if (canAct) {
+          const py = cy + pileH * 0.5 + 22;
+          if (!state.knockerId) {
+            const rAll = this.#drawPillButton(ctx, cx - 58, py, "Alle 3 tauschen", false);
+            this.#actionPills.push({ ...rAll, run: () => this.#onSwap?.("", -1) });
+            const rKnock = this.#drawPillButton(ctx, cx + 62, py, "Klopfen", true);
+            this.#actionPills.push({ ...rKnock, run: () => this.#onPass?.() });
+          } else {
+            const rAll = this.#drawPillButton(ctx, cx, py, "Alle 3 tauschen", true);
+            this.#actionPills.push({ ...rAll, run: () => this.#onSwap?.("", -1) });
+          }
+        }
+      }
+      return false;
+    }
 
     // Draw pile (Nachziehstapel) when undealt cards exist
     this.#drawRect = null;
@@ -453,24 +541,29 @@ export class CardTableCanvas {
       ctx.restore();
     });
 
-    // Subtle label showing who played the top card (or trick complete prompt)
+    // Subtle label showing who played the top card (or trick complete / pass action)
     const top = pile.at(-1);
     if (top) {
-      const text = state.trickComplete
-        ? "Stich fertig — tippen zum Nehmen"
-        : `${top.playerName}`;
-      ctx.save();
-      ctx.font = "600 11px system-ui, sans-serif";
-      const tw = ctx.measureText(text).width + 16;
-      ctx.fillStyle = state.trickComplete ? "rgba(234, 179, 8, 0.92)" : "rgba(10, 22, 16, 0.65)";
-      ctx.beginPath();
-      ctx.roundRect(pileCx - tw / 2, cy + pileH * 0.56, tw, 20, 10);
-      ctx.fill();
-      ctx.fillStyle = state.trickComplete ? "#1c1917" : "#e2e8f0";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(text, pileCx, cy + pileH * 0.56 + 10);
-      ctx.restore();
+      if (state.mode === "aloechlen" && state.turnPlayerId === state.me?.id && !state.winnerId) {
+        const passRect = this.#drawPillButton(ctx, pileCx, cy + pileH * 0.56 + 12, "Passen", false);
+        this.#actionPills.push({ ...passRect, run: () => this.#onPass?.() });
+      } else {
+        const text = state.trickComplete
+          ? "Stich fertig — tippen zum Nehmen"
+          : `${top.playerName}`;
+        ctx.save();
+        ctx.font = "600 11px system-ui, sans-serif";
+        const tw = ctx.measureText(text).width + 16;
+        ctx.fillStyle = state.trickComplete ? "rgba(234, 179, 8, 0.92)" : "rgba(10, 22, 16, 0.65)";
+        ctx.beginPath();
+        ctx.roundRect(pileCx - tw / 2, cy + pileH * 0.56, tw, 20, 10);
+        ctx.fill();
+        ctx.fillStyle = state.trickComplete ? "#1c1917" : "#e2e8f0";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, pileCx, cy + pileH * 0.56 + 10);
+        ctx.restore();
+      }
     }
 
     return animating;
@@ -483,11 +576,20 @@ export class CardTableCanvas {
     if (state.trickComplete) {
       statusMsg = "Stich fertig — tippe auf den Stapel";
       highlight = true;
-    } else if (!statusMsg && (state.mode === "jass" || state.mode === "tschau") && state.turnPlayerId === state.me?.id) {
-      statusMsg = state.pendingDraw > 0
-        ? `7er legen oder +${state.pendingDraw} ziehen!`
-        : "Du bist dran — Karte antippen oder hochziehen";
-      highlight = true;
+    } else if (!statusMsg && state.turnPlayerId === state.me?.id && !state.winnerId) {
+      if (state.mode === "tschau" && state.pendingDraw > 0) {
+        statusMsg = `7er legen oder +${state.pendingDraw} ziehen!`;
+        highlight = true;
+      } else if (state.mode === "hoseabe") {
+        statusMsg = this.#selectedId ? "Mitte antippen zum Tauschen" : "Karte wählen, alle 3 tauschen oder klopfen";
+        highlight = true;
+      } else if (state.mode === "aloechlen") {
+        statusMsg = state.pile.length ? "Höher überbieten oder passen" : "Du bist dran — anspielen";
+        highlight = true;
+      } else if (state.mode === "jass" || state.mode === "tschau") {
+        statusMsg = "Du bist dran — Karte antippen oder hochziehen";
+        highlight = true;
+      }
     } else if (!statusMsg && state.mode === "free") {
       statusMsg = "Oben auf dem Stapel — Karte spielen oder ziehen";
     }
@@ -569,7 +671,9 @@ export class CardTableCanvas {
 
       const img = getCardCanvas(deckId, card, cw, ch, this.#dpr);
       const isTschauTurn = state.mode === "tschau" && state.round > 0 && state.turnPlayerId === state.me?.id && !state.winnerId;
-      const playable = !isTschauTurn || canPlayTschau(card, state.pile.at(-1)?.card, state.wishSuit, state.pendingDraw);
+      const isAloechlenTurn = state.mode === "aloechlen" && state.round > 0 && state.turnPlayerId === state.me?.id && !state.winnerId;
+      const playable = (!isTschauTurn || canPlayTschau(card, state.pile.at(-1)?.card, state.wishSuit, state.pendingDraw))
+        && (!isAloechlenTurn || canPlayAloechlen(hand, card, state.pile.at(-1)?.card.rank ?? null, state.comboCount));
 
       ctx.save();
       if (!playable) ctx.globalAlpha = 0.62;
@@ -604,12 +708,14 @@ export class CardTableCanvas {
       ctx.restore();
     });
 
-    // Own score badge at bottom-left in Jass mode
-    if (state.mode === "jass" && state.me && state.round > 0) {
+    // Own score badge at bottom-left in Jass / Hose abe mode
+    if ((state.mode === "jass" || state.mode === "hoseabe") && state.me && state.round > 0) {
       const mePlayer = state.players.find((p) => p.id === state.me.id);
       if (mePlayer) {
-        const isMyTurn = state.turnPlayerId === mePlayer.id && !state.trickComplete;
-        const text = `${mePlayer.name} · ${mePlayer.points} P.`;
+        const isMyTurn = state.turnPlayerId === mePlayer.id && !state.trickComplete && !state.winnerId;
+        const text = state.mode === "hoseabe"
+          ? `${mePlayer.name} · ${state.me.hoseScore} P. · ${mePlayer.lives < 0 ? "Aus" : mePlayer.lives === 0 ? "Schwimmt" : `${mePlayer.lives} Leben`}`
+          : `${mePlayer.name} · ${mePlayer.points} P.`;
         ctx.save();
         ctx.font = "700 12px system-ui, sans-serif";
         const tw = ctx.measureText(text).width + 18;
@@ -656,6 +762,23 @@ export class CardTableCanvas {
     this.#canvas.addEventListener("pointerdown", (e) => {
       unlockAudio();
       const { x, y } = this.#point(e);
+      for (const pill of this.#actionPills) {
+        if (this.#inRect(x, y, pill)) {
+          navigator.vibrate?.(10);
+          pill.run();
+          return;
+        }
+      }
+      if (this.#state?.mode === "hoseabe" && this.#selectedId) {
+        const tHit = this.#tableCardRects.find((r) => this.#inRect(x, y, r));
+        if (tHit) {
+          const cid = this.#selectedId;
+          this.#selectedId = null;
+          navigator.vibrate?.(12);
+          this.#onSwap?.(cid, tHit.index);
+          return;
+        }
+      }
       const hit = this.#hitHand(x, y);
       if (hit) {
         this.#canvas.setPointerCapture(e.pointerId);
@@ -712,18 +835,17 @@ export class CardTableCanvas {
       const drag = this.#drag;
       this.#drag = null;
 
-      const thrownUp = drag.moved && drag.y < this.#height * 0.64;
-      if (thrownUp) {
+      if (thrownUp && this.#state?.mode !== "hoseabe") {
         this.#selectedId = null;
         navigator.vibrate?.(12);
         this.#onPlay?.(drag.cardId);
       } else if (!drag.moved) {
-        if (this.#selectedId === drag.cardId) {
+        if (this.#selectedId === drag.cardId && this.#state?.mode !== "hoseabe") {
           this.#selectedId = null;
           navigator.vibrate?.(12);
           this.#onPlay?.(drag.cardId);
         } else {
-          this.#selectedId = drag.cardId;
+          this.#selectedId = this.#selectedId === drag.cardId ? null : drag.cardId;
           navigator.vibrate?.(6);
         }
       }

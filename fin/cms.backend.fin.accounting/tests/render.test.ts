@@ -83,3 +83,19 @@ test("the closing card compares the books with the open invoices, and finds mone
     assertStringIncludes(String(await inRequest(app, BASE, (ctx) => render(node, { ctx }))), unbooked);
   });
 });
+
+test("the closing card counts the invoices the books never saw", async () => {
+  await withFinApp(FIN, async (app) => {
+    const node = backendNode(app, "/backend/accounting");
+    // in the year the card closes: the last one
+    const date = `${new Date().getFullYear() - 1}-06-01`;
+    await issue(app, await create(app, { currency: "CHF", date, lines: [{ name: "Design", price: 10000 }] }));
+    await issue(app, await create(app, { currency: "CHF", date, lines: [{ name: "Free", price: 0 }] }));
+    const missing = `>1</small> invoices not booked`;
+    assert(!String(await inRequest(app, BASE, (ctx) => render(node, { ctx }))).includes(missing));
+    await app.db.table("invoice").insert({
+      direction: "out", type: "invoice", status: "open", currency: "CHF", total: 5000, date, created: 1, changed: 1,
+    });
+    assertStringIncludes(String(await inRequest(app, BASE, (ctx) => render(node, { ctx }))), missing);
+  });
+});
