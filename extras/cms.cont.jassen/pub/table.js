@@ -834,6 +834,7 @@ export class CardTableCanvas {
       if (!this.#drag || this.#drag.pointerId !== e.pointerId) return;
       const drag = this.#drag;
       this.#drag = null;
+      const thrownUp = drag.moved && drag.y < this.#height * 0.64;
 
       if (thrownUp && this.#state?.mode !== "hoseabe") {
         this.#selectedId = null;
