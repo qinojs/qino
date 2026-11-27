@@ -23,7 +23,7 @@ export async function loginPage(ctx: Ctx, client: string): Promise<never> {
   <form method=post action="${ctx.req.url.href}">
     <input type=hidden name=core_login value=1>
     <input type=hidden name=csrfToken value="${ctx.csrfToken}">
-    <p><label>${t`Email`} <input type=email name=email autocomplete=username required autofocus></label></p>
+    <p><label>${t`Email`} <input type=text name=email autocomplete=username autocapitalize=none required autofocus></label></p>
     <p><label>${t`Password`} <input type=password name=pw autocomplete=current-password required></label></p>
     <button>${title}</button>
   </form>`);
