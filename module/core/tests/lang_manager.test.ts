@@ -34,7 +34,7 @@ test("LangManager: initCtx prefers URL language then browser language", async ()
     headers: { "accept-language": "de;q=1" },
     sess: langSess(sessionLang()),
   });
-  await lm.initCtx(ctx);
+  lm.initCtx(ctx);
   assertEquals(ctx.langUsr, "fr");
   assertEquals(ctx.lang, "fr");
 
@@ -43,7 +43,7 @@ test("LangManager: initCtx prefers URL language then browser language", async ()
     headers: { "accept-language": "fr-CH;q=0.9,de;q=0.8,en;q=0.7" },
     sess: langSess(sessionLang()),
   });
-  await lm.initCtx(ctx2);
+  lm.initCtx(ctx2);
   assertEquals(ctx2.langUsr, "fr");
 });
 
@@ -53,7 +53,7 @@ test("LangManager: lang query overrides stored session language", async () => {
 
   const lang = sessionLang("en");
   const ctx = await testContext({ url: "http://qino.test/page?lang=de", sess: langSess(lang) });
-  await lm.initCtx(ctx);
+  lm.initCtx(ctx);
 
   assertEquals(ctx.langUsr, "de");
   assertEquals(lang(), "de");

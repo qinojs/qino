@@ -16,7 +16,7 @@ test("appointment booking isolates instances, enforces node rights, and serializ
   const context = async (userId = 0) => {
     const data = bildJsonItem(JSON.stringify({ core: { userId } }), () => {}).proxy;
     const ctx = await testContext({ app, userId, sess: { data }, set: { app } });
-    await ctx.initSettings();
+    ctx.initSettings();
     return ctx;
   };
   try {

@@ -15,7 +15,7 @@ async function setup(url = "http://qino.test/") {
     const ctx = await Ctx.create(app, new Request(url), { appUrl: "/" });
     ctx.sess = await app.sessions.load();
     ctx.lang = app.languages.def;
-    await ctx.initSettings();
+    ctx.initSettings();
     return ctx;
   };
   let ctx = await make(url);

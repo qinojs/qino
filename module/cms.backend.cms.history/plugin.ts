@@ -69,13 +69,13 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const MAX = 150;
 
   for (const r of rows) {
-    const nodeId = Number(r.node_id);
-    if (await (await node.cms.node(nodeId)).access() < WRITE) continue; // edit right on the changed node (superuser: all)
     if (typeTables) {
       let table = "";
       try { table = JSON.parse(String(r.data ?? "{}")).table; } catch { /* ignore */ }
       if (!typeTables.includes(table)) continue;
     }
+    const nodeId = Number(r.node_id);
+    if (await (await node.cms.node(nodeId)).access() < WRITE) continue; // edit right on the changed node (superuser: all)
     const key = r.log_id + ":" + nodeId; // one event per request × changed node
     let ev = events.get(key);
     if (!ev) {

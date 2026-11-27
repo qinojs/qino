@@ -12,7 +12,7 @@ test("event previews keep events paginated, their rows along and dates bounded i
   await app.init();
   try {
     const ctx = await testContext({ app, set: { app } });
-    await ctx.initSettings();
+    ctx.initSettings();
     await requestStorage.run(ctx, async () => {
       const root = await cms(app).node(1);
       const first = await root.createCont({ module: "cms.cont.event", access: 1 });

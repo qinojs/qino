@@ -3,6 +3,7 @@ import { sys } from "../sys.ts";
 import { probe } from "./tryCommand.ts";
 import { limited } from './limit.ts';
 
+const dec = new TextDecoder();
 let _langs: Promise<string> | null = null;
 
 export const available = probe('tesseract', ['--version']);
@@ -13,7 +14,7 @@ available.reset = () => { _resetAvailable(); _langs = null; };
 function tesseractLangs() {
   return _langs ??= (async () => {
     const { stdout } = await sys.command('tesseract', { args: ['--list-langs'], stdout: 'piped', stderr: 'piped' });
-    return new TextDecoder().decode(stdout).split('\n')
+    return dec.decode(stdout).split('\n')
       .map((l) => l.trim()).filter((l) => l && l !== 'osd' && !l.includes(' ')).join('+');
   })().catch((e) => { _langs = null; throw e; });
 }
@@ -27,6 +28,6 @@ export async function run(input: string, signal?: AbortSignal): Promise<string> 
     stdout: 'piped',
     stderr: 'piped',
   }));
-  if (code !== 0) throw new Error(`tesseract error: ${new TextDecoder().decode(stderr).trim() || `exit code ${code}`}`);
-  return new TextDecoder().decode(stdout);
+  if (code !== 0) throw new Error(`tesseract error: ${dec.decode(stderr).trim() || `exit code ${code}`}`);
+  return dec.decode(stdout);
 }

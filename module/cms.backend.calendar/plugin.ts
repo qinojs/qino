@@ -47,7 +47,7 @@ export async function backendDashboardWidget(_app: App, page: Node) {
   </div>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   u2.assets(ctx, ["el/calendar/calendar.css"]);
   const available = sources(ctx.app, ctx.lang);
   const selected = selection(ctx, available);

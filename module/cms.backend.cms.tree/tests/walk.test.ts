@@ -19,7 +19,7 @@ test("cms.backend.cms.tree: walk lists open pages with their children, as the us
     const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });
     ctx.sess = await app.sessions.load();
     ctx.lang = app.languages.def;
-    await ctx.initSettings();
+    ctx.initSettings();
     ctx.settings.cms.admin.rootPageNode(root.id); // the tree starts there
     const ids = (vars: Record<string, unknown> = {}, opt = {}) => requestStorage.run(ctx, async () => {
       const out = String(await walk(root, { ctx, vars }, ({ page, level }) => html.async`[${page.id}:${level}]`, opt));

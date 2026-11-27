@@ -173,7 +173,8 @@ export class CMS extends Emitter<CmsEvents> {
 
   async link(node: Node | number): Promise<HtmlString> {
     const page = await this.node(Number(node));
-    return html.raw(`<a${attrsHtml(await this.linkAttributes(page))}>${await page.showTitle()}</a>`);
+    const [attrs, title] = await Promise.all([this.linkAttributes(page), page.showTitle()]);
+    return html.raw(`<a${attrsHtml(attrs)}>${title}</a>`);
   }
 
   async linkAttributes(node: Node | number): Promise<Record<string, string>> {

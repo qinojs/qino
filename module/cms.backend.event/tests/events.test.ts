@@ -17,7 +17,7 @@ test("event management uses CMS categories, checks both permission levels and pa
   const categoryPlugin = app.modules.get("cms.cont.event.category")!.plugin.cms;
   const context = async (userId = 0, url = "http://qino.test/") => {
     const ctx = await testContext({ app, userId, url, set: { app } });
-    await ctx.initSettings();
+    ctx.initSettings();
     return ctx;
   };
   try {

@@ -15,7 +15,7 @@ test("backend calendar reads CMS events through calendar, with node access and b
   try {
     const ctx = await testContext({ app });
     ctx.app = app;
-    await ctx.initSettings();
+    ctx.initSettings();
     await requestStorage.run(ctx, async () => {
       const root = await tree(app).node(1);
       const visible = await root.createChild({ access: 1, online_start: 0, online_end: 0 });
@@ -67,7 +67,7 @@ test("backend calendar reads CMS events through calendar, with node access and b
 
       const userId = Number(await app.db.table("usr").insert({ username: "calendar-user", superuser: true }));
       const user = await testContext({ app, userId, set: { app } });
-      await user.initSettings();
+      user.initSettings();
       await requestStorage.run(user, async () => {
         const widget = String(await backendDashboardWidget(app, await backend.page()));
         assertStringIncludes(widget, `data-calendar-dashboard="${backend.id}"`);
@@ -79,7 +79,7 @@ test("backend calendar reads CMS events through calendar, with node access and b
         await app.db.flush();
       });
       const returning = await testContext({ app, userId, set: { app } });
-      await returning.initSettings();
+      returning.initSettings();
       assertEquals((returning.settings["cms.backend.calendar"].sources() as Record<string, boolean>)["cms.event"], false);
       await requestStorage.run(returning, async () => assertEquals(await cms.node.api(backend, period), []));
       assertEquals(ctx.settings["cms.backend.calendar"].sources(), undefined);

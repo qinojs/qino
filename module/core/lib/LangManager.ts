@@ -44,7 +44,7 @@ export class LangManager {
   }
 
   // Initialises language per request (like L.init)
-  async initCtx(ctx: Ctx): Promise<void> {
+  initCtx(ctx: Ctx): void {
     const usr = ctx.user;
 
     const stored = String(usr ? usr.lang ?? "" : ctx.sess.data.core.lang() ?? "");

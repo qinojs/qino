@@ -317,7 +317,7 @@ function grantResource(id: number, parts: string[]) {
 }
 
 function permanentResource(resource: string, md5: unknown) {
-  return `${resource}\0${String(md5 ?? "")}`;
+  return `${resource}\0${md5 ?? ""}`;
 }
 
 /** Max length of a file's extracted `text`. Small, because every `SELECT f.*` loads it, and search

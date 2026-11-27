@@ -42,7 +42,7 @@ export const api: ApiTree = {
   },
 };
 
-export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // into every turn: who the user is and what is known about them, and the tool to forget it; what is new about
   // them, decide sorts out when the agent remembers it (below)
   app.on("ai.agent:turn", async (turn) => {

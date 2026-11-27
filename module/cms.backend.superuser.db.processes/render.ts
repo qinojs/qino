@@ -8,7 +8,7 @@ import type { Process } from "./lib/processlist.ts";
 
 const REFRESH_MS = 500;
 
-export async function render(node: Node): Promise<HtmlString> {
+export function render(node: Node): Promise<HtmlString> {
   const { app } = node, t = app.t;
 
   if (!supportsProcesses(app.db))

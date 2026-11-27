@@ -38,7 +38,7 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
   for (const [k, v] of Object.entries(req.queryAll)) query[k] = v.length === 1 ? v[0] : [...v];
   if (!isBodyMethod) Object.assign(input, query);
   try {
-    await authorizeMutation(req, opts, { method, path, input, query });
+    if (MUTATION_METHODS.has(method)) await authorizeMutation(req, opts, { method, path, input, query });
     const checkAccess = req.header("x-api-check") === "access"; // dry run: check access/guard, skip execute
     const result = await invoke(tree, req.method, path, { input, query }, { checkAccess });
     const body = result === undefined ? undefined : JSON.stringify(result);
@@ -54,7 +54,6 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
 }
 
 async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestData) {
-  if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(req, data)) return;
   if (opts.csrf === false) return;
   if (!isTrustedOrigin(req) || !hasValidCsrfToken(req)) throw new Output({ error: "Forbidden" }, { status: 403 });

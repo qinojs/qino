@@ -21,7 +21,7 @@ async function setup(url = "http://qino.test/?id=1") {
   const ctx = await Ctx.create(app, new Request(url), { appUrl: "/" });
   ctx.sess = await app.sessions.load();
   ctx.lang = app.languages.def;
-  await ctx.initSettings();
+  ctx.initSettings();
   const run = <T>(fn: () => Promise<T>) => requestStorage.run(ctx, fn);
   const close = async () => {
     await new Promise((resolve) => setTimeout(resolve, 100));

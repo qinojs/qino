@@ -239,7 +239,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
       if (!ctx.sess) return;
       const { mergeSessionSettingsToUser } = await import("./lib/ctx/contextSettings.ts");
       await mergeSessionSettingsToUser(app.db, usrId, ctx.sess.id);
-      await ctx.initSettings();
+      ctx.initSettings();
     }, { signal });
 
     app.on("respond", async ({ ctx }) => {

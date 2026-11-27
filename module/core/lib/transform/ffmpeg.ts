@@ -3,6 +3,7 @@ import { sys } from "../sys.ts";
 import { probe } from "./tryCommand.ts";
 import { limited } from './limit.ts';
 
+const dec = new TextDecoder();
 export const available = probe('ffmpeg', ['-version']);
 
 /** Write an audio file's cover art to `output` in its original format (usually JPEG).
@@ -14,7 +15,7 @@ export async function coverArt(input: string, output: string, signal?: AbortSign
     stdout: 'piped',
     stderr: 'piped',
   }));
-  if (code !== 0) throw new Error(`FFmpeg error (cover art): ${new TextDecoder().decode(stderr).trim()}`);
+  if (code !== 0) throw new Error(`FFmpeg error (cover art): ${dec.decode(stderr).trim()}`);
 }
 
 /** Write one video frame to `output`; the format follows its extension. */
@@ -37,7 +38,7 @@ export async function frame(
     stderr: 'piped',
   }));
   if (code !== 0)
-    throw new Error(`FFmpeg Error: ${new TextDecoder().decode(stderr).trim()}`);
+    throw new Error(`FFmpeg Error: ${dec.decode(stderr).trim()}`);
 }
 
 export async function audio(input: string, output: string, signal?: AbortSignal): Promise<void> {
@@ -48,7 +49,7 @@ export async function audio(input: string, output: string, signal?: AbortSignal)
     stderr: 'piped',
   }));
   if (code !== 0) {
-    const msg = new TextDecoder().decode(stderr).trim();
+    const msg = dec.decode(stderr).trim();
     if (/Stream map.*matches no streams|Output file does not contain any stream/.test(msg))
       throw new Error('FFmpeg error (audio): video has no audio stream');
     throw new Error(`FFmpeg error (audio): ${msg}`);

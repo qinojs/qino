@@ -34,7 +34,7 @@ export class Ctx {
     if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
     return this.#settingsRoot.proxy;
   }
-  async initSettings(): Promise<void> {
+  initSettings(): void {
     this.#settingsRoot = this.user
       ? userSettingsItem(this.user, this.app.ctxSettingsSchema)
       : sessSettingsItem(this.sess, this.app.ctxSettingsSchema);

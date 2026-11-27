@@ -23,7 +23,7 @@ test("form: a visitor judged spam is told and keeps the input, a sure bot gets t
       const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });
       ctx.sess = await app.sessions.load();
       ctx.lang = app.languages.def;
-      await ctx.initSettings();
+      ctx.initSettings();
       ctx.clientId = String(client);
       return requestStorage.run(ctx, async () => String(await form.html(vars)));
     };

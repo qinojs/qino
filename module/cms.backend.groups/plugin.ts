@@ -31,12 +31,13 @@ async function renderOverview(node: Node, ctx: Ctx) {
     await db.table("grp").insert({ name: String(ctx.req.body.name ?? "") });
   }
 
-  const usersUrl = await backend.toModuleUrl(node, "cms.backend.users");
-  const self = await (await node.page()).url();
-
-  const rows = await db.query`
-    SELECT grp.*, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
-    FROM grp ORDER BY grp.type, grp.name`;
+  const [usersUrl, self, rows] = await Promise.all([
+    backend.toModuleUrl(node, "cms.backend.users"),
+    node.page().then((p) => p.url()),
+    db.query`
+      SELECT grp.*, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
+      FROM grp ORDER BY grp.type, grp.name`,
+  ]);
 
   const trs = rows.map((vs) => {
     const membersUrl = usersUrl({ grp_id: vs.id });

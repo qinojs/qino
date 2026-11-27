@@ -39,7 +39,7 @@ test("cms.backend.cms.tree: the breadcrumb names no page the user may not read",
     const ctx = await Ctx.create(app, new Request("http://qino.test/"), { appUrl: "/" });
     ctx.sess = await app.sessions.load();
     ctx.lang = app.languages.def;
-    await ctx.initSettings();
+    ctx.initSettings();
     const out = await requestStorage.run(ctx, async () => {
       ctx.settings.cms.admin.rootPageNode(open.id); // the settings are the user's to write
       return String(await cms.node.render(open, { ctx }));

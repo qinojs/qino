@@ -3,6 +3,7 @@ import { sys } from "../sys.ts";
 import { tryCommand } from "./tryCommand.ts";
 import { limited } from './limit.ts';
 
+const dec = new TextDecoder();
 let _checked = false;
 let _available: boolean | null = null;
 let _avifSupported: boolean | null = null;
@@ -47,7 +48,7 @@ export async function avifSupported(): Promise<boolean> {
       stdout: 'piped',
       stderr: 'piped',
     });
-    _avifSupported = new TextDecoder().decode(stdout).toUpperCase().includes('AVIF');
+    _avifSupported = dec.decode(stdout).toUpperCase().includes('AVIF');
   } catch {
     _avifSupported = false;
   }
@@ -63,7 +64,6 @@ export async function run(input: string, args: string[], output: string, opts: {
     stderr: 'piped',
   }));
   if (code !== 0) {
-    const dec = new TextDecoder();
     const msg = dec.decode(stderr).trim() || dec.decode(stdout).trim() || `exit code ${code}`;
     throw new Error(`ImageMagick error: ${msg}`);
   }
@@ -77,7 +77,7 @@ export async function identify(input: string, format: string, signal?: AbortSign
     stdout: 'piped',
     stderr: 'piped',
   });
-  return new TextDecoder().decode(stdout).trim();
+  return dec.decode(stdout).trim();
 }
 
 export function resetCache(): void {

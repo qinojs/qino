@@ -15,8 +15,8 @@ test("event content is an event: renders its texts, details and dates, checks wh
   try {
     const userId = Number(await app.db.table("usr").insert({ username: "event-editor", superuser: true, pw: "", given_name: "Event", family_name: "Editor" }));
     const admin = await testContext({ app, userId, set: { app } }), viewer = await testContext({ app, set: { app, lang: "de" } });
-    await admin.initSettings();
-    await viewer.initSettings();
+    admin.initSettings();
+    viewer.initSettings();
     const root = await tree(app).node(1);
     const photo = await app.dbFiles.add(new File([new Uint8Array([137, 80, 78, 71])], "photo.png", { type: "image/png" }));
     const [event, hidden, other] = await requestStorage.run(admin, async () => {

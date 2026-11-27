@@ -17,8 +17,8 @@ export async function initRequest(ctx: Ctx): Promise<void> {
     if (!ctx.statelessAuth && !usr?.active) await logout(ctx);
   }
   ctx.sess.touch(ctx.userId);
-  await ctx.initSettings();
-  await ctx.app.languages.initCtx(ctx);
+  ctx.initSettings();
+  ctx.app.languages.initCtx(ctx);
   initLog(ctx);
 }
 

@@ -221,7 +221,7 @@ export const api: ApiTree = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t.in(NAME);
   const rawDeck = node.settings.deck();
   const deck: DeckId = isDeckId(rawDeck) ? rawDeck : "swiss36";

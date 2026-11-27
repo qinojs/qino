@@ -165,7 +165,7 @@ test("anonymous players can create, join, deal privately, play tricks and render
   const makeCtx = async () => {
     const data = bildJsonItem(JSON.stringify({ core: { userId: 0 } }), () => {}).proxy;
     const ctx = await testContext({ app, userId: 0, sess: { data }, set: { app } });
-    await ctx.initSettings();
+    ctx.initSettings();
     return ctx;
   };
 
@@ -257,7 +257,7 @@ test("anonymous players can create, join, deal privately, play tricks and render
     const adminId = Number(await app.db.table("usr").insert({ username: "jass-admin", superuser: true, pw: "" }));
     const adminData = bildJsonItem(JSON.stringify({ core: { userId: adminId } }), () => {}).proxy;
     const adminCtx = await testContext({ app, userId: adminId, sess: { data: adminData }, set: { app } });
-    await adminCtx.initSettings();
+    adminCtx.initSettings();
 
     const root = await tree(app).node(1);
     const node = await requestStorage.run(adminCtx, () =>

@@ -49,8 +49,9 @@ export async function render(ctx: Ctx): Promise<void> {
   // only existing texts: showText() would create missing ones on every public GET
   const plain = async (name: string) => (await speaker.texts()).has(name) ? (await speaker.showText(name)).plain() : "";
   const doc = ctx.res.html;
-  doc.title = await plain("_title") || (await speaker.showTitle()).plain();
-  doc.meta.description = await plain("_description");
+  const [title, desc] = await Promise.all([plain("_title"), plain("_description")]);
+  doc.title = title || (await speaker.showTitle()).plain();
+  doc.meta.description = desc;
 
   if (pageObj.vs.searchable) {
     // hreflang alternates: only meaningful with more than one language, and only for indexable pages

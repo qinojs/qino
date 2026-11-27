@@ -93,7 +93,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 <tbody>${trs.length ? trs : html.async`<tr><td colspan=8>${t`No entries`}`}`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+function render(node: Node, { ctx }: { ctx: Ctx }) {
   const id = backend.id(ctx.req.url.toURL());
   if (id) return renderDetail(node, id);
   const { t } = node.app;

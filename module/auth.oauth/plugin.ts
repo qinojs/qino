@@ -56,6 +56,8 @@ export const api: ApiTree = {
   },
 };
 
+const UTF8 = new TextEncoder();
+
 /** Decode a JWT payload without checking the signature — fine here: it comes from the token
  *  endpoint over TLS (allowed by OIDC). */
 function jwtPayload(token: string) {
@@ -86,11 +88,11 @@ export async function clientSecret(p: any, aud: string): Promise<string> {
   if (!p.key_id) return p.client_secret;
   const pkcs8 = Uint8Array.fromBase64(String(p.client_secret).replace(/-----[^-]+-----|\s/g, ""));
   const key = await crypto.subtle.importKey("pkcs8", pkcs8, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
-  const enc = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringify(o)));
+  const enc = (o: unknown) => b64url(UTF8.encode(JSON.stringify(o)));
   const now = unixTime();
   const data = enc({ alg: "ES256", kid: p.key_id }) + "." +
     enc({ iss: p.team_id || p.client_id, sub: p.client_id, aud, iat: now, exp: now + 300 });
-  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(data));
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, UTF8.encode(data));
   return data + "." + b64url(new Uint8Array(sig));
 }
 
@@ -194,7 +196,7 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   const own = ownCallback(ctx, name), redirectUri = callbackUrl(ctx, p);
   // a shared callback learns from the state where to send the browser on; signed with the client secret,
   // so a relay that knows it trusts the target without a host list
-  const rnd = randB64(24), target = b64url(new TextEncoder().encode(own));
+  const rnd = randB64(24), target = b64url(UTF8.encode(own));
   const sig = stateSig(String(p.client_secret).trim(), `${rnd}.${target}`);
   const state = redirectUri === own ? rnd : `${rnd}.${target}.${sig}`;
   const nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";

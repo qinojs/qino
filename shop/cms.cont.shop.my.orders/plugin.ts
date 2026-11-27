@@ -39,7 +39,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-async function detail(node: Node, order: Order, back: string): Promise<HtmlString> {
+function detail(node: Node, order: Order, back: string): Promise<HtmlString> {
   const t = shopT(node.app);
   return html.async`<div>
   <a class=-back href="${back}">${t`Back`}</a>
