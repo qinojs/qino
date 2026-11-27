@@ -56,7 +56,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
   const app = node.app, t = shopT(app), lang = app.languages.def;
   const self = await (await node.page()).url();
   const q = (key: string) => url.searchParams.get(key) ?? "";
-  const main = await mainCurrency(app), page = Math.max(0, Number(q("page")) || 0);
+  const main = await mainCurrency(app), page = Math.max(1, Number(q("page")) || 1);
   // every product's category: for the filter, and only here
   const all = await app.db.col`SELECT id FROM shop_product`;
   const categories = await Promise.all(all.map(async (id) => [Number(id), await categoryOf(await cmsOf(app).node(Number(id)))] as const));
@@ -69,7 +69,12 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
     q("search") ? sql`(${search.where} OR id IN (SELECT p.id FROM page p JOIN text_lang tl ON tl.text_id = p.title_id WHERE ${title}))` : null,
     q("category") ? sql.in("id", inCategory) : null,
   ].filter((w) => w != null);
-  const rows = await app.db.table("shop_product").all<Product>`${where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``} ORDER BY id DESC LIMIT ${PER_PAGE + 1} OFFSET ${page * PER_PAGE}`;
+  const filter = where.length ? sql`WHERE ${sql.join(where, " AND ")}` : sql``;
+  const [rows, count] = await Promise.all([
+    app.db.table("shop_product").all<Product>`${filter} ORDER BY id DESC LIMIT ${PER_PAGE} OFFSET ${(page - 1) * PER_PAGE}`,
+    app.db.one<number>`SELECT COUNT(*) FROM shop_product ${filter}`,
+  ]);
+  const pages = Math.ceil(Number(count) / PER_PAGE);
   const link = (params: Record<string, unknown>) => backend.toUrl(url.pathname + url.search, { search: q("search"), category: q("category"), ...params });
   const columns = await Promise.all(listColumns(app, main?.$id ?? "").map(async (c) => ({ ...c, label: await c.label })));
   const options = await Promise.all([...named.values()].map(async (c) => [String(c.id), String(await c.title(lang) || c.id)] as const));
@@ -94,7 +99,7 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       <th>${t`Category`}
       <th>${t`Article number`}
       ${columns.map((c) => html`<th>${c.label}`)}
-    <tbody>${rows.slice(0, PER_PAGE).map(async (p) => {
+    <tbody>${rows.map(async (p) => {
       const product = await p.node();
       return html.async`<tr data-id="${p.$id}">
       <td>${thumbnail(product)}
@@ -104,10 +109,10 @@ async function list(node: Node, url: URL): Promise<HtmlString> {
       ${columns.map((c) => html`<td>${input(c, { [c.name!]: p.$get(c.name!) })}`)}`;
     })}
   </table>
-  <div>
-    ${page ? html.async`<a href="${link({ page: page - 1 })}">${t`Back`}</a>` : ""}
-    ${rows.length > PER_PAGE ? html.async`<a href="${link({ page: page + 1 })}">${t`Next`}</a>` : ""}
-  </div>
+  ${pages > 1 ? html.async`<u2-pagination total="${pages}" current="${page}" href="${link({ page: "{page}" })}">
+    ${page > 1 ? html.async`<a href="${link({ page: page - 1 })}" rel=prev>${t`Back`}</a>` : ""}
+    ${page < pages ? html.async`<a href="${link({ page: page + 1 })}" rel=next>${t`Next`}</a>` : ""}
+  </u2-pagination>` : ""}
 </div>`;
 }
 
