@@ -381,7 +381,8 @@ async function detail(node: Node, id: number) {
   const waiting = payments.some((p) => p.status === "pending" || p.status === "processing");
   const file = row.file_id ? await app.dbFiles.file(Number(row.file_id)).catch(() => undefined) : undefined;
   const pdfUrl = file ? await file.url({ grant: "session" }).catch(() => "") : "";
-  const preview = document(app, id).catch((e) => `<p>${e.message}</p>`);
+  // a received invoice shows its original instead
+  const preview = row.direction === "in" ? "" : document(app, id).catch((e) => `<p>${e.message}</p>`);
   const users = await usersOf(app, [row]);
   return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 auto">

@@ -107,7 +107,7 @@ async function render(node: Node) {
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
   const c = await counts(app);
-  return html.async`<div class=-body>
+  return html.async`<div>
     <b>${int(c.lastDay)}</b> ${t`requests (24h)`} · ${int(c.lastHour)} ${t`last hour`}<br>
     <small>${int(c.clients)} ${t`clients`} · ${int(c.users)} ${t`logged-in users`} · ${int(c.online)} ${t`active sessions`}</small>
 </div>`;

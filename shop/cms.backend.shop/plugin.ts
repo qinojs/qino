@@ -77,4 +77,22 @@ function render(node: Node): Promise<HtmlString> {
 }
 
 export const cms = { node: { render } };
-export const backendDashboardWidget = figures;
+/** For the backend dashboard: the figures, and the latest placed orders that are not canceled. */
+async function backendDashboardWidget(app: App, page: Node): Promise<HtmlString> {
+  const t = shopT(app);
+  const target = await page.cms.nodeByModule("cms.backend.shop.orders");
+  const url = target ? await target.url() : "";
+  const orders = await app.db.table("shop_order").all<Order>`WHERE status IN ('ordered', 'paid') ORDER BY ordered DESC LIMIT 5`;
+  const status: Record<string, Promise<string>> = { ordered: t`Ordered`, paid: t`Paid` };
+  return html.async`${figures(app)}
+  ${orders.length ? html.async`<table class=u2-table style="white-space:nowrap; margin-top:1px">
+    <thead><tr><th>${t`Order`}<th><th><th>
+    <tbody>${orders.map(async (o) => html.async`<tr u2-href>
+      <td>${url ? html`<a href="${backend.toUrl(url, { id: o.$id })}">${o.$id}</a>` : o.$id}
+      <td>${o.party("bill")?.name}
+      <td>${(await o.currencyRow())?.show(Number(o.total)) ?? o.total}
+      <td>${status[o.status]}`)}
+  </table>` : ""}`;
+}
+
+export { backendDashboardWidget };

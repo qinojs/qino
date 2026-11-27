@@ -7,6 +7,7 @@ import { cms } from "@qino/qino/cms";
 import { healthChecks } from "../healthChecks.ts";
 import api from "../nodeApi.ts";
 import { preview, render, subscribe } from "../render.ts";
+import { backendDashboardWidget } from "../plugin.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -183,6 +184,25 @@ test("the template is written in the site's language: translations are loaded be
     const frame = String(await app.db.one`SELECT text FROM message_template WHERE name = ${"newsletter"}`);
     assertStringIncludes(frame, "Hallo {{givenName|zusammen}}");
     assertStringIncludes(frame, "Du erhältst diesen Newsletter");
+  } finally {
+    await app.db.close();
+    await fs.remove(dir, { recursive: true });
+  }
+});
+
+test("the dashboard widget counts and lists the latest issues, each linked", async () => {
+  const { app, dir } = await makeApp();
+  try {
+    const list = Number(await app.db.table("grp").insert({ name: "News", type: "newsletter" }));
+    const created = await page(app, "", { createIssue: "1", grp: String(list) });
+    const id = Number(created.location?.match(/issue=(\d+)/)?.[1]);
+    await page(app, `?issue=${id}`, { save: "1", grp: String(list), title: "<Hello>", template: "", text: "<p>News</p>" });
+
+    const node = await cms(app).nodeByModule("cms.backend.newsletter") as Node;
+    const out = String(await requestStorage.run(await testContext(), () => backendDashboardWidget(app, node)));
+    assertStringIncludes(out, "Subscribers:<td>0");
+    assertStringIncludes(out, `?issue=${id}">&lt;Hello&gt;</a>`);
+    assertStringIncludes(out, "Draft");
   } finally {
     await app.db.close();
     await fs.remove(dir, { recursive: true });

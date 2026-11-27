@@ -1,10 +1,10 @@
 import { test } from "node:test";
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { create, issue } from "@qino/qino/fin.invoice";
 
 import { backendNode, inRequest, withFinApp } from "../../tests/app.ts";
 import { inputAmount, money, parseAmount, status } from "../mod.ts";
-import { cms } from "../plugin.ts";
+import { backendDashboardWidget, cms } from "../plugin.ts";
 
 const FIN = ["fin.payment", "fin.bank", "fin.payment.qrbill", "fin.invoice"];
 
@@ -19,6 +19,19 @@ test("the overview shows what is open, no module list", async () => {
       '<small class=u2-badge style="background:var(--red)">1</small>', // overdue
     ]) assertStringIncludes(page, part);
     assertEquals(page.includes("<code>fin."), false); // what the modules are is the READMEs' job
+  });
+});
+
+test("the dashboard widget lists the invoices longest overdue", async () => {
+  await withFinApp(FIN, async (app) => {
+    await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Late", price: 10000 }], due: "2020-01-01" }));
+    await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Later", price: 5000 }], due: "2020-02-01" }));
+    await issue(app, await create(app, { currency: "CHF", lines: [{ name: "Not yet", price: 1000 }], due: "2999-01-01" }));
+    const node = backendNode(app, "/backend/fin");
+    const out = String(await inRequest(app, "http://qino.test/backend/fin", () => backendDashboardWidget(app, node)));
+    assertStringIncludes(out, '<small class=u2-badge style="background:var(--red)">2020-01-01</small>');
+    assert(out.indexOf("2020-01-01") < out.indexOf("2020-02-01")); // the longest overdue first
+    assertEquals(out.includes("2999-01-01"), false);
   });
 });
 

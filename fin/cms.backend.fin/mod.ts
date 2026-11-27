@@ -106,9 +106,15 @@ export const openInvoices = (app: App, direction: string): Promise<Record<string
   SELECT currency, SUM(total - paid) AS amount FROM invoice
   WHERE direction = ${direction} AND status = 'open' AND type <> 'proforma' GROUP BY currency ORDER BY currency`;
 
-/** How many of our invoices — reminders with fees too — are past their due date. */
-export const overdueInvoices = (app: App): Promise<number> => app.db.one`SELECT COUNT(*) FROM invoice
-  WHERE direction = 'out' AND type IN ('invoice', 'reminder') AND status = 'open' AND due < ${today()}`.then(Number);
+/** Our invoices — reminders with fees too — past their due date. */
+const overdue = () => sql`direction = 'out' AND type IN ('invoice', 'reminder') AND status = 'open' AND due < ${today()}`;
+
+/** How many invoices are overdue. */
+export const overdueInvoices = (app: App): Promise<number> => app.db.one`SELECT COUNT(*) FROM invoice WHERE ${overdue()}`.then(Number);
+
+/** The overdue invoices, the longest overdue first. */
+export const overdueList = (app: App, limit: number): Promise<Record<string, unknown>[]> =>
+  app.db.query`SELECT id, number, party, due, total, paid, currency FROM invoice WHERE ${overdue()} ORDER BY due, id LIMIT ${limit}`;
 
 /** What an invoice's or payment's status is called, in the request's language. */
 export function statusName(app: App, value: unknown): Promise<string> | string {

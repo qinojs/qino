@@ -4,13 +4,15 @@ import { App, Ctx, fs, requestStorage } from "@qino/qino";
 const BASE = ["cms", "cms.image", "browser", "cron", "identity", "locale.country", "locale.currency", "pdf", "score", "security", "seo", "u2", "user.profile"];
 const FIN = ["fin", "fin.payment", "fin.invoice"];
 
-/** Boot an app with the shop core and these shop modules, a product page 10 (CHF 24.50), run `fn`. */
+/** Boot an app with the shop core and these modules (from the shop store, else the core store), a product page 10 (CHF 24.50), run `fn`. */
 export async function withShop(mods: string[], fn: (app: App) => Promise<void>): Promise<void> {
   const dir = await fs.tempDir({ prefix: "qino-shop-test-" });
   const app = new App({ dir, db: "sqlite::memory:" });
   for (const name of BASE) app.modules.add(new URL(`../../module/${name}/plugin.ts`, import.meta.url));
   for (const name of FIN) app.modules.add(new URL(`../../fin/${name}/plugin.ts`, import.meta.url));
-  for (const name of ["cms.shop", ...mods]) app.modules.add(new URL(`../${name}/plugin.ts`, import.meta.url));
+  for (const name of ["cms.shop", ...mods]) { // every module of the shop store is named after it
+    app.modules.add(new URL(`${/\bshop\b/.test(name) ? ".." : "../../module"}/${name}/plugin.ts`, import.meta.url));
+  }
   try {
     await app.init();
     await app.db.exec`UPDATE country SET shop_tax_rate = ${8.1} WHERE id IN ('CH', 'LI')`;

@@ -150,7 +150,7 @@ const offList = (grp: Sql | unknown) => sql`NOT EXISTS (SELECT 1 FROM usr_grp ug
 
 /** Issues with their delivery counts and, per recipient, whether they opened or clicked. A click
  *  also counts as open: clients block the pixel, not links. */
-async function issueRows(app: App, id?: number) {
+async function issueRows(app: App, id?: number, limit = LIMIT) {
   const of = (condition: Sql) => sql`(SELECT COUNT(*) FROM message_delivery d WHERE d.message_id = m.id AND ${condition})`;
   const rows = await app.db.query`
     SELECT m.id, m.title, m.text, m.template, m.time, m.grp_id, g.name AS list,
@@ -162,7 +162,7 @@ async function issueRows(app: App, id?: number) {
     FROM message m
     JOIN grp g ON g.id = m.grp_id AND g.type = ${TYPE}
     WHERE m.channel = ${CHANNEL} AND m.direction = ${"out"} ${id ? sql`AND m.id = ${id}` : sql``}
-    ORDER BY m.time DESC, m.id DESC LIMIT ${LIMIT}`;
+    ORDER BY m.time DESC, m.id DESC LIMIT ${limit}`;
   if (!rows.length) return rows;
   const hits = new Map((await app.db.query`
     SELECT d.message_id, COUNT(DISTINCT t.delivery_id) AS opened,
@@ -189,6 +189,19 @@ function status(app: App, row: Row) {
       : html.async`<span class=u2-badge style="--color-dark:var(--orange)">${t`Sending`}</span>`;
   }
   return html.async`<span class=u2-badge style="--color-dark:var(--green)">${t`Sent`}</span> ${u2.el.time(row.time)}`;
+}
+
+/** The latest issues as a short table, each linked: for the backend dashboard. */
+export async function latestIssues(page: Node, count: number): Promise<HtmlString | string> {
+  const app = page.app, t = app.t;
+  const [issues, to] = await Promise.all([issueRows(app, undefined, count), here(page)]);
+  return issues.length ? html.async`<table class=u2-table style="white-space:nowrap; margin-top:1px">
+    <thead><tr><th>${t`Subject`}<th>${t`Status`}<th>${t`Opened`}
+    <tbody>${issues.map((row) => html.async`<tr u2-href>
+      <td><a href="${to({ issue: row.id })}">${str(row.title) || t`(no subject)`}</a>
+      <td>${status(app, row)}
+      <td>${share(row.opened, row.reached)}`)}
+  </table>` : "";
 }
 
 const percent = (count: unknown, of: unknown) => Number(of) ? html`<small>${Math.round(100 * Number(count) / Number(of))}%</small>` : "";

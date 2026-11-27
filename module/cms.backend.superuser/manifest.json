@@ -5,6 +5,7 @@
     "cms.backend"
   ],
   "files": [
+    "locale/de.json",
     "manifest.json",
     "plugin.ts",
     "pub/module.svg"

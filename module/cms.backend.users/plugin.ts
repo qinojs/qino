@@ -112,20 +112,20 @@ async function renderOverview(node: Node, ctx: Ctx) {
 </div>`;
 }
 
-export function backendDashboardWidget(app: App): Promise<HtmlString> {
+export function backendDashboardWidget(app: App, page: Node): Promise<HtmlString> {
   const db = app.db;
   const t = app.t;
 
-  const loginRows = db.query`
-    SELECT usr.username, sess.access
+  const loginRows = Promise.all([db.query`
+    SELECT usr.id, usr.username, sess.access
      FROM sess
      LEFT JOIN usr ON sess.usr_id = usr.id
      WHERE sess.usr_id IS NOT NULL AND sess.access IS NOT NULL
-     ORDER BY sess.access DESC LIMIT 5`.catch(() => []).then(logins =>
+     ORDER BY sess.access DESC LIMIT 5`.catch(() => []), page.url()]).then(([logins, pageUrl]) =>
     logins.length
       ? html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>${t`Recent logins`}<th>
-  <tbody>${logins.map((row) => html`<tr><td>${row.username ?? "–"}<td>${u2.el.time(row.access)}`)}
+  <tbody>${logins.map((row) => html`<tr u2-href><td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.username ?? "–"}</a><td>${u2.el.time(row.access)}`)}
 </table>`
       : html.raw(""));
 

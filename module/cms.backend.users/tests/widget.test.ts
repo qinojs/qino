@@ -24,14 +24,15 @@ test("cms.backend.users: dashboard widget renders counts and recent logins", asy
   const app = {
     db: {
       one: () => oneValues.shift(),
-      query: () => Promise.resolve([{ username: "user@example.test", access: 1700000000 }]),
+      query: () => Promise.resolve([{ id: 3, username: "user@example.test", access: 1700000000 }]),
     },
     t: (s: TemplateStringsArray) => Promise.resolve(s.join("")),
   } as unknown as Parameters<typeof backendDashboardWidget>[0];
-  const out = String(await backendDashboardWidget(app));
+  const page = { url: () => Promise.resolve("/backend/users") } as never;
+  const out = String(await backendDashboardWidget(app, page));
   assertEquals(out.includes("Total:<td>7"), true);
   assertEquals(out.includes("Active:<td>5"), true);
-  assertEquals(out.includes("user@example.test"), true);
+  assertStringIncludes(out, `<a href="/backend/users?id=3">user@example.test</a>`); // each login links to its user
   assertEquals(out.includes("2023-11-14T22:13:20.000Z"), true);
 });
 

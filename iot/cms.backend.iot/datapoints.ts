@@ -73,6 +73,32 @@ function entry(app: App, point: Datapoint) {
   </form>`);
 }
 
+/** Silent for twice its expected interval, or last seen unavailable. */
+const stale = (point: Datapoint, now: number) =>
+  point.interval > 0 && (point.value === null || point.time === null || point.time + point.interval * 2000 < now);
+
+/** For the backend dashboard: the stale datapoints first, then the latest values, each linked. */
+export async function widget(app: App, page: Node): Promise<HtmlString> {
+  const t = app.t, now = Date.now();
+  const [all, providers] = await Promise.all([datapoints(app), stored(app)]);
+  const late = all.filter((point) => stale(point, now));
+  const rows = [...late, ...all.filter((point) => !stale(point, now) && point.time !== null)
+    .sort((a, b) => Number(b.time) - Number(a.time))].slice(0, 5);
+  return html.async`<div style="overflow:auto; padding:0">
+<table class=u2-table style="white-space:nowrap">
+  <tr><td>${t`Providers`}:<td>${providers.filter((row) => row.enabled).length}
+  <tr><td>${t`Datapoints`}:<td>${all.length}
+  <tr><td>${t`Stale`}:<td>${late.length}
+</table>
+${rows.length ? html.async`<table class=u2-table style="white-space:nowrap; margin-top:1px">
+  <tbody>${rows.map((point) => html.async`<tr u2-href>
+    <td><a href="${link(page, { datapoint: point.id })}">${point.name}</a>
+    <td>${shown(point, point.value)}
+    <td style="color:${point.time === null ? "" : ageColor(point.time / 1000)}">${u2.el.time(point.time === null ? null : new Date(point.time))}`)}
+</table>` : ""}
+</div>`;
+}
+
 /** A recorded value as read: state codes by their text. */
 const shown = (point: Datapoint, value: number | null) => value === null ? "—" : point.type === "state"
   ? Object.entries(point.mapping).find(([, code]) => code === value)?.[0] ?? String(value)

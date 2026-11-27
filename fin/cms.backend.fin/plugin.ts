@@ -1,7 +1,7 @@
 import { html, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 
-import { amounts, badge, inFin, openInvoices, overdueInvoices } from "./mod.ts";
+import { amounts, badge, finTexts, inFin, money, openInvoices, overdueInvoices, overdueList, rowLink, widgetList } from "./mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { App, HtmlString } from "@qino/qino";
@@ -61,5 +61,18 @@ async function figures(app: App) {
   }
   return html`<table class=u2-table>${rows}</table>`;
 }
+
+/** For the backend dashboard: the figures, and the invoices longest overdue, each linked. */
+async function widget(app: App, page: Node): Promise<HtmlString> {
+  const rows = app.modules.linked("fin.invoice") ? await overdueList(app, 5) : [];
+  return html.async`${figures(app)}
+  ${widgetList(rows.map((row) => html.async`<tr u2-href>
+    <td>${rowLink(page, "cms.backend.fin.invoice", row.id, String(row.number || `#${row.id}`))}
+    <td>${((party) => party?.legalName || party?.name || "")(JSON.parse(String(row.party ?? "{}")))}
+    <td>${badge(row.due, "--red")}
+    <td style="text-align:end">${money(Number(row.total) - Number(row.paid), row.currency)}`))}`;
+}
+
+export const backendDashboardWidget = (app: App, page: Node): Promise<HtmlString> => finTexts(app, () => widget(app, page));
 
 export const cms = { node: { render: inFin(render) } };

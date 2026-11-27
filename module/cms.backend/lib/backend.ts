@@ -27,7 +27,7 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
     });
     for (const grp of [1, 2, 3]) await page.changeGroup(grp, 0);
     await (await page.cont("1")).set("module", "cms.backend");
-    page.settings.childXML("<page visible=1></page>");
+    await page.settings.childXML("<page visible=1></page>");
     node = await cm.nodeByModule("cms.backend");
   }
   return node?.page();

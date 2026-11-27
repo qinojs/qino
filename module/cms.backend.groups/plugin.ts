@@ -142,10 +142,19 @@ async function renderDetail(node: Node, id: number) {
 </div>`;
 }
 
-export function backendDashboardWidget(app: App): Promise<HtmlString> {
-  return html.async`<div class=-body>
-    <b>${app.db.one`SELECT count(*) FROM grp`}</b> ${app.t`groups`}
-  </div>`;
+export function backendDashboardWidget(app: App, page: Node): Promise<HtmlString> {
+  const t = app.t;
+  const grpRows = Promise.all([app.db.query`
+    SELECT grp.id, grp.name, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
+     FROM grp ORDER BY members DESC, grp.name LIMIT 5`, page.url()]).then(([grps, pageUrl]) =>
+    grps.length
+      ? html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
+  <thead><tr><th>${t`Group`}<th>${t`Members`}
+  <tbody>${grps.map((row) => html`<tr u2-href><td><a href="${backend.toUrl(pageUrl, { id: row.id })}">${row.name}</a><td>${Number(row.members)}`)}
+</table>`
+      : html.raw(""));
+
+  return html.async`<div style="overflow:auto; padding:0">${grpRows}</div>`;
 }
 
 export const cms = {
