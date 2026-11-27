@@ -130,15 +130,12 @@ small { color: var(--gray); }
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  align-content: flex-start;
   gap: 1.2rem;
   padding: 1.4rem;
   overflow: auto;
   & > * { min-width: 0; flex: 0 1 auto; }
   & > .u2-flex { width: 100%; gap: 1.2rem; }
 }
-
-body:has(qino-cms) :is(#toolbar, #content) { padding-inline-end: 4.1rem; }
 
 /* Cards & Tables: crisp editorial surfaces on top of u2 */
 .u2-card {
