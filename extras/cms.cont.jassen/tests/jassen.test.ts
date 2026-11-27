@@ -158,7 +158,8 @@ test("nearby discovery sorts by Haversine distance and isolates tenants", () => 
 test("anonymous players can create, join, deal privately, play tricks and render CMS block", async () => {
   const dir = await fs.tempDir() + "/";
   const app = new App({ db: "sqlite::memory:", dir });
-  app.stores.add(import.meta.resolve("../../store.json")).add("starter.cms").add("cms.cont.jassen");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("starter.cms");
+  app.stores.add(import.meta.resolve("../../store.json")).add("cms.cont.jassen");
   await app.init();
 
   const makeCtx = async () => {

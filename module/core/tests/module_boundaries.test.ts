@@ -14,9 +14,10 @@ const shopDir = fileURLToPath(new URL("../../../shop/", import.meta.url));
 const finDir = fileURLToPath(new URL("../../../fin/", import.meta.url));
 const iotDir = fileURLToPath(new URL("../../../iot/", import.meta.url));
 const opsDir = fileURLToPath(new URL("../../../ops/", import.meta.url));
+const extrasDir = fileURLToPath(new URL("../../../extras/", import.meta.url));
 const qinoDir = fileURLToPath(new URL("../../../", import.meta.url));
-const stores = [moduleDir, shopDir, finDir, iotDir, opsDir, testModuleDir];
-const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shopDir, finDir, iotDir, opsDir, testModuleDir];
+const stores = [moduleDir, shopDir, finDir, iotDir, opsDir, extrasDir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shopDir, finDir, iotDir, opsDir, extrasDir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for (const entry of await fs.list(dir)) {
@@ -180,6 +181,7 @@ test("module stores list every plugin directory", async () => {
   await assertStore(moduleDir);
   await assertStore(finDir);
   await assertStore(iotDir);
+  await assertStore(extrasDir);
   await assertStore(testModuleDir);
 });
 

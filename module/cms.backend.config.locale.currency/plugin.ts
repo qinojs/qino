@@ -66,8 +66,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
       ${t`Fetch the rates`}
       <select class=-every>${options}</select>
     </label>
+    <button class=-now>${t`Update now`}</button>
     <p>
-      <button class=-now>${t`Update now`}</button>
       <small class=-state>${state}</small>
     </p>
   </div>
