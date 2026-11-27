@@ -29,6 +29,7 @@ export async function withFinApp(fin: string[], fn: (app: App) => Promise<void>)
     await org.address.addressCountry("CH");
     await fn(app);
   } finally {
+    await new Promise((resolve) => setTimeout(resolve, 50)); // session data is written debounced (25 ms)
     // the other way round than linked, so nothing goes before what needs it; this stops the job timers
     for (const mod of app.modules.linked().toReversed()) if (mod.name !== "core") app.modules.unlink(mod.name);
     await app.db.close();
