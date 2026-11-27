@@ -6,6 +6,8 @@ import { fs } from "../fs.ts";
 
 import type { UploadedFile } from "../fileStream.ts";
 
+const EMPTY = Object.freeze(Object.create(null));
+
 /**
  * The request, created once after the pre-filter and static-file check. Read-only; for a mutable
  * URL use `req.url.toURL()`.
@@ -69,6 +71,7 @@ export class Req {
   /** Query params, first value per key. */
   get query(): Readonly<Record<string, string>> {
     if (!this.#query) {
+      if (!this.#nativeUrl.search) return (this.#query = EMPTY);
       const out: Record<string, string> = Object.create(null);
       this.#nativeUrl.searchParams.forEach((v, k) => out[k] ??= v);
       this.#query = Object.freeze(out);
@@ -79,6 +82,7 @@ export class Req {
   /** Query params, every value per key. */
   get queryAll(): Readonly<Record<string, readonly string[]>> {
     if (!this.#queryAll) {
+      if (!this.#nativeUrl.search) return (this.#queryAll = EMPTY);
       const out: Record<string, string[]> = Object.create(null);
       this.#nativeUrl.searchParams.forEach((v, k) => (out[k] ??= []).push(v));
       for (const k in out) Object.freeze(out[k]);
@@ -89,7 +93,9 @@ export class Req {
 
   /** Request cookies only, not response cookies. */
   get cookies(): Readonly<Record<string, string>> {
-    return this.#cookies ??= Object.freeze(parseCookies(this.header("cookie")));
+    if (this.#cookies) return this.#cookies;
+    const raw = this.header("cookie");
+    return this.#cookies = raw ? Object.freeze(parseCookies(raw)) : EMPTY;
   }
 
   /** Like `headers.get()`, but `undefined` instead of `null` on a miss. */
@@ -111,7 +117,7 @@ export class Req {
     const appUrl = ensureSlash(opt.appUrl || "/");
     if (!url.pathname.startsWith(appUrl)) throw new Output("Not Found", { status: 404 });
     const peerAddr = opt.peerAddr ?? "";
-    const body = await ReqBody.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 });
+    const body = request.body ? await ReqBody.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 }) : new ReqBody();
 
     const path = url.pathname.slice(appUrl.length);
     let appPath: string;

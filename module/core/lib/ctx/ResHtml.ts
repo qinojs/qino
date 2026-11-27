@@ -30,17 +30,18 @@ export class ResHtml {
   /** Turn import-map names in `scripts` and `styles` (`@u2/el/alert/alert.js`) into their urls,
    *  as the browser resolves an import: an exact entry, else the longest "/"-prefix. */
   resolve(): void {
-    const prefixes = [...this.importMap.keys()].filter((k) => k.endsWith("/")).sort((a, b) => b.length - a.length);
-    const resolve = (url: string) => {
+    if (!this.scripts.size && !this.styles.size) return;
+    const prefixes = [...this.importMap].filter(([k]) => k.endsWith("/")).sort((a, b) => b[0].length - a[0].length);
+    const res = (url: string) => {
       const to = this.importMap.get(url);
       if (to) return to;
-      const prefix = prefixes.find((p) => url.startsWith(p));
-      if (prefix) return this.importMap.get(prefix) + url.slice(prefix.length);
+      const hit = prefixes.find(([p]) => url.startsWith(p));
+      if (hit) return hit[1] + url.slice(hit[0].length);
       if (!URL.canParse(url) && !/^[./]/.test(url)) console.warn(`ResHtml: "${url}" is not in the import map`);
       return url;
     };
-    this.scripts = new Set([...this.scripts].map(resolve));
-    this.styles = new Set([...this.styles].map(resolve));
+    if (this.scripts.size) this.scripts = new Set([...this.scripts].map(res));
+    if (this.styles.size) this.styles = new Set([...this.styles].map(res));
   }
 
   #renderHead() {

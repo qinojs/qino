@@ -153,7 +153,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
             await using _views = await historicalViews(ctx, vs.space, vs.log);
 
             const load = async (node: Node) => {
-                for (const cont of await node.conts()) await load(cont);
+                await Promise.all((await node.conts()).map(load));
             };
             await load(await cms(app).node(pid));
         })();

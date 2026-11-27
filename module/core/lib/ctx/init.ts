@@ -24,10 +24,8 @@ export async function initRequest(ctx: Ctx): Promise<void> {
 
 async function initClient(ctx: Ctx) {
   if (ctx.clientId) return;
-
   const cid = ctx.req.cookies[cookiePrefix(ctx.req.url.protocol === "https:", ctx.req.appUrl) + "cid"];
-  if (!cid) return registerClient(ctx);
-  const client = await ctx.app.db.table("client").rowBy("hash", cid); // SELECT *, so ctx.client is loaded
+  const client = cid && await ctx.app.db.table("client").rowBy("hash", cid); // SELECT *, so ctx.client is loaded
   if (!client) return registerClient(ctx);
   ctx.clientId = String(client);
 }

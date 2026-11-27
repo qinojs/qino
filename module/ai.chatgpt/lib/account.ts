@@ -162,23 +162,18 @@ export async function active(app: App, user: number): Promise<Account | undefine
   if (!account || account.expires_at > Date.now() + 60_000) return account;
   const locks = refreshing.getOrInsertComputed(app, () => new Map());
   const key = `${user}:${account.client_id}`;
-  let task = locks.get(key);
-  if (!task) {
-    task = (async () => {
-      const current = (await accounts(app, user)).accounts.find((a) => a.client_id === account.client_id)!;
-      if (current.expires_at > Date.now() + 60_000) return current;
-      // the id_token kept is the one of the sign-in (id_token_hint)
-      const { id_token: _, ...tokens } = await token({ grant_type: "refresh_token", client_id: current.client_id,
-        refresh_token: current.refresh_token });
-      const refreshed = { ...current, ...tokens };
-      await update(app, user, (value) => {
-        value.accounts = value.accounts.map((a) => a.client_id === refreshed.client_id ? refreshed : a);
-      });
-      return refreshed;
-    })().finally(() => locks.delete(key));
-    locks.set(key, task);
-  }
-  return task;
+  return locks.getOrInsertComputed(key, () => (async () => {
+    const current = (await accounts(app, user)).accounts.find((a) => a.client_id === account.client_id)!;
+    if (current.expires_at > Date.now() + 60_000) return current;
+    // the id_token kept is the one of the sign-in (id_token_hint)
+    const { id_token: _, ...tokens } = await token({ grant_type: "refresh_token", client_id: current.client_id,
+      refresh_token: current.refresh_token });
+    const refreshed = { ...current, ...tokens };
+    await update(app, user, (value) => {
+      value.accounts = value.accounts.map((a) => a.client_id === refreshed.client_id ? refreshed : a);
+    });
+    return refreshed;
+  })().finally(() => locks.delete(key)));
 }
 
 export async function revoke(account: Account): Promise<void> {

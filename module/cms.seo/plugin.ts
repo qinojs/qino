@@ -10,9 +10,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   cms(app).on("page:render-after", async ({ ctx }) => {
     const html = ctx.res.html, meta = html.meta, c = cmsCtx(ctx);
     const page = await c.mainNode.page();
-    const file = await page.cms.image(page, { use: "share" });
-    meta["og:title"] = await text(page, "_share_title") || meta["og:title"] || html.title;
-    meta["og:description"] = await text(page, "_share_description") || meta["og:description"] || meta.description;
+    const [file, title, desc] = await Promise.all([page.cms.image(page, { use: "share" }), text(page, "_share_title"), text(page, "_share_description")]);
+    meta["og:title"] = title || meta["og:title"] || html.title;
+    meta["og:description"] = desc || meta["og:description"] || meta.description;
     // the size the platforms show (1.91:1)
     if (file) meta["og:image"] = ctx.req.url.origin + await imageUrl(file, 1200, 630);
     meta["twitter:card"] = meta["og:image"] ? "summary_large_image" : "summary";

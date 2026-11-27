@@ -71,9 +71,9 @@ export class Db extends Emitter<DbEvents> {
   get insertSyncsAutoIncrement(): boolean { return this.#driver.insertSyncsAutoIncrement; }
   get tables(): Record<string, DbTable> { return this.#tables; }
 
-  async #run<T>(fn: () => Promise<T>, sql: string): Promise<T> {
+  async #run<T>(p: Promise<T>, sql: string): Promise<T> {
     try { //console.log(sql);
-      return await fn();
+      return await p;
     } catch (e) {
       console.error("db: " + (e instanceof Error ? e.message : e) + "\n" + sql.replace(/\s+/g, " "), e);
       throw e;
@@ -91,7 +91,7 @@ export class Db extends Emitter<DbEvents> {
   /** Run a fragment via interpolation: `db.query\`${frag}\`` — same for the shortcuts below. */
   async query<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
     const [text, params] = await this.#sql(strings, values);
-    return this.#run(() => this.#driver.query(text, params), text) as Promise<T[]>;
+    return this.#run(this.#driver.query(text, params), text) as Promise<T[]>;
   }
 
   async row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> {
@@ -118,7 +118,7 @@ export class Db extends Emitter<DbEvents> {
   async exec(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<ExecResult> {
     const returning = isTemplate(a) ? undefined : rest[0] as string;
     const [text, params] = await this.#sql(a, rest);
-    return this.#run(() => this.#driver.exec(text, params, returning), text);
+    return this.#run(this.#driver.exec(text, params, returning), text);
   }
 
   /** Run fn atomically; nested calls join the outer transaction. */

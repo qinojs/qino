@@ -9,6 +9,8 @@ import type { DeckId, GameMode } from "./decks.ts";
 
 const NAME = "cms.cont.jassen";
 const KEEPALIVE_MS = 25000;
+const asMode = (v: unknown): GameMode | undefined =>
+  v === "jass" || v === "tschau" || v === "aloechlen" || v === "hoseabe" || v === "free" ? v : undefined;
 
 const settingsSchema = {
   properties: {
@@ -102,9 +104,7 @@ export const api: ApiTree = {
               table: tables.create(nodeId, player, {
                 name: input.tableName,
                 deck: isDeckId(input.deck) ? input.deck : undefined,
-                mode: input.mode === "free" || input.mode === "tschau" || input.mode === "aloechlen" || input.mode === "hoseabe"
-                  ? input.mode
-                  : "jass",
+                mode: asMode(input.mode) ?? "jass",
                 lat: input.lat,
                 lon: input.lon,
               }),
@@ -136,9 +136,7 @@ export const api: ApiTree = {
               player,
               table: tables.configure(String(input.code ?? ""), player.id, {
                 deck: isDeckId(input.deck) ? input.deck : undefined,
-                mode: input.mode === "jass" || input.mode === "tschau" || input.mode === "aloechlen" || input.mode === "hoseabe" || input.mode === "free"
-                  ? input.mode
-                  : undefined,
+                mode: asMode(input.mode),
                 trump: input.trump,
                 dealCount: input.dealCount,
                 name: input.tableName,
@@ -192,6 +190,10 @@ export const api: ApiTree = {
         const encoder = new TextEncoder();
         let unsubscribe: (() => void) | null = null;
         let timer: ReturnType<typeof setInterval> | null = null;
+        const cleanup = () => {
+          if (timer) { clearInterval(timer); timer = null; }
+          if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+        };
 
         throw new Output(
           new ReadableStream({
@@ -199,19 +201,12 @@ export const api: ApiTree = {
               const send = (chunk: string) => {
                 try { out.enqueue(encoder.encode(chunk)); } catch { cleanup(); }
               };
-              const cleanup = () => {
-                if (timer) { clearInterval(timer); timer = null; }
-                if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-              };
               unsubscribe = tables.subscribe(code, player.id, (view) => {
                 send(`data: ${JSON.stringify(view)}\n\n`);
               });
               timer = setInterval(() => send(": ping\n\n"), KEEPALIVE_MS);
             },
-            cancel() {
-              if (timer) { clearInterval(timer); timer = null; }
-              if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-            },
+            cancel: cleanup,
           }),
           {
             headers: {
@@ -230,10 +225,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const t = node.app.t.in(NAME);
   const rawDeck = node.settings.deck();
   const deck: DeckId = isDeckId(rawDeck) ? rawDeck : "swiss36";
-  const rawMode = node.settings.mode();
-  const mode: GameMode = rawMode === "free" || rawMode === "tschau" || rawMode === "aloechlen" || rawMode === "hoseabe"
-    ? rawMode
-    : "jass";
+  const mode: GameMode = asMode(node.settings.mode()) ?? "jass";
   const radius = Math.min(Math.max(Number(node.settings.radius() ?? 2000), 100), 50000);
   const showCounts = node.settings.showCounts() !== false;
   const savedName = String(ctx.sess.data[NAME].name() ?? "");

@@ -229,53 +229,56 @@ export const api: ApiTree = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
-  cms(app).on("page:render-after", async ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend || await app.settings.cms.frontend !== name) return;
+  cms(app).on("page:render-after", ({ ctx }) => {
+    if (ctx.req.query.cms_noFrontend) return;
+    return (async () => {
+      if (await app.settings.cms.frontend !== name) return;
 
-    const state = cmsCtx(ctx);
-    const node = state.mainNode;
-    if (!node) return;
-    const access = await node.access();
-    const inBackend = node.vs.module === "cms.layout.backend";
-    if (access < 2 && !inBackend) return;
+      const state = cmsCtx(ctx);
+      const node = state.mainNode;
+      if (!node) return;
+      const access = await node.access();
+      const inBackend = node.vs.module === "cms.layout.backend";
+      if (access < 2 && !inBackend) return;
 
-    const settings = ctx.settings;
-    const html = ctx.res.html;
-    const moduleUrl = ctx.req.moduleUrl;
-    const qino = html.jsData.qino ??= {};
-    qino.cms ??= {};
+      const settings = ctx.settings;
+      const html = ctx.res.html;
+      const moduleUrl = ctx.req.moduleUrl;
+      const qino = html.jsData.qino ??= {};
+      qino.cms ??= {};
 
-    if ((await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
-      const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
-      const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
-      const url = ctx.req.url;
-      settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
-      qino.cms.beUrl = String(settings.cms[otherKey]() ?? "");
-      html.scripts.add(moduleUrl + name + "/pub/js/init.js");
-    }
-
-    if (access > 1) {
-      ctx.res.csp["img-src"]["blob:"] = true;
-      qino.cms.nodeId = node.id;
-      qino.cms.requestedNodeId = state.requestedNodeId;
-      qino.dev = ctx.dev;
-      qino.cms.editmode = state.editmode;
-
-      if (state.editmode) {
-        qino.cms.clipboard = Number(settings.cms.clipboard() ?? 0);
-        qino.cms.ui = await settings[name].ui ?? {};
-        qino.cms.tourSeen = !!await settings[name].tour_seen;
-        const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
-        html.content += String(await app.t.with("cms", () => panel.default?.()) ?? "");
-
-        html.scripts.add(moduleUrl + "cms/pub/js/cms.js");
-        html.styles.add(moduleUrl + "cms/pub/css/ui.css");
-
-        html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree
-        html.styles.add(moduleUrl + name + "/pub/inline/page.css");
-        html.scripts.add(moduleUrl + name + "/pub/inline/inline.js");
-        html.scripts.add(moduleUrl + name + "/pub/panel/panel.js");
+      if ((await cms(app).nodeByPath(["system", "not-found"]))?.id !== node.id) {
+        const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
+        const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
+        const url = ctx.req.url;
+        settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
+        qino.cms.beUrl = String(settings.cms[otherKey]() ?? "");
+        html.scripts.add(moduleUrl + name + "/pub/js/init.js");
       }
-    }
+
+      if (access > 1) {
+        ctx.res.csp["img-src"]["blob:"] = true;
+        qino.cms.nodeId = node.id;
+        qino.cms.requestedNodeId = state.requestedNodeId;
+        qino.dev = ctx.dev;
+        qino.cms.editmode = state.editmode;
+
+        if (state.editmode) {
+          qino.cms.clipboard = Number(settings.cms.clipboard() ?? 0);
+          qino.cms.ui = await settings[name].ui ?? {};
+          qino.cms.tourSeen = !!await settings[name].tour_seen;
+          const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
+          html.content += String(await app.t.with("cms", () => panel.default?.()) ?? "");
+
+          html.scripts.add(moduleUrl + "cms/pub/js/cms.js");
+          html.styles.add(moduleUrl + "cms/pub/css/ui.css");
+
+          html.inlineStyles.add(policyCss(policyOf(ctx.app))); // the site's allowlist, so editor and output agree
+          html.styles.add(moduleUrl + name + "/pub/inline/page.css");
+          html.scripts.add(moduleUrl + name + "/pub/inline/inline.js");
+          html.scripts.add(moduleUrl + name + "/pub/panel/panel.js");
+        }
+      }
+    })();
   }, { signal });
 }

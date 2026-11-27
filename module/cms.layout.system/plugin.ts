@@ -21,7 +21,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   return html.async`
   <main id=container>
-    ${logo ? html`<a href="${ctx.req.appUrl}"><img src="${logo}" alt="${String(name ?? "")}"></a>` : ""}
+    ${logo ? html`<a href="${ctx.req.appUrl}"><img src="${logo}" alt="${name}"></a>` : ""}
     <h1>${(await node.title()).string()}</h1>
     ${node.cont("main")}
   </main>`;

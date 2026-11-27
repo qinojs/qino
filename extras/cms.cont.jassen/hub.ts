@@ -75,12 +75,7 @@ const hubs = new WeakMap<App, JassHub>();
 
 /** Per-App hub so tenants never share tables. */
 export function hub(app: App): JassHub {
-  let instance = hubs.get(app);
-  if (!instance) {
-    instance = new JassHub();
-    hubs.set(app, instance);
-  }
-  return instance;
+  return hubs.getOrInsertComputed(app, () => new JassHub());
 }
 
 /** Haversine distance in meters between two WGS84 coordinates. */
@@ -131,8 +126,8 @@ function aloechlenRank(order: string[], id: string, total: number): string {
 }
 
 function tableView(table: Table, playerId: string) {
-  const me = table.players.find((p) => p.id === playerId);
   const myIndex = table.players.findIndex((p) => p.id === playerId);
+  const me = table.players[myIndex];
   return {
     code: table.code,
     name: table.name,
@@ -207,11 +202,7 @@ export class JassHub {
 
   subscribe(code: string, playerId: string, fn: Listener): () => void {
     const table = this.#get(code);
-    let set = table.listeners.get(playerId);
-    if (!set) {
-      set = new Set();
-      table.listeners.set(playerId, set);
-    }
+    const set = table.listeners.getOrInsertComputed(playerId, () => new Set());
     set.add(fn);
     fn(tableView(table, playerId));
     return () => {
@@ -776,10 +767,8 @@ export class JassHub {
       const leaderIdx = table.players.findIndex((p) => p.id === table.lastPlayerId && p.hand.length > 0);
       table.turn = leaderIdx >= 0 ? leaderIdx : this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0);
     } else {
-      table.turn = this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0 && !table.passedIds.includes(p.id) && p.id !== table.lastPlayerId || p.id === table.lastPlayerId);
       // Prefer next active non-passed player
-      const nextIdx = this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0 && !table.passedIds.includes(p.id));
-      table.turn = nextIdx;
+      table.turn = this.#nextActiveSeat(table, seatIdx, (p) => p.hand.length > 0 && !table.passedIds.includes(p.id));
     }
   }
 

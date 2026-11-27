@@ -43,9 +43,7 @@ async function render(node: Node) {
     }
   }
 
-  let str = "";
-  for (const c of conts) str += await c.html();
-  return `<div>${str}</div>`;
+  return `<div>${(await Promise.all(conts.map((c) => c.html()))).join("")}</div>`;
 }
 
 export const cms = {

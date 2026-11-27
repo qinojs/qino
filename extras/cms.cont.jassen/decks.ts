@@ -105,36 +105,17 @@ const RANK_ORDER: Record<string, number> = {
   "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "10": 10, J: 11, Q: 12, K: 13, A: 14,
 };
 
+const BASE_POINTS: Record<string, number> = { A: 11, K: 4, Q: 3, J: 2, "10": 10 };
+
 /** Jass card point value under the active trump mode. */
 export function cardPoints(card: Card, trump: Trump): number {
-  if (trump === "obe") {
-    if (card.rank === "A") return 11;
-    if (card.rank === "K") return 4;
-    if (card.rank === "Q") return 3;
-    if (card.rank === "J") return 2;
-    if (card.rank === "10") return 10;
-    if (card.rank === "8") return 8;
-    return 0;
-  }
-  if (trump === "unde") {
-    if (card.rank === "6") return 11;
-    if (card.rank === "K") return 4;
-    if (card.rank === "Q") return 3;
-    if (card.rank === "J") return 2;
-    if (card.rank === "10") return 10;
-    if (card.rank === "8") return 8;
-    return 0;
-  }
+  if (trump === "obe") return card.rank === "8" ? 8 : BASE_POINTS[card.rank] ?? 0;
+  if (trump === "unde") return card.rank === "6" ? 11 : card.rank === "A" ? 0 : card.rank === "8" ? 8 : BASE_POINTS[card.rank] ?? 0;
   if (trump && card.suit === trump) {
     if (card.rank === "J") return 20; // Puur / Buur
     if (card.rank === "9") return 14; // Nell
   }
-  if (card.rank === "A") return 11;
-  if (card.rank === "K") return 4;
-  if (card.rank === "Q") return 3;
-  if (card.rank === "J") return 2;
-  if (card.rank === "10") return 10;
-  return 0;
+  return BASE_POINTS[card.rank] ?? 0;
 }
 
 /** Rank strength within a trick for Jass comparison (higher wins). */

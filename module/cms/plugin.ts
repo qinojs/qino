@@ -74,7 +74,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     app.on("render", (e) => render(e.ctx), { signal });
 
-    app.on("route", async ({ ctx }) => {
+    app.on("route", ({ ctx }) => {
         const settings = ctx.settings;
         const query = ctx.req.query;
 
@@ -85,21 +85,21 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         cmsCtx(ctx).editmode = Number(settings.cms.editmode()) || 0;
 
         // File upload
-        const cmsPageFile = await ctx.req.files.cmsPageFile;
-        if (cmsPageFile) {
-            const cmspid = Number(query.cmspid ?? 0);
-            const page = await cm.node(cmspid);
+        const cmsPageFile = ctx.req.files.cmsPageFile;
+        if (cmsPageFile) return (async () => {
+            const file = await cmsPageFile;
+            const page = await cm.node(Number(query.cmspid ?? 0));
             if (isTrustedOrigin(ctx.req) && await page.access() > 1) {
                 const replace = query.replace;
                 const dbFile = await (replace ? page.file(replace) : page.addFile());
-                await dbFile.replaceFromUpload(cmsPageFile);
+                await dbFile.replaceFromUpload(file);
                 throw new Output({ id: String(dbFile), url: await dbFile.url() });
             }
-        }
+        })();
 
         // Page files as ZIP
         const zipPid = query.cms_nodeFilesZip;
-        if (zipPid) {
+        if (zipPid) return (async () => {
             const page = await cm.node(Number(zipPid));
             if (!(await page.isReadable())) { ctx.res.status = 403; return; }
             const files = [...(await page.files()).values()];
@@ -112,7 +112,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
                 ["Content-Type", "application/zip"],
                 header.contentDisposition("attachment", `files_${page}.zip`),
             ] });
-        }
+        })();
     }, { signal });
 
     // url → page id is cached, so any write to page_url drops it

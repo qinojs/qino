@@ -244,8 +244,8 @@ function headers(res: Response) {
   const csp = res.headers.get("content-security-policy") ?? "";
   const missing = WANTED_HEADERS.filter((name) => !has(name));
   if (!/frame-ancestors/i.test(csp) && !has("x-frame-options")) missing.push("x-frame-options");
-  const sts = res.headers.get("strict-transport-security") ?? "";
-  const flags = ["includeSubDomains", "preload"].filter((flag) => new RegExp(flag, "i").test(sts));
+  const sts = res.headers.get("strict-transport-security") ?? "", low = sts.toLowerCase();
+  const flags = ["includeSubDomains", "preload"].filter((flag) => low.includes(flag.toLowerCase()));
   return {
     hsts: sts ? Number(sts.match(/max-age\s*=\s*"?(\d+)/i)?.[1] ?? 0) : 0,
     hstsFlags: flags.join(", "),

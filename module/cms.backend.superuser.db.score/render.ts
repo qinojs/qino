@@ -33,8 +33,7 @@ export async function list(node: Node): Promise<HtmlString> {
   const { db } = app;
   const now = unixTime();
   const all = scores(db);
-  const cards = [];
-  for (const score of all) cards.push(await renderScore(app, score, now));
+  const cards = await Promise.all(all.map((s) => renderScore(app, s, now)));
 
   return html.async`<div class=-body>
     <b>${all.length}</b> ${app.t`score tables`} · ${total(db)} ${app.t`scored rows`}

@@ -80,20 +80,17 @@ async function renderContent(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record
   const newTitle = String(vars.title ?? "").trim();
   if (edit && vars.create && newTitle) await create(page, newTitle, ctx);
   const heading = edit || (await node.showTitle()).plain() ? node.cms.text(node, "title", { tag: "h1" }) : "";
-  const items = [];
   const found = await posts(node, !edit, { offset: (pageNo - 1) * LIMIT, limit: LIMIT + 1 });
-  for (const post of found.slice(0, LIMIT)) {
-    const excerpt = await text(post.node, "_description");
-    const url = await post.node.url();
-    const file = await post.node.cms.image(post.node);
+  const items = found.slice(0, LIMIT).map(async (post) => {
+    const [excerpt, url, file] = await Promise.all([text(post.node, "_description"), post.node.url(), post.node.cms.image(post.node)]);
     const created = post.created && new Date(post.created * 1000);
-    items.push(html.async`<article>
+    return html.async`<article>
       ${file ? cms_image(file, { alt: post.title, fit: fit(file) }) : ""}
       <h2><a href="${url}">${post.title}</a>${post.draft ? html.async` <small>${t`Draft`}</small>` : ""}</h2>
       ${created ? html`<time datetime="${created.toISOString()}">${created.toLocaleDateString(ctx.lang || undefined)}</time>` : ""}
       ${excerpt ? html`<p>${excerpt}</p>` : edit ? html.async`<p><small>${t`No description`}</small></p>` : ""}
-    </article>`);
-  }
+    </article>`;
+  });
   const form = edit ? html.async`<form method=post>${node.cms.formFields(node)}
     <input name=title required aria-label="${t`Title`}" placeholder="${t`Title`}"> <button name=create value=1>${t`New post`}</button>
   </form>` : "";

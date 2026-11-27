@@ -3,6 +3,8 @@ import { Output } from "../util.ts";
 
 import type { UploadedFile } from "../fileStream.ts";
 
+const NO_FILES = Object.freeze(Object.create(null));
+
 /**
  * Parsed request body: fields right away, files written to disk on demand.
  * `body.value`: null (none/unknown), frozen record (form) or deep-frozen JSON.
@@ -17,15 +19,16 @@ export class ReqBody {
   #files?: Record<string, Promise<UploadedFile> | undefined>;
   /** tmp files written so far — removed in Ctx.cleanup() */
   tmpPaths: string[] = [];
-  #rawFiles: Record<string, File> = Object.create(null);
+  #rawFiles?: Record<string, File>;
   #spooled?: Map<string, Promise<UploadedFile>>;
   #maxSize = 0; // set by parse(); only parse() can add files
 
   get files(): Record<string, Promise<UploadedFile> | undefined> {
+    if (!this.#rawFiles) return NO_FILES;
     return this.#files ??= new Proxy(Object.create(null), {
-      get: (_, key) => typeof key === "string" && this.#rawFiles[key] ? this.#spool(key) : undefined,
-      has: (_, key) => typeof key === "string" && key in this.#rawFiles,
-      ownKeys: () => Object.keys(this.#rawFiles),
+      get: (_, key) => typeof key === "string" && this.#rawFiles![key] ? this.#spool(key) : undefined,
+      has: (_, key) => typeof key === "string" && key in this.#rawFiles!,
+      ownKeys: () => Object.keys(this.#rawFiles!),
       getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
       set: () => false,
     });
@@ -33,7 +36,7 @@ export class ReqBody {
 
   #spool(key: string) {
     return (this.#spooled ??= new Map()).getOrInsertComputed(key, () => {
-      const p = readUploadFile(this.#rawFiles[key], { maxSize: this.#maxSize })
+      const p = readUploadFile(this.#rawFiles![key], { maxSize: this.#maxSize })
         .then((f) => (this.tmpPaths.push(f.tmpPath), f));
       p.catch(() => {}); // access without await must not cause an unhandled rejection
       return p;
@@ -68,7 +71,7 @@ export class ReqBody {
     else {
       const post: Record<string, string | string[]> = Object.create(null);
       for (const [key, value] of await (src ?? request.clone()).formData().catch(bad)) {
-        if (value instanceof File) body.#rawFiles[key] = value; // several per name: last wins
+        if (value instanceof File) (body.#rawFiles ??= Object.create(null))[key] = value; // several per name: last wins
         else if (!(key in post)) post[key] = value;
         else if (Array.isArray(post[key])) post[key].push(value);
         else post[key] = [post[key], value];

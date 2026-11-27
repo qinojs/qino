@@ -67,7 +67,8 @@ const indexed = new WeakMap<App, Map<Kind, { text: string; done: Promise<void> }
 function indexAll(app: App, kind: Kind, every: Entry[]) {
   const kinds = indexed.getOrInsertComputed(app, () => new Map());
   const now = every.map((e) => e.text).join("\n\n");
-  if (kinds.get(kind)?.text === now) return kinds.get(kind)!.done;
+  const prev = kinds.get(kind);
+  if (prev?.text === now) return prev.done;
   const done = (async () => {
     for (const { name, text } of every) await index(app, "ai_discover", { kind, name }, text);
     const names = new Set(every.map((e) => e.name));

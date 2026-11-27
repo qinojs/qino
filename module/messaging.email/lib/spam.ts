@@ -4,7 +4,7 @@ import type { App } from "@qino/qino";
 
 /** A failed sender check: at DMARC the From is forged; SPF or DKIM alone often just mean forwarding
  *  or a mailing list. */
-const FAILED = { dmarc: 0.9, spf: 0.3, dkim: 0.3 };
+const FAILED = [[/\bdmarc=fail\b/i, 0.9], [/\bspf=fail\b/i, 0.3], [/\bdkim=fail\b/i, 0.3]] as const;
 /** The receiving server's own filter (SpamAssassin, rspamd) says spam. */
 const FLAGGED = 0.9;
 const FLAGS = ["x-spam-flag", "x-spam-status", "x-spam"];
@@ -19,7 +19,7 @@ const combine = (...signals: number[]) => 1 - signals.reduce((clean, p) => clean
  *  came with the mail; a spam flag only ever raises, so a forged one hurts no one but its sender. */
 function verdict(lines: Mail["headerLines"] = []) {
   const auth = lines.find((h) => h.key === "authentication-results")?.line ?? "";
-  const failed = Object.entries(FAILED).map(([check, p]) => new RegExp(`\\b${check}=fail\\b`, "i").test(auth) ? p : 0);
+  const failed = FAILED.map(([re, p]) => re.test(auth) ? p : 0);
   const flagged = lines.some((h) => FLAGS.includes(h.key) && /^[^:]*:\s*yes\b/i.test(h.line));
   return combine(...failed, flagged ? FLAGGED : 0);
 }

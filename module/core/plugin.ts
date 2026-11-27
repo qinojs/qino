@@ -197,7 +197,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     const transformTimeout = Number(await settings.transform.timeout ?? "");
     if (transformTimeout) app.fileTransformer.timeout = transformTimeout;
 
-    app.on("route", async ({ ctx }) => {
+    app.on("route", ({ ctx }) => {
         // HTTPS redirect
         const https = ctx.req.url.protocol === "https:";
         if (app.forceHttps && !https) {
@@ -205,20 +205,21 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
             url.protocol = "https:";
             throw new Redirect(url.href, 301);
         }
-
-        // HSTS, only valid on https: responses
-        if (https) {
-            const set = settings.HSTS;
-            const maxAge = Number(await set["max-age"]) || 0;
-            if (maxAge) {
-                let header = `max-age=${maxAge}`;
-                if (await set.includeSubDomains) header += "; includeSubDomains";
-                if (await set.preload) header += "; preload";
-                ctx.res.headers.set("Strict-Transport-Security", header);
+        if (!https && !ctx.user?.superuser) return;
+        return (async () => {
+            // HSTS, only valid on https: responses
+            if (https) {
+                const set = settings.HSTS;
+                const maxAge = Number(await set["max-age"]) || 0;
+                if (maxAge) {
+                    let header = `max-age=${maxAge}`;
+                    if (await set.includeSubDomains) header += "; includeSubDomains";
+                    if (await set.preload) header += "; preload";
+                    ctx.res.headers.set("Strict-Transport-Security", header);
+                }
             }
-        }
-
-        if (ctx.user?.superuser && !await settings.url) await settings.url(urlOf(ctx));
+            if (ctx.user?.superuser && !await settings.url) await settings.url(urlOf(ctx));
+        })();
     }, { signal });
 
     // add the request's logId to every write — except the log tables

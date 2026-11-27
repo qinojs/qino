@@ -175,10 +175,10 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     // ─────────────────────────────────────────────────────────────────────────
 
     // ─── page:render-after: draftmode frontend ────────────────────────────────────────
-    cms(app).on("page:render-after", async ({ ctx }) => {
+    cms(app).on("page:render-after", ({ ctx }) => {
         if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
-        const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
-        if (!draftmode) return;
-        ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/draftmode.mjs");
+        return (async () => {
+            if (await ctx.app.settings["cms.versions"].draftmode) ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/draftmode.mjs");
+        })();
     }, { signal });
 }

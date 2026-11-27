@@ -170,14 +170,8 @@ export class DbTable {
     return id;
   }
 
-  async update(idOrValues: any, values?: Record<string, any>): Promise<string | undefined> {
-    let id: any;
-    if (values === undefined) {
-      values = idOrValues;
-      id = this.entryId(values);
-    } else {
-      id = idOrValues;
-    }
+  async update(id: any, values?: Record<string, any>): Promise<string | undefined> {
+    if (values === undefined) [id, values] = [this.entryId(id), id];
     const eBefore: any = { table: this, id, data: values, returnValue: undefined };
     await this.#db.fire("table:update-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;

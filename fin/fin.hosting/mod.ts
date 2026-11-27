@@ -352,8 +352,9 @@ export async function unlink(app: App, name: string, subscriptionId: number): Pr
   await update(app, subscriptionId, { ref: null });
 }
 
+const KIND_RE = KINDS.map((k): [Kind, RegExp] => [k, new RegExp(`\\b${k}\\b`, "i")]);
 /** The kind its words name — "Hosting example.ch", a plan "Domain .ch" —, or undefined. */
-export const kindIn = (text: string): Kind | undefined => KINDS.find((k) => new RegExp(`\\b${k}\\b`, "i").test(text));
+export const kindIn = (text: string): Kind | undefined => KIND_RE.find(([, re]) => re.test(text))?.[0];
 
 /**
  * A subscription named after a domain is for it — "Hosting example.ch", or a plan's subscription
