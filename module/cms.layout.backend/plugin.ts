@@ -37,6 +37,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }) {
     "el/code/code.css",
     "el/menubutton/menubutton.css",
     "el/tree/tree.css",
+    "el/fields/fields.css",
     "el/ico/ico.js",
     "el/breadcrumb/breadcrumb.js",
     "el/time/time.js",
