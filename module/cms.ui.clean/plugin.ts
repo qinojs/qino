@@ -4,7 +4,7 @@ import type { App } from "@qino/qino";
 
 const { name } = manifest;
 
-export function init(app: App, { signal }: { signal: AbortSignal }): void {
+export function zzz_init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("html-ready", ({ ctx }) => {
     const html = ctx.res.html;
     const base = ctx.req.moduleUrl + name + "/pub/";
